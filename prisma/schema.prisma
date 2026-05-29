@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  CONSULTATION
+  CHECKUP
+  TREATMENT
+  FOLLOWUP
+}
+
+enum InvoiceStatus {
+  PENDING
+  PARTIAL
+  PAID
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(RECEPTIONIST)
+  createdAt DateTime @default(now())
+
+  appointments Appointment[] @relation("DoctorAppointments")
+  treatments   Treatment[]   @relation("DoctorTreatments")
+
+  @@map("users")
+}
+
+model Patient {
+  id             String    @id @default(cuid())
+  patientId      String    @unique
+  name           String
+  phone          String
+  email          String?
+  dateOfBirth    DateTime?
+  gender         Gender?
+  address        String?
+  medicalHistory String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  appointments Appointment[]
+  treatments   Treatment[]
+  invoices     Invoice[]
+
+  @@map("patients")
+}
+
+model Appointment {
+  id        String            @id @default(cuid())
+  patientId String
+  doctorId  String
+  date      DateTime
+  time      String
+  status    AppointmentStatus @default(SCHEDULED)
+  type      AppointmentType   @default(CONSULTATION)
+  notes     String?
+  createdAt DateTime          @default(now())
+
+  patient    Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor     User        @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  treatments Treatment[]
+
+  @@map("appointments")
+}
+
+model Treatment {
+  id            String   @id @default(cuid())
+  patientId     String
+  appointmentId String?
+  doctorId      String
+  description   String
+  toothNumber   String?
+  procedure     String
+  cost          Decimal  @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  doctor      User         @relation("DoctorTreatments", fields: [doctorId], references: [id])
+  invoices    Invoice[]    @relation("InvoiceTreatments")
+
+  @@map("treatments")
+}
+
+model Invoice {
+  id          String        @id @default(cuid())
+  patientId   String
+  totalAmount Decimal       @db.Decimal(10, 2)
+  paidAmount  Decimal       @default(0) @db.Decimal(10, 2)
+  status      InvoiceStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  patient    Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  treatments Treatment[] @relation("InvoiceTreatments")
+
+  @@map("invoices")
+}
