@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb();
-    const membership = await db
+    const membership = (await db
       .select({
         orgId: organizations.id,
         orgName: organizations.name,
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
           eq(organizationMembers.organizationId, orgId)
         )
       )
-      .get();
+      )[0];
 
     if (!membership) {
       return NextResponse.json({ error: "Not a member of this organization" }, { status: 403 });

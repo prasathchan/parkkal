@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const org = await db.select().from(organizations).where(eq(organizations.id, session.orgId)).get();
+  const org = (await db.select().from(organizations).where(eq(organizations.id, session.orgId)))[0];
   if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
 
   return NextResponse.json({ organization: org });

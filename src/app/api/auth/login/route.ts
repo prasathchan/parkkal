@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body);
 
     const db = getDb();
-    const user = await db
+    const user = (await db
       .select()
       .from(users)
       .where(eq(users.email, email))
-      .get();
+      )[0];
 
     if (!user) {
       return NextResponse.json(

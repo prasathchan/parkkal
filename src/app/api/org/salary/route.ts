@@ -61,11 +61,11 @@ export async function POST(request: NextRequest) {
     const created = [];
     for (const member of members) {
       // Skip if already exists
-      const existing = await db
+      const existing = (await db
         .select()
         .from(salaryRecords)
         .where(and(eq(salaryRecords.organizationId, session.orgId), eq(salaryRecords.userId, member.userId), eq(salaryRecords.month, month)))
-        .get();
+        )[0];
 
       if (existing) continue;
 

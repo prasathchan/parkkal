@@ -21,7 +21,7 @@ export async function GET(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const appt = await db.select().from(appointments).where(eq(appointments.id, params.id)).get();
+  const appt = (await db.select().from(appointments).where(eq(appointments.id, params.id)))[0];
   if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json({ appointment: appt });
@@ -40,7 +40,7 @@ export async function PATCH(
 
     const db = getDb();
     await db.update(appointments).set(data).where(eq(appointments.id, params.id));
-    const updated = await db.select().from(appointments).where(eq(appointments.id, params.id)).get();
+    const updated = (await db.select().from(appointments).where(eq(appointments.id, params.id)))[0];
 
     return NextResponse.json({ appointment: updated });
   } catch (error) {

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const now = Date.now();
 
     // Check if user exists
-    let existingUser = await db.select().from(users).where(eq(users.email, data.email)).get();
+    let existingUser = (await db.select().from(users).where(eq(users.email, data.email)))[0];
 
     if (!existingUser) {
       if (!data.name || !data.password) {
@@ -93,11 +93,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check not already member
-    const existing = await db
+    const existing = (await db
       .select()
       .from(organizationMembers)
       .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, existingUser.id)))
-      .get();
+      )[0];
 
     if (existing) {
       return NextResponse.json({ error: "User is already a member of this organization" }, { status: 409 });

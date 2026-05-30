@@ -25,11 +25,11 @@ export async function GET(
   }
 
   const db = getDb();
-  const patient = await db
+  const patient = (await db
     .select()
     .from(patients)
     .where(eq(patients.id, params.id))
-    .get();
+    )[0];
 
   if (!patient) {
     return NextResponse.json({ error: "Patient not found" }, { status: 404 });
@@ -57,11 +57,11 @@ export async function PATCH(
       .set({ ...data, updatedAt: Date.now() })
       .where(eq(patients.id, params.id));
 
-    const updated = await db
+    const updated = (await db
       .select()
       .from(patients)
       .where(eq(patients.id, params.id))
-      .get();
+      )[0];
 
     return NextResponse.json({ patient: updated });
   } catch (error) {
