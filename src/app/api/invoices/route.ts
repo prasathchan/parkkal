@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { invoices, patients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -37,7 +37,10 @@ export async function GET(request: NextRequest) {
     })
     .from(invoices)
     .leftJoin(patients, eq(invoices.patientId, patients.id))
-    .where(patientIdFilter ? eq(invoices.patientId, patientIdFilter) : undefined)
+    .where(patientIdFilter
+      ? and(eq(invoices.organizationId, session.orgId), eq(invoices.patientId, patientIdFilter))
+      : eq(invoices.organizationId, session.orgId)
+    )
     .orderBy(desc(invoices.createdAt))
     .all();
 
@@ -63,6 +66,7 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const newInvoice = {
       id: generateId(),
+      organizationId: session.orgId,
       patientId: data.patientId,
       totalAmount: data.totalAmount,
       paidAmount: data.paidAmount,

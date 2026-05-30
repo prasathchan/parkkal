@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const conditions = [];
+  const conditions = [eq(visits.organizationId, session.orgId)];
   if (patientId) conditions.push(eq(visits.patientId, patientId));
   if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
   if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
 
     const newVisit = {
       id: crypto.randomUUID(),
+      organizationId: session.orgId,
       visitCode,
       patientId,
       doctorId,

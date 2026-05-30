@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, count, sum, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { patients, appointments, invoices, payments, visits } from "@/db/schema";
+import { organizationPatients, appointments, invoices, payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
+  const orgId = session.orgId;
 
   const today = new Date().toISOString().split("T")[0];
   const todayStart = new Date(today).getTime();
@@ -23,19 +24,19 @@ export async function GET(request: NextRequest) {
     [{ openBilled }],
     [{ openPaid }],
   ] = await Promise.all([
-    db.select({ totalPatients: count() }).from(patients),
+    db.select({ totalPatients: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
     db
       .select({ todayAppointments: count() })
       .from(appointments)
-      .where(eq(appointments.appointmentDate, today)),
+      .where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today))),
     db
       .select({ pendingInvoices: count() })
       .from(invoices)
-      .where(eq(invoices.status, "PENDING")),
+      .where(and(eq(invoices.organizationId, orgId), eq(invoices.status, "PENDING"))),
     db
       .select({ monthlyRevenue: sum(invoices.paidAmount) })
       .from(invoices)
-      .where(gte(invoices.createdAt, monthStart)),
+      .where(and(eq(invoices.organizationId, orgId), gte(invoices.createdAt, monthStart))),
     db
       .select({ todayRevenue: sum(payments.amount) })
       .from(payments)
@@ -43,11 +44,11 @@ export async function GET(request: NextRequest) {
     db
       .select({ openBilled: sum(visits.totalAmount) })
       .from(visits)
-      .where(eq(visits.status, "OPEN")),
+      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
     db
       .select({ openPaid: sum(visits.paidAmount) })
       .from(visits)
-      .where(eq(visits.status, "OPEN")),
+      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
   ]);
 
   return NextResponse.json({

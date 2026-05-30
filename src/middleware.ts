@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { verifyOrgToken, verifyToken } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard routes
+  // Protect /dashboard routes using org session
   if (pathname.startsWith("/dashboard")) {
-    const cookie = request.cookies.get("pkd_session");
-    if (!cookie?.value) {
+    const orgCookie = request.cookies.get("pkd_org_session");
+    if (!orgCookie?.value) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    const session = await verifyToken(cookie.value);
+    const session = await verifyOrgToken(orgCookie.value);
+    if (!session) {
+      const response = NextResponse.redirect(new URL("/login", request.url));
+      response.cookies.delete("pkd_org_session");
+      return response;
+    }
+  }
+
+  // Protect /select-org using pre-org session
+  if (pathname.startsWith("/select-org")) {
+    const preCookie = request.cookies.get("pkd_session");
+    if (!preCookie?.value) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+    const session = await verifyToken(preCookie.value);
     if (!session) {
       const response = NextResponse.redirect(new URL("/login", request.url));
       response.cookies.delete("pkd_session");
@@ -21,9 +35,9 @@ export async function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from login
   if (pathname === "/login") {
-    const cookie = request.cookies.get("pkd_session");
-    if (cookie?.value) {
-      const session = await verifyToken(cookie.value);
+    const orgCookie = request.cookies.get("pkd_org_session");
+    if (orgCookie?.value) {
+      const session = await verifyOrgToken(orgCookie.value);
       if (session) {
         return NextResponse.redirect(new URL("/dashboard", request.url));
       }
@@ -34,5 +48,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/login", "/select-org/:path*"],
 };

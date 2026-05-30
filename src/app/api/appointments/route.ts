@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const conditions = [];
+  const conditions = [eq(appointments.organizationId, session.orgId)];
   if (dateFilter) conditions.push(eq(appointments.appointmentDate, dateFilter));
   if (statusFilter) conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
   if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const newAppt = {
       id: generateId(),
+      organizationId: session.orgId,
       patientId: data.patientId,
       doctorId: data.doctorId,
       appointmentDate: data.appointmentDate,

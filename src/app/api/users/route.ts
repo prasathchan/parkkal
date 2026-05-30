@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { users } from "@/db/schema";
+import { users, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -8,9 +9,18 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
+  // Return org members with their role in this org
   const rows = await db
-    .select({ id: users.id, name: users.name, role: users.role, email: users.email })
-    .from(users);
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: organizationMembers.role,
+    })
+    .from(organizationMembers)
+    .innerJoin(users, eq(organizationMembers.userId, users.id))
+    .where(eq(organizationMembers.organizationId, session.orgId))
+    .all();
 
   return NextResponse.json({ users: rows });
 }

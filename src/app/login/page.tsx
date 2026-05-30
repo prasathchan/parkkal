@@ -29,7 +29,12 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      if (data.requireOrgSelection) {
+        sessionStorage.setItem("pkd_orgs", JSON.stringify(data.organizations));
+        router.push("/select-org");
+      } else {
+        router.push(data.redirect || "/dashboard");
+      }
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");

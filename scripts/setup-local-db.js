@@ -9,7 +9,7 @@ async function runMigration(client, migrationPath) {
   const statements = sql
     .split(";")
     .map(s => s.trim())
-    .filter(s => s && !s.startsWith("INSERT") && !s.startsWith("--"));
+    .filter(s => s.length > 0 && !s.startsWith("--"));
   for (const stmt of statements) {
     try {
       await client.execute(stmt);
@@ -24,18 +24,20 @@ async function main() {
 
   await runMigration(client, path.join(__dirname, "../drizzle/migrations/0001_initial.sql"));
   await runMigration(client, path.join(__dirname, "../drizzle/migrations/0002_visits_billing.sql"));
+  await runMigration(client, path.join(__dirname, "../drizzle/migrations/0003_multitenant.sql"));
 
   const password = "Admin@123";
   const hash = await bcrypt.hash(password, 10);
 
   try {
     await client.execute({
-      sql: `INSERT OR IGNORE INTO users (id, name, email, password_hash, role, created_at)
+      sql: `INSERT OR IGNORE INTO users (id, name, email, password_hash, is_active, created_at)
             VALUES (?, ?, ?, ?, ?, ?)`,
-      args: ["usr_admin_001", "Admin User", "admin@parkkal.com", hash, "ADMIN", Date.now()],
+      args: ["usr_admin_001", "Admin User", "admin@parkkal.com", hash, 1, Date.now()],
     });
-    console.log("✅ Local database set up at ./local.db");
-    console.log("👤 Admin: admin@parkkal.com / Admin@123");
+    console.log("Local database set up at ./local.db");
+    console.log("Admin: admin@parkkal.com / Admin@123");
+    console.log("Org: Parkkal Dental Clinic (org_parkkal)");
   } catch (e) {
     console.error("Seed error:", e.message);
   }

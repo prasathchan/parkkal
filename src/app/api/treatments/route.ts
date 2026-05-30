@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { treatments, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
+  const conditions = [eq(treatments.organizationId, session.orgId)];
+  if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
+
   const rows = await db
     .select({
       id: treatments.id,
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
     .from(treatments)
     .leftJoin(patients, eq(treatments.patientId, patients.id))
     .leftJoin(users, eq(treatments.doctorId, users.id))
-    .where(patientIdFilter ? eq(treatments.patientId, patientIdFilter) : undefined)
+    .where(and(...conditions))
     .orderBy(desc(treatments.createdAt))
     .all();
 
@@ -60,6 +63,7 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const newTreatment = {
       id: generateId(),
+      organizationId: session.orgId,
       patientId: data.patientId,
       appointmentId: data.appointmentId || null,
       doctorId: data.doctorId,

@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { users } from "@/db/schema";
-import { verifyPassword, createToken } from "@/lib/auth";
+import { users, organizationMembers, organizations } from "@/db/schema";
+import { verifyPassword, createToken, createOrgToken } from "@/lib/auth";
 import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,26 +44,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = await createToken({
+    // Find all orgs this user belongs to
+    const memberships = await db
+      .select({
+        orgId: organizations.id,
+        orgName: organizations.name,
+        orgSlug: organizations.slug,
+        orgAddress: organizations.address,
+        role: organizationMembers.role,
+      })
+      .from(organizationMembers)
+      .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
+      .where(eq(organizationMembers.userId, user.id))
+      .all();
+
+    if (memberships.length === 0) {
+      return NextResponse.json(
+        { error: "No organization access. Contact your administrator." },
+        { status: 403 }
+      );
+    }
+
+    if (memberships.length === 1) {
+      // Auto-select the only org
+      const m = memberships[0];
+      const orgToken = await createOrgToken({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        orgId: m.orgId,
+        orgName: m.orgName,
+        orgSlug: m.orgSlug,
+        role: m.role,
+      });
+      const response = NextResponse.json({ redirect: "/dashboard" });
+      response.cookies.set("pkd_org_session", orgToken, {
+        ...COOKIE_OPTS,
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      return response;
+    }
+
+    // Multiple orgs — set pre-org session and return org list
+    const preToken = await createToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
       name: user.name,
     });
-
     const response = NextResponse.json({
-      success: true,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      requireOrgSelection: true,
+      organizations: memberships.map((m) => ({
+        id: m.orgId,
+        name: m.orgName,
+        slug: m.orgSlug,
+        address: m.orgAddress,
+        role: m.role,
+      })),
     });
-
-    response.cookies.set("pkd_session", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
+    response.cookies.set("pkd_session", preToken, {
+      ...COOKIE_OPTS,
+      maxAge: 60 * 60, // 1 hour
     });
-
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
