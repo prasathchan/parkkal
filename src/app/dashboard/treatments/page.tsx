@@ -43,10 +43,23 @@ export default function TreatmentsPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Treatments" }]}
       />
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+          <p className="text-sm text-blue-800">
+            Treatments are added inside a <strong>Visit</strong> under the Prescription tab.
+          </p>
+          <a
+            href="/dashboard/visits/new"
+            className="text-sm font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition"
+          >
+            + New Visit
+          </a>
+        </div>
+
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900">All Treatments</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Summary of all treatment items across visits</p>
           </div>
 
           <Table>
