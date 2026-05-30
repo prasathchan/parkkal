@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply parkkal-db --local",
     "db:migrate:prod": "wrangler d1 migrations apply parkkal-db --remote",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:setup:local": "node scripts/setup-local-db.js"
   },
   "dependencies": {
     "next": "^15.3.3",
@@ -37,6 +38,8 @@
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "drizzle-kit": "^0.24.0",
+    "better-sqlite3": "^11.3.0",
+    "@types/better-sqlite3": "^7.6.11",
     "wrangler": "^4.86.0",
     "eslint": "^8",
     "eslint-config-next": "^15.3.3"
