@@ -37,7 +37,7 @@
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "drizzle-kit": "^0.24.0",
-    "wrangler": "^3.72.0",
+    "wrangler": "^4.86.0",
     "eslint": "^8",
     "eslint-config-next": "^15.3.3"
   }
