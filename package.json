@@ -1,0 +1,44 @@
+{
+  "name": "parkkal-dental",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "cf:build": "next build && wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply parkkal-db --local",
+    "db:migrate:prod": "wrangler d1 migrations apply parkkal-db --remote",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
+    "drizzle-orm": "^0.33.0",
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "@opennextjs/cloudflare": "^0.3.0",
+    "jose": "^5.9.3",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.2",
+    "date-fns": "^3.6.0",
+    "lucide-react": "^0.441.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/bcryptjs": "^2.4.6",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "drizzle-kit": "^0.24.0",
+    "wrangler": "^3.72.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5"
+  }
+}
