@@ -2,21 +2,14 @@ const { createClient } = require("@libsql/client");
 const fs = require("fs");
 const path = require("path");
 
-// We inline bcryptjs since it may not be in PATH
 const bcrypt = require(path.join(__dirname, "../node_modules/bcryptjs"));
 
-async function main() {
-  const client = createClient({ url: "file:local.db" });
-
-  // Create tables from migration (skip INSERT lines — we'll seed manually)
-  const migrationPath = path.join(__dirname, "../drizzle/migrations/0001_initial.sql");
+async function runMigration(client, migrationPath) {
   const sql = fs.readFileSync(migrationPath, "utf-8");
-
   const statements = sql
     .split(";")
     .map(s => s.trim())
     .filter(s => s && !s.startsWith("INSERT") && !s.startsWith("--"));
-
   for (const stmt of statements) {
     try {
       await client.execute(stmt);
@@ -24,8 +17,14 @@ async function main() {
       console.warn("Skipped:", e.message);
     }
   }
+}
 
-  // Seed admin user with correct password hash
+async function main() {
+  const client = createClient({ url: "file:local.db" });
+
+  await runMigration(client, path.join(__dirname, "../drizzle/migrations/0001_initial.sql"));
+  await runMigration(client, path.join(__dirname, "../drizzle/migrations/0002_visits_billing.sql"));
+
   const password = "Admin@123";
   const hash = await bcrypt.hash(password, 10);
 
