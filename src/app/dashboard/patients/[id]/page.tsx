@@ -21,11 +21,21 @@ interface Patient {
   createdAt: number;
 }
 
+interface PatientBalance {
+  totalBilled: number;
+  totalPaid: number;
+  totalDue: number;
+  visitCount: number;
+  pendingVisits: number;
+  lastVisit: string | null;
+}
+
 type TabType = "appointments" | "treatments" | "invoices";
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [balance, setBalance] = useState<PatientBalance | null>(null);
   const [tab, setTab] = useState<TabType>("appointments");
   const [tabData, setTabData] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +45,10 @@ export default function PatientDetailPage() {
       .then((r) => r.json())
       .then((d) => setPatient(d.patient))
       .finally(() => setLoading(false));
+    fetch(`/api/patients/${id}/balance`)
+      .then((r) => r.json())
+      .then((d) => setBalance(d))
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -86,6 +100,45 @@ export default function PatientDetailPage() {
       />
 
       <main className="flex-1 p-6 space-y-6">
+        {/* Balance Card */}
+        {balance && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-900">Financial Summary</h3>
+              <Link
+                href={`/dashboard/visits/new`}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition"
+              >
+                + New Visit
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Total Billed</p>
+                <p className="text-lg font-bold text-slate-900">{formatCurrency(balance.totalBilled)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Total Paid</p>
+                <p className="text-lg font-bold text-green-600">{formatCurrency(balance.totalPaid)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Outstanding</p>
+                <p className={`text-lg font-bold ${balance.totalDue > 0 ? "text-red-600" : "text-slate-400"}`}>
+                  {formatCurrency(balance.totalDue)}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Total Visits</p>
+                <p className="text-lg font-bold text-slate-900">{balance.visitCount}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400 mb-1">Last Visit</p>
+                <p className="text-sm font-semibold text-slate-700">{balance.lastVisit || "—"}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Patient Info Card */}
         <Card>
           <CardHeader>
