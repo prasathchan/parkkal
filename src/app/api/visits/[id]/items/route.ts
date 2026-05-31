@@ -3,6 +3,16 @@ import { eq, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const createItemSchema = z.object({
+  itemName: z.string().min(1),
+  category: z.enum(["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"]),
+  toothNumber: z.string().optional(),
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  unitPrice: z.number().min(0, "Unit price cannot be negative"),
+  notes: z.string().optional(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -28,15 +38,27 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await request.json();
-  const { itemName, category, toothNumber, quantity, unitPrice, notes } = body;
 
-  if (!itemName || !category) {
-    return NextResponse.json({ error: "itemName and category are required" }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const qty = Number(quantity) || 1;
-  const price = Number(unitPrice) || 0;
+  let parsed: z.infer<typeof createItemSchema>;
+  try {
+    parsed = createItemSchema.parse(body);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input", details: err.errors }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
+
+  const { itemName, category, toothNumber, quantity, unitPrice, notes } = parsed;
+  const qty = quantity;
+  const price = unitPrice;
   const amount = qty * price;
 
   const db = getDb();

@@ -61,7 +61,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    label: "Billing",
+    label: "Visit Billing",
     href: "/dashboard/billing",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -70,7 +70,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    label: "Invoices",
+    label: "Standalone Invoices",
     href: "/dashboard/invoices",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

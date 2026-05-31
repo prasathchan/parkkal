@@ -129,6 +129,7 @@ export const treatments = sqliteTable("treatments", {
   toothNumbers: text("tooth_numbers"),
   procedure: text("procedure"),
   cost: real("cost").notNull().default(0),
+  status: text("status").notNull().default("PLANNED"),
   createdAt: integer("created_at").notNull(),
 });
 

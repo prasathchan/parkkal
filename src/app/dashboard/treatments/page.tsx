@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 
+type TreatmentStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED";
+
 interface TreatmentRecord {
   id: string;
   patientName: string | null;
@@ -13,6 +15,7 @@ interface TreatmentRecord {
   procedure: string | null;
   toothNumbers: string | null;
   cost: number;
+  status: TreatmentStatus;
   createdAt: number;
 }
 
@@ -65,6 +68,7 @@ export default function TreatmentsPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,6 +186,30 @@ export default function TreatmentsPage() {
 
   const hasFilters = filterPatientId || dateFilter;
 
+  async function handleStatusChange(treatmentId: string, newStatus: TreatmentStatus) {
+    setUpdatingStatus(treatmentId);
+    try {
+      await fetch(`/api/treatments/${treatmentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setTreatments((prev) =>
+        prev.map((t) => (t.id === treatmentId ? { ...t, status: newStatus } : t))
+      );
+    } catch {
+      // silently ignore
+    } finally {
+      setUpdatingStatus(null);
+    }
+  }
+
+  function statusBadgeClass(status: TreatmentStatus): string {
+    if (status === "COMPLETED") return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700";
+    if (status === "IN_PROGRESS") return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700";
+    return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700";
+  }
+
   return (
     <div className="flex-1 flex flex-col">
       <Header
@@ -269,17 +297,18 @@ export default function TreatmentsPage() {
                   <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
                   <th className="text-left px-4 py-3 font-semibold text-slate-600">Procedure / Item</th>
                   <th className="text-left px-4 py-3 font-semibold text-slate-600">Tooth</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Status</th>
                   <th className="text-right px-4 py-3 font-semibold text-slate-600">Cost</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-10 text-slate-400">Loading...</td>
+                    <td colSpan={7} className="text-center py-10 text-slate-400">Loading...</td>
                   </tr>
                 ) : treatments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-10 text-slate-400">
+                    <td colSpan={7} className="text-center py-10 text-slate-400">
                       No treatment records found
                     </td>
                   </tr>
@@ -301,6 +330,18 @@ export default function TreatmentsPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500">{t.toothNumbers || "—"}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={t.status || "PLANNED"}
+                          disabled={updatingStatus === t.id}
+                          onChange={(e) => handleStatusChange(t.id, e.target.value as TreatmentStatus)}
+                          className={`${statusBadgeClass((t.status || "PLANNED") as TreatmentStatus)} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 pr-6`}
+                        >
+                          <option value="PLANNED">PLANNED</option>
+                          <option value="IN_PROGRESS">IN_PROGRESS</option>
+                          <option value="COMPLETED">COMPLETED</option>
+                        </select>
+                      </td>
                       <td className="px-4 py-3 text-right font-medium text-slate-900">
                         {formatCurrency(t.cost ?? 0)}
                       </td>

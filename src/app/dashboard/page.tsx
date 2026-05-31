@@ -22,13 +22,25 @@ async function getStats(cookieHeader: string) {
 
 async function getRecentAppointments(cookieHeader: string) {
   try {
+    const today = new Date().toISOString().split("T")[0];
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/appointments?limit=5`,
+      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/appointments?date=${today}`,
       { cache: "no-store", headers: { cookie: cookieHeader } }
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return data.appointments || [];
+    // Sort by appointment time ascending so earlier slots appear first
+    const apts = (data.appointments || []) as {
+      id: string;
+      patientName?: string;
+      doctorName?: string;
+      appointmentDate: string;
+      appointmentTime: string;
+      status: string;
+      type: string;
+    }[];
+    apts.sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime));
+    return apts;
   } catch {
     return [];
   }
@@ -159,7 +171,7 @@ export default async function DashboardPage() {
           {/* Recent Appointments */}
           <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-semibold text-slate-900">Recent Appointments</h2>
+              <h2 className="font-semibold text-slate-900">Today&apos;s Appointments</h2>
               <Link
                 href="/dashboard/appointments"
                 className="text-xs text-blue-600 hover:underline"
@@ -170,7 +182,7 @@ export default async function DashboardPage() {
             <div className="divide-y divide-slate-100">
               {appointments.length === 0 ? (
                 <p className="px-6 py-8 text-center text-slate-400 text-sm">
-                  No appointments yet
+                  No appointments scheduled for today
                 </p>
               ) : (
                 appointments.map((apt: {

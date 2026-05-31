@@ -12,6 +12,7 @@ const createTreatmentSchema = z.object({
   toothNumbers: z.string().optional(),
   procedure: z.string().optional(),
   cost: z.number().default(0),
+  status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED"]).default("PLANNED"),
   appointmentId: z.string().optional(),
 });
 
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
       toothNumbers: treatments.toothNumbers,
       procedure: treatments.procedure,
       cost: treatments.cost,
+      status: treatments.status,
       createdAt: treatments.createdAt,
       patientName: patients.name,
       patientCode: patients.patientCode,
@@ -79,6 +81,7 @@ export async function POST(request: NextRequest) {
       toothNumbers: data.toothNumbers ?? null,
       procedure: data.procedure ?? null,
       cost: data.cost,
+      status: data.status,
       appointmentId: data.appointmentId ?? null,
       createdAt: Date.now(),
     };

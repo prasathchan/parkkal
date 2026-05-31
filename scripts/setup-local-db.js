@@ -240,6 +240,7 @@ async function main() {
     `INSERT OR IGNORE INTO appointments_new SELECT * FROM appointments`,
     `DROP TABLE IF EXISTS appointments`,
     `ALTER TABLE appointments_new RENAME TO appointments`,
+    `ALTER TABLE treatments ADD COLUMN status TEXT NOT NULL DEFAULT 'PLANNED'`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }
