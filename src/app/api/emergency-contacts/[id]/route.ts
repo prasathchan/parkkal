@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { emergencyContacts } from "@/db/schema";
+import { emergencyContacts, organizationPatients, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,9 +10,28 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   try {
     const { id } = await params;
+    const db = getDb();
+
+    const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
+    if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Verify entity belongs to the org
+    if (contact.entityType === "PATIENT") {
+      const [membership] = await db
+        .select({ patientId: organizationPatients.patientId })
+        .from(organizationPatients)
+        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, contact.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    } else if (contact.entityType === "USER") {
+      const [membership] = await db
+        .select({ userId: organizationMembers.userId })
+        .from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, contact.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await request.json();
     const { name, relationship, phone, email, address } = body;
-    const db = getDb();
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;
     if (relationship !== undefined) updates.relationship = relationship;
@@ -32,8 +51,32 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const db = getDb();
-  await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
-  return NextResponse.json({ success: true });
+  try {
+    const { id } = await params;
+    const db = getDb();
+
+    const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
+    if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Verify entity belongs to the org
+    if (contact.entityType === "PATIENT") {
+      const [membership] = await db
+        .select({ patientId: organizationPatients.patientId })
+        .from(organizationPatients)
+        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, contact.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    } else if (contact.entityType === "USER") {
+      const [membership] = await db
+        .select({ userId: organizationMembers.userId })
+        .from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, contact.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete emergency contact error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

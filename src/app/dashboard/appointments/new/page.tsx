@@ -58,6 +58,10 @@ export default function NewAppointmentPage() {
     setError("");
     if (!form.patientId) { setError("Please select a patient"); return; }
     if (!form.doctorId) { setError("Please select a doctor"); return; }
+    if (form.appointmentDate < new Date().toISOString().split("T")[0]) {
+      setError("Appointment date cannot be in the past");
+      return;
+    }
     setLoading(true);
 
     try {

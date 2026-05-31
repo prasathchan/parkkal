@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, notInArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -64,6 +64,28 @@ export async function POST(request: NextRequest) {
     const data = createSchema.parse(body);
 
     const db = getDb();
+
+    // Check for doctor time conflict
+    const [conflict] = await db
+      .select({ id: appointments.id })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.organizationId, session.orgId),
+          eq(appointments.doctorId, data.doctorId),
+          eq(appointments.appointmentDate, data.appointmentDate),
+          eq(appointments.appointmentTime, data.appointmentTime),
+          notInArray(appointments.status, ["CANCELLED", "NO_SHOW"])
+        )
+      );
+
+    if (conflict) {
+      return NextResponse.json(
+        { error: "This doctor already has an appointment at that date and time" },
+        { status: 409 }
+      );
+    }
+
     const newAppt = {
       id: generateId(),
       organizationId: session.orgId,

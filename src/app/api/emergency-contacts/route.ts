@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { emergencyContacts, patients } from "@/db/schema";
+import { emergencyContacts, patients, organizationPatients, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -23,6 +23,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createSchema.parse(body);
     const db = getDb();
+
+    // Verify entity belongs to the org
+    if (data.entityType === "PATIENT") {
+      const [membership] = await db
+        .select({ patientId: organizationPatients.patientId })
+        .from(organizationPatients)
+        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    } else if (data.entityType === "USER") {
+      const [membership] = await db
+        .select({ userId: organizationMembers.userId })
+        .from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, data.entityId)));
+      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const now = Date.now();
 
     const contact = {
