@@ -64,12 +64,9 @@ export default function NewPatientPage() {
 
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setTouched(t => ({ ...t, [field]: true }));
       setForm((f) => ({ ...f, [field]: e.target.value }));
     };
-  }
-
-  function touch(field: string) {
-    setTouched(t => ({ ...t, [field]: true }));
   }
 
   const fieldErrors = {
@@ -80,18 +77,13 @@ export default function NewPatientPage() {
     ecPhone: validatePhone(form.ecPhone),
   };
 
+  const requiredFilled = form.name.trim() && form.phone.trim() && form.ecName.trim() && form.ecRelationship && form.ecPhone.trim();
+  const hasValidationErrors = Object.values(fieldErrors).some(Boolean);
+  const canSubmit = requiredFilled && !hasValidationErrors;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setTouched({ phone: true, email: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
-    // Re-compute errors at submit time (state update above is async, can't rely on fieldErrors)
-    const errs = {
-      phone: validatePhone(form.phone),
-      email: validateEmail(form.email),
-      panNumber: validatePan(form.panNumber),
-      aadhaarNumber: validateAadhaar(form.aadhaarNumber),
-      ecPhone: validatePhone(form.ecPhone),
-    };
-    if (Object.values(errs).some(Boolean)) return;
+    if (!canSubmit) return;
     setError("");
     setLoading(true);
 
@@ -179,7 +171,6 @@ export default function NewPatientPage() {
                   label="Phone Number *"
                   value={form.phone}
                   onChange={update("phone")}
-                  onBlur={() => touch("phone")}
                   required
                   placeholder="+91 98765 43210"
                   error={touched.phone ? fieldErrors.phone : ""}
@@ -191,7 +182,6 @@ export default function NewPatientPage() {
                 label="Email Address"
                 value={form.email}
                 onChange={update("email")}
-                onBlur={() => touch("email")}
                 placeholder="patient@example.com"
                 error={touched.email ? fieldErrors.email : ""}
               />
@@ -280,7 +270,6 @@ export default function NewPatientPage() {
                     label="Phone *"
                     value={form.ecPhone}
                     onChange={update("ecPhone")}
-                    onBlur={() => touch("ecPhone")}
                     required
                     placeholder="+91 98765 43210"
                     error={touched.ecPhone ? fieldErrors.ecPhone : ""}
@@ -308,7 +297,6 @@ export default function NewPatientPage() {
                     label="PAN Number (optional)"
                     value={form.panNumber}
                     onChange={update("panNumber")}
-                    onBlur={() => touch("panNumber")}
                     placeholder="AAAAA9999A"
                     maxLength={10}
                     error={touched.panNumber ? fieldErrors.panNumber : ""}
@@ -318,7 +306,6 @@ export default function NewPatientPage() {
                     label="Aadhaar Number (optional)"
                     value={form.aadhaarNumber}
                     onChange={update("aadhaarNumber")}
-                    onBlur={() => touch("aadhaarNumber")}
                     placeholder="12 digits"
                     maxLength={12}
                     error={touched.aadhaarNumber ? fieldErrors.aadhaarNumber : ""}
@@ -332,10 +319,20 @@ export default function NewPatientPage() {
                 </div>
               )}
 
+              {!canSubmit && (
+                <p className="text-xs text-slate-400 pt-1">
+                  {hasValidationErrors
+                    ? "Fix the errors above to continue."
+                    : "Fill in all required fields (*) to register."}
+                </p>
+              )}
+
               <div className="flex gap-3 pt-2">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : "Register Patient"}
-                </Button>
+                {canSubmit && (
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Saving..." : "Register Patient"}
+                  </Button>
+                )}
                 <Button
                   type="button"
                   variant="outline"

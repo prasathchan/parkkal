@@ -92,9 +92,9 @@ export default function StaffPage() {
 
   function updateForm(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      setTouched(t => ({ ...t, [field]: true }));
       setForm(f => {
         const updated = { ...f, [field]: e.target.value };
-        // Auto-set salary type based on role
         if (field === "role") {
           updated.salaryType = e.target.value === "DOCTOR" ? "PER_APPOINTMENT" : "FIXED";
         }
@@ -103,9 +103,12 @@ export default function StaffPage() {
     };
   }
 
+  const staffHasErrors = Object.values(fieldErrors).some(Boolean);
+  const staffCanSubmit = form.email.trim() && form.role && form.ecName?.trim() && form.ecRelationship && form.ecPhone?.trim() && !staffHasErrors;
+
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
-    setTouched({ email: true, phone: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
+    if (!staffCanSubmit) return;
     const errs = {
       email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? "error" : "",
       phone: form.phone && !/^\+?\d{10,15}$/.test(form.phone.replace(/[\s-]/g, "")) ? "error" : "",
@@ -274,7 +277,6 @@ export default function StaffPage() {
                     type="text"
                     value={form.email}
                     onChange={updateForm("email")}
-                    onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -308,7 +310,6 @@ export default function StaffPage() {
                     type="text"
                     value={form.phone}
                     onChange={updateForm("phone")}
-                    onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                   />
@@ -405,7 +406,6 @@ export default function StaffPage() {
                       type="text"
                       value={form.panNumber}
                       onChange={updateForm("panNumber")}
-                      onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -418,7 +418,6 @@ export default function StaffPage() {
                       type="text"
                       value={form.aadhaarNumber}
                       onChange={updateForm("aadhaarNumber")}
-                      onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -466,7 +465,6 @@ export default function StaffPage() {
                       type="text"
                       value={form.ecPhone}
                       onChange={updateForm("ecPhone")}
-                      onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -482,14 +480,22 @@ export default function StaffPage() {
                 </div>
               )}
 
+              {!staffCanSubmit && (
+                <p className="text-xs text-slate-400 pt-1">
+                  {staffHasErrors ? "Fix the errors above to continue." : "Fill in all required fields (*) to add staff."}
+                </p>
+              )}
+
               <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
-                >
-                  {saving ? "Adding..." : "Add Staff"}
-                </button>
+                {staffCanSubmit && (
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
+                  >
+                    {saving ? "Adding..." : "Add Staff"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
