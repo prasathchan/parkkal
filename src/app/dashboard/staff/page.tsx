@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
 import Link from "next/link";
+import { BloodGroupSelect } from "@/components/ui/blood-group-select";
+import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 
 interface Member {
   memberId: string;
@@ -40,7 +42,7 @@ export default function StaffPage() {
     phone: "",
     dateOfBirth: "",
     gender: "",
-    address: "",
+    bloodGroup: "",
     panNumber: "",
     aadhaarNumber: "",
     role: "RECEPTIONIST" as typeof ROLES[number],
@@ -51,6 +53,14 @@ export default function StaffPage() {
     ecName: "",
     ecRelationship: "",
     ecPhone: "",
+  });
+  const [staffAddress, setStaffAddress] = useState<AddressValue>({
+    country: "India",
+    state: "",
+    district: "",
+    city: "",
+    pincode: "",
+    fullAddress: "",
   });
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -85,6 +95,21 @@ export default function StaffPage() {
     setFormError("");
     setSaving(true);
     try {
+      const addressString = [
+        staffAddress.fullAddress,
+        staffAddress.city,
+        staffAddress.district,
+        staffAddress.state
+          ? staffAddress.pincode
+            ? `${staffAddress.state} - ${staffAddress.pincode}`
+            : staffAddress.state
+          : "",
+        staffAddress.country,
+      ]
+        .filter(Boolean)
+        .join(", ")
+        .trim();
+
       const res = await fetch("/api/org/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +119,8 @@ export default function StaffPage() {
           phone: form.phone || undefined,
           dateOfBirth: form.dateOfBirth || undefined,
           gender: form.gender || undefined,
-          address: form.address || undefined,
+          bloodGroup: form.bloodGroup || undefined,
+          address: addressString || undefined,
           panNumber: form.panNumber || undefined,
           aadhaarNumber: form.aadhaarNumber || undefined,
           role: form.role,
@@ -285,6 +311,13 @@ export default function StaffPage() {
                   </select>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Blood Group</label>
+                  <BloodGroupSelect
+                    value={form.bloodGroup}
+                    onChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Role *</label>
                   <select
                     value={form.role}
@@ -328,6 +361,12 @@ export default function StaffPage() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                <AddressForm value={staffAddress} onChange={setStaffAddress} />
               </div>
 
               {/* Documents */}

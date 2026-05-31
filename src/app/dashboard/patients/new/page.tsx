@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { BloodGroupSelect } from "@/components/ui/blood-group-select";
+import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 
 export default function NewPatientPage() {
   const router = useRouter();
@@ -18,7 +20,7 @@ export default function NewPatientPage() {
     email: "",
     dateOfBirth: "",
     gender: "",
-    address: "",
+    bloodGroup: "",
     medicalHistory: "",
     panNumber: "",
     aadhaarNumber: "",
@@ -26,6 +28,14 @@ export default function NewPatientPage() {
     ecRelationship: "",
     ecPhone: "",
     ecEmail: "",
+  });
+  const [addressData, setAddressData] = useState<AddressValue>({
+    country: "India",
+    state: "",
+    district: "",
+    city: "",
+    pincode: "",
+    fullAddress: "",
   });
 
   function update(field: keyof typeof form) {
@@ -39,13 +49,29 @@ export default function NewPatientPage() {
     setError("");
     setLoading(true);
 
+    const addressString = [
+      addressData.fullAddress,
+      addressData.city,
+      addressData.district,
+      addressData.state
+        ? addressData.pincode
+          ? `${addressData.state} - ${addressData.pincode}`
+          : addressData.state
+        : "",
+      addressData.country,
+    ]
+      .filter(Boolean)
+      .join(", ")
+      .trim();
+
     const payload = {
       name: form.name,
       phone: form.phone,
       email: form.email,
       dateOfBirth: form.dateOfBirth,
       gender: form.gender,
-      address: form.address,
+      bloodGroup: form.bloodGroup || undefined,
+      address: addressString || undefined,
       medicalHistory: form.medicalHistory,
       panNumber: form.panNumber,
       aadhaarNumber: form.aadhaarNumber,
@@ -144,15 +170,19 @@ export default function NewPatientPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Blood Group
+                </label>
+                <BloodGroupSelect
+                  value={form.bloodGroup}
+                  onChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Address
                 </label>
-                <textarea
-                  value={form.address}
-                  onChange={update("address")}
-                  rows={2}
-                  placeholder="Street, City, State, PIN"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
-                />
+                <AddressForm value={addressData} onChange={setAddressData} />
               </div>
 
               <div>
