@@ -30,11 +30,27 @@ export const users = sqliteTable("users", {
   updatedAt: integer("updated_at"),
 });
 
+export const orgRoles = sqliteTable("org_roles", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  color: text("color").notNull().default("#3B82F6"),
+  isSystem: integer("is_system").notNull().default(0),
+  permissions: text("permissions").notNull().default("[]"),
+  createdAt: integer("created_at"),
+  updatedAt: integer("updated_at"),
+}, (t) => ({
+  uniqOrgSlug: unique().on(t.organizationId, t.slug),
+}));
+
 export const organizationMembers = sqliteTable("organization_members", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => organizations.id),
   userId: text("user_id").notNull().references(() => users.id),
   role: text("role", { enum: ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"] }).notNull(),
+  orgRoleId: text("org_role_id").references(() => orgRoles.id),
   salaryType: text("salary_type", { enum: ["FIXED", "PER_APPOINTMENT"] }).notNull().default("FIXED"),
   salaryAmount: real("salary_amount").notNull().default(0),
   joinedAt: text("joined_at"),
