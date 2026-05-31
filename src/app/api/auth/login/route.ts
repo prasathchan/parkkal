@@ -36,6 +36,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.isActive === 0) {
+      return NextResponse.json(
+        { error: "Account is inactive" },
+        { status: 401 }
+      );
+    }
+
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
       return NextResponse.json(

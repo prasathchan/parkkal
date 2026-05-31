@@ -31,6 +31,7 @@ export async function GET(
       visitType: visits.visitType,
       createdAt: visits.createdAt,
       updatedAt: visits.updatedAt,
+      organizationId: visits.organizationId,
       patientName: patients.name,
       patientCode: patients.patientCode,
       doctorName: users.name,
@@ -42,6 +43,10 @@ export async function GET(
 
   if (!visitRow) {
     return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  }
+
+  if (visitRow.organizationId !== session.orgId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
@@ -59,8 +64,13 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await request.json();
   const db = getDb();
+
+  const [existingVisit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await request.json();
 
   const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "totalAmount", "paidAmount", "visitDate"];
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
@@ -82,6 +92,10 @@ export async function DELETE(
 
   const { id } = await params;
   const db = getDb();
+
+  const [existingVisit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await db.delete(attachments).where(eq(attachments.visitId, id));
   await db.delete(payments).where(eq(payments.visitId, id));

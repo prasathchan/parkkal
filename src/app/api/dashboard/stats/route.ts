@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, count, sum, gte } from "drizzle-orm";
+import { eq, and, ne, count, sum, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationPatients, appointments, payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -41,11 +41,11 @@ export async function GET(request: NextRequest) {
     db
       .select({ val: sum(visits.totalAmount) })
       .from(visits)
-      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+      .where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
     db
       .select({ val: sum(visits.paidAmount) })
       .from(visits)
-      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+      .where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
   ]);
 
   // Today's revenue: sum of payments recorded today for this org

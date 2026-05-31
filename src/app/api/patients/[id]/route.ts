@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { patients } from "@/db/schema";
+import { patients, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -27,6 +27,15 @@ export async function GET(
   const patient = (await db.select().from(patients).where(eq(patients.id, id)))[0];
 
   if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+
+  const orgLink = (await db
+    .select()
+    .from(organizationPatients)
+    .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patient.id)))
+  )[0];
+
+  if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   return NextResponse.json({ patient });
 }
 

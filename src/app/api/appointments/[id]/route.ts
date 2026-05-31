@@ -24,6 +24,7 @@ export async function GET(
   const db = getDb();
   const appt = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
   if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (appt.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return NextResponse.json({ appointment: appt });
 }
 
@@ -36,10 +37,15 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+    const db = getDb();
+
+    const appt = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
+    if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (appt.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await request.json();
     const data = updateSchema.parse(body);
 
-    const db = getDb();
     await db.update(appointments).set(data).where(eq(appointments.id, id));
     const updated = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
     return NextResponse.json({ appointment: updated });
