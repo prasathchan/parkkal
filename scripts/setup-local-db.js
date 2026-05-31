@@ -114,6 +114,18 @@ const SQL = [
     paid_at INTEGER, status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PARTIAL','PAID')),
     notes TEXT, created_at INTEGER NOT NULL, UNIQUE(organization_id, user_id, month)
   )`,
+  `CREATE TABLE IF NOT EXISTS feature_flags (
+    id TEXT PRIMARY KEY,
+    feature_key TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    org_id TEXT,
+    is_enabled INTEGER NOT NULL DEFAULT 0,
+    rollout_percent INTEGER NOT NULL DEFAULT 100,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(feature_key, org_id)
+  )`,
 ];
 
 const SYSTEM_ROLES = [
@@ -266,6 +278,24 @@ async function main() {
     await client.execute({
       sql: `INSERT OR IGNORE INTO organization_members (id,organization_id,user_id,role,org_role_id,salary_type,salary_amount,joined_at,is_active,created_at) VALUES (?,?,?,?,?,?,?,?,1,?)`,
       args: [id,orgId,userId,role,orgRoleId,"FIXED",0,today,now],
+    });
+  }
+
+  console.log("Seeding feature flags...");
+  const defaultFlags = [
+    ["ff_dental_chart",       "Dental Chart (Odontogram)",       "Interactive tooth chart on visits",           0],
+    ["ff_patient_portal",     "Patient Portal",                  "Patient self-service login and history",      0],
+    ["ff_pdf_export",         "PDF Export",                      "Download receipts and prescriptions as PDF",  0],
+    ["ff_whatsapp_notify",    "WhatsApp Notifications",          "Send appointment and payment notifications",  0],
+    ["ff_inventory",          "Inventory Management",            "Track dental supplies and stock levels",      0],
+    ["ff_analytics",          "Financial Analytics",             "Advanced revenue reports and charts",         0],
+    ["ff_lab_integration",    "Lab Integration",                 "Track crown/denture lab work orders",         0],
+    ["ff_appointment_source", "Appointment vs Walk-in Tracking", "Show appointment/walk-in split on dashboard", 1],
+  ];
+  for (const [key, name, desc, enabled] of defaultFlags) {
+    await client.execute({
+      sql: `INSERT OR IGNORE INTO feature_flags (id, feature_key, name, description, org_id, is_enabled, rollout_percent, created_at, updated_at) VALUES (?, ?, ?, ?, NULL, ?, 100, ?, ?)`,
+      args: [`ff_global_${key}`, key, name, desc, enabled, now, now],
     });
   }
 

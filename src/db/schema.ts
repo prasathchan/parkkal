@@ -228,3 +228,15 @@ export const attachments = sqliteTable("attachments", {
   uploadedBy: text("uploaded_by").notNull().references(() => users.id),
   createdAt: integer("created_at").notNull(),
 });
+
+export const featureFlags = sqliteTable("feature_flags", {
+  id: text("id").primaryKey(),
+  featureKey: text("feature_key").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  orgId: text("org_id"),
+  isEnabled: integer("is_enabled").notNull().default(0),
+  rolloutPercent: integer("rollout_percent").notNull().default(100),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
