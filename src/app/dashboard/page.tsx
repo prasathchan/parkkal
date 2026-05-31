@@ -35,7 +35,7 @@ async function getRecentAppointments(cookieHeader: string) {
 }
 
 export default async function DashboardPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const orgToken = cookieStore.get("pkd_org_session")?.value;
   const session = orgToken ? await verifyOrgToken(orgToken) : null;
   const cookieHeader = orgToken ? `pkd_org_session=${orgToken}` : "";
