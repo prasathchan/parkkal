@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { attachments } from "@/db/schema";
+import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
@@ -15,6 +15,9 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const rows = await db.select().from(attachments).where(eq(attachments.visitId, id));
   return NextResponse.json({ attachments: rows });
 }
@@ -37,6 +40,11 @@ export async function POST(
     return NextResponse.json({ error: "file and patientId are required" }, { status: 400 });
   }
 
+  const db = getDb();
+  const [visitRow] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!visitRow) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visitRow.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
@@ -48,7 +56,6 @@ export async function POST(
 
   const fileUrl = `/uploads/${patientId}/${fileName}`;
 
-  const db = getDb();
   const newAttachment = {
     id: crypto.randomUUID(),
     visitId: id,

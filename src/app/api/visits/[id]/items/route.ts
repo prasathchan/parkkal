@@ -13,6 +13,9 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
   return NextResponse.json({ items });
 }

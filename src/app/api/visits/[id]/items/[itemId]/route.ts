@@ -41,15 +41,20 @@ export async function PATCH(
     }
   }
 
-  await db.update(visitItems).set(updates).where(eq(visitItems.id, itemId));
+  const runPatch = async (tx: typeof db) => {
+    await tx.update(visitItems).set(updates).where(eq(visitItems.id, itemId));
+    const [{ total }] = await tx
+      .select({ total: sum(visitItems.amount) })
+      .from(visitItems)
+      .where(eq(visitItems.visitId, id));
+    await tx.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+  };
 
-  // Recalculate visit totalAmount
-  const [{ total }] = await db
-    .select({ total: sum(visitItems.amount) })
-    .from(visitItems)
-    .where(eq(visitItems.visitId, id));
-
-  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
+    await (db as unknown as { transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void> }).transaction(runPatch);
+  } else {
+    await runPatch(db);
+  }
 
   const [updated] = await db.select().from(visitItems).where(eq(visitItems.id, itemId));
   return NextResponse.json({ item: updated });
