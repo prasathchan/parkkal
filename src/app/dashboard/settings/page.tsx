@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Header } from "@/components/header";
+import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 
 interface OrgProfile {
   id: string;
@@ -13,9 +14,19 @@ interface OrgProfile {
   logoUrl: string | null;
 }
 
+function parseAddress(raw: string | null): AddressValue {
+  return { country: "India", state: "", district: "", city: "", pincode: "", fullAddress: raw || "" };
+}
+
+function serializeAddress(a: AddressValue): string {
+  const parts = [a.fullAddress, a.city, a.district, a.state ? (a.pincode ? `${a.state} - ${a.pincode}` : a.state) : "", a.country].filter(Boolean);
+  return parts.join(", ");
+}
+
 export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
-  const [form, setForm] = useState({ name: "", address: "", phone: "", email: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [addressData, setAddressData] = useState<AddressValue>({ country: "India", state: "", district: "", city: "", pincode: "", fullAddress: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -26,21 +37,11 @@ export default function SettingsPage() {
       .then(data => {
         const o = data.organization;
         setOrg(o);
-        setForm({
-          name: o.name || "",
-          address: o.address || "",
-          phone: o.phone || "",
-          email: o.email || "",
-        });
+        setForm({ name: o.name || "", phone: o.phone || "", email: o.email || "" });
+        setAddressData(parseAddress(o.address));
         setLoading(false);
       });
   }, []);
-
-  function update(field: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setForm(f => ({ ...f, [field]: e.target.value }));
-    };
-  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +50,7 @@ export default function SettingsPage() {
     const res = await fetch("/api/org/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, address: serializeAddress(addressData) }),
     });
     if (res.ok) {
       setMessage("Organization settings saved successfully.");
@@ -76,7 +77,7 @@ export default function SettingsPage() {
               <input
                 type="text"
                 value={form.name}
-                onChange={update("name")}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 required
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -86,7 +87,7 @@ export default function SettingsPage() {
               <input
                 type="text"
                 value={form.phone}
-                onChange={update("phone")}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="+91 98765 43210"
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -96,20 +97,14 @@ export default function SettingsPage() {
               <input
                 type="email"
                 value={form.email}
-                onChange={update("email")}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="clinic@example.com"
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
-              <textarea
-                value={form.address}
-                onChange={update("address")}
-                rows={3}
-                placeholder="Clinic address"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
+              <AddressForm value={addressData} onChange={setAddressData} />
             </div>
 
             {message && (
