@@ -108,6 +108,9 @@ export default function VisitDetailPage() {
   // Appointment
   const [markingApptDone, setMarkingApptDone] = useState(false);
 
+  // Complete visit
+  const [completingVisit, setCompletingVisit] = useState(false);
+
   // Attachment
   const [fileType, setFileType] = useState("OTHER");
   const [uploadError, setUploadError] = useState("");
@@ -208,6 +211,17 @@ export default function VisitDetailPage() {
     if (!confirm("Delete this attachment?")) return;
     await fetch(`/api/visits/${id}/attachments/${attId}`, { method: "DELETE" });
     await fetchVisit();
+  }
+
+  async function handleCompleteVisit() {
+    setCompletingVisit(true);
+    await fetch(`/api/visits/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" }),
+    });
+    await fetchVisit();
+    setCompletingVisit(false);
   }
 
   async function handleMarkAppointmentDone() {
@@ -317,6 +331,15 @@ export default function VisitDetailPage() {
                 </svg>
                 Print
               </Link>
+              {visit.status === "OPEN" && (
+                <button
+                  onClick={handleCompleteVisit}
+                  disabled={completingVisit}
+                  className="inline-flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-40 transition"
+                >
+                  {completingVisit ? "Completing..." : "Complete Visit"}
+                </button>
+              )}
               <button
                 onClick={() => setShowPayModal(true)}
                 disabled={visit.status === "CANCELLED" || due <= 0}

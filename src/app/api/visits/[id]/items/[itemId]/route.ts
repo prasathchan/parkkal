@@ -61,15 +61,20 @@ export async function DELETE(
   const { id, itemId } = await params;
   const db = getDb();
 
-  await db.delete(visitItems).where(eq(visitItems.id, itemId));
+  const runDelete = async (tx: typeof db) => {
+    await tx.delete(visitItems).where(eq(visitItems.id, itemId));
+    const [{ total }] = await tx
+      .select({ total: sum(visitItems.amount) })
+      .from(visitItems)
+      .where(eq(visitItems.visitId, id));
+    await tx.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+  };
 
-  // Recalculate visit totalAmount
-  const [{ total }] = await db
-    .select({ total: sum(visitItems.amount) })
-    .from(visitItems)
-    .where(eq(visitItems.visitId, id));
-
-  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
+    await (db as unknown as { transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void> }).transaction(runDelete);
+  } else {
+    await runDelete(db);
+  }
 
   return NextResponse.json({ success: true });
 }

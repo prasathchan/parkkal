@@ -37,10 +37,13 @@ export default function NewAppointmentPage() {
   }, [patientSearch]);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/org/members")
       .then((r) => r.json())
       .then((d) => {
-        if (d.user) setDoctors([{ id: d.user.userId, name: d.user.name }]);
+        const eligible = (d.members || []).filter(
+          (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+        );
+        setDoctors(eligible.map((m: { userId: string; name: string }) => ({ id: m.userId, name: m.name })));
       });
   }, []);
 

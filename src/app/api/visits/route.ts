@@ -67,20 +67,26 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
+    // Debug: verify FK references exist
+    const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
+    const [patientExists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, patientId));
+    const [doctorExists] = await db.select({ id: users.id }).from(users).where(eq(users.id, doctorId));
+    if (!orgExists) return NextResponse.json({ error: `Organization not found: ${session.orgId}` }, { status: 400 });
+    if (!patientExists) return NextResponse.json({ error: `Patient not found: ${patientId}` }, { status: 400 });
+    if (!doctorExists) return NextResponse.json({ error: `Doctor not found: ${doctorId}` }, { status: 400 });
+
     // Count today's visits for sequence
     const [{ todayCount }] = await db
       .select({ todayCount: count() })
       .from(visits)
       .where(eq(visits.visitDate, visitDate));
 
-    const seq = (todayCount as number) + 1;
-    const visitCode = generateVisitCode(visitDate, seq);
     const now = Date.now();
+    const baseSeq = (todayCount as number) + 1;
 
     const newVisit = {
       id: crypto.randomUUID(),
       organizationId: session.orgId,
-      visitCode,
       patientId,
       doctorId,
       visitDate,
@@ -96,16 +102,20 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    // Debug: verify FK references exist
-    const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
-    const [patientExists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, patientId));
-    const [doctorExists] = await db.select({ id: users.id }).from(users).where(eq(users.id, doctorId));
-    if (!orgExists) return NextResponse.json({ error: `Organization not found: ${session.orgId}` }, { status: 400 });
-    if (!patientExists) return NextResponse.json({ error: `Patient not found: ${patientId}` }, { status: 400 });
-    if (!doctorExists) return NextResponse.json({ error: `Doctor not found: ${doctorId}` }, { status: 400 });
+    // Retry loop to handle UNIQUE constraint violations on visitCode
+    let visitCode = '';
+    for (let attempt = 0; attempt < 5; attempt++) {
+      visitCode = generateVisitCode(visitDate, baseSeq + attempt);
+      try {
+        await db.insert(visits).values({ ...newVisit, visitCode });
+        break;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (attempt === 4 || !msg.includes('UNIQUE')) throw e;
+      }
+    }
 
-    await db.insert(visits).values(newVisit);
-    return NextResponse.json({ visit: newVisit }, { status: 201 });
+    return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });
   } catch (error) {
     console.error("Create visit error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
