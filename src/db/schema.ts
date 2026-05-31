@@ -8,6 +8,7 @@ export const organizations = sqliteTable("organizations", {
   phone: text("phone"),
   email: text("email"),
   logoUrl: text("logo_url"),
+  themeConfig: text("theme_config"),
   isActive: integer("is_active").notNull().default(1),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),

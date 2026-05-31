@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, address, phone, email, logoUrl } = body;
+    const { name, address, phone, email, logoUrl, themeConfig } = body;
 
     const db = getDb();
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
@@ -31,6 +31,7 @@ export async function PATCH(request: NextRequest) {
     if (phone !== undefined) updates.phone = phone;
     if (email !== undefined) updates.email = email;
     if (logoUrl !== undefined) updates.logoUrl = logoUrl;
+    if (themeConfig !== undefined) updates.themeConfig = typeof themeConfig === "string" ? themeConfig : JSON.stringify(themeConfig);
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
     return NextResponse.json({ success: true });

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Header } from "@/components/header";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 
 interface OrgProfile {
   id: string;
@@ -12,6 +14,7 @@ interface OrgProfile {
   phone: string | null;
   email: string | null;
   logoUrl: string | null;
+  themeConfig: string | null;
 }
 
 function parseAddress(raw: string | null): AddressValue {
@@ -23,27 +26,39 @@ function serializeAddress(a: AddressValue): string {
   return parts.join(", ");
 }
 
+type Tab = "profile" | "appearance";
+
 export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
+  const [tab, setTab] = useState<Tab>("profile");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
   const [addressData, setAddressData] = useState<AddressValue>({ country: "India", state: "", district: "", city: "", pincode: "", fullAddress: "" });
+  const [theme, setTheme] = useState<OrgThemeConfig>(DEFAULT_THEME);
+  const [customColor, setCustomColor] = useState("#2563eb");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/org/profile")
       .then(r => r.json())
       .then(data => {
-        const o = data.organization;
+        const o = data.organization as OrgProfile;
         setOrg(o);
         setForm({ name: o.name || "", phone: o.phone || "", email: o.email || "" });
         setAddressData(parseAddress(o.address));
+        const t = parseThemeConfig(o.themeConfig);
+        setTheme(t);
+        setCustomColor(t.primaryColor);
+        setLogoPreview(o.logoUrl);
         setLoading(false);
       });
   }, []);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setMessage("");
@@ -52,86 +67,313 @@ export default function SettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, address: serializeAddress(addressData) }),
     });
+    setMessage(res.ok ? "Profile saved successfully." : ((await res.json()).error || "Failed to save."));
+    setSaving(false);
+  }
+
+  async function handleSaveAppearance() {
+    setSaving(true);
+    setMessage("");
+    const res = await fetch("/api/org/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ themeConfig: theme }),
+    });
     if (res.ok) {
-      setMessage("Organization settings saved successfully.");
+      setMessage("Appearance saved. Refresh to see all changes.");
+      // Apply immediately
+      document.documentElement.style.setProperty("--primary", theme.primaryColor);
+      const fontOpt = FONT_OPTIONS.find(f => f.value === theme.fontFamily);
+      if (fontOpt) document.documentElement.style.setProperty("--font-body", fontOpt.stack);
+      if (theme.darkMode === "dark") document.documentElement.classList.add("dark");
+      else if (theme.darkMode === "light") document.documentElement.classList.remove("dark");
     } else {
-      const data = await res.json();
-      setMessage(data.error || "Failed to save.");
+      setMessage((await res.json()).error || "Failed to save.");
     }
     setSaving(false);
   }
 
-  if (loading) return <div className="flex-1 p-6 text-slate-500">Loading...</div>;
+  async function handleLogoUpload(file: File) {
+    setLogoUploading(true);
+    const fd = new FormData();
+    fd.append("logo", file);
+    const res = await fetch("/api/org/logo", { method: "POST", body: fd });
+    if (res.ok) {
+      const { logoUrl } = await res.json();
+      setLogoPreview(logoUrl);
+      setOrg(o => o ? { ...o, logoUrl } : o);
+    } else {
+      const data = await res.json();
+      setMessage(data.error || "Logo upload failed.");
+    }
+    setLogoUploading(false);
+  }
+
+  async function handleRemoveLogo() {
+    await fetch("/api/org/logo", { method: "DELETE" });
+    setLogoPreview(null);
+    setOrg(o => o ? { ...o, logoUrl: null } : o);
+  }
+
+  if (loading) return <div className="flex-1 p-6 text-slate-500" style={{ color: "var(--muted-foreground)" }}>Loading...</div>;
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "profile", label: "Organization Profile" },
+    { id: "appearance", label: "Appearance" },
+  ];
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <Header title="Settings" breadcrumb={[{ label: "Dashboard" }, { label: "Settings" }]} />
       <main className="flex-1 p-6 max-w-2xl">
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-1">Organization Profile</h2>
-          <p className="text-sm text-slate-500 mb-6">Update your clinic's information</p>
-
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Organization Name *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-              <input
-                type="text"
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="+91 98765 43210"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="clinic@example.com"
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
-              <AddressForm value={addressData} onChange={setAddressData} />
-            </div>
-
-            {message && (
-              <div className={`text-sm rounded-lg px-4 py-3 ${message.includes("success") ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
-                {message}
-              </div>
-            )}
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
-              >
-                {saving ? "Saving..." : "Save Changes"}
-              </button>
-            </div>
-          </form>
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 p-1 rounded-lg w-fit" style={{ background: "var(--muted)" }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => { setTab(t.id); setMessage(""); }}
+              className="px-4 py-2 rounded-md text-sm font-medium transition-all"
+              style={tab === t.id
+                ? { background: "var(--card)", color: "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "var(--muted-foreground)" }
+              }
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
+        {/* Profile Tab */}
+        {tab === "profile" && (
+          <div className="rounded-xl border p-6" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--foreground)" }}>Organization Profile</h2>
+            <p className="text-sm mb-6" style={{ color: "var(--muted-foreground)" }}>Update your clinic&apos;s information</p>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <Field label="Organization Name *">
+                <input type="text" value={form.name} required onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="field-input" />
+              </Field>
+              <Field label="Phone">
+                <input type="text" value={form.phone} placeholder="+91 98765 43210" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="field-input" />
+              </Field>
+              <Field label="Email">
+                <input type="email" value={form.email} placeholder="clinic@example.com" onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="field-input" />
+              </Field>
+              <Field label="Address">
+                <AddressForm value={addressData} onChange={setAddressData} />
+              </Field>
+
+              {message && <StatusMessage message={message} />}
+              <div className="pt-2">
+                <SaveButton saving={saving} label="Save Profile" />
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Appearance Tab */}
+        {tab === "appearance" && (
+          <div className="space-y-6">
+            {/* Logo */}
+            <Section title="Clinic Logo" subtitle="Upload your clinic logo — shown in the sidebar">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style={{ borderColor: "var(--border)", background: "var(--muted)" }}>
+                  {logoPreview ? (
+                    <Image src={logoPreview} alt="Logo" width={80} height={80} className="w-full h-full object-contain" />
+                  ) : (
+                    <svg className="w-8 h-8" style={{ color: "var(--muted-foreground)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
+                  <button onClick={() => fileInputRef.current?.click()} disabled={logoUploading}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors disabled:opacity-50"
+                    style={{ borderColor: "var(--border)", color: "var(--foreground)", background: "var(--card)" }}>
+                    {logoUploading ? "Uploading..." : "Upload Logo"}
+                  </button>
+                  {logoPreview && (
+                    <button onClick={handleRemoveLogo} className="block px-4 py-2 text-sm rounded-lg transition-colors" style={{ color: "#ef4444" }}>
+                      Remove
+                    </button>
+                  )}
+                  <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>PNG, JPG, SVG · Max 2MB</p>
+                </div>
+              </div>
+            </Section>
+
+            {/* Primary Color */}
+            <Section title="Brand Color" subtitle="Used for buttons, active nav items, and accents">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {COLOR_PRESETS.map(c => (
+                  <button key={c.value} title={c.name} onClick={() => { setTheme(t => ({ ...t, primaryColor: c.value })); setCustomColor(c.value); }}
+                    className="w-9 h-9 rounded-lg transition-all border-2"
+                    style={{ background: c.value, borderColor: theme.primaryColor === c.value ? "var(--foreground)" : "transparent", outline: theme.primaryColor === c.value ? `3px solid ${c.value}30` : "none", outlineOffset: "2px" }}
+                  />
+                ))}
+                {/* Custom color */}
+                <label className="w-9 h-9 rounded-lg border-2 cursor-pointer overflow-hidden relative" title="Custom color"
+                  style={{ borderColor: !COLOR_PRESETS.find(c => c.value === theme.primaryColor) ? "var(--foreground)" : "var(--border)" }}>
+                  <input type="color" value={customColor} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onChange={e => { setCustomColor(e.target.value); setTheme(t => ({ ...t, primaryColor: e.target.value })); }} />
+                  <div className="w-full h-full flex items-center justify-center" style={{ background: customColor }}>
+                    <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded" style={{ background: theme.primaryColor }} />
+                <code className="text-xs" style={{ color: "var(--muted-foreground)" }}>{theme.primaryColor}</code>
+              </div>
+            </Section>
+
+            {/* Font */}
+            <Section title="Font Family" subtitle="Applied across the entire interface">
+              <div className="space-y-2">
+                {FONT_OPTIONS.map(f => (
+                  <label key={f.value} className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                    style={{ borderColor: theme.fontFamily === f.value ? theme.primaryColor : "var(--border)", background: theme.fontFamily === f.value ? `${theme.primaryColor}08` : "var(--card)" }}>
+                    <input type="radio" name="font" value={f.value} checked={theme.fontFamily === f.value}
+                      onChange={() => setTheme(t => ({ ...t, fontFamily: f.value as OrgThemeConfig["fontFamily"] }))} className="sr-only" />
+                    <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                      style={{ borderColor: theme.fontFamily === f.value ? theme.primaryColor : "var(--border)" }}>
+                      {theme.fontFamily === f.value && <div className="w-2 h-2 rounded-full" style={{ background: theme.primaryColor }} />}
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-sm font-medium" style={{ fontFamily: f.stack, color: "var(--foreground)" }}>{f.label}</span>
+                      <span className="ml-2 text-xs" style={{ fontFamily: f.stack, color: "var(--muted-foreground)" }}>The quick brown fox jumps</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </Section>
+
+            {/* Sidebar Style */}
+            <Section title="Sidebar Style" subtitle="Background style for the navigation sidebar">
+              <div className="grid grid-cols-3 gap-3">
+                {([
+                  { value: "dark", label: "Dark", desc: "Classic dark sidebar", preview: "#0f172a" },
+                  { value: "light", label: "Light", desc: "Clean white sidebar", preview: "#ffffff" },
+                  { value: "colored", label: "Colored", desc: "Your brand color", preview: theme.primaryColor },
+                ] as { value: OrgThemeConfig["sidebarStyle"]; label: string; desc: string; preview: string }[]).map(s => (
+                  <button key={s.value} onClick={() => setTheme(t => ({ ...t, sidebarStyle: s.value }))}
+                    className="p-3 rounded-xl border-2 text-left transition-all"
+                    style={{ borderColor: theme.sidebarStyle === s.value ? theme.primaryColor : "var(--border)", background: "var(--card)" }}>
+                    <div className="w-full h-10 rounded-lg mb-2 border" style={{ background: s.preview, borderColor: "var(--border)" }} />
+                    <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{s.label}</p>
+                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{s.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            {/* Dark Mode */}
+            <Section title="Color Scheme" subtitle="Light, dark, or follow system preference">
+              <div className="flex gap-2">
+                {([
+                  { value: "light", label: "Light", icon: "☀️" },
+                  { value: "dark", label: "Dark", icon: "🌙" },
+                  { value: "system", label: "System", icon: "💻" },
+                ] as { value: OrgThemeConfig["darkMode"]; label: string; icon: string }[]).map(m => (
+                  <button key={m.value} onClick={() => setTheme(t => ({ ...t, darkMode: m.value }))}
+                    className="flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-sm font-medium transition-all"
+                    style={{ borderColor: theme.darkMode === m.value ? theme.primaryColor : "var(--border)", background: theme.darkMode === m.value ? `${theme.primaryColor}10` : "var(--card)", color: theme.darkMode === m.value ? theme.primaryColor : "var(--muted-foreground)" }}>
+                    <span className="text-xl">{m.icon}</span>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </Section>
+
+            {/* Live Preview */}
+            <Section title="Preview" subtitle="How your sidebar will look">
+              <div className="rounded-xl overflow-hidden border" style={{ borderColor: "var(--border)" }}>
+                <div className="flex h-28">
+                  <div className="w-40 flex flex-col p-3 gap-1.5" style={{ background: theme.sidebarStyle === "dark" ? "#0f172a" : theme.sidebarStyle === "light" ? "#ffffff" : theme.primaryColor, borderRight: `1px solid ${theme.sidebarStyle === "light" ? "#e2e8f0" : "rgba(255,255,255,0.1)"}` }}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 rounded" style={{ background: theme.sidebarStyle === "colored" ? "rgba(255,255,255,0.2)" : theme.primaryColor }} />
+                      <div className="h-2 rounded flex-1" style={{ background: theme.sidebarStyle === "dark" ? "#475569" : theme.sidebarStyle === "light" ? "#94a3b8" : "rgba(255,255,255,0.5)" }} />
+                    </div>
+                    {[true, false, false].map((active, i) => (
+                      <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-md">
+                        <div className="w-3 h-3 rounded-sm" style={{ background: active ? (theme.sidebarStyle === "dark" ? theme.primaryColor : theme.sidebarStyle === "light" ? theme.primaryColor : "rgba(255,255,255,0.9)") : (theme.sidebarStyle === "dark" ? "#475569" : theme.sidebarStyle === "light" ? "#94a3b8" : "rgba(255,255,255,0.4)") }} />
+                        <div className="h-2 flex-1 rounded" style={{ background: active ? (theme.sidebarStyle === "dark" ? theme.primaryColor : theme.sidebarStyle === "light" ? theme.primaryColor : "rgba(255,255,255,0.9)") : (theme.sidebarStyle === "dark" ? "#334155" : theme.sidebarStyle === "light" ? "#e2e8f0" : "rgba(255,255,255,0.3)") }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex-1 p-3" style={{ background: "var(--muted)" }}>
+                    <div className="h-4 w-24 rounded mb-2" style={{ background: "var(--border)" }} />
+                    <div className="grid grid-cols-3 gap-2">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-10 rounded-lg" style={{ background: i === 1 ? `${theme.primaryColor}20` : "var(--card)" }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Section>
+
+            {message && <StatusMessage message={message} />}
+
+            <button onClick={handleSaveAppearance} disabled={saving}
+              className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              style={{ background: saving ? "var(--muted-foreground)" : theme.primaryColor }}>
+              {saving ? "Saving..." : "Save Appearance"}
+            </button>
+          </div>
+        )}
+
         {org && (
-          <div className="mt-4 bg-slate-50 rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500">Organization ID: <code className="text-slate-700">{org.id}</code></p>
-            <p className="text-xs text-slate-500 mt-1">Slug: <code className="text-slate-700">{org.slug}</code></p>
+          <div className="mt-4 rounded-xl border p-4" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
+            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
+            <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Slug: <code style={{ color: "var(--foreground)" }}>{org.slug}</code></p>
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Section({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border p-6" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+      <h3 className="text-sm font-semibold mb-0.5" style={{ color: "var(--foreground)" }}>{title}</h3>
+      <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>{subtitle}</p>
+      {children}
+    </div>
+  );
+}
+
+function SaveButton({ saving, label }: { saving: boolean; label: string }) {
+  return (
+    <button type="submit" disabled={saving}
+      className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+      style={{ background: "var(--primary)" }}>
+      {saving ? "Saving..." : label}
+    </button>
+  );
+}
+
+function StatusMessage({ message }: { message: string }) {
+  const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("saved") || message.toLowerCase().includes("refresh");
+  return (
+    <div className="text-sm rounded-lg px-4 py-3 border" style={isSuccess
+      ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
+      : { background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626" }}>
+      {message}
     </div>
   );
 }

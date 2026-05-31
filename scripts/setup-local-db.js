@@ -213,6 +213,14 @@ async function main() {
     await client.execute(sql);
   }
 
+  // Migrations for existing DBs
+  const migrations = [
+    `ALTER TABLE organizations ADD COLUMN theme_config TEXT`,
+  ];
+  for (const sql of migrations) {
+    try { await client.execute(sql); } catch { /* column already exists */ }
+  }
+
   console.log("Seeding organizations...");
 
   // Org 1: Parkkal Dental Clinic

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/theme-provider";
+import { getSidebarColors } from "@/lib/theme";
 
 interface NavItem {
   label: string;
@@ -109,12 +112,16 @@ const navItems: NavItem[] = [
 
 interface SidebarProps {
   user: { name: string; role: string; orgName?: string };
+  logoUrl?: string | null;
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, logoUrl }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const theme = useTheme();
+  const colors = getSidebarColors(theme);
   const isAdmin = user.role === "ADMIN";
+  const isLight = theme.sidebarStyle === "light";
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -125,24 +132,35 @@ export function Sidebar({ user }: SidebarProps) {
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-slate-900 min-h-screen flex flex-col">
-      {/* Logo */}
-      <div className="px-6 py-6 border-b border-slate-700">
+    <aside
+      className="w-64 flex-shrink-0 min-h-screen flex flex-col transition-colors duration-200"
+      style={{ background: colors.bg, borderRight: isLight ? `1px solid ${colors.border}` : "none" }}
+    >
+      {/* Logo / Org Name */}
+      <div className="px-6 py-5" style={{ borderBottom: `1px solid ${colors.divider}` }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-              <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-            </svg>
-          </div>
+          {logoUrl ? (
+            <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+              <Image src={logoUrl} alt="Logo" width={36} height={36} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: theme.sidebarStyle === "colored" ? "rgba(255,255,255,0.2)" : theme.primaryColor }}>
+              <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
+                <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
+              </svg>
+            </div>
+          )}
           <div>
-            <p className="text-white font-bold text-sm leading-tight">{user.orgName || "Parkkal Dental"}</p>
-            <p className="text-slate-400 text-xs">Clinic Management</p>
+            <p className="font-bold text-sm leading-tight" style={{ color: colors.textActive }}>
+              {user.orgName || "Parkkal Dental"}
+            </p>
+            <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>Clinic Management</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
         {visibleItems.map((item) => {
           const isActive =
             item.href === "/dashboard"
@@ -154,11 +172,14 @@ export function Sidebar({ user }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
               )}
+              style={{
+                background: isActive ? colors.activeBg : "transparent",
+                color: isActive ? colors.textActive : colors.text,
+              }}
+              onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = colors.hoverBg; }}
+              onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
             >
               {item.icon}
               {item.label}
@@ -168,21 +189,24 @@ export function Sidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User info + logout */}
-      <div className="px-4 py-4 border-t border-slate-700">
+      <div className="px-4 py-4" style={{ borderTop: `1px solid ${colors.divider}` }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: theme.primaryColor }}>
             <span className="text-white text-xs font-bold">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="min-w-0">
-            <p className="text-white text-xs font-medium truncate">{user.name}</p>
-            <p className="text-slate-400 text-xs truncate">{user.role}</p>
+            <p className="text-xs font-medium truncate" style={{ color: colors.userText }}>{user.name}</p>
+            <p className="text-xs truncate" style={{ color: colors.userSubText }}>{user.role}</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-xs transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors"
+          style={{ color: colors.text }}
+          onMouseEnter={e => (e.currentTarget.style.background = colors.hoverBg)}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
