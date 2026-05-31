@@ -27,6 +27,13 @@ interface Appointment {
   doctorName?: string;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  CONSULTATION: "Consultation",
+  CHECKUP: "Checkup",
+  TREATMENT: "Treatment",
+  FOLLOWUP: "Follow-up",
+};
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,19 +114,23 @@ export default function AppointmentsPage() {
                 <TableHeadCell>Date & Time</TableHeadCell>
                 <TableHeadCell>Type</TableHeadCell>
                 <TableHeadCell>Status</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-400">
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : appointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-400">
-                    No appointments found
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
+                    No appointments found.{" "}
+                    <Link href="/dashboard/appointments/new" className="text-blue-600 hover:underline">
+                      Book one?
+                    </Link>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -136,12 +147,24 @@ export default function AppointmentsPage() {
                       <p className="text-xs text-slate-500">{apt.appointmentTime}</p>
                     </TableCell>
                     <TableCell>
-                      <span className="text-xs capitalize">{apt.type.toLowerCase()}</span>
+                      <span className="text-xs">{TYPE_LABELS[apt.type] ?? apt.type}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(apt.status)}>
-                        {apt.status}
+                        {apt.status.replace("_", " ")}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS" ? (
+                        <Link
+                          href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg transition"
+                        >
+                          Start Visit
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

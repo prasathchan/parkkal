@@ -82,7 +82,7 @@ export default function PrintPage() {
           body { margin: 0; }
           .print-container { padding: 20px; }
         }
-        body { font-family: 'Courier New', monospace; background: #f5f5f5; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
         .print-container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; }
       `}</style>
 
@@ -247,7 +247,8 @@ export default function PrintPage() {
               PRESCRIPTION
             </p>
             {prescriptions.map((rx) => {
-              const medicines = JSON.parse(rx.medicines) as { name: string; dosage: string; frequency: string; duration: string; notes?: string }[];
+              let medicines: { name: string; dosage: string; frequency: string; duration: string; notes?: string }[] = [];
+              try { medicines = JSON.parse(rx.medicines); } catch { medicines = []; }
               return (
                 <div key={rx.id} style={{ marginBottom: 12 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>

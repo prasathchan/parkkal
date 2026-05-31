@@ -30,13 +30,13 @@ interface PatientBalance {
   lastVisit: string | null;
 }
 
-type TabType = "appointments" | "treatments" | "invoices";
+type TabType = "visits" | "appointments" | "treatments" | "invoices";
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [balance, setBalance] = useState<PatientBalance | null>(null);
-  const [tab, setTab] = useState<TabType>("appointments");
+  const [tab, setTab] = useState<TabType>("visits");
   const [tabData, setTabData] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,13 +54,14 @@ export default function PatientDetailPage() {
   useEffect(() => {
     if (!id) return;
     const urls: Record<TabType, string> = {
+      visits: `/api/visits?patientId=${id}`,
       appointments: `/api/appointments?patientId=${id}`,
       treatments: `/api/treatments?patientId=${id}`,
       invoices: `/api/invoices?patientId=${id}`,
     };
     fetch(urls[tab])
       .then((r) => r.json())
-      .then((d) => setTabData(d.appointments || d.treatments || d.invoices || []));
+      .then((d) => setTabData(d.visits || d.appointments || d.treatments || d.invoices || []));
   }, [id, tab]);
 
   if (loading) {
@@ -83,6 +84,7 @@ export default function PatientDetailPage() {
   }
 
   const tabs: { key: TabType; label: string }[] = [
+    { key: "visits", label: "Visits" },
     { key: "appointments", label: "Appointments" },
     { key: "treatments", label: "Treatments" },
     { key: "invoices", label: "Invoices" },
@@ -144,9 +146,20 @@ export default function PatientDetailPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Patient Details</CardTitle>
-              <span className="text-xs font-mono bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
-                {patient.patientCode}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                  {patient.patientCode}
+                </span>
+                <Link
+                  href={`/dashboard/patients/${patient.id}/edit`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Edit
+                </Link>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -225,6 +238,26 @@ export default function PatientDetailPage() {
               <div className="space-y-3">
                 {tabData.map((item: unknown) => {
                   const row = item as Record<string, unknown>;
+                  if (tab === "visits") {
+                    const due = (row.totalAmount as number) - (row.paidAmount as number);
+                    return (
+                      <a
+                        key={row.id as string}
+                        href={`/dashboard/visits/${row.id}`}
+                        className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded px-1 transition"
+                      >
+                        <div>
+                          <p className="text-sm font-mono font-medium text-blue-700">{row.visitCode as string}</p>
+                          <p className="text-xs text-slate-500">{row.visitDate as string} · Dr. {row.doctorName as string}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-slate-900">{formatCurrency(row.totalAmount as number)}</p>
+                          {due > 0 && <p className="text-xs text-red-500">Due {formatCurrency(due)}</p>}
+                          <Badge variant={getStatusBadgeVariant(row.status as string)}>{row.status as string}</Badge>
+                        </div>
+                      </a>
+                    );
+                  }
                   if (tab === "appointments") {
                     return (
                       <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">

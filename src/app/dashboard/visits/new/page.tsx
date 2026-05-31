@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -30,7 +30,18 @@ interface Appointment {
 type VisitSource = "" | "appointment" | "walkin";
 
 export default function NewVisitPage() {
+  return (
+    <Suspense>
+      <NewVisitForm />
+    </Suspense>
+  );
+}
+
+function NewVisitForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillApplied = useRef(false);
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [search, setSearch] = useState("");
@@ -52,16 +63,65 @@ export default function NewVisitPage() {
     fetch("/api/patients?limit=200")
       .then((r) => r.json())
       .then((d) => setPatients(d.patients || []));
-    fetch("/api/users").then((r) => {
-      if (r.ok) r.json().then((d) => setDoctors(d.users || []));
-    }).catch(() => {});
-    fetch("/api/auth/me").then(r => r.json()).then(d => {
-      if (d.user) setDoctors(prev => prev.length ? prev : [{ id: d.user.id, name: d.user.name, role: d.user.role }]);
-    });
+    fetch("/api/org/members")
+      .then((r) => r.json())
+      .then((d) => {
+        const eligible = (d.members || []).filter(
+          (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+        );
+        setDoctors(
+          eligible.map((m: { userId: string; name: string; role: string }) => ({
+            id: m.userId,
+            name: m.name,
+            role: m.role,
+          }))
+        );
+      })
+      .catch(() => {});
   }, []);
 
+  // Pre-fill from URL params (?patientId=X&appointmentId=Y&doctorId=Z)
+  useEffect(() => {
+    if (prefillApplied.current || patients.length === 0) return;
+    const paramPatientId = searchParams.get("patientId");
+    const paramAppointmentId = searchParams.get("appointmentId");
+    const paramDoctorId = searchParams.get("doctorId");
+    if (!paramPatientId) return;
+    prefillApplied.current = true;
+
+    const patient = patients.find((p) => p.id === paramPatientId) || null;
+    if (patient) {
+      setSelectedPatient(patient);
+      setSearch(patient.name);
+    }
+
+    if (paramDoctorId) {
+      setForm((f) => ({ ...f, doctorId: paramDoctorId }));
+    }
+
+    if (paramAppointmentId) {
+      fetch(`/api/appointments/${paramAppointmentId}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.appointment) {
+            const appt = d.appointment as Appointment;
+            setAppointments([appt]);
+            setSelectedAppointment(appt);
+            setVisitSource("appointment");
+            setForm((f) => ({
+              ...f,
+              doctorId: appt.doctorId,
+              chiefComplaint: appt.notes || f.chiefComplaint,
+            }));
+          }
+        })
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patients, searchParams]);
+
   async function handlePatientSelect(patientId: string) {
-    const patient = patients.find(p => p.id === patientId) || null;
+    const patient = patients.find((p) => p.id === patientId) || null;
     setSelectedPatient(patient);
     setVisitSource("");
     setSelectedAppointment(null);
@@ -79,7 +139,7 @@ export default function NewVisitPage() {
       if (appts.length === 1) {
         setVisitSource("appointment");
         setSelectedAppointment(appts[0]);
-        setForm(f => ({ ...f, doctorId: appts[0].doctorId, chiefComplaint: appts[0].notes || "" }));
+        setForm((f) => ({ ...f, doctorId: appts[0].doctorId, chiefComplaint: appts[0].notes || "" }));
       }
     } finally {
       setLoadingAppointments(false);
@@ -89,7 +149,7 @@ export default function NewVisitPage() {
   function selectAppointment(appt: Appointment) {
     setSelectedAppointment(appt);
     setVisitSource("appointment");
-    setForm(f => ({ ...f, doctorId: appt.doctorId, chiefComplaint: appt.notes || f.chiefComplaint }));
+    setForm((f) => ({ ...f, doctorId: appt.doctorId, chiefComplaint: appt.notes || f.chiefComplaint }));
   }
 
   function selectWalkIn() {
@@ -98,7 +158,10 @@ export default function NewVisitPage() {
   }
 
   const filteredPatients = patients.filter(
-    (p) => search === "" || p.name.toLowerCase().includes(search.toLowerCase()) || p.patientCode.toLowerCase().includes(search.toLowerCase())
+    (p) =>
+      search === "" ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.patientCode.toLowerCase().includes(search.toLowerCase())
   );
 
   const canSubmit = selectedPatient && visitSource && form.doctorId && form.visitDate;
@@ -129,15 +192,7 @@ export default function NewVisitPage() {
       return;
     }
 
-    // Mark appointment as IN_PROGRESS
-    if (selectedAppointment) {
-      await fetch(`/api/appointments/${selectedAppointment.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "IN_PROGRESS" }),
-      });
-    }
-
+    // Appointment marked IN_PROGRESS server-side
     router.push(`/dashboard/visits/${data.visit.id}`);
   }
 
@@ -145,7 +200,11 @@ export default function NewVisitPage() {
     <div className="flex-1 flex flex-col">
       <Header
         title="New Visit"
-        breadcrumb={[{ label: "Dashboard" }, { label: "Visits", href: "/dashboard/visits" }, { label: "New" }]}
+        breadcrumb={[
+          { label: "Dashboard" },
+          { label: "Visits", href: "/dashboard/visits" },
+          { label: "New" },
+        ]}
       />
       <main className="flex-1 p-6">
         <Card className="max-w-2xl mx-auto">
@@ -155,7 +214,9 @@ export default function NewVisitPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  {error}
+                </div>
               )}
 
               {/* Step 1: Patient */}
@@ -189,7 +250,7 @@ export default function NewVisitPage() {
               {selectedPatient && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Visit Type <span className="text-red-500">*</span>
+                    Visit Source <span className="text-red-500">*</span>
                   </label>
 
                   {loadingAppointments ? (
@@ -199,9 +260,10 @@ export default function NewVisitPage() {
                       {appointments.length > 0 ? (
                         <>
                           <p className="text-xs text-slate-500">
-                            {appointments.length} scheduled appointment{appointments.length > 1 ? "s" : ""} for today:
+                            {appointments.length} scheduled appointment
+                            {appointments.length > 1 ? "s" : ""} for today:
                           </p>
-                          {appointments.map(appt => (
+                          {appointments.map((appt) => (
                             <button
                               key={appt.id}
                               type="button"
@@ -215,12 +277,17 @@ export default function NewVisitPage() {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-sm font-semibold text-slate-900">
-                                    📅 {appt.appointmentTime} — {appt.type.charAt(0) + appt.type.slice(1).toLowerCase()}
+                                    📅 {appt.appointmentTime} —{" "}
+                                    {appt.type.charAt(0) + appt.type.slice(1).toLowerCase()}
                                   </p>
-                                  {appt.notes && <p className="text-xs text-slate-500 mt-0.5">{appt.notes}</p>}
+                                  {appt.notes && (
+                                    <p className="text-xs text-slate-500 mt-0.5">{appt.notes}</p>
+                                  )}
                                 </div>
                                 {selectedAppointment?.id === appt.id && (
-                                  <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">Selected</span>
+                                  <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">
+                                    Selected
+                                  </span>
                                 )}
                               </div>
                             </button>
@@ -242,9 +309,13 @@ export default function NewVisitPage() {
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-700">🚶 Walk-in (no appointment)</span>
+                          <span className="text-sm font-semibold text-slate-700">
+                            🚶 Walk-in (no appointment)
+                          </span>
                           {visitSource === "walkin" && (
-                            <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Selected</span>
+                            <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">
+                              Selected
+                            </span>
                           )}
                         </div>
                       </button>
@@ -267,7 +338,9 @@ export default function NewVisitPage() {
                     >
                       <option value="">-- Select Doctor --</option>
                       {doctors.map((d) => (
-                        <option key={d.id} value={d.id}>Dr. {d.name} ({d.role})</option>
+                        <option key={d.id} value={d.id}>
+                          Dr. {d.name} ({d.role})
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -285,7 +358,9 @@ export default function NewVisitPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Chief Complaint</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Chief Complaint
+                    </label>
                     <textarea
                       value={form.chiefComplaint}
                       onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
@@ -296,7 +371,9 @@ export default function NewVisitPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Doctor Notes</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Doctor Notes
+                    </label>
                     <textarea
                       value={form.doctorNotes}
                       onChange={(e) => setForm({ ...form, doctorNotes: e.target.value })}
@@ -315,7 +392,11 @@ export default function NewVisitPage() {
                     disabled={submitting}
                     className="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
                   >
-                    {submitting ? "Creating..." : visitSource === "appointment" ? "Start Appointment Visit" : "Start Walk-in Visit"}
+                    {submitting
+                      ? "Creating..."
+                      : visitSource === "appointment"
+                      ? "Start Appointment Visit"
+                      : "Start Walk-in Visit"}
                   </button>
                 )}
                 <button

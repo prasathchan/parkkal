@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, patients, users, organizations, organizationPatients } from "@/db/schema";
+import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 function generateVisitCode(date: string, seq: number): string {
@@ -46,9 +46,8 @@ export async function GET(request: NextRequest) {
     .from(visits)
     .leftJoin(patients, eq(visits.patientId, patients.id))
     .leftJoin(users, eq(visits.doctorId, users.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(visits.createdAt))
-    ;
+    .where(and(...conditions))
+    .orderBy(desc(visits.createdAt));
 
   return NextResponse.json({ visits: rows });
 }
@@ -67,23 +66,23 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
-    // Debug: verify FK references exist
     const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
-    const [patientExists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, patientId));
-    const [doctorExists] = await db.select({ id: users.id }).from(users).where(eq(users.id, doctorId));
-    if (!orgExists) return NextResponse.json({ error: `Organization not found: ${session.orgId}` }, { status: 400 });
-    if (!patientExists) return NextResponse.json({ error: `Patient not found: ${patientId}` }, { status: 400 });
-    if (!doctorExists) return NextResponse.json({ error: `Doctor not found: ${doctorId}` }, { status: 400 });
+    if (!orgExists) return NextResponse.json({ error: "Organization not found" }, { status: 400 });
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)));
     if (!patientOrgLink) return NextResponse.json({ error: "Patient does not belong to this organization" }, { status: 400 });
 
-    // Count today's visits for sequence
+    // Verify doctor is a member of this org
+    const [doctorMembership] = await db.select({ userId: organizationMembers.userId }).from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, doctorId)));
+    if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
+
+    // Count org-scoped visits today for sequential visit code
     const [{ todayCount }] = await db
       .select({ todayCount: count() })
       .from(visits)
-      .where(eq(visits.visitDate, visitDate));
+      .where(and(eq(visits.organizationId, session.orgId), eq(visits.visitDate, visitDate)));
 
     const now = Date.now();
     const baseSeq = (todayCount as number) + 1;
@@ -106,8 +105,8 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    // Retry loop to handle UNIQUE constraint violations on visitCode
-    let visitCode = '';
+    // Retry loop for UNIQUE constraint on visitCode
+    let visitCode = "";
     for (let attempt = 0; attempt < 5; attempt++) {
       visitCode = generateVisitCode(visitDate, baseSeq + attempt);
       try {
@@ -115,8 +114,16 @@ export async function POST(request: NextRequest) {
         break;
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (attempt === 4 || !msg.includes('UNIQUE')) throw e;
+        if (attempt === 4 || !msg.includes("UNIQUE")) throw e;
       }
+    }
+
+    // Mark linked appointment as IN_PROGRESS server-side (atomic with visit creation)
+    if (appointmentId) {
+      await db
+        .update(appointments)
+        .set({ status: "IN_PROGRESS" })
+        .where(and(eq(appointments.id, appointmentId), eq(appointments.organizationId, session.orgId)));
     }
 
     return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });

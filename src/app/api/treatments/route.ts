@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, gte, lte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { treatments, patients, users, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -21,11 +21,18 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const patientIdFilter = searchParams.get("patientId");
+  const dateFilter = searchParams.get("date");
 
   const db = getDb();
 
   const conditions = [eq(treatments.organizationId, session.orgId)];
   if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
+  if (dateFilter) {
+    const dayStart = new Date(dateFilter + "T00:00:00").getTime();
+    const dayEnd = new Date(dateFilter + "T23:59:59.999").getTime();
+    conditions.push(gte(treatments.createdAt, dayStart));
+    conditions.push(lte(treatments.createdAt, dayEnd));
+  }
 
   const rows = await db
     .select({

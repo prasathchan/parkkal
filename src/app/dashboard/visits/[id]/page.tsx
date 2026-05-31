@@ -233,6 +233,14 @@ export default function VisitDetailPage() {
   }
 
   async function handleCompleteVisit() {
+    if (!visit) return;
+    const due = visit.totalAmount - visit.paidAmount;
+    if (due > 0) {
+      const confirmed = confirm(
+        `This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway? Payment can still be recorded after completion.`
+      );
+      if (!confirmed) return;
+    }
     setCompletingVisit(true);
     await fetch(`/api/visits/${id}`, {
       method: "PATCH",
