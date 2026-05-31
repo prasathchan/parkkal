@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, patients, users } from "@/db/schema";
+import { visits, patients, users, organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 function generateVisitCode(date: string, seq: number): string {
@@ -93,6 +93,14 @@ export async function POST(request: NextRequest) {
       createdAt: now,
       updatedAt: now,
     };
+
+    // Debug: verify FK references exist
+    const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
+    const [patientExists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, patientId));
+    const [doctorExists] = await db.select({ id: users.id }).from(users).where(eq(users.id, doctorId));
+    if (!orgExists) return NextResponse.json({ error: `Organization not found: ${session.orgId}` }, { status: 400 });
+    if (!patientExists) return NextResponse.json({ error: `Patient not found: ${patientId}` }, { status: 400 });
+    if (!doctorExists) return NextResponse.json({ error: `Doctor not found: ${doctorId}` }, { status: 400 });
 
     await db.insert(visits).values(newVisit);
     return NextResponse.json({ visit: newVisit }, { status: 201 });
