@@ -382,6 +382,14 @@ export default function VisitDetailPage() {
                   {completingVisit ? "Completing..." : "Complete Visit"}
                 </button>
               )}
+              {visit.status === "COMPLETED" && (
+                <button
+                  onClick={() => router.push(`/dashboard/appointments/new?patientId=${visit.patientId}&doctorId=${visit.doctorId}`)}
+                  className="inline-flex items-center gap-2 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
+                >
+                  Book Follow-up
+                </button>
+              )}
               <button
                 onClick={() => setShowPayModal(true)}
                 disabled={visit.status === "CANCELLED" || due <= 0}

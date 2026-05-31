@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ interface Doctor { id: string; name: string; }
 
 export default function NewAppointmentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefillApplied = useRef(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -46,6 +48,43 @@ export default function NewAppointmentPage() {
         setDoctors(eligible.map((m: { userId: string; name: string }) => ({ id: m.userId, name: m.name })));
       });
   }, []);
+
+  // Pre-fill patientId and doctorId from URL params (follow-up flow)
+  useEffect(() => {
+    if (prefillApplied.current) return;
+    const paramPatientId = searchParams.get("patientId");
+    const paramDoctorId = searchParams.get("doctorId");
+    if (!paramPatientId && !paramDoctorId) return;
+    prefillApplied.current = true;
+
+    const updates: Partial<typeof form> = {};
+    if (paramDoctorId) updates.doctorId = paramDoctorId;
+    if (paramPatientId) updates.patientId = paramPatientId;
+    if (paramPatientId || paramDoctorId) {
+      setForm((f) => ({ ...f, ...updates, type: "FOLLOWUP" }));
+    }
+
+    // Fetch patient details so the select shows the correct option
+    if (paramPatientId) {
+      fetch(`/api/patients/${paramPatientId}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.patient) {
+            setPatients((prev) => {
+              const exists = prev.find((p) => p.id === d.patient.id);
+              return exists ? prev : [d.patient, ...prev];
+            });
+          }
+        })
+        .catch(() => {
+          // Fallback: search empty to get list
+          fetch("/api/patients")
+            .then((r) => r.json())
+            .then((d) => setPatients((d.patients || []).slice(0, 20)));
+        });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
