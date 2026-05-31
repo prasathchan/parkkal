@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { StatCard } from "@/components/stat-card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { verifyOrgToken } from "@/lib/auth";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
                         {apt.patientName || "Patient"}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {apt.appointmentDate} at {apt.appointmentTime} · Dr. {apt.doctorName || "—"}
+                        {apt.appointmentDate} at {apt.appointmentTime} · {formatDoctorName(apt.doctorName)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

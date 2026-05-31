@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
-import { formatDate, calculateAge, formatCurrency } from "@/lib/utils";
+import { formatDate, calculateAge, formatCurrency, formatDoctorName } from "@/lib/utils";
 
 interface Patient {
   id: string;
@@ -248,7 +248,7 @@ export default function PatientDetailPage() {
                       >
                         <div>
                           <p className="text-sm font-mono font-medium text-blue-700">{row.visitCode as string}</p>
-                          <p className="text-xs text-slate-500">{row.visitDate as string} · Dr. {row.doctorName as string}</p>
+                          <p className="text-xs text-slate-500">{row.visitDate as string} · {formatDoctorName(row.doctorName as string)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-slate-900">{formatCurrency(row.totalAmount as number)}</p>
@@ -279,15 +279,15 @@ export default function PatientDetailPage() {
                         <div>
                           <p className="text-sm font-medium">{(row.itemName || row.description) as string}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            {row.category && (
+                            {(row.category as string) && (
                               <span className="text-xs text-slate-400">{row.category as string}</span>
                             )}
-                            {(row.toothNumber || row.toothNumbers) && (
+                            {((row.toothNumber || row.toothNumbers) as string) && (
                               <span className="text-xs text-slate-400">
                                 Tooth: {(row.toothNumber || row.toothNumbers) as string}
                               </span>
                             )}
-                            {row.visitDate && (
+                            {(row.visitDate as string) && (
                               <span className="text-xs text-slate-400">{row.visitDate as string}</span>
                             )}
                           </div>

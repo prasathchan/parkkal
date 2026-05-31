@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
+import { formatDoctorName } from "@/lib/utils";
 import {
   Table,
   TableHead,
@@ -140,7 +141,7 @@ export default function AppointmentsPage() {
                       {apt.patientName || apt.patientId}
                     </TableCell>
                     <TableCell className="text-slate-600">
-                      {apt.doctorName ? `Dr. ${apt.doctorName}` : "—"}
+                      {formatDoctorName(apt.doctorName)}
                     </TableCell>
                     <TableCell>
                       <p>{apt.appointmentDate}</p>

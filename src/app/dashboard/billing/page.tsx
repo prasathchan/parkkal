@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/header";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import {
   Table,
   TableHead,
@@ -156,7 +156,7 @@ export default function BillingPage() {
                         {v.patientCode && <div className="text-xs text-slate-400">{v.patientCode}</div>}
                       </TableCell>
                       <TableCell className="text-slate-600">
-                        {v.doctorName ? `Dr. ${v.doctorName}` : "—"}
+                        {formatDoctorName(v.doctorName)}
                       </TableCell>
                       <TableCell className="text-slate-500">{v.visitDate}</TableCell>
                       <TableCell className="font-semibold">

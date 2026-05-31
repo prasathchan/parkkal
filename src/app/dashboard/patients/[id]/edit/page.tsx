@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 
 interface Patient {
   id: string;
@@ -39,10 +40,17 @@ export default function PatientEditPage() {
     dateOfBirth: "",
     gender: "",
     bloodGroup: "",
-    address: "",
     medicalHistory: "",
     panNumber: "",
     aadhaarNumber: "",
+  });
+  const [addressData, setAddressData] = useState<AddressValue>({
+    country: "India",
+    state: "",
+    district: "",
+    city: "",
+    pincode: "",
+    fullAddress: "",
   });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -59,10 +67,17 @@ export default function PatientEditPage() {
           dateOfBirth: p.dateOfBirth || "",
           gender: p.gender || "",
           bloodGroup: p.bloodGroup || "",
-          address: p.address || "",
           medicalHistory: p.medicalHistory || "",
           panNumber: p.panNumber || "",
           aadhaarNumber: p.aadhaarNumber || "",
+        });
+        setAddressData({
+          country: "India",
+          state: "",
+          district: "",
+          city: "",
+          pincode: "",
+          fullAddress: p.address || "",
         });
       })
       .finally(() => setLoading(false));
@@ -103,7 +118,17 @@ export default function PatientEditPage() {
           email: form.email.trim() || undefined,
           dateOfBirth: form.dateOfBirth || undefined,
           gender: form.gender || undefined,
-          address: form.address || undefined,
+          address: [
+            addressData.fullAddress,
+            addressData.city,
+            addressData.district,
+            addressData.state
+              ? addressData.pincode
+                ? `${addressData.state} - ${addressData.pincode}`
+                : addressData.state
+              : "",
+            addressData.country,
+          ].filter(Boolean).join(", ") || undefined,
           medicalHistory: form.medicalHistory || undefined,
         }),
       });
@@ -220,12 +245,7 @@ export default function PatientEditPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
-                <textarea
-                  value={form.address}
-                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
+                <AddressForm value={addressData} onChange={setAddressData} />
               </div>
 
               <div>

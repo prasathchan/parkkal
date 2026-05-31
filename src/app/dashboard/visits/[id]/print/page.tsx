@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { formatDoctorName } from "@/lib/utils";
 
 interface PrintData {
   visit: {
@@ -141,7 +142,7 @@ export default function PrintPage() {
             <strong>Patient:</strong> {visit.patientName} ({visit.patientCode})
           </div>
           <div>
-            <strong>Doctor:</strong> Dr. {visit.doctorName}
+            <strong>Doctor:</strong> {formatDoctorName(visit.doctorName)}
           </div>
           {visit.patientPhone && (
             <div><strong>Phone:</strong> {visit.patientPhone}</div>
@@ -287,7 +288,7 @@ export default function PrintPage() {
           <div>
             <div style={{ borderTop: "1px solid #374151", paddingTop: 8, marginTop: 32 }}>
               <p>Doctor Signature</p>
-              <p style={{ color: "#64748b" }}>Dr. {visit.doctorName}</p>
+              <p style={{ color: "#64748b" }}>{formatDoctorName(visit.doctorName)}</p>
             </div>
           </div>
           <div>

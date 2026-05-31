@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDoctorName } from "@/lib/utils";
 
 type TabKey = "items" | "payments" | "attachments" | "history" | "prescriptions";
 
@@ -115,6 +115,7 @@ export default function VisitDetailPage() {
 
   // Appointment
   const [markingApptDone, setMarkingApptDone] = useState(false);
+  const [appointmentStatus, setAppointmentStatus] = useState<string | null>(null);
 
   // Complete visit
   const [completingVisit, setCompletingVisit] = useState(false);
@@ -138,6 +139,15 @@ export default function VisitDetailPage() {
     setItems(data.items || []);
     setPayments(data.payments || []);
     setAttachments(data.attachments || []);
+    if (data.visit?.appointmentId) {
+      const apptRes = await fetch(`/api/appointments/${data.visit.appointmentId}`);
+      if (apptRes.ok) {
+        const apptData = await apptRes.json();
+        setAppointmentStatus(apptData.appointment?.status || null);
+      }
+    } else {
+      setAppointmentStatus(null);
+    }
     const rxRes = await fetch(`/api/visits/${id}/prescriptions`);
     if (rxRes.ok) {
       const rxData = await rxRes.json();
@@ -282,6 +292,7 @@ export default function VisitDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "COMPLETED" }),
     });
+    setAppointmentStatus("COMPLETED");
     await fetchVisit();
     setMarkingApptDone(false);
   }
@@ -312,7 +323,7 @@ export default function VisitDetailPage() {
       />
       <main className="flex-1 p-6 space-y-5">
         {/* Appointment Banner */}
-        {visit.appointmentId && (
+        {visit.appointmentId && appointmentStatus && appointmentStatus !== "COMPLETED" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-blue-800">
               <span>📅</span>
@@ -325,6 +336,12 @@ export default function VisitDetailPage() {
             >
               {markingApptDone ? "Marking..." : "Mark Appointment Done"}
             </button>
+          </div>
+        )}
+        {visit.appointmentId && appointmentStatus === "COMPLETED" && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-2 text-sm text-green-800">
+            <span>✅</span>
+            <span>Appointment marked as completed.</span>
           </div>
         )}
 
@@ -342,7 +359,7 @@ export default function VisitDetailPage() {
                 <span className="font-medium">{visit.patientName}</span>
                 <span className="text-slate-400 ml-1">({visit.patientCode})</span>
                 <span className="text-slate-400 mx-2">·</span>
-                Dr. {visit.doctorName}
+                {formatDoctorName(visit.doctorName)}
                 <span className="text-slate-400 mx-2">·</span>
                 {visit.visitDate}
               </p>
@@ -430,8 +447,11 @@ export default function VisitDetailPage() {
             {tab === "items" && (
               <div className="space-y-5">
                 {/* Add Item Form */}
-                {visit.status === "OPEN" && (
+                {visit.status !== "CANCELLED" && (
                   <form onSubmit={handleAddItem} className="bg-slate-50 rounded-lg p-4">
+                    {visit.status === "COMPLETED" && (
+                      <p className="text-xs text-amber-600 mb-2">⚠️ Visit is completed — items added will update billing.</p>
+                    )}
                     <p className="text-sm font-semibold text-slate-700 mb-3">Add Item</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                       <div className="lg:col-span-2">
@@ -525,7 +545,7 @@ export default function VisitDetailPage() {
                         <th className="text-right px-3 py-2 font-semibold text-slate-600">Qty</th>
                         <th className="text-right px-3 py-2 font-semibold text-slate-600">Unit Price</th>
                         <th className="text-right px-3 py-2 font-semibold text-slate-600">Amount</th>
-                        {visit.status === "OPEN" && <th className="px-3 py-2"></th>}
+                        {visit.status !== "CANCELLED" && <th className="px-3 py-2"></th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -547,7 +567,7 @@ export default function VisitDetailPage() {
                             <td className="px-3 py-2.5 text-right">{item.quantity}</td>
                             <td className="px-3 py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
                             <td className="px-3 py-2.5 text-right font-semibold">{formatCurrency(item.amount)}</td>
-                            {visit.status === "OPEN" && (
+                            {visit.status !== "CANCELLED" && (
                               <td className="px-3 py-2.5 text-right">
                                 <button
                                   onClick={() => handleDeleteItem(item.id)}
@@ -568,7 +588,7 @@ export default function VisitDetailPage() {
                           <td className="px-3 py-2 text-right font-bold text-slate-900">
                             {formatCurrency(items.reduce((sum, i) => sum + i.amount, 0))}
                           </td>
-                          {visit.status === "OPEN" && <td />}
+                          {visit.status !== "CANCELLED" && <td />}
                         </tr>
                       </tfoot>
                     )}
@@ -722,7 +742,7 @@ export default function VisitDetailPage() {
                       >
                         <div>
                           <p className="text-sm font-mono text-blue-700">{h.visitCode}</p>
-                          <p className="text-xs text-slate-500">{h.visitDate} · Dr. {h.doctorName}</p>
+                          <p className="text-xs text-slate-500">{h.visitDate} · {formatDoctorName(h.doctorName)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold">{formatCurrency(h.totalAmount)}</p>

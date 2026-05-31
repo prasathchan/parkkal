@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { salaryRecords, organizationMembers, users, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -74,17 +74,18 @@ export async function POST(request: NextRequest) {
 
       if (member.salaryType === "PER_APPOINTMENT") {
         const appts = await db
-          .select()
+          .select({ id: appointments.id })
           .from(appointments)
           .where(
             and(
               eq(appointments.organizationId, session.orgId),
-              eq(appointments.doctorId, member.userId)
+              eq(appointments.doctorId, member.userId),
+              eq(appointments.status, "COMPLETED"),
+              gte(appointments.appointmentDate, monthStart),
+              lte(appointments.appointmentDate, monthEnd)
             )
-          )
-          ;
-        // Filter by month
-        apptCount = appts.filter(a => a.appointmentDate >= monthStart && a.appointmentDate <= monthEnd && a.status === "COMPLETED").length;
+          );
+        apptCount = appts.length;
         totalSalary = member.salaryAmount * apptCount;
       }
 

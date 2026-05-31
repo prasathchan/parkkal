@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { like, or, desc, count, eq } from "drizzle-orm";
+import { like, or, desc, count, eq, and, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { patients, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -53,18 +53,20 @@ export async function GET(request: NextRequest) {
       .select()
       .from(patients)
       .where(
-        or(
-          like(patients.name, likeSearch),
-          like(patients.phone, likeSearch),
-          like(patients.patientCode, likeSearch)
+        and(
+          inArray(patients.id, patientIds),
+          or(
+            like(patients.name, likeSearch),
+            like(patients.phone, likeSearch),
+            like(patients.patientCode, likeSearch)
+          )
         )
       )
-      .orderBy(desc(patients.createdAt))
-      ;
-    results = results.filter(p => patientIds.includes(p.id));
+      .orderBy(desc(patients.createdAt));
   } else {
-    results = await db.select().from(patients).orderBy(desc(patients.createdAt));
-    results = results.filter(p => patientIds.includes(p.id));
+    results = await db.select().from(patients)
+      .where(inArray(patients.id, patientIds))
+      .orderBy(desc(patients.createdAt));
   }
 
   return NextResponse.json({ patients: results });

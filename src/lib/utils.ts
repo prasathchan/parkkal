@@ -41,3 +41,9 @@ export function generateId(): string {
 export function generatePatientCode(count: number): string {
   return `PKL-${String(count).padStart(4, "0")}`;
 }
+
+export function formatDoctorName(name: string | null | undefined): string {
+  if (!name) return "—";
+  const stripped = name.replace(/^Dr\.?\s+/i, "");
+  return `Dr. ${stripped}`;
+}

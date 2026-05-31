@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
+import { formatDoctorName } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -339,7 +340,7 @@ function NewVisitForm() {
                       <option value="">-- Select Doctor --</option>
                       {doctors.map((d) => (
                         <option key={d.id} value={d.id}>
-                          Dr. {d.name} ({d.role})
+                          {formatDoctorName(d.name)} ({d.role})
                         </option>
                       ))}
                     </select>

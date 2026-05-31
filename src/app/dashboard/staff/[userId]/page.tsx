@@ -54,6 +54,10 @@ export default function StaffDetailPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [editForm, setEditForm] = useState({
+    name: "",
+    phone: "",
+    dateOfBirth: "",
+    gender: "",
     role: "",
     salaryType: "FIXED",
     salaryAmount: "0",
@@ -73,6 +77,10 @@ export default function StaffDetailPage() {
     setMember(found || null);
     if (found) {
       setEditForm({
+        name: found.name || "",
+        phone: found.phone || "",
+        dateOfBirth: found.dateOfBirth || "",
+        gender: found.gender || "",
         role: found.role,
         salaryType: found.salaryType,
         salaryAmount: String(found.salaryAmount),
@@ -93,6 +101,23 @@ export default function StaffDetailPage() {
     setSaveError("");
     setSaveSuccess(false);
     try {
+      // Update personal info
+      const userRes = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          phone: editForm.phone || null,
+          dateOfBirth: editForm.dateOfBirth || null,
+          gender: editForm.gender || null,
+        }),
+      });
+      if (!userRes.ok) {
+        const d = await userRes.json();
+        setSaveError(d.error || "Failed to save personal info");
+        return;
+      }
+      // Update role & salary
       const res = await fetch(`/api/org/members/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -203,7 +228,52 @@ export default function StaffDetailPage() {
             {/* Edit Form */}
             {editing && (
               <div className="border-t border-slate-100 pt-5 space-y-4">
-                <p className="text-sm font-semibold text-slate-700">Edit Role &amp; Salary</p>
+                <p className="text-sm font-semibold text-slate-700">Edit Personal Info</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                    <input
+                      type="text"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={editForm.dateOfBirth}
+                      onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Gender</label>
+                    <select
+                      value={editForm.gender}
+                      onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">— Select —</option>
+                      <option value="MALE">Male</option>
+                      <option value="FEMALE">Female</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <p className="text-sm font-semibold text-slate-700 pt-2">Edit Role &amp; Salary</p>
 
                 {saveError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
