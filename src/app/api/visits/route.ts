@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     .leftJoin(users, eq(visits.doctorId, users.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(visits.createdAt))
-    .all();
+    ;
 
   return NextResponse.json({ visits: rows });
 }

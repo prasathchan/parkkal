@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       : eq(invoices.organizationId, session.orgId)
     )
     .orderBy(desc(invoices.createdAt))
-    .all();
+    ;
 
   return NextResponse.json({ invoices: rows });
 }

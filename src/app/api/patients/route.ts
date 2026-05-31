@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     .select({ patientId: organizationPatients.patientId, orgPatientCode: organizationPatients.patientCode })
     .from(organizationPatients)
     .where(eq(organizationPatients.organizationId, session.orgId))
-    .all();
+    ;
 
   const patientIds = orgPatientRows.map(r => r.patientId);
 
@@ -60,10 +60,10 @@ export async function GET(request: NextRequest) {
         )
       )
       .orderBy(desc(patients.createdAt))
-      .all();
+      ;
     results = results.filter(p => patientIds.includes(p.id));
   } else {
-    results = await db.select().from(patients).orderBy(desc(patients.createdAt)).all();
+    results = await db.select().from(patients).orderBy(desc(patients.createdAt));
     results = results.filter(p => patientIds.includes(p.id));
   }
 

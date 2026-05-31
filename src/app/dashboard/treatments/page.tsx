@@ -14,15 +14,22 @@ import {
 
 interface Treatment {
   id: string;
+  visitId: string;
+  visitCode: string;
+  visitDate: string;
   patientId: string;
   doctorId: string;
-  description: string;
-  toothNumbers?: string;
-  procedure?: string;
-  cost: number;
+  itemName: string;
+  category: string;
+  toothNumber?: string | null;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  notes?: string | null;
   createdAt: number;
-  patientName?: string;
-  doctorName?: string;
+  patientName?: string | null;
+  patientCode?: string | null;
+  doctorName?: string | null;
 }
 
 export default function TreatmentsPage() {
@@ -65,42 +72,51 @@ export default function TreatmentsPage() {
           <Table>
             <TableHead>
               <tr>
+                <TableHeadCell>Item Name</TableHeadCell>
+                <TableHeadCell>Category</TableHeadCell>
                 <TableHeadCell>Patient</TableHeadCell>
-                <TableHeadCell>Description</TableHeadCell>
-                <TableHeadCell>Procedure</TableHeadCell>
-                <TableHeadCell>Tooth(s)</TableHeadCell>
                 <TableHeadCell>Doctor</TableHeadCell>
-                <TableHeadCell>Cost</TableHeadCell>
+                <TableHeadCell>Visit Code</TableHeadCell>
+                <TableHeadCell>Tooth #</TableHeadCell>
+                <TableHeadCell>Amount</TableHeadCell>
                 <TableHeadCell>Date</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                  <TableCell colSpan={8} className="text-center py-8 text-slate-400">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : treatments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-slate-400">
+                  <TableCell colSpan={8} className="text-center py-8 text-slate-400">
                     No treatments recorded
                   </TableCell>
                 </TableRow>
               ) : (
                 treatments.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.patientName || t.patientId}</TableCell>
-                    <TableCell>{t.description}</TableCell>
-                    <TableCell className="text-slate-600">{t.procedure || "—"}</TableCell>
-                    <TableCell className="text-slate-600">{t.toothNumbers || "—"}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{t.itemName}</TableCell>
+                    <TableCell>
+                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{t.category}</span>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div>{t.patientName || t.patientId}</div>
+                      {t.patientCode && <div className="text-xs text-slate-400">{t.patientCode}</div>}
+                    </TableCell>
                     <TableCell className="text-slate-600">
                       {t.doctorName ? `Dr. ${t.doctorName}` : "—"}
                     </TableCell>
-                    <TableCell className="font-semibold text-slate-900">
-                      {formatCurrency(t.cost)}
+                    <TableCell className="font-mono text-xs text-blue-700">
+                      <a href={`/dashboard/visits/${t.visitId}`} className="hover:underline">{t.visitCode}</a>
                     </TableCell>
-                    <TableCell className="text-slate-500">{formatDate(t.createdAt)}</TableCell>
+                    <TableCell className="text-slate-600">{t.toothNumber || "—"}</TableCell>
+                    <TableCell className="font-semibold text-slate-900">
+                      {formatCurrency(t.amount)}
+                    </TableCell>
+                    <TableCell className="text-slate-500">{t.visitDate}</TableCell>
                   </TableRow>
                 ))
               )}

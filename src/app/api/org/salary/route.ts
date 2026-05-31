@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     .from(salaryRecords)
     .innerJoin(users, eq(salaryRecords.userId, users.id))
     .where(and(eq(salaryRecords.organizationId, session.orgId), eq(salaryRecords.month, month)))
-    .all();
+    ;
 
   return NextResponse.json({ records, month });
 }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       .select()
       .from(organizationMembers)
       .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)))
-      .all();
+      ;
 
     const [year, mon] = month.split("-").map(Number);
     const monthStart = `${month}-01`;
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
               eq(appointments.doctorId, member.userId)
             )
           )
-          .all();
+          ;
         // Filter by month
         apptCount = appts.filter(a => a.appointmentDate >= monthStart && a.appointmentDate <= monthEnd && a.status === "COMPLETED").length;
         totalSalary = member.salaryAmount * apptCount;

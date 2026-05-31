@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     .from(organizationMembers)
     .innerJoin(users, eq(organizationMembers.userId, users.id))
     .where(eq(organizationMembers.organizationId, session.orgId))
-    .all();
+    ;
 
   return NextResponse.json({ members });
 }

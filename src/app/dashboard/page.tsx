@@ -2,15 +2,15 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { StatCard } from "@/components/stat-card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
+import { verifyOrgToken } from "@/lib/auth";
 
-async function getStats() {
+async function getStats(cookieHeader: string) {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/dashboard/stats`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: { cookie: cookieHeader } }
     );
     if (!res.ok) return null;
     return res.json();
@@ -19,11 +19,11 @@ async function getStats() {
   }
 }
 
-async function getRecentAppointments() {
+async function getRecentAppointments(cookieHeader: string) {
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/appointments?limit=5`,
-      { cache: "no-store" }
+      { cache: "no-store", headers: { cookie: cookieHeader } }
     );
     if (!res.ok) return [];
     const data = await res.json();
@@ -35,18 +35,19 @@ async function getRecentAppointments() {
 
 export default async function DashboardPage() {
   const cookieStore = cookies();
-  const token = cookieStore.get("pkd_session")?.value;
-  const session = token ? await verifyToken(token) : null;
+  const orgToken = cookieStore.get("pkd_org_session")?.value;
+  const session = orgToken ? await verifyOrgToken(orgToken) : null;
+  const cookieHeader = orgToken ? `pkd_org_session=${orgToken}` : "";
 
   const [statsData, appointments] = await Promise.all([
-    getStats(),
-    getRecentAppointments(),
+    getStats(cookieHeader),
+    getRecentAppointments(cookieHeader),
   ]);
 
   const stats = statsData || {
     totalPatients: 0,
     todayAppointments: 0,
-    pendingInvoices: 0,
+    pendingVisits: 0,
     monthlyRevenue: 0,
     todayRevenue: 0,
     outstandingDues: 0,
@@ -59,6 +60,7 @@ export default async function DashboardPage() {
         breadcrumb={[{ label: "Home" }, { label: "Dashboard" }]}
         user={session ? { name: session.name, role: session.role } : undefined}
       />
+
 
       <main className="flex-1 p-6 space-y-6">
         {/* Stat Cards */}
@@ -84,8 +86,8 @@ export default async function DashboardPage() {
             }
           />
           <StatCard
-            label="Pending Invoices"
-            value={stats.pendingInvoices}
+            label="Open Visits"
+            value={stats.pendingVisits}
             iconBg="bg-yellow-100"
             icon={
               <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

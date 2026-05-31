@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, count, sum, gte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { organizationPatients, appointments, invoices, payments, visits } from "@/db/schema";
+import { organizationPatients, appointments, payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
@@ -16,47 +16,51 @@ export async function GET(request: NextRequest) {
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
 
   const [
-    [{ totalPatients }],
-    [{ todayAppointments }],
-    [{ pendingInvoices }],
-    [{ monthlyRevenue }],
-    [{ todayRevenue }],
-    [{ openBilled }],
-    [{ openPaid }],
+    totalPatientsRows,
+    todayAppointmentsRows,
+    pendingVisitsRows,
+    monthlyRevenueRows,
+    openBilledRows,
+    openPaidRows,
   ] = await Promise.all([
-    db.select({ totalPatients: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
+    db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
     db
-      .select({ todayAppointments: count() })
+      .select({ val: count() })
       .from(appointments)
       .where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today))),
     db
-      .select({ pendingInvoices: count() })
-      .from(invoices)
-      .where(and(eq(invoices.organizationId, orgId), eq(invoices.status, "PENDING"))),
+      .select({ val: count() })
+      .from(visits)
+      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+    // Monthly revenue: sum of payments for this org's visits this month
     db
-      .select({ monthlyRevenue: sum(invoices.paidAmount) })
-      .from(invoices)
-      .where(and(eq(invoices.organizationId, orgId), gte(invoices.createdAt, monthStart))),
-    db
-      .select({ todayRevenue: sum(payments.amount) })
+      .select({ val: sum(payments.amount) })
       .from(payments)
-      .where(gte(payments.paidAt, todayStart)),
+      .innerJoin(visits, eq(payments.visitId, visits.id))
+      .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, monthStart))),
     db
-      .select({ openBilled: sum(visits.totalAmount) })
+      .select({ val: sum(visits.totalAmount) })
       .from(visits)
       .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
     db
-      .select({ openPaid: sum(visits.paidAmount) })
+      .select({ val: sum(visits.paidAmount) })
       .from(visits)
       .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
   ]);
 
+  // Today's revenue: sum of payments recorded today for this org
+  const todayRevenueRows = await db
+    .select({ val: sum(payments.amount) })
+    .from(payments)
+    .innerJoin(visits, eq(payments.visitId, visits.id))
+    .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart)));
+
   return NextResponse.json({
-    totalPatients,
-    todayAppointments,
-    pendingInvoices,
-    monthlyRevenue: Number(monthlyRevenue) || 0,
-    todayRevenue: Number(todayRevenue) || 0,
-    outstandingDues: (Number(openBilled) || 0) - (Number(openPaid) || 0),
+    totalPatients: totalPatientsRows[0]?.val ?? 0,
+    todayAppointments: todayAppointmentsRows[0]?.val ?? 0,
+    pendingVisits: pendingVisitsRows[0]?.val ?? 0,
+    monthlyRevenue: Number(monthlyRevenueRows[0]?.val) || 0,
+    todayRevenue: Number(todayRevenueRows[0]?.val) || 0,
+    outstandingDues: (Number(openBilledRows[0]?.val) || 0) - (Number(openPaidRows[0]?.val) || 0),
   });
 }

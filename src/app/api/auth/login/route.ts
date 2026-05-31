@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
       })
       .from(organizationMembers)
       .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
-      .where(eq(organizationMembers.userId, user.id))
-      .all();
+      .where(eq(organizationMembers.userId, user.id));
 
     if (memberships.length === 0) {
       return NextResponse.json(

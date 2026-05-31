@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     .leftJoin(users, eq(appointments.doctorId, users.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(appointments.createdAt))
-    .all();
+    ;
 
   return NextResponse.json({ appointments: rows });
 }
