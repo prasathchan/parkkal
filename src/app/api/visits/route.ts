@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, patients, users, organizations } from "@/db/schema";
+import { visits, patients, users, organizations, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 function generateVisitCode(date: string, seq: number): string {
@@ -74,6 +74,10 @@ export async function POST(request: NextRequest) {
     if (!orgExists) return NextResponse.json({ error: `Organization not found: ${session.orgId}` }, { status: 400 });
     if (!patientExists) return NextResponse.json({ error: `Patient not found: ${patientId}` }, { status: 400 });
     if (!doctorExists) return NextResponse.json({ error: `Doctor not found: ${doctorId}` }, { status: 400 });
+
+    const [patientOrgLink] = await db.select().from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)));
+    if (!patientOrgLink) return NextResponse.json({ error: "Patient does not belong to this organization" }, { status: 400 });
 
     // Count today's visits for sequence
     const [{ todayCount }] = await db

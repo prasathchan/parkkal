@@ -48,10 +48,15 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+    const db = getDb();
+
+    const orgLink = (await db.select().from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id))))[0];
+    if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await request.json();
     const data = updatePatientSchema.parse(body);
 
-    const db = getDb();
     await db.update(patients).set({ ...data, updatedAt: Date.now() }).where(eq(patients.id, id));
     const updated = (await db.select().from(patients).where(eq(patients.id, id)))[0];
     return NextResponse.json({ patient: updated });
@@ -72,6 +77,11 @@ export async function DELETE(
 
   const { id } = await params;
   const db = getDb();
+
+  const orgLink = (await db.select().from(organizationPatients)
+    .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id))))[0];
+  if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   await db.delete(patients).where(eq(patients.id, id));
   return NextResponse.json({ success: true });
 }

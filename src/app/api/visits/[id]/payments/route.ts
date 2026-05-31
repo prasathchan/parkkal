@@ -40,6 +40,7 @@ export async function POST(
   // Get current visit
   const [visit] = await db.select().from(visits).where(eq(visits.id, id));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const newTotal = visit.paidAmount + Number(amount);
   if (newTotal > visit.totalAmount + 0.001) {

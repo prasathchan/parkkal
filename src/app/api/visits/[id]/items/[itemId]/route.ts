@@ -12,9 +12,13 @@ export async function PATCH(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, itemId } = await params;
-  const body = await request.json();
   const db = getDb();
 
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await request.json();
   const updates: Record<string, unknown> = {};
   if ("itemName" in body) updates.itemName = body.itemName;
   if ("category" in body) updates.category = body.category;
@@ -60,6 +64,10 @@ export async function DELETE(
 
   const { id, itemId } = await params;
   const db = getDb();
+
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const runDelete = async (tx: typeof db) => {
     await tx.delete(visitItems).where(eq(visitItems.id, itemId));
