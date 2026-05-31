@@ -6,15 +6,13 @@ import { formatCurrency } from "@/lib/utils";
 
 interface TreatmentRecord {
   id: string;
-  patientName: string;
-  patientCode: string;
-  doctorName: string;
-  visitDate: string;
-  itemName: string;
-  category: string;
-  toothNumber: string | null;
-  unitPrice: number;
-  amount: number;
+  patientName: string | null;
+  patientCode: string | null;
+  doctorName: string | null;
+  description: string;
+  procedure: string | null;
+  toothNumbers: string | null;
+  cost: number;
   createdAt: number;
 }
 
@@ -292,17 +290,19 @@ export default function TreatmentsPage() {
                         <div className="font-medium text-slate-900">{t.patientName}</div>
                         <div className="text-xs text-slate-400">{t.patientCode}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-700">{t.doctorName}</td>
-                      <td className="px-4 py-3 text-slate-700">{t.visitDate}</td>
+                      <td className="px-4 py-3 text-slate-700">{t.doctorName || "—"}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {new Date(t.createdAt).toLocaleDateString()}
+                      </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-900">{t.itemName}</div>
-                        {t.category && (
-                          <div className="text-xs text-slate-400">{t.category}</div>
+                        <div className="text-slate-900">{t.description}</div>
+                        {t.procedure && (
+                          <div className="text-xs text-slate-400">{t.procedure}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{t.toothNumber || "—"}</td>
+                      <td className="px-4 py-3 text-slate-500">{t.toothNumbers || "—"}</td>
                       <td className="px-4 py-3 text-right font-medium text-slate-900">
-                        {formatCurrency(t.amount ?? t.unitPrice ?? 0)}
+                        {formatCurrency(t.cost ?? 0)}
                       </td>
                     </tr>
                   ))

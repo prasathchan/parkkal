@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visitItems, visits, patients, users, treatments } from "@/db/schema";
+import { treatments, patients, users, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -24,35 +24,28 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const conditions = [eq(visits.organizationId, session.orgId)];
-  if (patientIdFilter) conditions.push(eq(visits.patientId, patientIdFilter));
+  const conditions = [eq(treatments.organizationId, session.orgId)];
+  if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
 
   const rows = await db
     .select({
-      id: visitItems.id,
-      visitId: visitItems.visitId,
-      visitCode: visits.visitCode,
-      visitDate: visits.visitDate,
-      patientId: visits.patientId,
-      doctorId: visits.doctorId,
-      itemName: visitItems.itemName,
-      category: visitItems.category,
-      toothNumber: visitItems.toothNumber,
-      quantity: visitItems.quantity,
-      unitPrice: visitItems.unitPrice,
-      amount: visitItems.amount,
-      notes: visitItems.notes,
-      createdAt: visitItems.createdAt,
+      id: treatments.id,
+      patientId: treatments.patientId,
+      doctorId: treatments.doctorId,
+      description: treatments.description,
+      toothNumbers: treatments.toothNumbers,
+      procedure: treatments.procedure,
+      cost: treatments.cost,
+      createdAt: treatments.createdAt,
       patientName: patients.name,
       patientCode: patients.patientCode,
       doctorName: users.name,
     })
-    .from(visitItems)
-    .innerJoin(visits, eq(visitItems.visitId, visits.id))
-    .leftJoin(patients, eq(visits.patientId, patients.id))
-    .leftJoin(users, eq(visits.doctorId, users.id))
+    .from(treatments)
+    .leftJoin(patients, eq(treatments.patientId, patients.id))
+    .leftJoin(users, eq(treatments.doctorId, users.id))
     .where(and(...conditions))
-    .orderBy(desc(visitItems.createdAt));
+    .orderBy(desc(treatments.createdAt));
 
   return NextResponse.json({ treatments: rows });
 }
@@ -65,6 +58,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = createTreatmentSchema.parse(body);
     const db = getDb();
+
+    const [patientOrgLink] = await db.select().from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
+    if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const treatment = {
       id: crypto.randomUUID(),

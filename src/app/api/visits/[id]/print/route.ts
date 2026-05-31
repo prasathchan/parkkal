@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, visitItems, payments, patients, users } from "@/db/schema";
+import { visits, visitItems, payments, patients, users, prescriptions } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(
@@ -39,11 +39,13 @@ export async function GET(
 
   const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
   const paymentRows = await db.select().from(payments).where(eq(payments.visitId, id));
+  const prescriptionRows = await db.select().from(prescriptions).where(eq(prescriptions.visitId, id));
 
   return NextResponse.json({
     visit: visitRow,
     items,
     payments: paymentRows,
+    prescriptions: prescriptionRows,
     clinic: {
       name: "Parkkal Dental Clinic",
       address: "Palavakkam, ECR, Chennai",

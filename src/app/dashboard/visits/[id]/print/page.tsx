@@ -33,6 +33,12 @@ interface PrintData {
     paidAt: number;
     referenceNumber?: string | null;
   }[];
+  prescriptions: {
+    id: string;
+    medicines: string;
+    instructions?: string | null;
+    createdAt: number;
+  }[];
   clinic: {
     name: string;
     address: string;
@@ -65,7 +71,7 @@ export default function PrintPage() {
   if (loading) return <div className="p-10 text-center text-slate-400">Loading...</div>;
   if (!data) return <div className="p-10 text-center text-red-500">Failed to load visit data.</div>;
 
-  const { visit, items, payments, clinic } = data;
+  const { visit, items, payments, prescriptions, clinic } = data;
   const due = visit.totalAmount - visit.paidAmount;
 
   return (
@@ -231,6 +237,47 @@ export default function PrintPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Prescriptions */}
+        {prescriptions.length > 0 && (
+          <div style={{ marginBottom: 24, fontFamily: "sans-serif", fontSize: 13 }}>
+            <p style={{ fontWeight: "bold", marginBottom: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>
+              PRESCRIPTION
+            </p>
+            {prescriptions.map((rx) => {
+              const medicines = JSON.parse(rx.medicines) as { name: string; dosage: string; frequency: string; duration: string; notes?: string }[];
+              return (
+                <div key={rx.id} style={{ marginBottom: 12 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <th style={{ textAlign: "left", padding: "4px 8px" }}>Medicine</th>
+                        <th style={{ textAlign: "left", padding: "4px 8px" }}>Dosage</th>
+                        <th style={{ textAlign: "left", padding: "4px 8px" }}>Frequency</th>
+                        <th style={{ textAlign: "left", padding: "4px 8px" }}>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {medicines.map((m, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                          <td style={{ padding: "4px 8px", fontWeight: "bold" }}>{m.name}</td>
+                          <td style={{ padding: "4px 8px" }}>{m.dosage}</td>
+                          <td style={{ padding: "4px 8px" }}>{m.frequency}</td>
+                          <td style={{ padding: "4px 8px" }}>{m.duration}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {rx.instructions && (
+                    <p style={{ marginTop: 6, color: "#475569" }}>
+                      <strong>Instructions:</strong> {rx.instructions}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

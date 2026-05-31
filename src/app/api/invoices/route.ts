@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { invoices, patients } from "@/db/schema";
+import { invoices, patients, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
@@ -64,6 +64,11 @@ export async function POST(request: NextRequest) {
         : "PENDING";
 
     const db = getDb();
+
+    const [patientOrgLink] = await db.select().from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
+    if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const newInvoice = {
       id: generateId(),
       organizationId: session.orgId,

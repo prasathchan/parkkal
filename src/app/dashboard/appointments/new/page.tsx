@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ interface Patient { id: string; patientCode: string; name: string; }
 interface Doctor { id: string; name: string; }
 
 export default function NewAppointmentPage() {
+  return (
+    <Suspense>
+      <NewAppointmentForm />
+    </Suspense>
+  );
+}
+
+function NewAppointmentForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillApplied = useRef(false);
