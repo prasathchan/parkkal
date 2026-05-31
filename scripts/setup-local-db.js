@@ -228,6 +228,18 @@ async function main() {
   instructions TEXT,
   created_at INTEGER NOT NULL
 )`,
+    // Recreate appointments table to add IN_PROGRESS to status CHECK constraint
+    `CREATE TABLE IF NOT EXISTS appointments_new (
+    id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
+    patient_id TEXT NOT NULL REFERENCES patients(id), doctor_id TEXT NOT NULL REFERENCES users(id),
+    appointment_date TEXT NOT NULL, appointment_time TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED','IN_PROGRESS','COMPLETED','CANCELLED','NO_SHOW')),
+    type TEXT NOT NULL DEFAULT 'CONSULTATION' CHECK (type IN ('CONSULTATION','CHECKUP','TREATMENT','FOLLOWUP','EMERGENCY')),
+    notes TEXT, created_at INTEGER NOT NULL
+  )`,
+    `INSERT OR IGNORE INTO appointments_new SELECT * FROM appointments`,
+    `DROP TABLE IF EXISTS appointments`,
+    `ALTER TABLE appointments_new RENAME TO appointments`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }
