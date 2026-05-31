@@ -5,6 +5,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { verifyOrgToken } from "@/lib/auth";
+import { isFeatureEnabled } from "@/lib/flags";
 
 async function getStats(cookieHeader: string) {
   try {
@@ -39,9 +40,10 @@ export default async function DashboardPage() {
   const session = orgToken ? await verifyOrgToken(orgToken) : null;
   const cookieHeader = orgToken ? `pkd_org_session=${orgToken}` : "";
 
-  const [statsData, appointments] = await Promise.all([
+  const [statsData, appointments, showAppointmentSource] = await Promise.all([
     getStats(cookieHeader),
     getRecentAppointments(cookieHeader),
+    session ? isFeatureEnabled("ff_appointment_source", session.orgId) : Promise.resolve(false),
   ]);
 
   const stats = statsData || {
@@ -51,6 +53,8 @@ export default async function DashboardPage() {
     monthlyRevenue: 0,
     todayRevenue: 0,
     outstandingDues: 0,
+    todayAppointmentVisits: 0,
+    todayWalkInVisits: 0,
   };
 
   return (
@@ -126,6 +130,29 @@ export default async function DashboardPage() {
             }
           />
         </div>
+
+        {/* Visit Source Widget (feature-flagged) */}
+        {showAppointmentSource && (
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm px-6 py-4">
+            <h2 className="font-semibold text-slate-900 mb-3">Today&apos;s Visit Sources</h2>
+            <div className="flex gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📅</span>
+                <div>
+                  <p className="text-xs text-slate-500">By Appointment</p>
+                  <p className="text-lg font-bold text-slate-900">{stats.todayAppointmentVisits ?? 0}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🚶</span>
+                <div>
+                  <p className="text-xs text-slate-500">Walk-ins</p>
+                  <p className="text-lg font-bold text-slate-900">{stats.todayWalkInVisits ?? 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Recent Appointments + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

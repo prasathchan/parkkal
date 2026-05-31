@@ -62,5 +62,8 @@ export async function GET(request: NextRequest) {
     monthlyRevenue: Number(monthlyRevenueRows[0]?.val) || 0,
     todayRevenue: Number(todayRevenueRows[0]?.val) || 0,
     outstandingDues: (Number(openBilledRows[0]?.val) || 0) - (Number(openPaidRows[0]?.val) || 0),
+    // source_type column not yet added — returns 0 until Phase 2
+    todayAppointmentVisits: 0,
+    todayWalkInVisits: 0,
   });
 }
