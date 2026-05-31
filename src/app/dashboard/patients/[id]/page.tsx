@@ -30,7 +30,16 @@ interface PatientBalance {
   lastVisit: string | null;
 }
 
-type TabType = "visits" | "appointments" | "treatments" | "invoices";
+type TabType = "visits" | "appointments" | "treatments" | "invoices" | "emergency";
+
+interface EmergencyContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
+}
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +47,7 @@ export default function PatientDetailPage() {
   const [balance, setBalance] = useState<PatientBalance | null>(null);
   const [tab, setTab] = useState<TabType>("visits");
   const [tabData, setTabData] = useState<unknown[]>([]);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,13 +63,20 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    const urls: Record<TabType, string> = {
+    if (tab === "emergency") {
+      fetch(`/api/patients/${id}/emergency-contacts`)
+        .then((r) => r.json())
+        .then((d) => setEmergencyContacts(d.contacts || []))
+        .catch(() => setEmergencyContacts([]));
+      return;
+    }
+    const urls: Record<Exclude<TabType, "emergency">, string> = {
       visits: `/api/visits?patientId=${id}`,
       appointments: `/api/appointments?patientId=${id}`,
       treatments: `/api/treatments?patientId=${id}`,
       invoices: `/api/invoices?patientId=${id}`,
     };
-    fetch(urls[tab])
+    fetch(urls[tab as Exclude<TabType, "emergency">])
       .then((r) => r.json())
       .then((d) => setTabData(d.visits || d.appointments || d.treatments || d.invoices || []));
   }, [id, tab]);
@@ -88,6 +105,7 @@ export default function PatientDetailPage() {
     { key: "appointments", label: "Appointments" },
     { key: "treatments", label: "Treatments" },
     { key: "invoices", label: "Invoices" },
+    { key: "emergency", label: "Emergency" },
   ];
 
   return (
@@ -230,7 +248,24 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <CardContent>
-            {tabData.length === 0 ? (
+            {tab === "emergency" ? (
+              emergencyContacts.length === 0 ? (
+                <p className="text-center text-slate-400 text-sm py-6">No emergency contacts on file.</p>
+              ) : (
+                <div className="space-y-3">
+                  {emergencyContacts.map((c) => (
+                    <div key={c.id} className="flex items-start justify-between py-2 border-b border-slate-50 last:border-0">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">{c.name}</p>
+                        <p className="text-xs text-slate-500">{c.relationship}</p>
+                        {c.email && <p className="text-xs text-slate-400">{c.email}</p>}
+                      </div>
+                      <p className="text-sm font-medium text-slate-700">{c.phone}</p>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : tabData.length === 0 ? (
               <p className="text-center text-slate-400 text-sm py-6">
                 No {tab} found for this patient.
               </p>

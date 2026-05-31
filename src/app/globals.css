@@ -77,3 +77,9 @@ body {
   font-family: var(--font-body);
   transition: background-color 0.2s, color 0.2s;
 }
+
+@media print {
+  [data-sidebar] { display: none !important; }
+  body { background: white !important; }
+  .no-print { display: none !important; }
+}

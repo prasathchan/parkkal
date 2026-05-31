@@ -151,7 +151,8 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
 
   return (
     <aside
-      className="w-64 flex-shrink-0 min-h-screen flex flex-col transition-colors duration-200"
+      data-sidebar=""
+      className="print:hidden w-64 flex-shrink-0 min-h-screen flex flex-col transition-colors duration-200"
       style={{ background: colors.bg, borderRight: isLight ? `1px solid ${colors.border}` : "none" }}
     >
       {/* Logo / Org Name */}

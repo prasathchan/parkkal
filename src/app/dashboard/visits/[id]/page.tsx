@@ -476,12 +476,25 @@ export default function VisitDetailPage() {
                       </div>
                       <div>
                         <label className="block text-xs text-slate-500 mb-1">Tooth #</label>
-                        <input
+                        <select
                           value={newItem.toothNumber}
                           onChange={(e) => setNewItem({ ...newItem, toothNumber: e.target.value })}
                           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="e.g. 26"
-                        />
+                        >
+                          <option value="">— Any tooth</option>
+                          <optgroup label="Upper Right">
+                            {[11,12,13,14,15,16,17,18].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                          </optgroup>
+                          <optgroup label="Upper Left">
+                            {[21,22,23,24,25,26,27,28].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                          </optgroup>
+                          <optgroup label="Lower Left">
+                            {[31,32,33,34,35,36,37,38].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                          </optgroup>
+                          <optgroup label="Lower Right">
+                            {[41,42,43,44,45,46,47,48].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                          </optgroup>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-xs text-slate-500 mb-1">Qty</label>
