@@ -64,6 +64,19 @@ export default function StaffPage() {
   });
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  function touch(field: string) {
+    setTouched(t => ({ ...t, [field]: true }));
+  }
+
+  const fieldErrors = {
+    email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? "Enter a valid email address" : "",
+    phone: form.phone && !/^\+?\d{10,15}$/.test(form.phone.replace(/[\s-]/g, "")) ? "Phone must be 10–15 digits" : "",
+    panNumber: form.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(form.panNumber.toUpperCase()) ? "PAN format: ABCDE1234F" : "",
+    aadhaarNumber: form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, "")) ? "Aadhaar must be 12 digits" : "",
+    ecPhone: form.ecPhone && !/^\+?\d{10,15}$/.test(form.ecPhone.replace(/[\s-]/g, "")) ? "Phone must be 10–15 digits" : "",
+  };
 
   useEffect(() => {
     fetchMembers();
@@ -92,6 +105,8 @@ export default function StaffPage() {
 
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
+    setTouched({ email: true, phone: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
+    if (Object.values(fieldErrors).some(Boolean)) return;
     setFormError("");
     setSaving(true);
     try {
@@ -249,13 +264,15 @@ export default function StaffPage() {
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
                   <input
-                    type="email"
+                    type="text"
                     value={form.email}
                     onChange={updateForm("email")}
+                    onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                   />
+                  {touched.email && fieldErrors.email && <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
                   <p className="text-xs text-slate-500 mt-1">If user exists, their profile will be used. Otherwise fill the fields below.</p>
                 </div>
                 <div>
@@ -284,9 +301,11 @@ export default function StaffPage() {
                     type="text"
                     value={form.phone}
                     onChange={updateForm("phone")}
+                    onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                   />
+                  {touched.phone && fieldErrors.phone && <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
@@ -379,10 +398,12 @@ export default function StaffPage() {
                       type="text"
                       value={form.panNumber}
                       onChange={updateForm("panNumber")}
+                      onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                     />
+                    {touched.panNumber && fieldErrors.panNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.panNumber}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">Aadhaar Number</label>
@@ -390,10 +411,12 @@ export default function StaffPage() {
                       type="text"
                       value={form.aadhaarNumber}
                       onChange={updateForm("aadhaarNumber")}
+                      onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                     />
+                    {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>}
                   </div>
                 </div>
               </div>
@@ -436,10 +459,12 @@ export default function StaffPage() {
                       type="text"
                       value={form.ecPhone}
                       onChange={updateForm("ecPhone")}
+                      onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                     />
+                    {touched.ecPhone && fieldErrors.ecPhone && <p className="text-xs text-red-600 mt-1">{fieldErrors.ecPhone}</p>}
                   </div>
                 </div>
               </div>

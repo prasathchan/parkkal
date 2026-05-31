@@ -10,10 +10,34 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 
+function validatePhone(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length < 10) return "Phone number must be at least 10 digits";
+  if (digits.length > 15) return "Phone number is too long";
+  return "";
+}
+
+function validateEmail(email: string) {
+  if (!email) return "";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "" : "Enter a valid email address";
+}
+
+function validatePan(pan: string) {
+  if (!pan) return "";
+  return /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase()) ? "" : "PAN format: ABCDE1234F";
+}
+
+function validateAadhaar(aadhaar: string) {
+  if (!aadhaar) return "";
+  return /^\d{12}$/.test(aadhaar.replace(/\s/g, "")) ? "" : "Aadhaar must be 12 digits";
+}
+
 export default function NewPatientPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -44,8 +68,25 @@ export default function NewPatientPage() {
     };
   }
 
+  function touch(field: string) {
+    setTouched(t => ({ ...t, [field]: true }));
+  }
+
+  const fieldErrors = {
+    phone: validatePhone(form.phone),
+    email: validateEmail(form.email),
+    panNumber: validatePan(form.panNumber),
+    aadhaarNumber: validateAadhaar(form.aadhaarNumber),
+    ecPhone: validatePhone(form.ecPhone),
+  };
+
+  const hasErrors = Object.values(fieldErrors).some(Boolean);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Touch all fields to show errors
+    setTouched({ phone: true, email: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
+    if (hasErrors) return;
     setError("");
     setLoading(true);
 
@@ -133,18 +174,21 @@ export default function NewPatientPage() {
                   label="Phone Number *"
                   value={form.phone}
                   onChange={update("phone")}
+                  onBlur={() => touch("phone")}
                   required
                   placeholder="+91 98765 43210"
+                  error={touched.phone ? fieldErrors.phone : ""}
                 />
               </div>
 
               <Input
                 id="email"
-                type="email"
                 label="Email Address"
                 value={form.email}
                 onChange={update("email")}
+                onBlur={() => touch("email")}
                 placeholder="patient@example.com"
+                error={touched.email ? fieldErrors.email : ""}
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -231,8 +275,10 @@ export default function NewPatientPage() {
                     label="Phone *"
                     value={form.ecPhone}
                     onChange={update("ecPhone")}
+                    onBlur={() => touch("ecPhone")}
                     required
                     placeholder="+91 98765 43210"
+                    error={touched.ecPhone ? fieldErrors.ecPhone : ""}
                   />
                   <Input
                     id="ec-email"
@@ -257,16 +303,20 @@ export default function NewPatientPage() {
                     label="PAN Number (optional)"
                     value={form.panNumber}
                     onChange={update("panNumber")}
+                    onBlur={() => touch("panNumber")}
                     placeholder="AAAAA9999A"
                     maxLength={10}
+                    error={touched.panNumber ? fieldErrors.panNumber : ""}
                   />
                   <Input
                     id="aadhaar"
                     label="Aadhaar Number (optional)"
                     value={form.aadhaarNumber}
                     onChange={update("aadhaarNumber")}
+                    onBlur={() => touch("aadhaarNumber")}
                     placeholder="12 digits"
                     maxLength={12}
+                    error={touched.aadhaarNumber ? fieldErrors.aadhaarNumber : ""}
                   />
                 </div>
               </div>

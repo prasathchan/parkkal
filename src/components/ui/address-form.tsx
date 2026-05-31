@@ -347,10 +347,13 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
         onChange({ ...value, pincode, state: data.state || value.state, district: data.district || value.district });
         setPincodeSuccess(true);
       } else {
-        setPincodeError("Pincode not found");
+        // Only show error if state/district aren't already filled by user
+        if (!value.state && !value.district) {
+          setPincodeError("Pincode not found — fill state and district manually");
+        }
       }
     } catch {
-      setPincodeError("Lookup failed");
+      // Silently fail if API is down — user can fill manually
     } finally {
       setPincodeLoading(false);
     }
