@@ -4,11 +4,12 @@ import { getDb } from "@/lib/db";
 import { emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const { name, relationship, phone, email, address } = body;
     const db = getDb();
@@ -19,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (email !== undefined) updates.email = email;
     if (address !== undefined) updates.address = address;
 
-    await db.update(emergencyContacts).set(updates).where(eq(emergencyContacts.id, params.id));
+    await db.update(emergencyContacts).set(updates).where(eq(emergencyContacts.id, id));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update emergency contact error:", error);
@@ -27,11 +28,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const db = getDb();
-  await db.delete(emergencyContacts).where(eq(emergencyContacts.id, params.id));
+  await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
   return NextResponse.json({ success: true });
 }

@@ -80,13 +80,18 @@ export default function NewPatientPage() {
     ecPhone: validatePhone(form.ecPhone),
   };
 
-  const hasErrors = Object.values(fieldErrors).some(Boolean);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Touch all fields to show errors
     setTouched({ phone: true, email: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
-    if (hasErrors) return;
+    // Re-compute errors at submit time (state update above is async, can't rely on fieldErrors)
+    const errs = {
+      phone: validatePhone(form.phone),
+      email: validateEmail(form.email),
+      panNumber: validatePan(form.panNumber),
+      aadhaarNumber: validateAadhaar(form.aadhaarNumber),
+      ecPhone: validatePhone(form.ecPhone),
+    };
+    if (Object.values(errs).some(Boolean)) return;
     setError("");
     setLoading(true);
 

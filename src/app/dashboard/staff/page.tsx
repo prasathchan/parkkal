@@ -106,7 +106,14 @@ export default function StaffPage() {
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ email: true, phone: true, panNumber: true, aadhaarNumber: true, ecPhone: true });
-    if (Object.values(fieldErrors).some(Boolean)) return;
+    const errs = {
+      email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? "error" : "",
+      phone: form.phone && !/^\+?\d{10,15}$/.test(form.phone.replace(/[\s-]/g, "")) ? "error" : "",
+      panNumber: form.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(form.panNumber.toUpperCase()) ? "error" : "",
+      aadhaarNumber: form.aadhaarNumber && !/^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, "")) ? "error" : "",
+      ecPhone: form.ecPhone && !/^\+?\d{10,15}$/.test(form.ecPhone.replace(/[\s-]/g, "")) ? "error" : "",
+    };
+    if (Object.values(errs).some(Boolean)) return;
     setFormError("");
     setSaving(true);
     try {

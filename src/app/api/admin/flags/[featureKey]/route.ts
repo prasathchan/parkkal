@@ -6,13 +6,13 @@ import { getSession } from "@/lib/auth";
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { featureKey: string } }
+  { params }: { params: Promise<{ featureKey: string }> }
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { featureKey } = params;
+  const { featureKey } = await params;
   const body = await request.json();
   const { isEnabled, scope } = body;
 
@@ -25,7 +25,6 @@ export async function PATCH(
   const orgId = scope === "org" ? session.orgId : null;
   const id = orgId ? `ff_${orgId}_${featureKey}` : `ff_global_${featureKey}`;
 
-  // Check if a row exists
   const existing = await db
     .select()
     .from(featureFlags)
@@ -36,28 +35,13 @@ export async function PATCH(
     );
 
   if (existing.length > 0) {
-    await db
-      .update(featureFlags)
-      .set({ isEnabled: isEnabled ? 1 : 0, updatedAt: now })
-      .where(eq(featureFlags.id, existing[0].id));
+    await db.update(featureFlags).set({ isEnabled: isEnabled ? 1 : 0, updatedAt: now }).where(eq(featureFlags.id, existing[0].id));
   } else {
-    // Get name/description from global flag
-    const globalFlags = await db
-      .select()
-      .from(featureFlags)
-      .where(and(eq(featureFlags.featureKey, featureKey), isNull(featureFlags.orgId)));
+    const globalFlags = await db.select().from(featureFlags).where(and(eq(featureFlags.featureKey, featureKey), isNull(featureFlags.orgId)));
     const globalFlag = globalFlags[0];
-
     await db.insert(featureFlags).values({
-      id,
-      featureKey,
-      name: globalFlag?.name ?? featureKey,
-      description: globalFlag?.description ?? null,
-      orgId,
-      isEnabled: isEnabled ? 1 : 0,
-      rolloutPercent: 100,
-      createdAt: now,
-      updatedAt: now,
+      id, featureKey, name: globalFlag?.name ?? featureKey, description: globalFlag?.description ?? null,
+      orgId, isEnabled: isEnabled ? 1 : 0, rolloutPercent: 100, createdAt: now, updatedAt: now,
     });
   }
 

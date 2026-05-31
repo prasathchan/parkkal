@@ -17,57 +17,37 @@ const updatePatientSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const db = getDb();
-  const patient = (await db
-    .select()
-    .from(patients)
-    .where(eq(patients.id, params.id))
-    )[0];
+  const patient = (await db.select().from(patients).where(eq(patients.id, id)))[0];
 
-  if (!patient) {
-    return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-  }
-
+  if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
   return NextResponse.json({ patient });
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const { id } = await params;
     const body = await request.json();
     const data = updatePatientSchema.parse(body);
 
     const db = getDb();
-    await db
-      .update(patients)
-      .set({ ...data, updatedAt: Date.now() })
-      .where(eq(patients.id, params.id));
-
-    const updated = (await db
-      .select()
-      .from(patients)
-      .where(eq(patients.id, params.id))
-      )[0];
-
+    await db.update(patients).set({ ...data, updatedAt: Date.now() }).where(eq(patients.id, id));
+    const updated = (await db.select().from(patients).where(eq(patients.id, id)))[0];
     return NextResponse.json({ patient: updated });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    }
+    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     console.error("Update patient error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -75,18 +55,14 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  if (session.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+  const { id } = await params;
   const db = getDb();
-  await db.delete(patients).where(eq(patients.id, params.id));
+  await db.delete(patients).where(eq(patients.id, id));
   return NextResponse.json({ success: true });
 }
