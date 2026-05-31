@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visitItems, visits, patients, users } from "@/db/schema";
+import { visitItems, visits, patients, users, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const createTreatmentSchema = z.object({
+  patientId: z.string().min(1),
+  doctorId: z.string().min(1),
+  description: z.string().min(1),
+  toothNumbers: z.string().optional(),
+  procedure: z.string().optional(),
+  cost: z.number().default(0),
+  appointmentId: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
@@ -44,4 +55,38 @@ export async function GET(request: NextRequest) {
     .orderBy(desc(visitItems.createdAt));
 
   return NextResponse.json({ treatments: rows });
+}
+
+export async function POST(request: NextRequest) {
+  const session = await getSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const body = await request.json();
+    const data = createTreatmentSchema.parse(body);
+    const db = getDb();
+
+    const treatment = {
+      id: crypto.randomUUID(),
+      organizationId: session.orgId,
+      patientId: data.patientId,
+      doctorId: data.doctorId,
+      description: data.description,
+      toothNumbers: data.toothNumbers ?? null,
+      procedure: data.procedure ?? null,
+      cost: data.cost,
+      appointmentId: data.appointmentId ?? null,
+      createdAt: Date.now(),
+    };
+
+    await db.insert(treatments).values(treatment);
+
+    return NextResponse.json({ treatment }, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
+    }
+    console.error("Create treatment error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

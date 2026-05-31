@@ -244,11 +244,23 @@ export default function PatientDetailPage() {
                     return (
                       <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                         <div>
-                          <p className="text-sm font-medium">{row.description as string}</p>
-                          <p className="text-xs text-slate-500">{row.procedure as string}</p>
+                          <p className="text-sm font-medium">{(row.itemName || row.description) as string}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {row.category && (
+                              <span className="text-xs text-slate-400">{row.category as string}</span>
+                            )}
+                            {(row.toothNumber || row.toothNumbers) && (
+                              <span className="text-xs text-slate-400">
+                                Tooth: {(row.toothNumber || row.toothNumbers) as string}
+                              </span>
+                            )}
+                            {row.visitDate && (
+                              <span className="text-xs text-slate-400">{row.visitDate as string}</span>
+                            )}
+                          </div>
                         </div>
                         <p className="text-sm font-semibold text-slate-900">
-                          {formatCurrency(row.cost as number)}
+                          {formatCurrency((row.amount ?? row.cost ?? 0) as number)}
                         </p>
                       </div>
                     );
