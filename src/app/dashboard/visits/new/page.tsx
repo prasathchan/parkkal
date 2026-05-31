@@ -188,12 +188,16 @@ function NewVisitForm() {
     });
     const data = await res.json();
     if (!res.ok) {
+      // If a visit already exists for this appointment, redirect to it
+      if (res.status === 409 && data.visitId) {
+        router.push(`/dashboard/visits/${data.visitId}`);
+        return;
+      }
       setError(data.error || "Failed to create visit");
       setSubmitting(false);
       return;
     }
 
-    // Appointment marked IN_PROGRESS server-side
     router.push(`/dashboard/visits/${data.visit.id}`);
   }
 

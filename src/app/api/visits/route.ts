@@ -78,6 +78,12 @@ export async function POST(request: NextRequest) {
       .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, doctorId)));
     if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
 
+    // Prevent duplicate visits for the same appointment
+    if (appointmentId) {
+      const [existing] = await db.select({ id: visits.id }).from(visits)
+        .where(and(eq(visits.appointmentId, appointmentId), eq(visits.organizationId, session.orgId)));
+      if (existing) return NextResponse.json({ error: "A visit already exists for this appointment", visitId: existing.id }, { status: 409 });
+    }
     // Count org-scoped visits today for sequential visit code
     const [{ todayCount }] = await db
       .select({ todayCount: count() })
@@ -118,12 +124,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Mark linked appointment as IN_PROGRESS server-side (atomic with visit creation)
+    // Mark linked appointment as IN_PROGRESS (best-effort — old DBs without this status are tolerated)
     if (appointmentId) {
-      await db
-        .update(appointments)
-        .set({ status: "IN_PROGRESS" })
-        .where(and(eq(appointments.id, appointmentId), eq(appointments.organizationId, session.orgId)));
+      try {
+        await db
+          .update(appointments)
+          .set({ status: "IN_PROGRESS" })
+          .where(and(eq(appointments.id, appointmentId), eq(appointments.organizationId, session.orgId)));
+      } catch {
+        // DB schema not yet migrated — skip silently
+      }
     }
 
     return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });
