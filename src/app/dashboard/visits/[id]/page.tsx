@@ -82,7 +82,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-const CATEGORIES = ["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"];
+const CATEGORIES = ["PROCEDURE", "XRAY", "CONSULTATION", "OTHER"];
 const PAYMENT_METHODS = ["CASH", "CARD", "UPI", "BANK_TRANSFER"];
 
 function formatBytes(bytes: number) {
@@ -104,7 +104,7 @@ export default function VisitDetailPage() {
   const [loading, setLoading] = useState(true);
 
   // Item form
-  const [newItem, setNewItem] = useState({ itemName: "", category: "MEDICINE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
+  const [newItem, setNewItem] = useState({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
   const [addingItem, setAddingItem] = useState(false);
 
   // Payment modal
@@ -179,7 +179,7 @@ export default function VisitDetailPage() {
       }),
     });
     if (res.ok) {
-      setNewItem({ itemName: "", category: "MEDICINE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
+      setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
       await fetchVisit();
     }
     setAddingItem(false);
@@ -407,9 +407,9 @@ export default function VisitDetailPage() {
                   {completingVisit ? "Completing..." : "Complete Visit"}
                 </button>
               )}
-              {visit.status === "COMPLETED" && (
+              {appointmentStatus === "COMPLETED" && (
                 <button
-                  onClick={() => router.push(`/dashboard/appointments/new?patientId=${visit.patientId}&doctorId=${visit.doctorId}`)}
+                  onClick={() => router.push(`/dashboard/appointments/new?patientId=${visit.patientId}&doctorId=${visit.doctorId}&type=FOLLOWUP`)}
                   className="inline-flex items-center gap-2 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
                 >
                   Book Follow-up
