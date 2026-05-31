@@ -132,6 +132,17 @@ export const treatments = sqliteTable("treatments", {
   createdAt: integer("created_at").notNull(),
 });
 
+export const prescriptions = sqliteTable("prescriptions", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").references(() => organizations.id),
+  visitId: text("visit_id").notNull().references(() => visits.id),
+  patientId: text("patient_id").notNull().references(() => patients.id),
+  doctorId: text("doctor_id").notNull().references(() => users.id),
+  medicines: text("medicines").notNull(), // JSON array of { name, dosage, frequency, duration, notes }
+  instructions: text("instructions"),
+  createdAt: integer("created_at").notNull(),
+});
+
 export const invoices = sqliteTable("invoices", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id").references(() => organizations.id),

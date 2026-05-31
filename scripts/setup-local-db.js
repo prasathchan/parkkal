@@ -218,6 +218,16 @@ async function main() {
     `ALTER TABLE organizations ADD COLUMN theme_config TEXT`,
     `ALTER TABLE visits ADD COLUMN appointment_id TEXT REFERENCES appointments(id)`,
     `ALTER TABLE visits ADD COLUMN visit_type TEXT NOT NULL DEFAULT 'WALKIN'`,
+    `CREATE TABLE IF NOT EXISTS prescriptions (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT REFERENCES organizations(id),
+  visit_id TEXT NOT NULL REFERENCES visits(id),
+  patient_id TEXT NOT NULL REFERENCES patients(id),
+  doctor_id TEXT NOT NULL REFERENCES users(id),
+  medicines TEXT NOT NULL DEFAULT '[]',
+  instructions TEXT,
+  created_at INTEGER NOT NULL
+)`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

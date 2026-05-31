@@ -7,7 +7,7 @@ import { Header } from "@/components/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 
-type TabKey = "items" | "payments" | "attachments" | "history";
+type TabKey = "items" | "payments" | "attachments" | "history" | "prescriptions";
 
 interface Visit {
   id: string;
@@ -69,6 +69,13 @@ interface HistoryVisit {
   status: string;
 }
 
+interface Prescription {
+  id: string;
+  medicines: string; // JSON string
+  instructions?: string | null;
+  createdAt: number;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   OPEN: "bg-blue-100 text-blue-800",
   COMPLETED: "bg-green-100 text-green-800",
@@ -92,6 +99,7 @@ export default function VisitDetailPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<HistoryVisit[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [tab, setTab] = useState<TabKey>("items");
   const [loading, setLoading] = useState(true);
 
@@ -111,6 +119,12 @@ export default function VisitDetailPage() {
   // Complete visit
   const [completingVisit, setCompletingVisit] = useState(false);
 
+  // Prescription form
+  const [showRxForm, setShowRxForm] = useState(false);
+  const [rxMedicines, setRxMedicines] = useState([{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]);
+  const [rxInstructions, setRxInstructions] = useState("");
+  const [rxSubmitting, setRxSubmitting] = useState(false);
+
   // Attachment
   const [fileType, setFileType] = useState("OTHER");
   const [uploadError, setUploadError] = useState("");
@@ -124,6 +138,11 @@ export default function VisitDetailPage() {
     setItems(data.items || []);
     setPayments(data.payments || []);
     setAttachments(data.attachments || []);
+    const rxRes = await fetch(`/api/visits/${id}/prescriptions`);
+    if (rxRes.ok) {
+      const rxData = await rxRes.json();
+      setPrescriptions(rxData.prescriptions || []);
+    }
     setLoading(false);
   }, [id]);
 
@@ -222,6 +241,29 @@ export default function VisitDetailPage() {
     });
     await fetchVisit();
     setCompletingVisit(false);
+  }
+
+  async function handleAddRx(e: React.FormEvent) {
+    e.preventDefault();
+    if (!visit) return;
+    setRxSubmitting(true);
+    const res = await fetch(`/api/visits/${id}/prescriptions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        medicines: rxMedicines.filter(m => m.name && m.dosage && m.frequency && m.duration),
+        instructions: rxInstructions || null,
+        patientId: visit.patientId,
+        doctorId: visit.doctorId,
+      }),
+    });
+    if (res.ok) {
+      setShowRxForm(false);
+      setRxMedicines([{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]);
+      setRxInstructions("");
+      await fetchVisit();
+    }
+    setRxSubmitting(false);
   }
 
   async function handleMarkAppointmentDone() {
@@ -354,7 +396,7 @@ export default function VisitDetailPage() {
         {/* Tabs */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 px-6 flex gap-1">
-            {(["items", "payments", "attachments", "history"] as TabKey[]).map((t) => (
+            {(["items", "payments", "attachments", "history", "prescriptions"] as TabKey[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -362,7 +404,7 @@ export default function VisitDetailPage() {
                   tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"
                 }`}
               >
-                {t === "items" ? "Prescription / Items" : t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === "items" ? "Items" : t === "prescriptions" ? "💊 Prescriptions" : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>
@@ -674,6 +716,218 @@ export default function VisitDetailPage() {
                         </div>
                       </Link>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab: Prescriptions */}
+            {tab === "prescriptions" && (
+              <div className="space-y-5">
+                {visit.status === "OPEN" && !showRxForm && (
+                  <button
+                    onClick={() => setShowRxForm(true)}
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                  >
+                    + New Prescription
+                  </button>
+                )}
+
+                {showRxForm && (
+                  <form onSubmit={handleAddRx} className="border border-slate-200 rounded-xl p-5 space-y-4 bg-slate-50">
+                    <p className="text-sm font-semibold text-slate-700">New Prescription</p>
+
+                    <div className="space-y-3">
+                      {rxMedicines.map((med, idx) => (
+                        <div key={idx} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                          <div className="sm:col-span-1">
+                            <label className="block text-xs text-slate-500 mb-1">Drug Name *</label>
+                            <input
+                              required
+                              value={med.name}
+                              onChange={(e) => {
+                                const updated = [...rxMedicines];
+                                updated[idx] = { ...updated[idx], name: e.target.value };
+                                setRxMedicines(updated);
+                              }}
+                              placeholder="e.g. Amoxicillin"
+                              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-1">Dosage *</label>
+                            <input
+                              required
+                              value={med.dosage}
+                              onChange={(e) => {
+                                const updated = [...rxMedicines];
+                                updated[idx] = { ...updated[idx], dosage: e.target.value };
+                                setRxMedicines(updated);
+                              }}
+                              placeholder="e.g. 500mg"
+                              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-1">Frequency *</label>
+                            <select
+                              required
+                              value={med.frequency}
+                              onChange={(e) => {
+                                const updated = [...rxMedicines];
+                                updated[idx] = { ...updated[idx], frequency: e.target.value };
+                                setRxMedicines(updated);
+                              }}
+                              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select...</option>
+                              <option value="Once daily">Once daily</option>
+                              <option value="Twice daily">Twice daily</option>
+                              <option value="Three times daily">Three times daily</option>
+                              <option value="Four times daily">Four times daily</option>
+                              <option value="As needed">As needed</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-1">Duration *</label>
+                            <input
+                              required
+                              value={med.duration}
+                              onChange={(e) => {
+                                const updated = [...rxMedicines];
+                                updated[idx] = { ...updated[idx], duration: e.target.value };
+                                setRxMedicines(updated);
+                              }}
+                              placeholder="e.g. 5 days"
+                              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1">
+                              <label className="block text-xs text-slate-500 mb-1">Notes</label>
+                              <input
+                                value={med.notes}
+                                onChange={(e) => {
+                                  const updated = [...rxMedicines];
+                                  updated[idx] = { ...updated[idx], notes: e.target.value };
+                                  setRxMedicines(updated);
+                                }}
+                                placeholder="Optional"
+                                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                            {rxMedicines.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setRxMedicines(rxMedicines.filter((_, i) => i !== idx))}
+                                className="mb-0.5 text-xs text-red-500 hover:text-red-700 border border-red-200 px-2 py-2 rounded-lg hover:bg-red-50 transition"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setRxMedicines([...rxMedicines, { name: "", dosage: "", frequency: "", duration: "", notes: "" }])}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      + Add Medicine
+                    </button>
+
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1">Instructions</label>
+                      <textarea
+                        value={rxInstructions}
+                        onChange={(e) => setRxInstructions(e.target.value)}
+                        rows={3}
+                        placeholder="Additional instructions for the patient..."
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        disabled={rxSubmitting}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                      >
+                        {rxSubmitting ? "Saving..." : "Save Prescription"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowRxForm(false);
+                          setRxMedicines([{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]);
+                          setRxInstructions("");
+                        }}
+                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {prescriptions.length === 0 && !showRxForm ? (
+                  <p className="text-center text-slate-400 text-sm py-6">No prescriptions yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {prescriptions.map((rx) => {
+                      const meds = (() => {
+                        try { return JSON.parse(rx.medicines) as Array<{ name: string; dosage: string; frequency: string; duration: string; notes?: string }>; }
+                        catch { return []; }
+                      })();
+                      return (
+                        <div key={rx.id} className="border border-slate-200 rounded-xl p-5 space-y-3 bg-white">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-700">
+                              {new Date(rx.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                            </p>
+                            <Link
+                              href={`/dashboard/visits/${id}/print`}
+                              target="_blank"
+                              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              🖨 Print
+                            </Link>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-slate-50">
+                                <tr>
+                                  <th className="text-left px-3 py-2 font-semibold text-slate-600 text-xs">Drug</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-slate-600 text-xs">Dosage</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-slate-600 text-xs">Frequency</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-slate-600 text-xs">Duration</th>
+                                  <th className="text-left px-3 py-2 font-semibold text-slate-600 text-xs">Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {meds.map((m, i) => (
+                                  <tr key={i} className="hover:bg-slate-50">
+                                    <td className="px-3 py-2 font-medium text-slate-900">{m.name}</td>
+                                    <td className="px-3 py-2 text-slate-700">{m.dosage}</td>
+                                    <td className="px-3 py-2 text-slate-700">{m.frequency}</td>
+                                    <td className="px-3 py-2 text-slate-700">{m.duration}</td>
+                                    <td className="px-3 py-2 text-slate-500">{m.notes || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {rx.instructions && (
+                            <div className="bg-amber-50 border border-amber-100 rounded-lg px-4 py-3">
+                              <p className="text-xs font-semibold text-amber-700 mb-1">Instructions</p>
+                              <p className="text-sm text-amber-900">{rx.instructions}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
