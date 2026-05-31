@@ -6,7 +6,7 @@ import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
 const updateSchema = z.object({
-  status: z.enum(["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"]).optional(),
+  status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"]).optional(),
   type: z.enum(["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"]).optional(),
   appointmentDate: z.string().optional(),
   appointmentTime: z.string().optional(),

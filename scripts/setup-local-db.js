@@ -216,6 +216,8 @@ async function main() {
   // Migrations for existing DBs
   const migrations = [
     `ALTER TABLE organizations ADD COLUMN theme_config TEXT`,
+    `ALTER TABLE visits ADD COLUMN appointment_id TEXT REFERENCES appointments(id)`,
+    `ALTER TABLE visits ADD COLUMN visit_type TEXT NOT NULL DEFAULT 'WALKIN'`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

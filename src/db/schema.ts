@@ -110,7 +110,7 @@ export const appointments = sqliteTable("appointments", {
   appointmentDate: text("appointment_date").notNull(),
   appointmentTime: text("appointment_time").notNull(),
   status: text("status", {
-    enum: ["SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"],
+    enum: ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"],
   }).notNull().default("SCHEDULED"),
   type: text("type", {
     enum: ["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"],
@@ -184,6 +184,8 @@ export const visits = sqliteTable("visits", {
   chiefComplaint: text("chief_complaint"),
   doctorNotes: text("doctor_notes"),
   diagnosis: text("diagnosis"),
+  appointmentId: text("appointment_id").references(() => appointments.id),
+  visitType: text("visit_type", { enum: ["APPOINTMENT", "WALKIN"] }).notNull().default("WALKIN"),
   status: text("status", { enum: ["OPEN", "COMPLETED", "CANCELLED"] }).notNull().default("OPEN"),
   totalAmount: real("total_amount").notNull().default(0),
   paidAmount: real("paid_amount").notNull().default(0),

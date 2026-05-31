@@ -27,6 +27,8 @@ export async function GET(
       status: visits.status,
       totalAmount: visits.totalAmount,
       paidAmount: visits.paidAmount,
+      appointmentId: visits.appointmentId,
+      visitType: visits.visitType,
       createdAt: visits.createdAt,
       updatedAt: visits.updatedAt,
       patientName: patients.name,

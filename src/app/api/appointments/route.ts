@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   const conditions = [eq(appointments.organizationId, session.orgId)];
   if (dateFilter) conditions.push(eq(appointments.appointmentDate, dateFilter));
-  if (statusFilter) conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
+  if (statusFilter) conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
   if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
 
   const rows = await db

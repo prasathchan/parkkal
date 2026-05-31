@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { patientId, doctorId, visitDate, chiefComplaint, doctorNotes } = body;
+    const { patientId, doctorId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = body;
 
     if (!patientId || !doctorId || !visitDate) {
       return NextResponse.json({ error: "patientId, doctorId, visitDate are required" }, { status: 400 });
@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
       chiefComplaint: chiefComplaint || null,
       doctorNotes: doctorNotes || null,
       diagnosis: null,
+      appointmentId: appointmentId || null,
+      visitType: visitType || "WALKIN",
       status: "OPEN" as const,
       totalAmount: 0,
       paidAmount: 0,

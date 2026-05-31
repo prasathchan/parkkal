@@ -75,6 +75,7 @@ export default function AppointmentsPage() {
               >
                 <option value="">All Status</option>
                 <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="NO_SHOW">No Show</option>

@@ -42,6 +42,7 @@ export function Badge({
 export function getStatusBadgeVariant(status: string): BadgeVariant {
   const map: Record<string, BadgeVariant> = {
     SCHEDULED: "info",
+    IN_PROGRESS: "warning",
     COMPLETED: "success",
     CANCELLED: "danger",
     NO_SHOW: "warning",

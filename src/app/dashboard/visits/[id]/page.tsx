@@ -19,6 +19,8 @@ interface Visit {
   status: "OPEN" | "COMPLETED" | "CANCELLED";
   totalAmount: number;
   paidAmount: number;
+  appointmentId?: string | null;
+  visitType?: string | null;
   patientName: string;
   patientCode: string;
   patientId: string;
@@ -102,6 +104,9 @@ export default function VisitDetailPage() {
   const [payForm, setPayForm] = useState({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
   const [payError, setPayError] = useState("");
   const [paySubmitting, setPaySubmitting] = useState(false);
+
+  // Appointment
+  const [markingApptDone, setMarkingApptDone] = useState(false);
 
   // Attachment
   const [fileType, setFileType] = useState("OTHER");
@@ -205,6 +210,18 @@ export default function VisitDetailPage() {
     await fetchVisit();
   }
 
+  async function handleMarkAppointmentDone() {
+    if (!visit?.appointmentId) return;
+    setMarkingApptDone(true);
+    await fetch(`/api/appointments/${visit.appointmentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" }),
+    });
+    await fetchVisit();
+    setMarkingApptDone(false);
+  }
+
   if (loading) {
     return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
   }
@@ -230,6 +247,23 @@ export default function VisitDetailPage() {
         ]}
       />
       <main className="flex-1 p-6 space-y-5">
+        {/* Appointment Banner */}
+        {visit.appointmentId && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-blue-800">
+              <span>📅</span>
+              <span>This visit is linked to a scheduled appointment.</span>
+            </div>
+            <button
+              onClick={handleMarkAppointmentDone}
+              disabled={markingApptDone}
+              className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+            >
+              {markingApptDone ? "Marking..." : "Mark Appointment Done"}
+            </button>
+          </div>
+        )}
+
         {/* Header Card */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
