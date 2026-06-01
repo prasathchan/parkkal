@@ -120,6 +120,11 @@ export default function VisitDetailPage() {
   // Complete visit
   const [completingVisit, setCompletingVisit] = useState(false);
 
+  // Clinical notes inline edit
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesForm, setNotesForm] = useState({ chiefComplaint: "", doctorNotes: "", diagnosis: "" });
+  const [savingNotes, setSavingNotes] = useState(false);
+
   // Prescription form
   const [showRxForm, setShowRxForm] = useState(false);
   const [rxMedicines, setRxMedicines] = useState([{ name: "", dosage: "", frequency: "", duration: "", notes: "" }]);
@@ -189,6 +194,23 @@ export default function VisitDetailPage() {
     if (!confirm("Delete this item?")) return;
     await fetch(`/api/visits/${id}/items/${itemId}`, { method: "DELETE" });
     await fetchVisit();
+  }
+
+  async function handleSaveNotes(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingNotes(true);
+    await fetch(`/api/visits/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chiefComplaint: notesForm.chiefComplaint || null,
+        doctorNotes: notesForm.doctorNotes || null,
+        diagnosis: notesForm.diagnosis || null,
+      }),
+    });
+    await fetchVisit();
+    setEditingNotes(false);
+    setSavingNotes(false);
   }
 
   async function handleAddPayment(e: React.FormEvent) {
@@ -363,10 +385,42 @@ export default function VisitDetailPage() {
                 <span className="text-slate-400 mx-2">·</span>
                 {visit.visitDate}
               </p>
-              {visit.chiefComplaint && (
-                <p className="text-sm text-slate-500 italic">
-                  Chief complaint: {visit.chiefComplaint}
-                </p>
+              {!editingNotes ? (
+                <div className="flex items-start gap-2 mt-1">
+                  <div className="flex-1 space-y-0.5">
+                    {visit.chiefComplaint && <p className="text-sm text-slate-500 italic">Chief complaint: {visit.chiefComplaint}</p>}
+                    {visit.diagnosis && <p className="text-sm text-slate-600"><span className="font-medium text-slate-700">Diagnosis:</span> {visit.diagnosis}</p>}
+                    {visit.doctorNotes && <p className="text-sm text-slate-500">Notes: {visit.doctorNotes}</p>}
+                  </div>
+                  {visit.status !== "CANCELLED" && (
+                    <button
+                      onClick={() => { setNotesForm({ chiefComplaint: visit.chiefComplaint || "", doctorNotes: visit.doctorNotes || "", diagnosis: visit.diagnosis || "" }); setEditingNotes(true); }}
+                      className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1 flex-shrink-0 mt-0.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      Edit
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleSaveNotes} className="mt-2 space-y-2 bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Chief Complaint</label>
+                    <input type="text" value={notesForm.chiefComplaint} onChange={e => setNotesForm(f => ({ ...f, chiefComplaint: e.target.value }))} className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Diagnosis</label>
+                    <input type="text" value={notesForm.diagnosis} onChange={e => setNotesForm(f => ({ ...f, diagnosis: e.target.value }))} className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter diagnosis..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Doctor Notes</label>
+                    <textarea value={notesForm.doctorNotes} onChange={e => setNotesForm(f => ({ ...f, doctorNotes: e.target.value }))} rows={2} className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" disabled={savingNotes} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50">{savingNotes ? "Saving..." : "Save"}</button>
+                    <button type="button" onClick={() => setEditingNotes(false)} className="text-xs border border-slate-300 text-slate-600 px-3 py-1.5 rounded-md hover:bg-slate-100">Cancel</button>
+                  </div>
+                </form>
               )}
             </div>
             <div className="flex items-center gap-3 flex-wrap">

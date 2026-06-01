@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { organizationPatients, appointments, payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
+
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -48,12 +49,21 @@ export async function GET(request: NextRequest) {
       .where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
   ]);
 
-  // Today's revenue: sum of payments recorded today for this org
-  const todayRevenueRows = await db
-    .select({ val: sum(payments.amount) })
-    .from(payments)
-    .innerJoin(visits, eq(payments.visitId, visits.id))
-    .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart)));
+  const [todayRevenueRows, todayApptVisitsRows, todayWalkInVisitsRows] = await Promise.all([
+    db
+      .select({ val: sum(payments.amount) })
+      .from(payments)
+      .innerJoin(visits, eq(payments.visitId, visits.id))
+      .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart))),
+    db
+      .select({ val: count() })
+      .from(visits)
+      .where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "APPOINTMENT"))),
+    db
+      .select({ val: count() })
+      .from(visits)
+      .where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "WALKIN"))),
+  ]);
 
   return NextResponse.json({
     totalPatients: totalPatientsRows[0]?.val ?? 0,
@@ -62,8 +72,7 @@ export async function GET(request: NextRequest) {
     monthlyRevenue: Number(monthlyRevenueRows[0]?.val) || 0,
     todayRevenue: Number(todayRevenueRows[0]?.val) || 0,
     outstandingDues: (Number(openBilledRows[0]?.val) || 0) - (Number(openPaidRows[0]?.val) || 0),
-    // source_type column not yet added — returns 0 until Phase 2
-    todayAppointmentVisits: 0,
-    todayWalkInVisits: 0,
+    todayAppointmentVisits: todayApptVisitsRows[0]?.val ?? 0,
+    todayWalkInVisits: todayWalkInVisitsRows[0]?.val ?? 0,
   });
 }

@@ -52,15 +52,16 @@ const SQL = [
     id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
     patient_id TEXT NOT NULL REFERENCES patients(id), doctor_id TEXT NOT NULL REFERENCES users(id),
     appointment_date TEXT NOT NULL, appointment_time TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED','COMPLETED','CANCELLED','NO_SHOW')),
-    type TEXT NOT NULL DEFAULT 'CONSULTATION' CHECK (type IN ('CONSULTATION','CHECKUP','TREATMENT','FOLLOWUP')),
+    status TEXT NOT NULL DEFAULT 'SCHEDULED' CHECK (status IN ('SCHEDULED','IN_PROGRESS','COMPLETED','CANCELLED','NO_SHOW')),
+    type TEXT NOT NULL DEFAULT 'CONSULTATION' CHECK (type IN ('CONSULTATION','CHECKUP','TREATMENT','FOLLOWUP','EMERGENCY')),
     notes TEXT, created_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS treatments (
     id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
     patient_id TEXT NOT NULL REFERENCES patients(id), appointment_id TEXT REFERENCES appointments(id),
     doctor_id TEXT NOT NULL REFERENCES users(id), description TEXT NOT NULL,
-    tooth_numbers TEXT, procedure TEXT, cost REAL NOT NULL DEFAULT 0, created_at INTEGER NOT NULL
+    tooth_numbers TEXT, procedure TEXT, cost REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'PLANNED', created_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS invoices (
     id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
@@ -81,6 +82,8 @@ const SQL = [
     chief_complaint TEXT, doctor_notes TEXT, diagnosis TEXT,
     status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','COMPLETED','CANCELLED')),
     total_amount REAL NOT NULL DEFAULT 0, paid_amount REAL NOT NULL DEFAULT 0,
+    appointment_id TEXT REFERENCES appointments(id),
+    visit_type TEXT NOT NULL DEFAULT 'WALKIN',
     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS visit_items (
