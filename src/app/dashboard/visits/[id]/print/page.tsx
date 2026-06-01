@@ -155,8 +155,13 @@ export default function PrintPage() {
           </div>
         )}
         {visit.diagnosis && (
-          <div style={{ marginBottom: 16, fontFamily: "sans-serif", fontSize: 13 }}>
+          <div style={{ marginBottom: 8, fontFamily: "sans-serif", fontSize: 13 }}>
             <strong>Diagnosis:</strong> {visit.diagnosis}
+          </div>
+        )}
+        {visit.doctorNotes && (
+          <div style={{ marginBottom: 16, fontFamily: "sans-serif", fontSize: 13 }}>
+            <strong>Doctor Notes:</strong> {visit.doctorNotes}
           </div>
         )}
 

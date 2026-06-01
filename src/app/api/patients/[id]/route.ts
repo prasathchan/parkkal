@@ -13,6 +13,7 @@ const updatePatientSchema = z.object({
   gender: z.string().optional(),
   address: z.string().optional(),
   medicalHistory: z.string().optional(),
+  bloodGroup: z.string().optional().nullable(),
 });
 
 export async function GET(

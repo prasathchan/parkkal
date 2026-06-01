@@ -40,6 +40,18 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  async function updateStatus(id: string, status: string) {
+    setUpdatingId(id);
+    await fetch(`/api/appointments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    await fetchAppointments();
+    setUpdatingId(null);
+  }
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -156,16 +168,37 @@ export default function AppointmentsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS" ? (
-                        <Link
-                          href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg transition"
-                        >
-                          Start Visit
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-slate-300">—</span>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS") && (
+                          <Link
+                            href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg transition"
+                          >
+                            Start Visit
+                          </Link>
+                        )}
+                        {apt.status === "SCHEDULED" && (
+                          <>
+                            <button
+                              onClick={() => updateStatus(apt.id, "NO_SHOW")}
+                              disabled={updatingId === apt.id}
+                              className="text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
+                            >
+                              No Show
+                            </button>
+                            <button
+                              onClick={() => updateStatus(apt.id, "CANCELLED")}
+                              disabled={updatingId === apt.id}
+                              className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                        {apt.status !== "SCHEDULED" && apt.status !== "IN_PROGRESS" && (
+                          <span className="text-xs text-slate-300">—</span>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

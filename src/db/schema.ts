@@ -71,6 +71,7 @@ export const patients = sqliteTable("patients", {
   gender: text("gender"),
   address: text("address"),
   medicalHistory: text("medical_history"),
+  bloodGroup: text("blood_group"),
   panNumber: text("pan_number"),
   aadhaarNumber: text("aadhaar_number"),
   emergencyContactAdded: integer("emergency_contact_added").notNull().default(0),

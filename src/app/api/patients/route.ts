@@ -14,6 +14,7 @@ const createPatientSchema = z.object({
   gender: z.string().optional(),
   address: z.string().optional(),
   medicalHistory: z.string().optional(),
+  bloodGroup: z.string().optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
   emergencyContact: z.object({
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       gender: data.gender || null,
       address: data.address || null,
       medicalHistory: data.medicalHistory || null,
+      bloodGroup: data.bloodGroup || null,
       panNumber: data.panNumber || null,
       aadhaarNumber: data.aadhaarNumber || null,
       emergencyContactAdded: data.emergencyContact ? 1 : 0,

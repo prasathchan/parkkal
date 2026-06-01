@@ -38,7 +38,7 @@ const SQL = [
   `CREATE TABLE IF NOT EXISTS patients (
     id TEXT PRIMARY KEY, patient_code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
     phone TEXT NOT NULL, email TEXT, date_of_birth TEXT, gender TEXT, address TEXT,
-    medical_history TEXT, pan_number TEXT, aadhaar_number TEXT,
+    medical_history TEXT, blood_group TEXT, pan_number TEXT, aadhaar_number TEXT,
     emergency_contact_added INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
   )`,
@@ -244,6 +244,7 @@ async function main() {
     `DROP TABLE IF EXISTS appointments`,
     `ALTER TABLE appointments_new RENAME TO appointments`,
     `ALTER TABLE treatments ADD COLUMN status TEXT NOT NULL DEFAULT 'PLANNED'`,
+    `ALTER TABLE patients ADD COLUMN blood_group TEXT`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

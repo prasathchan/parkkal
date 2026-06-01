@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 
 interface Patient {
   id: string;
@@ -233,14 +234,10 @@ export default function PatientEditPage() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Blood Group</label>
-                <select
-                  value={form.bloodGroup}
-                  onChange={(e) => setForm((f) => ({ ...f, bloodGroup: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select blood group</option>
-                  {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
-                </select>
+                <BloodGroupSelect
+                  value={form.bloodGroup || ""}
+                  onChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
+                />
               </div>
 
               <div>
