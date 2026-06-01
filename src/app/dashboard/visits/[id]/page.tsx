@@ -106,6 +106,7 @@ export default function VisitDetailPage() {
   // Item form
   const [newItem, setNewItem] = useState({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
   const [addingItem, setAddingItem] = useState(false);
+  const [addItemError, setAddItemError] = useState("");
 
   // Payment modal
   const [showPayModal, setShowPayModal] = useState(false);
@@ -174,6 +175,7 @@ export default function VisitDetailPage() {
   async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
     setAddingItem(true);
+    setAddItemError("");
     const res = await fetch(`/api/visits/${id}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -186,6 +188,9 @@ export default function VisitDetailPage() {
     if (res.ok) {
       setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
       await fetchVisit();
+    } else {
+      const d = await res.json();
+      setAddItemError(d.error || "Failed to add item");
     }
     setAddingItem(false);
   }
@@ -588,7 +593,7 @@ export default function VisitDetailPage() {
                           = {formatCurrency(Number(newItem.quantity) * Number(newItem.unitPrice))}
                         </p>
                       </div>
-                      <div className="pt-5">
+                      <div className="pt-5 flex items-center gap-3">
                         <button
                           type="submit"
                           disabled={addingItem}
@@ -596,6 +601,9 @@ export default function VisitDetailPage() {
                         >
                           {addingItem ? "Adding..." : "Add"}
                         </button>
+                        {addItemError && (
+                          <p className="text-xs text-red-600">{addItemError}</p>
+                        )}
                       </div>
                     </div>
                   </form>
@@ -990,13 +998,27 @@ export default function VisitDetailPage() {
                             <p className="text-sm font-semibold text-slate-700">
                               {new Date(rx.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                             </p>
-                            <Link
-                              href={`/dashboard/visits/${id}/print`}
-                              target="_blank"
-                              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                            >
-                              🖨 Print
-                            </Link>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`/dashboard/visits/${id}/print`}
+                                target="_blank"
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                🖨 Print
+                              </Link>
+                              {visit.status !== "CANCELLED" && (
+                                <button
+                                  onClick={async () => {
+                                    if (!confirm("Delete this prescription?")) return;
+                                    await fetch(`/api/visits/${id}/prescriptions/${rx.id}`, { method: "DELETE" });
+                                    await fetchVisit();
+                                  }}
+                                  className="text-xs text-red-500 hover:text-red-700"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">

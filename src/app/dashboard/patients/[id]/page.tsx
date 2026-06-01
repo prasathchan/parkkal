@@ -16,6 +16,7 @@ interface Patient {
   email?: string;
   dateOfBirth?: string;
   gender?: string;
+  bloodGroup?: string | null;
   address?: string;
   medicalHistory?: string;
   createdAt: number;
@@ -204,6 +205,12 @@ export default function PatientDetailPage() {
                 <div>
                   <p className="text-slate-500 text-xs mb-0.5">Gender</p>
                   <p className="font-medium">{patient.gender}</p>
+                </div>
+              )}
+              {patient.bloodGroup && (
+                <div>
+                  <p className="text-slate-500 text-xs mb-0.5">Blood Group</p>
+                  <p className="font-medium text-red-600">{patient.bloodGroup}</p>
                 </div>
               )}
               <div>

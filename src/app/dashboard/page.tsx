@@ -187,6 +187,8 @@ export default async function DashboardPage() {
               ) : (
                 appointments.map((apt: {
                   id: string;
+                  patientId?: string;
+                  doctorId?: string;
                   patientName?: string;
                   doctorName?: string;
                   appointmentDate: string;
@@ -200,13 +202,21 @@ export default async function DashboardPage() {
                         {apt.patientName || "Patient"}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {apt.appointmentDate} at {apt.appointmentTime} · {formatDoctorName(apt.doctorName)}
+                        {apt.appointmentTime} · {formatDoctorName(apt.doctorName)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={getStatusBadgeVariant(apt.status)}>
-                        {apt.status}
+                        {apt.status.replace("_", " ")}
                       </Badge>
+                      {(apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS") && apt.patientId && (
+                        <Link
+                          href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId ?? ""}`}
+                          className="text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg transition"
+                        >
+                          Start Visit
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))

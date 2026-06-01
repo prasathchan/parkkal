@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, like, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   const doctorId = searchParams.get("doctorId");
   const status = searchParams.get("status");
   const date = searchParams.get("date");
+  const search = searchParams.get("search");
 
   const db = getDb();
 
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
   if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
   if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
   if (date) conditions.push(eq(visits.visitDate, date));
+  if (search) {
+    const likeSearch = `%${search}%`;
+    conditions.push(or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch)) as ReturnType<typeof eq>);
+  }
 
   const rows = await db
     .select({

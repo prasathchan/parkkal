@@ -29,17 +29,19 @@ export default function VisitsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [search, setSearch] = useState("");
 
   const fetchVisits = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
     if (dateFilter) params.set("date", dateFilter);
+    if (search.trim()) params.set("search", search.trim());
     const res = await fetch(`/api/visits?${params}`);
     const data = await res.json();
     setVisits(data.visits || []);
     setLoading(false);
-  }, [statusFilter, dateFilter]);
+  }, [statusFilter, dateFilter, search]);
 
   useEffect(() => {
     fetchVisits();
@@ -70,9 +72,16 @@ export default function VisitsPage() {
             onChange={(e) => setDateFilter(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {(statusFilter || dateFilter) && (
+          <input
+            type="text"
+            placeholder="Search patient..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+          />
+          {(statusFilter || dateFilter || search) && (
             <button
-              onClick={() => { setStatusFilter(""); setDateFilter(""); }}
+              onClick={() => { setStatusFilter(""); setDateFilter(""); setSearch(""); }}
               className="text-sm text-slate-500 hover:text-slate-700 underline"
             >
               Clear filters
