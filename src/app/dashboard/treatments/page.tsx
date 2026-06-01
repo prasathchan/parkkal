@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
+import { ToothChart } from "@/components/ui/tooth-chart";
 
 type TreatmentStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED";
 
@@ -36,7 +37,7 @@ interface NewTreatmentForm {
   doctorId: string;
   description: string;
   procedure: string;
-  toothNumbers: string;
+  toothNumbers: string[];
   cost: string;
 }
 
@@ -59,7 +60,7 @@ export default function TreatmentsPage() {
     doctorId: "",
     description: "",
     procedure: "",
-    toothNumbers: "",
+    toothNumbers: [],
     cost: "0",
   });
   const [formPatientSearch, setFormPatientSearch] = useState("");
@@ -134,7 +135,7 @@ export default function TreatmentsPage() {
   }, [showSlideover, members.length]);
 
   function openSlideover() {
-    setForm({ patientId: "", doctorId: "", description: "", procedure: "", toothNumbers: "", cost: "0" });
+    setForm({ patientId: "", doctorId: "", description: "", procedure: "", toothNumbers: [], cost: "0" });
     setFormPatientSearch("");
     setFormPatients([]);
     setSubmitError("");
@@ -159,7 +160,7 @@ export default function TreatmentsPage() {
           doctorId: form.doctorId,
           description: form.description,
           procedure: form.procedure || undefined,
-          toothNumbers: form.toothNumbers || undefined,
+          toothNumbers: form.toothNumbers.length > 0 ? form.toothNumbers.join(",") : undefined,
           cost: parseFloat(form.cost) || 0,
         }),
       });
@@ -329,7 +330,15 @@ export default function TreatmentsPage() {
                           <div className="text-xs text-slate-400">{t.procedure}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">{t.toothNumbers || "—"}</td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {t.toothNumbers ? (
+                          <ToothChart
+                            value={t.toothNumbers.split(",").map((s) => s.trim()).filter(Boolean)}
+                            readOnly
+                            compact
+                          />
+                        ) : "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <select
                           value={t.status || "PLANNED"}
@@ -470,27 +479,12 @@ export default function TreatmentsPage() {
               {/* Tooth Numbers */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Tooth Number
+                  Tooth Selection (FDI)
                 </label>
-                <select
+                <ToothChart
                   value={form.toothNumbers}
-                  onChange={(e) => setForm((f) => ({ ...f, toothNumbers: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">— Any tooth</option>
-                  <optgroup label="Upper Right">
-                    {[11,12,13,14,15,16,17,18].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                  </optgroup>
-                  <optgroup label="Upper Left">
-                    {[21,22,23,24,25,26,27,28].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                  </optgroup>
-                  <optgroup label="Lower Left">
-                    {[31,32,33,34,35,36,37,38].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                  </optgroup>
-                  <optgroup label="Lower Right">
-                    {[41,42,43,44,45,46,47,48].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                  </optgroup>
-                </select>
+                  onChange={(teeth) => setForm((f) => ({ ...f, toothNumbers: teeth }))}
+                />
               </div>
 
               {/* Cost */}

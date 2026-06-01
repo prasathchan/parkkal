@@ -93,11 +93,20 @@ export async function DELETE(
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await db.delete(prescriptions).where(eq(prescriptions.visitId, id));
-  await db.delete(attachments).where(eq(attachments.visitId, id));
-  await db.delete(payments).where(eq(payments.visitId, id));
-  await db.delete(visitItems).where(eq(visitItems.visitId, id));
-  await db.delete(visits).where(eq(visits.id, id));
+  const cascadeDelete = async (tx: typeof db) => {
+    await tx.delete(prescriptions).where(eq(prescriptions.visitId, id));
+    await tx.delete(attachments).where(eq(attachments.visitId, id));
+    await tx.delete(payments).where(eq(payments.visitId, id));
+    await tx.delete(visitItems).where(eq(visitItems.visitId, id));
+    await tx.delete(visits).where(eq(visits.id, id));
+  };
+
+  type DbWithTx = typeof db & { transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void> };
+  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
+    await (db as unknown as DbWithTx).transaction(cascadeDelete);
+  } else {
+    await cascadeDelete(db);
+  }
 
   return NextResponse.json({ success: true });
 }

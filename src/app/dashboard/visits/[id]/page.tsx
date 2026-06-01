@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
+import { ToothChart } from "@/components/ui/tooth-chart";
 
 type TabKey = "items" | "payments" | "attachments" | "history" | "prescriptions" | "treatmentPlan";
 
@@ -148,7 +149,7 @@ export default function VisitDetailPage() {
   const [uploadError, setUploadError] = useState("");
 
   // Treatment plan
-  const [txForm, setTxForm] = useState({ description: "", toothNumbers: "", procedure: "", cost: "0" });
+  const [txForm, setTxForm] = useState({ description: "", toothNumbers: [] as string[], procedure: "", cost: "0" });
   const [txSubmitting, setTxSubmitting] = useState(false);
   const [txError, setTxError] = useState("");
   const [txUpdating, setTxUpdating] = useState<string | null>(null);
@@ -346,13 +347,13 @@ export default function VisitDetailPage() {
         doctorId: visit.doctorId,
         visitId: id,
         description: txForm.description,
-        toothNumbers: txForm.toothNumbers || undefined,
+        toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
         procedure: txForm.procedure || undefined,
         cost: Number(txForm.cost),
       }),
     });
     if (res.ok) {
-      setTxForm({ description: "", toothNumbers: "", procedure: "", cost: "0" });
+      setTxForm({ description: "", toothNumbers: [], procedure: "", cost: "0" });
       await fetchVisit();
     } else {
       const d = await res.json();
@@ -908,8 +909,9 @@ export default function VisitDetailPage() {
                 {visit.status !== "CANCELLED" && (
                   <form onSubmit={handleAddTreatment} className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
                     <p className="text-sm font-semibold text-slate-700">Add Treatment Item</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="sm:col-span-2">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
                         <label className="block text-xs text-slate-500 mb-1">Description *</label>
                         <input
                           required
@@ -918,28 +920,6 @@ export default function VisitDetailPage() {
                           placeholder="e.g. Root Canal Treatment"
                           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-500 mb-1">Tooth #</label>
-                        <select
-                          value={txForm.toothNumbers}
-                          onChange={(e) => setTxForm(f => ({ ...f, toothNumbers: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">— Any tooth</option>
-                          <optgroup label="Upper Right">
-                            {[11,12,13,14,15,16,17,18].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                          </optgroup>
-                          <optgroup label="Upper Left">
-                            {[21,22,23,24,25,26,27,28].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                          </optgroup>
-                          <optgroup label="Lower Left">
-                            {[31,32,33,34,35,36,37,38].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                          </optgroup>
-                          <optgroup label="Lower Right">
-                            {[41,42,43,44,45,46,47,48].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                          </optgroup>
-                        </select>
                       </div>
                       <div>
                         <label className="block text-xs text-slate-500 mb-1">Est. Cost (₹)</label>
@@ -953,6 +933,15 @@ export default function VisitDetailPage() {
                         />
                       </div>
                     </div>
+
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-2">Tooth Selection (FDI)</label>
+                      <ToothChart
+                        value={txForm.toothNumbers}
+                        onChange={(teeth) => setTxForm(f => ({ ...f, toothNumbers: teeth }))}
+                      />
+                    </div>
+
                     <div className="flex items-center gap-3">
                       <div className="flex-1">
                         <label className="block text-xs text-slate-500 mb-1">Procedure Notes</label>
@@ -988,7 +977,11 @@ export default function VisitDetailPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className={`text-sm font-semibold ${tx.status === "COMPLETED" ? "line-through text-slate-400" : "text-slate-900"}`}>{tx.description}</p>
                               {tx.toothNumbers && (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Tooth {tx.toothNumbers}</span>
+                                <ToothChart
+                                  value={tx.toothNumbers.split(",").map(s => s.trim()).filter(Boolean)}
+                                  readOnly
+                                  compact
+                                />
                               )}
                             </div>
                             {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}

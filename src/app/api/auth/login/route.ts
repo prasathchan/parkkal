@@ -3,12 +3,15 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, organizationMembers, organizations } from "@/db/schema";
 import { verifyPassword, createToken, createOrgToken } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
+
+const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 }; // 10 attempts per 15 min
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -18,6 +21,25 @@ const COOKIE_OPTS = {
 };
 
 export async function POST(request: NextRequest) {
+  // Rate limiting: 10 attempts per IP per 15 minutes
+  const ip = getClientIp(request);
+  const rl = checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
+  if (!rl.allowed) {
+    const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
+    return NextResponse.json(
+      { error: "Too many login attempts. Please wait before trying again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfter),
+          "X-RateLimit-Limit": String(LOGIN_RATE_LIMIT.limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(rl.resetAt / 1000)),
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
