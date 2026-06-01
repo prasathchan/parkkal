@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, visitItems, payments, patients, users, prescriptions } from "@/db/schema";
+import { visits, visitItems, payments, patients, users, prescriptions, organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(
@@ -25,6 +25,7 @@ export async function GET(
       status: visits.status,
       totalAmount: visits.totalAmount,
       paidAmount: visits.paidAmount,
+      organizationId: visits.organizationId,
       patientName: patients.name,
       patientCode: patients.patientCode,
       patientPhone: patients.phone,
@@ -33,13 +34,20 @@ export async function GET(
     .from(visits)
     .leftJoin(patients, eq(visits.patientId, patients.id))
     .leftJoin(users, eq(visits.doctorId, users.id))
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
   if (!visitRow) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
 
-  const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
-  const paymentRows = await db.select().from(payments).where(eq(payments.visitId, id));
-  const prescriptionRows = await db.select().from(prescriptions).where(eq(prescriptions.visitId, id));
+  const [org] = await db
+    .select({ name: organizations.name, address: organizations.address, phone: organizations.phone, email: organizations.email })
+    .from(organizations)
+    .where(eq(organizations.id, session.orgId));
+
+  const [items, paymentRows, prescriptionRows] = await Promise.all([
+    db.select().from(visitItems).where(eq(visitItems.visitId, id)),
+    db.select().from(payments).where(eq(payments.visitId, id)),
+    db.select().from(prescriptions).where(eq(prescriptions.visitId, id)),
+  ]);
 
   return NextResponse.json({
     visit: visitRow,
@@ -47,11 +55,10 @@ export async function GET(
     payments: paymentRows,
     prescriptions: prescriptionRows,
     clinic: {
-      name: "Parkkal Dental Clinic",
-      address: "Palavakkam, ECR, Chennai",
-      phone: "+91 98765 43210",
-      email: "info@parkkal.com",
-      website: "app.parkkal.com",
+      name: org?.name ?? "Dental Clinic",
+      address: org?.address ?? "",
+      phone: org?.phone ?? "",
+      email: org?.email ?? "",
     },
   });
 }

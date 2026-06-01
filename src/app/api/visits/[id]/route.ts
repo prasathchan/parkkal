@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, visitItems, payments, attachments, prescriptions, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -39,14 +39,10 @@ export async function GET(
     .from(visits)
     .leftJoin(patients, eq(visits.patientId, patients.id))
     .leftJoin(users, eq(visits.doctorId, users.id))
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
   if (!visitRow) {
     return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  }
-
-  if (visitRow.organizationId !== session.orgId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));

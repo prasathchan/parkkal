@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { patients, organizationPatients } from "@/db/schema";
+import { patients, organizationPatients, appointments, treatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -83,6 +83,27 @@ export async function DELETE(
     .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id))))[0];
   if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  // Cascade: delete all patient-linked data in FK-safe order
+  const patientVisits = await db.select({ id: visits.id }).from(visits).where(eq(visits.patientId, id));
+  for (const v of patientVisits) {
+    await db.delete(prescriptions).where(eq(prescriptions.visitId, v.id));
+    await db.delete(attachments).where(eq(attachments.visitId, v.id));
+    await db.delete(payments).where(eq(payments.visitId, v.id));
+    await db.delete(visitItems).where(eq(visitItems.visitId, v.id));
+  }
+  await db.delete(visits).where(eq(visits.patientId, id));
+
+  const patientInvoices = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.patientId, id));
+  for (const inv of patientInvoices) {
+    await db.delete(invoiceTreatments).where(eq(invoiceTreatments.invoiceId, inv.id));
+  }
+  await db.delete(invoices).where(eq(invoices.patientId, id));
+
+  await db.delete(treatments).where(eq(treatments.patientId, id));
+  await db.delete(appointments).where(eq(appointments.patientId, id));
+  await db.delete(emergencyContacts).where(eq(emergencyContacts.entityId, id));
+  await db.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
   await db.delete(patients).where(eq(patients.id, id));
+
   return NextResponse.json({ success: true });
 }

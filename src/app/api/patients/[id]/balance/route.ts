@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, ne, sum, count, max } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits } from "@/db/schema";
+import { visits, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(
@@ -14,40 +14,37 @@ export async function GET(
   const { id } = await params;
   const db = getDb();
 
-  // All visits for totalBilled, visitCount, lastVisit
-  const [agg] = await db
-    .select({
+  // Verify patient belongs to this org before exposing any financial data
+  const [orgLink] = await db
+    .select({ patientId: organizationPatients.patientId })
+    .from(organizationPatients)
+    .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
+  if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const orgId = session.orgId;
+
+  const [[agg], [dueAgg], [{ pendingVisits }]] = await Promise.all([
+    db.select({
       totalBilled: sum(visits.totalAmount),
       totalPaid: sum(visits.paidAmount),
       visitCount: count(),
       lastVisit: max(visits.visitDate),
-    })
-    .from(visits)
-    .where(eq(visits.patientId, id));
+    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId))),
 
-  // totalDue: sum across non-CANCELLED visits
-  const [dueAgg] = await db
-    .select({
+    db.select({
       totalBilled: sum(visits.totalAmount),
       totalPaid: sum(visits.paidAmount),
-    })
-    .from(visits)
-    .where(and(eq(visits.patientId, id), ne(visits.status, "CANCELLED")));
+    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
 
-  const [{ pendingVisits }] = await db
-    .select({ pendingVisits: count() })
-    .from(visits)
-    .where(and(eq(visits.patientId, id), eq(visits.status, "OPEN")));
-
-  const totalBilled = Number(agg?.totalBilled) || 0;
-  const totalPaid = Number(agg?.totalPaid) || 0;
-  const dueBilled = Number(dueAgg?.totalBilled) || 0;
-  const duePaid = Number(dueAgg?.totalPaid) || 0;
+    db.select({ pendingVisits: count() })
+      .from(visits)
+      .where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+  ]);
 
   return NextResponse.json({
-    totalBilled,
-    totalPaid,
-    totalDue: dueBilled - duePaid,
+    totalBilled: Number(agg?.totalBilled) || 0,
+    totalPaid: Number(agg?.totalPaid) || 0,
+    totalDue: (Number(dueAgg?.totalBilled) || 0) - (Number(dueAgg?.totalPaid) || 0),
     visitCount: Number(agg?.visitCount) || 0,
     pendingVisits: Number(pendingVisits) || 0,
     lastVisit: agg?.lastVisit || null,

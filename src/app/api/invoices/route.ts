@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { invoices, patients, organizationPatients } from "@/db/schema";
+import { invoices, invoiceTreatments, patients, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
       ? and(eq(invoices.organizationId, session.orgId), eq(invoices.patientId, patientIdFilter))
       : eq(invoices.organizationId, session.orgId)
     )
-    .orderBy(desc(invoices.createdAt))
-    ;
+    .orderBy(desc(invoices.createdAt));
 
   return NextResponse.json({ invoices: rows });
 }
@@ -69,8 +68,9 @@ export async function POST(request: NextRequest) {
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
     if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+    const invoiceId = generateId();
     const newInvoice = {
-      id: generateId(),
+      id: invoiceId,
       organizationId: session.orgId,
       patientId: data.patientId,
       totalAmount: data.totalAmount,
@@ -82,11 +82,20 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(invoices).values(newInvoice);
+
+    // Link treatments to invoice if provided
+    if (data.treatmentIds && data.treatmentIds.length > 0) {
+      await db.insert(invoiceTreatments).values(
+        data.treatmentIds.map((treatmentId) => ({ invoiceId, treatmentId }))
+      );
+    }
+
     return NextResponse.json({ invoice: newInvoice }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    console.error("Create invoice error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

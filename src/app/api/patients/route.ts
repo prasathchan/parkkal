@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { like, or, desc, count, eq, and, inArray } from "drizzle-orm";
+import { like, or, desc, count, eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { patients, organizationPatients } from "@/db/schema";
+import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
 
 const createPatientSchema = z.object({
   name: z.string().min(1),
-  phone: z.string().min(1),
+  phone: z.string().min(10).max(15),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
   address: z.string().optional(),
   medicalHistory: z.string().optional(),
-  bloodGroup: z.string().optional(),
+  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
   emergencyContact: z.object({
@@ -33,42 +33,49 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
+  const limit = Math.min(Number(searchParams.get("limit") || "200"), 500);
 
   const db = getDb();
 
-  // Get patients linked to this org
-  const orgPatientRows = await db
-    .select({ patientId: organizationPatients.patientId, orgPatientCode: organizationPatients.patientCode })
-    .from(organizationPatients)
-    .where(eq(organizationPatients.organizationId, session.orgId))
-    ;
+  const baseConditions = and(
+    eq(organizationPatients.organizationId, session.orgId),
+    eq(organizationPatients.isActive, 1)
+  );
 
-  const patientIds = orgPatientRows.map(r => r.patientId);
-
-  if (patientIds.length === 0) return NextResponse.json({ patients: [] });
-
-  let results;
-  if (search) {
-    const likeSearch = `%${search}%`;
-    results = await db
-      .select()
-      .from(patients)
-      .where(
-        and(
-          inArray(patients.id, patientIds),
-          or(
-            like(patients.name, likeSearch),
-            like(patients.phone, likeSearch),
-            like(patients.patientCode, likeSearch)
-          )
+  const whereCondition = search
+    ? and(
+        baseConditions,
+        or(
+          like(patients.name, `%${search}%`),
+          like(patients.phone, `%${search}%`),
+          like(patients.patientCode, `%${search}%`)
         )
       )
-      .orderBy(desc(patients.createdAt));
-  } else {
-    results = await db.select().from(patients)
-      .where(inArray(patients.id, patientIds))
-      .orderBy(desc(patients.createdAt));
-  }
+    : baseConditions;
+
+  const results = await db
+    .select({
+      id: patients.id,
+      patientCode: patients.patientCode,
+      name: patients.name,
+      phone: patients.phone,
+      email: patients.email,
+      dateOfBirth: patients.dateOfBirth,
+      gender: patients.gender,
+      address: patients.address,
+      medicalHistory: patients.medicalHistory,
+      bloodGroup: patients.bloodGroup,
+      panNumber: patients.panNumber,
+      aadhaarNumber: patients.aadhaarNumber,
+      emergencyContactAdded: patients.emergencyContactAdded,
+      createdAt: patients.createdAt,
+      updatedAt: patients.updatedAt,
+    })
+    .from(patients)
+    .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
+    .where(whereCondition)
+    .orderBy(desc(patients.createdAt))
+    .limit(limit);
 
   return NextResponse.json({ patients: results });
 }
@@ -85,7 +92,6 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
-    // Generate org-specific patient code (PKL-XXXX)
     const [{ orgCount }] = await db
       .select({ orgCount: count() })
       .from(organizationPatients)
@@ -93,9 +99,8 @@ export async function POST(request: NextRequest) {
 
     const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String((orgCount as number) + 1).padStart(4, "0")}`;
 
-    // Also get total patient count for global patient code
     const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
-    const globalCode = `PKL-${String((totalCount as number) + 1).padStart(4, "0")}`;
+    const globalCode = `PKL-${String((totalCount as number) + 1).padStart(6, "0")}`;
 
     const now = Date.now();
     const patientId = generateId();
@@ -120,7 +125,6 @@ export async function POST(request: NextRequest) {
 
     await db.insert(patients).values(newPatient);
 
-    // Link patient to org
     await db.insert(organizationPatients).values({
       id: crypto.randomUUID(),
       organizationId: session.orgId,
@@ -130,9 +134,7 @@ export async function POST(request: NextRequest) {
       isActive: 1,
     });
 
-    // Create emergency contact if provided
     if (data.emergencyContact) {
-      const { emergencyContacts } = await import("@/db/schema");
       await db.insert(emergencyContacts).values({
         id: crypto.randomUUID(),
         entityType: "PATIENT",
