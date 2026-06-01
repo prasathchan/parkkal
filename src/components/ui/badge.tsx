@@ -1,41 +1,54 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { HTMLAttributes } from "react";
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
-        success:
-          "border-transparent bg-green-100 text-green-800",
-        warning:
-          "border-transparent bg-yellow-100 text-yellow-800",
-        info:
-          "border-transparent bg-blue-100 text-blue-800",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+type BadgeVariant =
+  | "default"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info"
+  | "secondary";
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+  variant?: BadgeVariant;
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+const variantClasses: Record<BadgeVariant, string> = {
+  default: "bg-slate-100 text-slate-700",
+  success: "bg-green-100 text-green-700",
+  warning: "bg-yellow-100 text-yellow-700",
+  danger: "bg-red-100 text-red-700",
+  info: "bg-blue-100 text-blue-700",
+  secondary: "bg-purple-100 text-purple-700",
+};
+
+export function Badge({
+  variant = "default",
+  className,
+  ...props
+}: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+        variantClasses[variant],
+        className
+      )}
+      {...props}
+    />
   );
 }
 
-export { Badge, badgeVariants };
+export function getStatusBadgeVariant(status: string): BadgeVariant {
+  const map: Record<string, BadgeVariant> = {
+    SCHEDULED: "info",
+    IN_PROGRESS: "warning",
+    COMPLETED: "success",
+    CANCELLED: "danger",
+    NO_SHOW: "warning",
+    PENDING: "warning",
+    PARTIAL: "info",
+    PAID: "success",
+  };
+  return map[status] ?? "default";
+}

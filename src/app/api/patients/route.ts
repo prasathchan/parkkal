@@ -1,84 +1,160 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { like, or, desc, count, eq, and, inArray } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { patients, organizationPatients } from "@/db/schema";
+import { getSession } from "@/lib/auth";
+import { generateId } from "@/lib/utils";
 import { z } from "zod";
 
 const createPatientSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phone: z.string().min(1, "Phone is required"),
+  name: z.string().min(1),
+  phone: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
-  dateOfBirth: z.string().optional().or(z.literal("")),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional().or(z.literal("")),
+  dateOfBirth: z.string().optional(),
+  gender: z.string().optional(),
   address: z.string().optional(),
   medicalHistory: z.string().optional(),
+  bloodGroup: z.string().optional(),
+  panNumber: z.string().optional(),
+  aadhaarNumber: z.string().optional(),
+  emergencyContact: z.object({
+    name: z.string().min(1),
+    relationship: z.string().min(1),
+    phone: z.string().min(1),
+    email: z.string().email().optional().or(z.literal("")),
+  }).optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
+export async function GET(request: NextRequest) {
+  const session = await getSession(request);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const search = searchParams.get("q");
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get("search");
 
-  const patients = await prisma.patient.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { patientId: { contains: search, mode: "insensitive" } },
-            { phone: { contains: search } },
-          ],
-        }
-      : undefined,
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      patientId: true,
-      phone: true,
-      email: true,
-    },
-  });
+  const db = getDb();
 
-  return NextResponse.json({ patients });
+  // Get patients linked to this org
+  const orgPatientRows = await db
+    .select({ patientId: organizationPatients.patientId, orgPatientCode: organizationPatients.patientCode })
+    .from(organizationPatients)
+    .where(eq(organizationPatients.organizationId, session.orgId))
+    ;
+
+  const patientIds = orgPatientRows.map(r => r.patientId);
+
+  if (patientIds.length === 0) return NextResponse.json({ patients: [] });
+
+  let results;
+  if (search) {
+    const likeSearch = `%${search}%`;
+    results = await db
+      .select()
+      .from(patients)
+      .where(
+        and(
+          inArray(patients.id, patientIds),
+          or(
+            like(patients.name, likeSearch),
+            like(patients.phone, likeSearch),
+            like(patients.patientCode, likeSearch)
+          )
+        )
+      )
+      .orderBy(desc(patients.createdAt));
+  } else {
+    results = await db.select().from(patients)
+      .where(inArray(patients.id, patientIds))
+      .orderBy(desc(patients.createdAt));
+  }
+
+  return NextResponse.json({ patients: results });
 }
 
-export async function POST(req: NextRequest) {
-  const session = await auth();
+export async function POST(request: NextRequest) {
+  const session = await getSession(request);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const parsed = createPatientSchema.safeParse(body);
+  try {
+    const body = await request.json();
+    const data = createPatientSchema.parse(body);
 
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.errors[0].message },
-      { status: 400 }
-    );
-  }
+    const db = getDb();
 
-  const { name, phone, email, dateOfBirth, gender, address, medicalHistory } = parsed.data;
+    // Generate org-specific patient code (PKL-XXXX)
+    const [{ orgCount }] = await db
+      .select({ orgCount: count() })
+      .from(organizationPatients)
+      .where(eq(organizationPatients.organizationId, session.orgId));
 
-  // Generate patient ID
-  const count = await prisma.patient.count();
-  const patientId = `PKL-${String(count + 1).padStart(3, "0")}`;
+    const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String((orgCount as number) + 1).padStart(4, "0")}`;
 
-  const patient = await prisma.patient.create({
-    data: {
+    // Also get total patient count for global patient code
+    const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
+    const globalCode = `PKL-${String((totalCount as number) + 1).padStart(4, "0")}`;
+
+    const now = Date.now();
+    const patientId = generateId();
+
+    const newPatient = {
+      id: patientId,
+      patientCode: globalCode,
+      name: data.name,
+      phone: data.phone,
+      email: data.email || null,
+      dateOfBirth: data.dateOfBirth || null,
+      gender: data.gender || null,
+      address: data.address || null,
+      medicalHistory: data.medicalHistory || null,
+      bloodGroup: data.bloodGroup || null,
+      panNumber: data.panNumber || null,
+      aadhaarNumber: data.aadhaarNumber || null,
+      emergencyContactAdded: data.emergencyContact ? 1 : 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(patients).values(newPatient);
+
+    // Link patient to org
+    await db.insert(organizationPatients).values({
+      id: crypto.randomUUID(),
+      organizationId: session.orgId,
       patientId,
-      name,
-      phone,
-      email: email || undefined,
-      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-      gender: (gender as "MALE" | "FEMALE" | "OTHER") || undefined,
-      address: address || undefined,
-      medicalHistory: medicalHistory || undefined,
-    },
-  });
+      patientCode: orgCode,
+      registeredAt: now,
+      isActive: 1,
+    });
 
-  return NextResponse.json({ patient }, { status: 201 });
+    // Create emergency contact if provided
+    if (data.emergencyContact) {
+      const { emergencyContacts } = await import("@/db/schema");
+      await db.insert(emergencyContacts).values({
+        id: crypto.randomUUID(),
+        entityType: "PATIENT",
+        entityId: patientId,
+        name: data.emergencyContact.name,
+        relationship: data.emergencyContact.relationship,
+        phone: data.emergencyContact.phone,
+        email: data.emergencyContact.email || null,
+        address: null,
+        createdAt: now,
+      });
+    }
+
+    return NextResponse.json({ patient: newPatient }, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", details: error.errors },
+        { status: 400 }
+      );
+    }
+    console.error("Create patient error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

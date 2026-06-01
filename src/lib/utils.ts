@@ -1,40 +1,49 @@
-import { type ClassValue, clsx } from "clsx";
+import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number | string): string {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(num);
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
-export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+export function formatDate(timestamp: number | string): string {
+  const date =
+    typeof timestamp === "number" ? new Date(timestamp) : new Date(timestamp);
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(d);
+  }).format(date);
 }
 
-export function generatePatientId(count: number): string {
-  return `PKL-${String(count).padStart(3, "0")}`;
-}
-
-export function calculateAge(dateOfBirth: Date | string): number {
-  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+export function calculateAge(dateOfBirth: string): number {
   const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const monthDiff = today.getMonth() - dob.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+  const birth = new Date(dateOfBirth);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
     age--;
   }
   return age;
+}
+
+export function generateId(): string {
+  return crypto.randomUUID();
+}
+
+export function generatePatientCode(count: number): string {
+  return `PKL-${String(count).padStart(4, "0")}`;
+}
+
+export function formatDoctorName(name: string | null | undefined): string {
+  if (!name) return "—";
+  const stripped = name.replace(/^Dr\.?\s+/i, "");
+  return `Dr. ${stripped}`;
 }
