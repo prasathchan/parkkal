@@ -151,6 +151,7 @@ export default function VisitDetailPage() {
   const [txForm, setTxForm] = useState({ description: "", toothNumbers: "", procedure: "", cost: "0" });
   const [txSubmitting, setTxSubmitting] = useState(false);
   const [txError, setTxError] = useState("");
+  const [txUpdating, setTxUpdating] = useState<string | null>(null);
 
   const fetchVisit = useCallback(async () => {
     setLoading(true);
@@ -361,12 +362,14 @@ export default function VisitDetailPage() {
   }
 
   async function handleUpdateTreatmentStatus(txId: string, status: string) {
+    setTxUpdating(txId);
     await fetch(`/api/treatments/${txId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
     await fetchVisit();
+    setTxUpdating(null);
   }
 
   async function handleDeleteTreatment(txId: string) {
@@ -977,45 +980,56 @@ export default function VisitDetailPage() {
                 {treatments.length === 0 ? (
                   <p className="text-center text-slate-400 text-sm py-6">No treatment items yet</p>
                 ) : (
-                  <div className="space-y-3">
-                    {treatments.map((tx) => (
-                      <div key={tx.id} className="border border-slate-200 rounded-xl p-4 flex flex-wrap items-start justify-between gap-3 bg-white">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-semibold text-slate-900">{tx.description}</p>
-                            {tx.toothNumbers && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Tooth {tx.toothNumbers}</span>
+                  <>
+                    <div className="space-y-3">
+                      {treatments.map((tx) => (
+                        <div key={tx.id} className={`border rounded-xl p-4 flex flex-wrap items-start justify-between gap-3 transition ${tx.status === "COMPLETED" ? "bg-slate-50 border-slate-200 opacity-75" : "bg-white border-slate-200"}`}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className={`text-sm font-semibold ${tx.status === "COMPLETED" ? "line-through text-slate-400" : "text-slate-900"}`}>{tx.description}</p>
+                              {tx.toothNumbers && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Tooth {tx.toothNumbers}</span>
+                              )}
+                            </div>
+                            {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}
+                            <p className="text-sm font-medium text-slate-700 mt-1">{formatCurrency(tx.cost)}</p>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <select
+                              value={tx.status}
+                              disabled={txUpdating === tx.id}
+                              onChange={(e) => handleUpdateTreatmentStatus(tx.id, e.target.value)}
+                              className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
+                                tx.status === "PLANNED" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                                : tx.status === "IN_PROGRESS" ? "bg-blue-50 border-blue-200 text-blue-800"
+                                : "bg-green-50 border-green-200 text-green-800"
+                              }`}
+                            >
+                              <option value="PLANNED">Planned</option>
+                              <option value="IN_PROGRESS">In Progress</option>
+                              <option value="COMPLETED">Completed</option>
+                            </select>
+                            {visit.status !== "CANCELLED" && (
+                              <button
+                                onClick={() => handleDeleteTreatment(tx.id)}
+                                className="text-xs text-red-500 hover:text-red-700"
+                              >
+                                Delete
+                              </button>
                             )}
                           </div>
-                          {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}
-                          <p className="text-sm font-medium text-slate-700 mt-1">{formatCurrency(tx.cost)}</p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <select
-                            value={tx.status}
-                            onChange={(e) => handleUpdateTreatmentStatus(tx.id, e.target.value)}
-                            className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              tx.status === "PLANNED" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-                              : tx.status === "IN_PROGRESS" ? "bg-blue-50 border-blue-200 text-blue-800"
-                              : "bg-green-50 border-green-200 text-green-800"
-                            }`}
-                          >
-                            <option value="PLANNED">Planned</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="COMPLETED">Completed</option>
-                          </select>
-                          {visit.status !== "CANCELLED" && (
-                            <button
-                              onClick={() => handleDeleteTreatment(tx.id)}
-                              className="text-xs text-red-500 hover:text-red-700"
-                            >
-                              Delete
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm">
+                      <span className="text-slate-500">
+                        {treatments.filter(t => t.status === "COMPLETED").length} of {treatments.length} completed
+                      </span>
+                      <span className="font-semibold text-slate-700">
+                        Est. total: {formatCurrency(treatments.reduce((s, t) => s + t.cost, 0))}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             )}
