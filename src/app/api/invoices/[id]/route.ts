@@ -10,6 +10,7 @@ const patchSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -71,6 +72,10 @@ export async function PATCH(
     const current = existing[0];
     const newPaidAmount = data.paidAmount !== undefined ? data.paidAmount : current.paidAmount;
     const totalAmount = current.totalAmount;
+
+    if (newPaidAmount > totalAmount + 0.001) {
+      return NextResponse.json({ error: `Paid amount ₹${newPaidAmount.toFixed(2)} exceeds invoice total ₹${totalAmount.toFixed(2)}` }, { status: 400 });
+    }
 
     const status: "PAID" | "PARTIAL" | "PENDING" =
       newPaidAmount >= totalAmount

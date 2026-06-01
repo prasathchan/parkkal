@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and, notInArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -22,9 +22,8 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
-  const appt = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
+  const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
   if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (appt.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return NextResponse.json({ appointment: appt });
 }
 
@@ -39,12 +38,37 @@ export async function PATCH(
     const { id } = await params;
     const db = getDb();
 
-    const appt = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
+    const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
     if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (appt.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await request.json();
     const data = updateSchema.parse(body);
+
+    // If date or time is being changed, check for doctor conflicts
+    const newDate = data.appointmentDate ?? appt.appointmentDate;
+    const newTime = data.appointmentTime ?? appt.appointmentTime;
+    const dateOrTimeChanged = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
+
+    if (dateOrTimeChanged) {
+      const [conflict] = await db
+        .select({ id: appointments.id })
+        .from(appointments)
+        .where(
+          and(
+            eq(appointments.organizationId, session.orgId),
+            eq(appointments.doctorId, appt.doctorId),
+            eq(appointments.appointmentDate, newDate),
+            eq(appointments.appointmentTime, newTime),
+            notInArray(appointments.status, ["CANCELLED", "NO_SHOW"])
+          )
+        );
+      if (conflict && conflict.id !== id) {
+        return NextResponse.json(
+          { error: "This doctor already has an appointment at that date and time" },
+          { status: 409 }
+        );
+      }
+    }
 
     await db.update(appointments).set(data).where(eq(appointments.id, id));
     const updated = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];

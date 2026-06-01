@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const createPaymentSchema = z.object({
+  amount: z.number().positive("Amount must be positive"),
+  paymentMethod: z.enum(["CASH", "CARD", "UPI", "BANK_TRANSFER"]).default("CASH"),
+  referenceNumber: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
 
 export async function GET(
   request: NextRequest,
@@ -13,9 +21,8 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
-  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const rows = await db.select().from(payments).where(eq(payments.visitId, id));
   return NextResponse.json({ payments: rows });
 }
@@ -28,34 +35,46 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await request.json();
-  const { amount, paymentMethod, referenceNumber, notes, patientId } = body;
 
-  if (!amount || amount <= 0) {
-    return NextResponse.json({ error: "Valid amount is required" }, { status: 400 });
-  }
-  if (!patientId) {
-    return NextResponse.json({ error: "patientId is required" }, { status: 400 });
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const parsed = createPaymentSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
+  }
+
+  const { amount, paymentMethod, referenceNumber, notes } = parsed.data;
   const db = getDb();
 
-  // Get current visit
-  const [visit] = await db.select().from(visits).where(eq(visits.id, id));
+  // Fetch visit — get patientId from DB, not from caller
+  const [visit] = await db.select().from(visits).where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const newTotal = visit.paidAmount + Number(amount);
+  if (visit.status === "CANCELLED") {
+    return NextResponse.json({ error: "Cannot add payment to a cancelled visit" }, { status: 400 });
+  }
+
+  const due = visit.totalAmount - visit.paidAmount;
+  if (due <= 0.001) {
+    return NextResponse.json({ error: "Visit is already fully paid" }, { status: 400 });
+  }
+
+  const newTotal = visit.paidAmount + amount;
   if (newTotal > visit.totalAmount + 0.001) {
-    return NextResponse.json({ error: `Payment exceeds balance. Due: ₹${(visit.totalAmount - visit.paidAmount).toFixed(2)}` }, { status: 400 });
+    return NextResponse.json({ error: `Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}` }, { status: 400 });
   }
 
   const newPayment = {
     id: crypto.randomUUID(),
     visitId: id,
-    patientId,
-    amount: Number(amount),
-    paymentMethod: (paymentMethod || "CASH") as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER",
+    patientId: visit.patientId,
+    amount,
+    paymentMethod,
     referenceNumber: referenceNumber || null,
     notes: notes || null,
     paidAt: Date.now(),
@@ -64,7 +83,6 @@ export async function POST(
 
   await db.insert(payments).values(newPayment);
 
-  // Update visit paidAmount and possibly status
   const isFullyPaid = newTotal >= visit.totalAmount - 0.001;
   await db.update(visits).set({
     paidAmount: newTotal,

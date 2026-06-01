@@ -7,13 +7,15 @@ import { z } from "zod";
 
 const updatePatientSchema = z.object({
   name: z.string().min(1).optional(),
-  phone: z.string().min(1).optional(),
+  phone: z.string().min(10).max(15).optional(),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
   address: z.string().optional(),
   medicalHistory: z.string().optional(),
-  bloodGroup: z.string().optional().nullable(),
+  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional().nullable(),
+  panNumber: z.string().optional().nullable(),
+  aadhaarNumber: z.string().optional().nullable(),
 });
 
 export async function GET(

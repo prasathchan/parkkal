@@ -45,7 +45,6 @@ interface PrintData {
     address: string;
     phone: string;
     email: string;
-    website: string;
   };
 }
 
@@ -116,7 +115,7 @@ export default function PrintPage() {
           </div>
           <p style={{ fontSize: 13, color: "#64748b", fontFamily: "sans-serif" }}>{clinic.address}</p>
           <p style={{ fontSize: 13, color: "#64748b", fontFamily: "sans-serif" }}>
-            Phone: {clinic.phone} · {clinic.email} · {clinic.website}
+            {clinic.phone && `Phone: ${clinic.phone}`}{clinic.phone && clinic.email && " · "}{clinic.email}
           </p>
         </div>
 

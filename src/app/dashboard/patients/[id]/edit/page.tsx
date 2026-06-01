@@ -131,6 +131,9 @@ export default function PatientEditPage() {
             addressData.country,
           ].filter(Boolean).join(", ") || undefined,
           medicalHistory: form.medicalHistory || undefined,
+          bloodGroup: form.bloodGroup || undefined,
+          panNumber: form.panNumber || null,
+          aadhaarNumber: form.aadhaarNumber || null,
         }),
       });
       const data = await res.json();

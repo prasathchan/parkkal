@@ -63,9 +63,10 @@ export async function POST(
 
   const db = getDb();
 
-  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  const [visit] = await db.select({ organizationId: visits.organizationId, status: visits.status }).from(visits).where(eq(visits.id, id));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (visit.status === "CANCELLED") return NextResponse.json({ error: "Cannot add items to a cancelled visit" }, { status: 400 });
   const newItem = {
     id: crypto.randomUUID(),
     visitId: id,

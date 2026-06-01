@@ -7,6 +7,7 @@ import { getSession } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
@@ -56,7 +57,8 @@ export async function POST(request: NextRequest) {
 
     const [year, mon] = month.split("-").map(Number);
     const monthStart = `${month}-01`;
-    const monthEnd = `${month}-31`;
+    const lastDay = new Date(year, mon, 0).getDate();
+    const monthEnd = `${month}-${String(lastDay).padStart(2, "0")}`;
 
     const created = [];
     for (const member of members) {

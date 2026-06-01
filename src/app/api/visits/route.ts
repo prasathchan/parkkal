@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
   if (date) conditions.push(eq(visits.visitDate, date));
   if (search) {
     const likeSearch = `%${search}%`;
-    conditions.push(or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch)) as ReturnType<typeof eq>);
+    const searchCondition = or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch));
+    if (searchCondition) conditions.push(searchCondition);
   }
 
   const rows = await db

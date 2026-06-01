@@ -58,6 +58,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "featureKey and isEnabled are required" }, { status: 400 });
   }
 
+  // Only allow setting flags for the current org or globally — never for another org
+  if (orgId !== undefined && orgId !== null && orgId !== session.orgId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const db = getDb();
   const now = Date.now();
   const targetOrgId = orgId ?? null;

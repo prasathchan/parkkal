@@ -92,7 +92,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-const CATEGORIES = ["PROCEDURE", "XRAY", "CONSULTATION", "OTHER"];
+const CATEGORIES = ["PROCEDURE", "MEDICINE", "XRAY", "CONSULTATION", "OTHER"];
 const PAYMENT_METHODS = ["CASH", "CARD", "UPI", "BANK_TRANSFER"];
 
 function formatBytes(bytes: number) {

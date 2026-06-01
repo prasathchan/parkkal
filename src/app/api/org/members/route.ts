@@ -116,7 +116,9 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(organizationMembers).values(member);
-    return NextResponse.json({ member, user: existingUser }, { status: 201 });
+    // Exclude passwordHash from response
+    const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
+    return NextResponse.json({ member, user: safeUser }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });

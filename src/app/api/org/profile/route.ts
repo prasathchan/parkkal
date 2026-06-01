@@ -3,6 +3,16 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const updateOrgSchema = z.object({
+  name: z.string().min(1).optional(),
+  address: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email().optional().or(z.literal("")).nullable(),
+  logoUrl: z.string().url().optional().or(z.literal("")).nullable(),
+  themeConfig: z.union([z.string(), z.record(z.unknown())]).optional(),
+});
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
@@ -22,15 +32,20 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, address, phone, email, logoUrl, themeConfig } = body;
+    const parsed = updateOrgSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
+    }
+
+    const { name, address, phone, email, logoUrl, themeConfig } = parsed.data;
 
     const db = getDb();
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
     if (address !== undefined) updates.address = address;
     if (phone !== undefined) updates.phone = phone;
-    if (email !== undefined) updates.email = email;
-    if (logoUrl !== undefined) updates.logoUrl = logoUrl;
+    if (email !== undefined) updates.email = email || null;
+    if (logoUrl !== undefined) updates.logoUrl = logoUrl || null;
     if (themeConfig !== undefined) updates.themeConfig = typeof themeConfig === "string" ? themeConfig : JSON.stringify(themeConfig);
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));

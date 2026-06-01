@@ -16,8 +16,6 @@ const medicineSchema = z.object({
 const createSchema = z.object({
   medicines: z.array(medicineSchema).min(1),
   instructions: z.string().optional(),
-  patientId: z.string().min(1),
-  doctorId: z.string().min(1),
 });
 
 export async function GET(
@@ -33,22 +31,14 @@ export async function GET(
   const [visit] = await db
     .select({ organizationId: visits.organizationId })
     .from(visits)
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const rows = await db
     .select()
     .from(prescriptions)
-    .where(
-      and(
-        eq(prescriptions.visitId, id),
-        eq(prescriptions.organizationId, session.orgId)
-      )
-    );
+    .where(and(eq(prescriptions.visitId, id), eq(prescriptions.organizationId, session.orgId)));
 
   return NextResponse.json({ prescriptions: rows });
 }
@@ -63,23 +53,22 @@ export async function POST(
   const { id } = await params;
   const db = getDb();
 
+  // Fetch visit to get authoritative patientId/doctorId — never trust caller for these
   const [visit] = await db
-    .select({ organizationId: visits.organizationId })
+    .select({ organizationId: visits.organizationId, patientId: visits.patientId, doctorId: visits.doctorId, status: visits.status })
     .from(visits)
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (visit.status === "CANCELLED") {
+    return NextResponse.json({ error: "Cannot add prescription to a cancelled visit" }, { status: 400 });
   }
 
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Invalid request", details: parsed.error.flatten() },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid request", details: parsed.error.flatten() }, { status: 400 });
   }
 
   const data = parsed.data;
@@ -92,8 +81,8 @@ export async function POST(
       id: rxId,
       organizationId: session.orgId,
       visitId: id,
-      patientId: data.patientId,
-      doctorId: data.doctorId,
+      patientId: visit.patientId,
+      doctorId: visit.doctorId,
       medicines: JSON.stringify(data.medicines),
       instructions: data.instructions ?? null,
       createdAt: now,

@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 
+if (!process.env.JWT_SECRET) {
+  console.warn("[SECURITY] JWT_SECRET env var is not set. Using insecure default. Set JWT_SECRET before production deployment.");
+}
+
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "parkkal-dental-secret-key-change-in-production"
 );
