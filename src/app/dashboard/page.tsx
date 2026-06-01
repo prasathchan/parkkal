@@ -231,6 +231,21 @@ export default async function DashboardPage() {
             </div>
             <div className="p-6 space-y-3">
               <Link
+                href="/dashboard/visits/new"
+                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 transition group"
+              >
+                <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-900">New Visit</p>
+                  <p className="text-xs text-slate-500">Start a walk-in or appointment visit</p>
+                </div>
+              </Link>
+
+              <Link
                 href="/dashboard/patients/new"
                 className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-blue-50 hover:border-blue-200 transition group"
               >

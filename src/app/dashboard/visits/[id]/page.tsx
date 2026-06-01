@@ -533,7 +533,7 @@ export default function VisitDetailPage() {
                   {completingVisit ? "Completing..." : "Complete Visit"}
                 </button>
               )}
-              {appointmentStatus === "COMPLETED" && (
+              {visit.status !== "CANCELLED" && (
                 <button
                   onClick={() => router.push(`/dashboard/appointments/new?patientId=${visit.patientId}&doctorId=${visit.doctorId}&type=FOLLOWUP`)}
                   className="inline-flex items-center gap-2 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition"

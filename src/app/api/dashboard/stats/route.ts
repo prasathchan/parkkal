@@ -12,9 +12,10 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   const orgId = session.orgId;
 
-  const today = new Date().toISOString().split("T")[0];
-  const todayStart = new Date(today).getTime();
-  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const now = new Date();
+  const today = now.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
   const [
     totalPatientsRows,

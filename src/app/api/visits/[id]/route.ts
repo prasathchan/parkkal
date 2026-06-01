@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, visitItems, payments, attachments, patients, users } from "@/db/schema";
+import { visits, visitItems, payments, attachments, prescriptions, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(
@@ -72,7 +72,7 @@ export async function PATCH(
 
   const body = await request.json();
 
-  const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "totalAmount", "paidAmount", "visitDate"];
+  const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate"];
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];
@@ -97,6 +97,7 @@ export async function DELETE(
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  await db.delete(prescriptions).where(eq(prescriptions.visitId, id));
   await db.delete(attachments).where(eq(attachments.visitId, id));
   await db.delete(payments).where(eq(payments.visitId, id));
   await db.delete(visitItems).where(eq(visitItems.visitId, id));
