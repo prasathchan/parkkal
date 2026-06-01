@@ -44,3 +44,10 @@ prisma/migrations/
 .vscode/
 *.swp
 *.swo
+
+# local database
+*.db
+*.sqlite
+
+# claude agent worktrees
+.claude/worktrees/
