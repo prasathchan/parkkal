@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatDoctorName } from "@/lib/utils";
+import { parseAddress, formatAddressDisplay } from "@/lib/address";
 
 interface PrintData {
   visit: {
@@ -113,7 +114,7 @@ export default function PrintPage() {
             </div>
             <h1 style={{ fontSize: 22, fontWeight: "bold", color: "#1e293b", fontFamily: "sans-serif" }}>{clinic.name}</h1>
           </div>
-          <p style={{ fontSize: 13, color: "#64748b", fontFamily: "sans-serif" }}>{clinic.address}</p>
+          <p style={{ fontSize: 13, color: "#64748b", fontFamily: "sans-serif" }}>{formatAddressDisplay(parseAddress(clinic.address))}</p>
           <p style={{ fontSize: 13, color: "#64748b", fontFamily: "sans-serif" }}>
             {clinic.phone && `Phone: ${clinic.phone}`}{clinic.phone && clinic.email && " · "}{clinic.email}
           </p>

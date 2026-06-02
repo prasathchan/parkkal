@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { parseAddress, formatAddressDisplay } from "@/lib/address";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
@@ -221,7 +222,7 @@ export default function PatientDetailPage() {
             {patient.address && (
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <p className="text-slate-500 text-xs mb-0.5">Address</p>
-                <p className="text-sm">{patient.address}</p>
+                <p className="text-sm">{formatAddressDisplay(parseAddress(patient.address))}</p>
               </div>
             )}
             {patient.medicalHistory && (
