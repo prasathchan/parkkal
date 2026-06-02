@@ -44,16 +44,12 @@ const ALL_PERMISSIONS = [
   "settings.manage",
   "reports.view",
   "roles.manage",
+  "appointments.view", "appointments.create", "appointments.edit",
 ];
 
-// Default roles seeded for every new organization so the roles screen and
-// permission system have sensible starting points.
-const DEFAULT_ROLES: { name: string; slug: string; color: string; isSystem: number; permissions: string[] }[] = [
-  { name: "Administrator", slug: "administrator", color: "#3B82F6", isSystem: 1, permissions: ALL_PERMISSIONS },
-  { name: "Doctor", slug: "doctor", color: "#10B981", isSystem: 0, permissions: ["patients.view", "patients.create", "patients.edit", "visits.view", "visits.create", "visits.edit", "billing.view", "reports.view"] },
-  { name: "Nurse", slug: "nurse", color: "#F59E0B", isSystem: 0, permissions: ["patients.view", "visits.view", "visits.create"] },
-  { name: "Receptionist", slug: "receptionist", color: "#8B5CF6", isSystem: 0, permissions: ["patients.view", "patients.create", "visits.view", "billing.view"] },
-];
+// Imported from shared module — kept here for reference; signup uses DEFAULT_ROLES from lib
+import { DEFAULT_ROLES } from "@/lib/default-roles";
+void ALL_PERMISSIONS; // used by lib/default-roles
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);

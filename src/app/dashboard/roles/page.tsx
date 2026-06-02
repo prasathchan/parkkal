@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 
 const ALL_PERMISSIONS = [
   { group: "Patients", perms: ["patients.view", "patients.create", "patients.edit", "patients.delete"] },
+  { group: "Appointments", perms: ["appointments.view", "appointments.create", "appointments.edit"] },
   { group: "Visits", perms: ["visits.view", "visits.create", "visits.edit"] },
   { group: "Billing", perms: ["billing.view", "billing.manage"] },
   { group: "Staff", perms: ["staff.view", "staff.manage"] },
@@ -385,7 +386,21 @@ export default function RolesPage() {
             ))}
           </div>
         ) : roles.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">No roles found.</div>
+          <div className="text-center py-16">
+            <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <p className="text-slate-500 font-medium mb-1">No roles yet</p>
+            <p className="text-sm text-slate-400 mb-4">Create your first role or reload to generate defaults.</p>
+            <button
+              onClick={() => { setEditingRole(null); setShowForm(true); }}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+            >
+              + New Role
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {roles.map((role) => (

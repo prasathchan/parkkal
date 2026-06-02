@@ -3,9 +3,27 @@ import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { DEFAULT_ROLES } from "@/lib/default-roles";
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+}
+
+async function seedDefaultRoles(db: ReturnType<typeof getDb>, orgId: string): Promise<void> {
+  const now = Date.now();
+  const rows = DEFAULT_ROLES.map((r) => ({
+    id: `role_${orgId}_${r.slug}_${now}`,
+    organizationId: orgId,
+    name: r.name,
+    slug: r.slug,
+    description: r.description,
+    color: r.color,
+    isSystem: r.isSystem,
+    permissions: JSON.stringify(r.permissions),
+    createdAt: now,
+    updatedAt: now,
+  }));
+  await db.insert(orgRoles).values(rows);
 }
 
 export async function GET(request: NextRequest) {
@@ -14,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
 
-  const roles = await db
+  let roles = await db
     .select({
       id: orgRoles.id,
       name: orgRoles.name,
@@ -27,6 +45,28 @@ export async function GET(request: NextRequest) {
     .from(orgRoles)
     .where(eq(orgRoles.organizationId, session.orgId))
     .orderBy(orgRoles.name);
+
+  // Auto-seed defaults for orgs that pre-date the role system
+  if (roles.length === 0) {
+    try {
+      await seedDefaultRoles(db, session.orgId);
+      roles = await db
+        .select({
+          id: orgRoles.id,
+          name: orgRoles.name,
+          slug: orgRoles.slug,
+          description: orgRoles.description,
+          color: orgRoles.color,
+          isSystem: orgRoles.isSystem,
+          permissions: orgRoles.permissions,
+        })
+        .from(orgRoles)
+        .where(eq(orgRoles.organizationId, session.orgId))
+        .orderBy(orgRoles.name);
+    } catch (e) {
+      console.error("Role seeding failed:", e);
+    }
+  }
 
   // Get user counts per role
   const memberCounts = await db
