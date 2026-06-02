@@ -375,7 +375,7 @@ export default function VisitDetailPage() {
       />
       <main className="flex-1 p-6 space-y-5">
         {/* Appointment Banner */}
-        {visit.appointmentId && appointmentStatus && appointmentStatus !== "COMPLETED" && (
+        {visit.appointmentId && appointmentStatus && appointmentStatus !== "COMPLETED" && visit.status !== "COMPLETED" && visit.status !== "CANCELLED" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-blue-800">
               <span>📅</span>
@@ -390,7 +390,7 @@ export default function VisitDetailPage() {
             </button>
           </div>
         )}
-        {visit.appointmentId && appointmentStatus === "COMPLETED" && (
+        {visit.appointmentId && (appointmentStatus === "COMPLETED" || visit.status === "COMPLETED") && (
           <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-2 text-sm text-green-800">
             <span>✅</span>
             <span>Appointment marked as completed.</span>
