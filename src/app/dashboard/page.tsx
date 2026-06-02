@@ -6,59 +6,91 @@ import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { verifyOrgToken } from "@/lib/auth";
 import { isFeatureEnabled } from "@/lib/flags";
+import { getDb } from "@/lib/db";
+import { organizationPatients, appointments, payments, visits, patients, users } from "@/db/schema";
+import { eq, and, ne, count, sum, gte, desc } from "drizzle-orm";
 
-async function getStats(cookieHeader: string) {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/dashboard/stats`,
-      { cache: "no-store", headers: { cookie: cookieHeader } }
-    );
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
+async function getDashboardStats(orgId: string) {
+  const db = getDb();
+  const now = new Date();
+  const today = now.toLocaleDateString("en-CA");
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+  const [
+    totalPatientsRows,
+    todayAppointmentsRows,
+    pendingVisitsRows,
+    monthlyRevenueRows,
+    openBilledRows,
+    openPaidRows,
+    todayRevenueRows,
+    todayApptVisitsRows,
+    todayWalkInVisitsRows,
+  ] = await Promise.all([
+    db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
+    db.select({ val: count() }).from(appointments).where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today))),
+    db.select({ val: count() }).from(visits).where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+    db.select({ val: sum(payments.amount) }).from(payments)
+      .innerJoin(visits, eq(payments.visitId, visits.id))
+      .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, monthStart))),
+    db.select({ val: sum(visits.totalAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
+    db.select({ val: sum(visits.paidAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
+    db.select({ val: sum(payments.amount) }).from(payments)
+      .innerJoin(visits, eq(payments.visitId, visits.id))
+      .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart))),
+    db.select({ val: count() }).from(visits).where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "APPOINTMENT"))),
+    db.select({ val: count() }).from(visits).where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "WALKIN"))),
+  ]);
+
+  return {
+    totalPatients: totalPatientsRows[0]?.val ?? 0,
+    todayAppointments: todayAppointmentsRows[0]?.val ?? 0,
+    pendingVisits: pendingVisitsRows[0]?.val ?? 0,
+    monthlyRevenue: Number(monthlyRevenueRows[0]?.val) || 0,
+    todayRevenue: Number(todayRevenueRows[0]?.val) || 0,
+    outstandingDues: (Number(openBilledRows[0]?.val) || 0) - (Number(openPaidRows[0]?.val) || 0),
+    todayAppointmentVisits: todayApptVisitsRows[0]?.val ?? 0,
+    todayWalkInVisits: todayWalkInVisitsRows[0]?.val ?? 0,
+  };
 }
 
-async function getRecentAppointments(cookieHeader: string) {
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/appointments?date=${today}`,
-      { cache: "no-store", headers: { cookie: cookieHeader } }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    // Sort by appointment time ascending so earlier slots appear first
-    const apts = (data.appointments || []) as {
-      id: string;
-      patientName?: string;
-      doctorName?: string;
-      appointmentDate: string;
-      appointmentTime: string;
-      status: string;
-      type: string;
-    }[];
-    apts.sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime));
-    return apts;
-  } catch {
-    return [];
-  }
+async function getTodayAppointments(orgId: string) {
+  const db = getDb();
+  const today = new Date().toLocaleDateString("en-CA");
+  const rows = await db
+    .select({
+      id: appointments.id,
+      patientId: appointments.patientId,
+      doctorId: appointments.doctorId,
+      appointmentDate: appointments.appointmentDate,
+      appointmentTime: appointments.appointmentTime,
+      status: appointments.status,
+      type: appointments.type,
+      patientName: patients.name,
+      doctorName: users.name,
+    })
+    .from(appointments)
+    .leftJoin(patients, eq(appointments.patientId, patients.id))
+    .leftJoin(users, eq(appointments.doctorId, users.id))
+    .where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today)))
+    .orderBy(desc(appointments.createdAt));
+
+  return rows.sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime));
 }
 
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const orgToken = cookieStore.get("pkd_org_session")?.value;
   const session = orgToken ? await verifyOrgToken(orgToken) : null;
-  const cookieHeader = orgToken ? `pkd_org_session=${orgToken}` : "";
 
-  const [statsData, appointments, showAppointmentSource] = await Promise.all([
-    getStats(cookieHeader),
-    getRecentAppointments(cookieHeader),
+  const [statsData, todayAppointments, showAppointmentSource] = await Promise.all([
+    session ? getDashboardStats(session.orgId) : Promise.resolve(null),
+    session ? getTodayAppointments(session.orgId) : Promise.resolve([]),
     session ? isFeatureEnabled("ff_appointment_source", session.orgId) : Promise.resolve(false),
   ]);
 
-  const stats = statsData || {
+  const stats = statsData ?? {
     totalPatients: 0,
     todayAppointments: 0,
     pendingVisits: 0,
@@ -180,22 +212,12 @@ export default async function DashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-slate-100">
-              {appointments.length === 0 ? (
+              {todayAppointments.length === 0 ? (
                 <p className="px-6 py-8 text-center text-slate-400 text-sm">
                   No appointments scheduled for today
                 </p>
               ) : (
-                appointments.map((apt: {
-                  id: string;
-                  patientId?: string;
-                  doctorId?: string;
-                  patientName?: string;
-                  doctorName?: string;
-                  appointmentDate: string;
-                  appointmentTime: string;
-                  status: string;
-                  type: string;
-                }) => (
+                todayAppointments.map((apt) => (
                   <div key={apt.id} className="px-6 py-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-slate-900">

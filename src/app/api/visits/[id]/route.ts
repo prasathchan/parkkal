@@ -68,6 +68,15 @@ export async function PATCH(
 
   const body = await request.json();
 
+  // Validate status and visitDate if provided
+  const VALID_STATUSES = ["OPEN", "COMPLETED", "CANCELLED"];
+  if ("status" in body && !VALID_STATUSES.includes(body.status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+  if ("visitDate" in body && (typeof body.visitDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.visitDate))) {
+    return NextResponse.json({ error: "visitDate must be YYYY-MM-DD" }, { status: 400 });
+  }
+
   const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate"];
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
   for (const key of allowed) {

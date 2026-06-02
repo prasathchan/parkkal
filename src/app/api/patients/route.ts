@@ -91,23 +91,11 @@ export async function POST(request: NextRequest) {
     const data = createPatientSchema.parse(body);
 
     const db = getDb();
-
-    const [{ orgCount }] = await db
-      .select({ orgCount: count() })
-      .from(organizationPatients)
-      .where(eq(organizationPatients.organizationId, session.orgId));
-
-    const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String((orgCount as number) + 1).padStart(4, "0")}`;
-
-    const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
-    const globalCode = `PKL-${String((totalCount as number) + 1).padStart(6, "0")}`;
-
     const now = Date.now();
     const patientId = generateId();
 
-    const newPatient = {
+    const basePatient = {
       id: patientId,
-      patientCode: globalCode,
       name: data.name,
       phone: data.phone,
       email: data.email || null,
@@ -123,7 +111,30 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    await db.insert(patients).values(newPatient);
+    // Retry loop handles race condition: two concurrent requests may compute the same count.
+    // On UNIQUE constraint collision, re-count and retry (same pattern as visit code generation).
+    let newPatient: typeof basePatient & { patientCode: string } = { ...basePatient, patientCode: "" };
+    let orgCode = "";
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const [{ orgCount }] = await db
+        .select({ orgCount: count() })
+        .from(organizationPatients)
+        .where(eq(organizationPatients.organizationId, session.orgId));
+      const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
+
+      const seq = (totalCount as number) + 1 + attempt;
+      const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
+      orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String((orgCount as number) + 1 + attempt).padStart(4, "0")}`;
+      newPatient = { ...basePatient, patientCode: globalCode };
+
+      try {
+        await db.insert(patients).values(newPatient);
+        break;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (attempt === 4 || !msg.includes("UNIQUE")) throw e;
+      }
+    }
 
     await db.insert(organizationPatients).values({
       id: crypto.randomUUID(),

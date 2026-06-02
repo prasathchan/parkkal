@@ -253,7 +253,6 @@ export default function VisitDetailPage() {
         paymentMethod: payForm.paymentMethod,
         referenceNumber: payForm.referenceNumber || null,
         notes: payForm.notes || null,
-        patientId: visit?.patientId,
       }),
     });
     const data = await res.json();
@@ -321,8 +320,6 @@ export default function VisitDetailPage() {
       body: JSON.stringify({
         medicines: rxMedicines.filter(m => m.name && m.dosage && m.frequency && m.duration),
         instructions: rxInstructions || null,
-        patientId: visit.patientId,
-        doctorId: visit.doctorId,
       }),
     });
     if (res.ok) {
