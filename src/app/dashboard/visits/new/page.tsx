@@ -59,26 +59,36 @@ function NewVisitForm() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
     fetch("/api/patients?limit=200")
       .then((r) => r.json())
       .then((d) => setPatients(d.patients || []));
-    fetch("/api/org/members")
-      .then((r) => r.json())
-      .then((d) => {
-        const eligible = (d.members || []).filter(
-          (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
-        );
-        setDoctors(
-          eligible.map((m: { userId: string; name: string; role: string }) => ({
-            id: m.userId,
-            name: m.name,
-            role: m.role,
-          }))
-        );
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/org/members").then((r) => r.json()),
+      fetch("/api/auth/me").then((r) => r.json()),
+    ]).then(([membersData, meData]) => {
+      const eligible = (membersData.members || []).filter(
+        (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+      );
+      setDoctors(
+        eligible.map((m: { userId: string; name: string; role: string }) => ({
+          id: m.userId,
+          name: m.name,
+          role: m.role,
+        }))
+      );
+      const me = meData.user;
+      if (me) {
+        setCurrentUserRole(me.role);
+        setCurrentUserId(me.userId);
+        if (me.role === "DOCTOR") {
+          setForm((f) => ({ ...f, doctorId: me.userId }));
+        }
+      }
+    }).catch(() => {});
   }, []);
 
   // Pre-fill from URL params (?patientId=X&appointmentId=Y&doctorId=Z)
@@ -332,23 +342,32 @@ function NewVisitForm() {
               {/* Step 3: Doctor, Date, Notes */}
               {visitSource && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Doctor <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={form.doctorId}
-                      onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">-- Select Doctor --</option>
-                      {doctors.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {formatDoctorName(d.name)} ({d.role})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {currentUserRole === "DOCTOR" ? (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Doctor</label>
+                      <p className="text-sm px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                        {formatDoctorName(doctors.find((d) => d.id === currentUserId)?.name ?? "")}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Doctor <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={form.doctorId}
+                        onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">-- Select Doctor --</option>
+                        {doctors.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {formatDoctorName(d.name)} ({d.role})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
