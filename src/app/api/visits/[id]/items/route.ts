@@ -80,21 +80,12 @@ export async function POST(
     createdAt: Date.now(),
   };
 
-  // Insert item and update visit total atomically if transactions are supported
-  const runInsert = async (tx: typeof db) => {
-    await tx.insert(visitItems).values(newItem);
-    const [{ total }] = await tx
-      .select({ total: sum(visitItems.amount) })
-      .from(visitItems)
-      .where(eq(visitItems.visitId, id));
-    await tx.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
-  };
-
-  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
-    await (db as unknown as { transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void> }).transaction(runInsert);
-  } else {
-    await runInsert(db);
-  }
+  await db.insert(visitItems).values(newItem);
+  const [{ total }] = await db
+    .select({ total: sum(visitItems.amount) })
+    .from(visitItems)
+    .where(eq(visitItems.visitId, id));
+  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
 
   return NextResponse.json({ item: newItem }, { status: 201 });
 }
