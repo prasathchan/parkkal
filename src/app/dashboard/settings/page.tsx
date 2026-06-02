@@ -428,7 +428,7 @@ export default function SettingsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-medium text-slate-800">Delete this organization</h3>
-                  <p className="text-sm text-slate-500 mt-1">The organization will be deactivated immediately and permanently deleted after 15 days. All data including patients, appointments, and records will be erased.</p>
+                  <p className="text-sm text-slate-500 mt-1">Immediately and permanently deletes all data — patients, appointments, visits, staff, and all records. This cannot be undone.</p>
                 </div>
                 <button
                   onClick={() => { setShowDeleteDialog(true); setDeleteConfirmName(""); setDeleteError(""); }}
@@ -459,7 +459,7 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-sm text-slate-600 mb-4">
-                This will immediately deactivate <strong>{org.name}</strong> and schedule all data for permanent deletion in <strong>15 days</strong>.
+                This will <strong>immediately and permanently delete</strong> all data for <strong>{org.name}</strong> — patients, appointments, visits, staff, and all records. This cannot be undone.
               </p>
 
               <div className="mb-4">
