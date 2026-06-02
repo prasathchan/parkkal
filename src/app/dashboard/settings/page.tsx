@@ -25,7 +25,7 @@ interface AdminMember {
 }
 
 
-type Tab = "profile" | "appearance" | "security" | "danger";
+type Tab = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
@@ -162,7 +162,6 @@ export default function SettingsPage() {
     { id: "profile", label: "Organization Profile" },
     { id: "appearance", label: "Appearance" },
     { id: "security", label: "Security" },
-    { id: "danger", label: "Danger Zone" },
   ];
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -205,8 +204,8 @@ export default function SettingsPage() {
               onClick={() => { setTab(t.id); setMessage(""); }}
               className="px-4 py-2 rounded-md text-sm font-medium transition-all"
               style={tab === t.id
-                ? { background: t.id === "danger" ? "#dc2626" : "var(--card)", color: t.id === "danger" ? "#fff" : "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                : { color: t.id === "danger" ? "#dc2626" : "var(--muted-foreground)" }
+                ? { background: "var(--card)", color: "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: "var(--muted-foreground)" }
               }
             >
               {t.label}
@@ -412,27 +411,19 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {org && tab !== "danger" && (
-          <div className="mt-4 rounded-xl border p-4" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
-            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
-            <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Slug: <code style={{ color: "var(--foreground)" }}>{org.slug}</code></p>
-          </div>
-        )}
-
-        {tab === "danger" && org && (
-          <div className="rounded-xl border-2 p-6" style={{ borderColor: "#fca5a5", background: "#fff5f5" }}>
-            <h2 className="text-lg font-semibold text-red-700 mb-1">Danger Zone</h2>
-            <p className="text-sm text-red-600 mb-6">Actions here are irreversible. Proceed with caution.</p>
-
-            <div className="rounded-lg border p-4 bg-white" style={{ borderColor: "#fca5a5" }}>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-medium text-slate-800">Delete this organization</h3>
-                  <p className="text-sm text-slate-500 mt-1">Immediately and permanently deletes all data — patients, appointments, visits, staff, and all records. This cannot be undone.</p>
-                </div>
+        {org && (
+          <div className="mt-4 rounded-xl border p-4 space-y-3" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
+            <div>
+              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
+              <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Slug: <code style={{ color: "var(--foreground)" }}>{org.slug}</code></p>
+            </div>
+            <div className="border-t pt-3" style={{ borderColor: "var(--border)" }}>
+              <p className="text-xs font-medium mb-2" style={{ color: "#dc2626" }}>Danger Zone</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Permanently delete this organization and all its data. This cannot be undone.</p>
                 <button
                   onClick={() => { setShowDeleteDialog(true); setDeleteConfirmName(""); setDeleteError(""); }}
-                  className="flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
                   style={{ background: "#dc2626" }}
                 >
                   Delete Organization
