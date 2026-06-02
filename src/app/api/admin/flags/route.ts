@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await request.json();
+  const body = await request.json() as { featureKey?: string; isEnabled?: boolean; orgId?: string | null };
   const { featureKey, isEnabled, orgId } = body;
 
   if (!featureKey || isEnabled === undefined) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         : isNull(featureFlags.orgId)
     );
 
-  const existingFlag = existing.find(f => f.featureKey === featureKey);
+  const existingFlag = existing.find((f: (typeof existing)[number]) => f.featureKey === featureKey);
 
   if (existingFlag) {
     await db
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   } else {
     // Need to get name/description from global flag
     const globalFlags = await db.select().from(featureFlags).where(isNull(featureFlags.orgId));
-    const globalFlag = globalFlags.find(f => f.featureKey === featureKey);
+    const globalFlag = globalFlags.find((f: (typeof globalFlags)[number]) => f.featureKey === featureKey);
 
     await db.insert(featureFlags).values({
       id,

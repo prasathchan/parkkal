@@ -66,11 +66,11 @@ export async function PATCH(
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const body = await request.json();
+  const body = await request.json() as Record<string, unknown>;
 
   // Validate status and visitDate if provided
   const VALID_STATUSES = ["OPEN", "COMPLETED", "CANCELLED"];
-  if ("status" in body && !VALID_STATUSES.includes(body.status)) {
+  if ("status" in body && !VALID_STATUSES.includes(body.status as string)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
   if ("visitDate" in body && (typeof body.visitDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.visitDate))) {

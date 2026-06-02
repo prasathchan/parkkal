@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 import * as schema from "@/db/schema";
 
 export function getDb(env?: { DB: D1Database }) {

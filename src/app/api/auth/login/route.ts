@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     });
     const response = NextResponse.json({
       requireOrgSelection: true,
-      organizations: memberships.map((m) => ({
+      organizations: memberships.map((m: (typeof memberships)[number]) => ({
         id: m.orgId,
         name: m.orgName,
         slug: m.orgSlug,

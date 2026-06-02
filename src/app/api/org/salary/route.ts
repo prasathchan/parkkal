@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    const body = await request.json();
-    const month = body.month || new Date().toISOString().slice(0, 7);
+    const body = await request.json() as Record<string, unknown>;
+    const month = (body.month as string | undefined) || new Date().toISOString().slice(0, 7);
 
     const db = getDb();
     const now = Date.now();

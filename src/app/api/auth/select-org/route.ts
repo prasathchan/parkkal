@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { orgId } = await request.json();
+    const { orgId } = await request.json() as { orgId?: string };
     if (!orgId) {
       return NextResponse.json({ error: "orgId required" }, { status: 400 });
     }

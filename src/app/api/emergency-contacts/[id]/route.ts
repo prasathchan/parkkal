@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = await request.json() as { name?: string; relationship?: string; phone?: string; email?: string; address?: string };
     const { name, relationship, phone, email, address } = body;
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;

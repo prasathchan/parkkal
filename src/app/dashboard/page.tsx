@@ -55,7 +55,19 @@ async function getDashboardStats(orgId: string) {
   };
 }
 
-async function getTodayAppointments(orgId: string) {
+type AppointmentRow = Awaited<ReturnType<typeof getTodayAppointments>>[number];
+
+async function getTodayAppointments(orgId: string): Promise<Array<{
+  id: string | null;
+  patientId: string | null;
+  doctorId: string | null;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: string;
+  type: string | null;
+  patientName: string | null;
+  doctorName: string | null;
+}>> {
   const db = getDb();
   const today = new Date().toLocaleDateString("en-CA");
   const rows = await db
@@ -76,7 +88,7 @@ async function getTodayAppointments(orgId: string) {
     .where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today)))
     .orderBy(desc(appointments.createdAt));
 
-  return rows.sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime));
+  return rows.sort((a: (typeof rows)[number], b: (typeof rows)[number]) => a.appointmentTime.localeCompare(b.appointmentTime));
 }
 
 export default async function DashboardPage() {
@@ -86,7 +98,7 @@ export default async function DashboardPage() {
 
   const [statsData, todayAppointments, showAppointmentSource] = await Promise.all([
     session ? getDashboardStats(session.orgId) : Promise.resolve(null),
-    session ? getTodayAppointments(session.orgId) : Promise.resolve([]),
+    session ? getTodayAppointments(session.orgId) : Promise.resolve([] as Awaited<ReturnType<typeof getTodayAppointments>>),
     session ? isFeatureEnabled("ff_appointment_source", session.orgId) : Promise.resolve(false),
   ]);
 

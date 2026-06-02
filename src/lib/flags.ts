@@ -18,8 +18,8 @@ export async function isFeatureEnabled(featureKey: string, orgId: string): Promi
   if (flags.length === 0) return false;
 
   // Org-specific flag takes priority over global
-  const orgFlag = flags.find(f => f.orgId === orgId);
-  const globalFlag = flags.find(f => f.orgId === null);
+  const orgFlag = flags.find((f: (typeof flags)[number]) => f.orgId === orgId);
+  const globalFlag = flags.find((f: (typeof flags)[number]) => f.orgId === null);
   const activeFlag = orgFlag ?? globalFlag;
 
   return activeFlag ? activeFlag.isEnabled === 1 : false;
@@ -34,8 +34,8 @@ export async function getAllFlagsForOrg(orgId: string): Promise<Record<string, b
 
   const result: Record<string, boolean> = {};
   // Build map: org-specific overrides global
-  const globalFlags = flags.filter(f => f.orgId === null);
-  const orgFlags = flags.filter(f => f.orgId === orgId);
+  const globalFlags = flags.filter((f: (typeof flags)[number]) => f.orgId === null);
+  const orgFlags = flags.filter((f: (typeof flags)[number]) => f.orgId === orgId);
 
   for (const f of globalFlags) {
     result[f.featureKey] = f.isEnabled === 1;

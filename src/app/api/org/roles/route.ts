@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (row.orgRoleId) countMap[row.orgRoleId] = Number(row.count);
   }
 
-  const result = roles.map((r) => ({
+  const result = roles.map((r: (typeof roles)[number]) => ({
     ...r,
     permissions: JSON.parse(r.permissions || "[]") as string[],
     userCount: countMap[r.id] || 0,

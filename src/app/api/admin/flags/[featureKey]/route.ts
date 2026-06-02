@@ -13,7 +13,7 @@ export async function PATCH(
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { featureKey } = await params;
-  const body = await request.json();
+  const body = await request.json() as { isEnabled?: boolean; scope?: string };
   const { isEnabled, scope } = body;
 
   if (isEnabled === undefined || !scope) {
