@@ -27,6 +27,7 @@ export const users = sqliteTable("users", {
   aadhaarNumber: text("aadhaar_number"),
   profileImageUrl: text("profile_image_url"),
   isActive: integer("is_active").notNull().default(1),
+  isVerified: integer("is_verified").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at"),
 });
@@ -243,6 +244,16 @@ export const attachments = sqliteTable("attachments", {
   fileSize: integer("file_size").notNull(),
   fileUrl: text("file_url").notNull(),
   uploadedBy: text("uploaded_by").notNull().references(() => users.id),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const verificationTokens = sqliteTable("verification_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(), // 'EMAIL' | 'PHONE'
+  code: text("code").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  used: integer("used").notNull().default(0),
   createdAt: integer("created_at").notNull(),
 });
 

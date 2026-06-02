@@ -1,0 +1,12 @@
+ALTER TABLE users ADD COLUMN is_verified INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS verification_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL, -- 'EMAIL' or 'PHONE'
+  code TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);

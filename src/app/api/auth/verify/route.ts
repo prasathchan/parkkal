@@ -1,0 +1,147 @@
+import { NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+import { getDb } from "@/lib/db";
+import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
+import { createOrgToken } from "@/lib/auth-edge";
+
+const verifySchema = z.object({
+  userId: z.string(),
+  emailCode: z.string().length(6),
+  phoneCode: z.string().length(6),
+});
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+};
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, emailCode, phoneCode } = verifySchema.parse(body);
+
+    const db = getDb();
+    const now = Date.now();
+
+    // Find valid EMAIL token
+    const emailTokens = await db
+      .select()
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.userId, userId),
+          eq(verificationTokens.type, "EMAIL"),
+          eq(verificationTokens.code, emailCode),
+          eq(verificationTokens.used, 0)
+        )
+      );
+
+    const emailToken = emailTokens.find((t: (typeof emailTokens)[number]) => t.expiresAt > now);
+    if (!emailToken) {
+      return NextResponse.json({ error: "Invalid email code" }, { status: 400 });
+    }
+
+    // Find valid PHONE token
+    const phoneTokens = await db
+      .select()
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.userId, userId),
+          eq(verificationTokens.type, "PHONE"),
+          eq(verificationTokens.code, phoneCode),
+          eq(verificationTokens.used, 0)
+        )
+      );
+
+    const phoneToken = phoneTokens.find((t: (typeof phoneTokens)[number]) => t.expiresAt > now);
+    if (!phoneToken) {
+      return NextResponse.json({ error: "Invalid phone code" }, { status: 400 });
+    }
+
+    // Mark both tokens as used
+    await db
+      .update(verificationTokens)
+      .set({ used: 1 })
+      .where(eq(verificationTokens.id, emailToken.id));
+    await db
+      .update(verificationTokens)
+      .set({ used: 1 })
+      .where(eq(verificationTokens.id, phoneToken.id));
+
+    // Activate user
+    await db
+      .update(users)
+      .set({ isActive: 1, isVerified: 1 })
+      .where(eq(users.id, userId));
+
+    // Find org membership
+    const membership = await db
+      .select({
+        orgId: organizations.id,
+        orgName: organizations.name,
+        orgSlug: organizations.slug,
+        role: organizationMembers.role,
+        orgMemberId: organizationMembers.id,
+      })
+      .from(organizationMembers)
+      .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
+      .where(eq(organizationMembers.userId, userId));
+
+    if (membership.length === 0) {
+      return NextResponse.json({ error: "No organization found" }, { status: 500 });
+    }
+
+    const m = membership[0];
+
+    // Activate organization and membership
+    await db
+      .update(organizations)
+      .set({ isActive: 1 })
+      .where(eq(organizations.id, m.orgId));
+    await db
+      .update(organizationMembers)
+      .set({ isActive: 1 })
+      .where(eq(organizationMembers.id, m.orgMemberId));
+
+    // Load user details
+    const userRows = await db
+      .select({ email: users.email, name: users.name })
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (userRows.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 500 });
+    }
+
+    const user = userRows[0];
+
+    // Create org session JWT
+    const orgToken = await createOrgToken({
+      userId,
+      email: user.email,
+      name: user.name,
+      orgId: m.orgId,
+      orgName: m.orgName,
+      orgSlug: m.orgSlug,
+      role: m.role,
+    });
+
+    const response = NextResponse.json({ redirect: "/dashboard" });
+    response.cookies.set("pkd_org_session", orgToken, {
+      ...COOKIE_OPTS,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return response;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+    console.error("Verify error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
