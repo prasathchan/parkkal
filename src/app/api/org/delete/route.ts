@@ -46,28 +46,28 @@ export async function POST(request: NextRequest) {
     .select({ userId: organizationMembers.userId })
     .from(organizationMembers)
     .where(eq(organizationMembers.organizationId, orgId));
-  const userIds = members.map(m => m.userId);
+  const userIds = members.map((m: { userId: string }) => m.userId);
 
   // Collect all patient IDs in this org
   const orgPatientRows = await db
     .select({ patientId: organizationPatients.patientId })
     .from(organizationPatients)
     .where(eq(organizationPatients.organizationId, orgId));
-  const patientIds = orgPatientRows.map(r => r.patientId);
+  const patientIds = orgPatientRows.map((r: { patientId: string }) => r.patientId);
 
   // Collect visit IDs for this org
   const orgVisits = await db
     .select({ id: visits.id })
     .from(visits)
     .where(eq(visits.organizationId, orgId));
-  const visitIds = orgVisits.map(v => v.id);
+  const visitIds = orgVisits.map((v: { id: string }) => v.id);
 
   // Collect invoice IDs for this org
   const orgInvoices = await db
     .select({ id: invoices.id })
     .from(invoices)
     .where(eq(invoices.organizationId, orgId));
-  const invoiceIds = orgInvoices.map(i => i.id);
+  const invoiceIds = orgInvoices.map((i: { id: string }) => i.id);
 
   // Delete in FK-safe order (leaves before roots)
   if (visitIds.length > 0) {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       .select({ patientId: organizationPatients.patientId })
       .from(organizationPatients)
       .where(inArray(organizationPatients.patientId, patientIds));
-    const sharedIds = new Set(sharedPatients.map(r => r.patientId));
+    const sharedIds = new Set(sharedPatients.map((r: { patientId: string }) => r.patientId));
     const soloPatientIds = patientIds.filter(id => !sharedIds.has(id));
     if (soloPatientIds.length > 0) {
       await db.delete(patients).where(inArray(patients.id, soloPatientIds));
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       .select({ userId: organizationMembers.userId })
       .from(organizationMembers)
       .where(inArray(organizationMembers.userId, userIds));
-    const stillMemberedIds = new Set(stillMembered.map(r => r.userId));
+    const stillMemberedIds = new Set(stillMembered.map((r: { userId: string }) => r.userId));
     const soloUserIds = userIds.filter(id => !stillMemberedIds.has(id));
 
     if (soloUserIds.length > 0) {
