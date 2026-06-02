@@ -41,6 +41,20 @@ export default function AppointmentsPage() {
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setCurrentUserRole(d.user.role);
+          setCurrentUserId(d.user.userId);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function updateStatus(id: string, status: string) {
     setUpdatingId(id);
@@ -54,10 +68,12 @@ export default function AppointmentsPage() {
   }
 
   const fetchAppointments = useCallback(async () => {
+    if (!currentUserId && currentUserRole === "") return;
     setLoading(true);
     const params = new URLSearchParams();
     if (dateFilter) params.set("date", dateFilter);
     if (statusFilter) params.set("status", statusFilter);
+    if (currentUserRole === "DOCTOR" && currentUserId) params.set("doctorId", currentUserId);
     try {
       const res = await fetch(`/api/appointments?${params}`);
       const data = await res.json();
@@ -65,7 +81,7 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, statusFilter]);
+  }, [dateFilter, statusFilter, currentUserRole, currentUserId]);
 
   useEffect(() => {
     fetchAppointments();

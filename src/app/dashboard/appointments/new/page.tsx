@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface Patient { id: string; patientCode: string; name: string; }
-interface Doctor { id: string; name: string; }
+interface Doctor { id: string; name: string; role: string; }
 
 export default function NewAppointmentPage() {
   return (
@@ -28,6 +28,8 @@ function NewAppointmentForm() {
   const [error, setError] = useState("");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [form, setForm] = useState({
     patientId: "",
@@ -48,14 +50,23 @@ function NewAppointmentForm() {
   }, [patientSearch]);
 
   useEffect(() => {
-    fetch("/api/org/members")
-      .then((r) => r.json())
-      .then((d) => {
-        const eligible = (d.members || []).filter(
-          (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
-        );
-        setDoctors(eligible.map((m: { userId: string; name: string }) => ({ id: m.userId, name: m.name })));
-      });
+    Promise.all([
+      fetch("/api/org/members").then((r) => r.json()),
+      fetch("/api/auth/me").then((r) => r.json()),
+    ]).then(([membersData, meData]) => {
+      const eligible = (membersData.members || []).filter(
+        (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+      );
+      setDoctors(eligible.map((m: { userId: string; name: string; role: string }) => ({ id: m.userId, name: m.name, role: m.role })));
+      const me = meData.user;
+      if (me) {
+        setCurrentUserRole(me.role);
+        setCurrentUserId(me.userId);
+        if (me.role === "DOCTOR") {
+          setForm((f) => ({ ...f, doctorId: me.userId }));
+        }
+      }
+    }).catch(() => {});
   }, []);
 
   // Pre-fill patientId and doctorId from URL params (follow-up flow)
@@ -172,19 +183,28 @@ function NewAppointmentForm() {
                 </select>
               </div>
 
-              <Select
-                id="doctor"
-                label="Doctor *"
-                value={form.doctorId}
-                onChange={update("doctorId")}
-              >
-                <option value="">— Select Doctor —</option>
-                {doctors.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {formatDoctorName(d.name)}
-                  </option>
-                ))}
-              </Select>
+              {currentUserRole === "DOCTOR" ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Doctor</label>
+                  <p className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
+                    {formatDoctorName(doctors.find((d) => d.id === currentUserId)?.name ?? "")}
+                  </p>
+                </div>
+              ) : (
+                <Select
+                  id="doctor"
+                  label="Doctor *"
+                  value={form.doctorId}
+                  onChange={update("doctorId")}
+                >
+                  <option value="">— Select Doctor —</option>
+                  {doctors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {formatDoctorName(d.name)}
+                    </option>
+                  ))}
+                </Select>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input

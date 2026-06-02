@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
   const dateFilter = searchParams.get("date");
   const statusFilter = searchParams.get("status");
   const patientIdFilter = searchParams.get("patientId");
+  const doctorIdFilter = searchParams.get("doctorId");
 
   const db = getDb();
 
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
   if (dateFilter) conditions.push(eq(appointments.appointmentDate, dateFilter));
   if (statusFilter) conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
   if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
+  if (doctorIdFilter) conditions.push(eq(appointments.doctorId, doctorIdFilter));
 
   const rows = await db
     .select({
