@@ -14,7 +14,7 @@ export async function sendSMSOTP(to: string, code: string): Promise<void> {
   const body = new URLSearchParams({
     From: from,
     To: to,
-    Body: `Your Parkkal verification code: ${code}. Valid for 15 minutes. Do not share this with anyone.`,
+    Body: `Your Root Dental verification code: ${code}. Valid for 15 minutes. Do not share this with anyone.`,
   });
 
   const res = await fetch(url, {

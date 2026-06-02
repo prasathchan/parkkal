@@ -10,13 +10,13 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
     <html>
     <head>
       <meta charset="utf-8" />
-      <title>Your Parkkal Verification Code</title>
+      <title>Your Root Dental Verification Code</title>
     </head>
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
       <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal Dental</h1>
-          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">Smile, We Care</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Root Dental</h1>
+          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">Deep Care, Strong Roots</p>
         </div>
         <div style="padding: 40px 32px; text-align: center;">
           <p style="color: #374151; font-size: 16px; margin: 0 0 8px;">Hi ${name},</p>
@@ -27,7 +27,7 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">If you didn't request this, you can safely ignore this email.</p>
         </div>
         <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© 2024 Parkkal Dental Clinic · app.parkkal.com</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© 2026 Root Dental · app.rootdental.in</p>
         </div>
       </div>
     </body>
@@ -41,9 +41,9 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal Dental <noreply@parkkal.com>",
+      from: "Root Dental <noreply@rootdental.in>",
       to: [to],
-      subject: "Your Parkkal verification code",
+      subject: "Your Root Dental verification code",
       html,
     }),
   });

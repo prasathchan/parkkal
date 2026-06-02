@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Parkkal Dental Clinic",
+  title: "Root Dental",
   description: "Dental Clinic Management System",
 };
 
