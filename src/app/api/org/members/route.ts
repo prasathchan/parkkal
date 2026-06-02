@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { organizationMembers, users, organizations } from "@/db/schema";
+import { organizationMembers, users, organizations, orgRoles } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -15,6 +15,7 @@ const addMemberSchema = z.object({
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
   role: z.enum(["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"]),
+  orgRoleId: z.string().optional(),
   salaryType: z.enum(["FIXED", "PER_APPOINTMENT"]).default("FIXED"),
   salaryAmount: z.number().default(0),
   joinedAt: z.string().optional(),
@@ -37,6 +38,9 @@ export async function GET(request: NextRequest) {
       gender: users.gender,
       address: users.address,
       role: organizationMembers.role,
+      orgRoleId: organizationMembers.orgRoleId,
+      orgRoleName: orgRoles.name,
+      orgRoleColor: orgRoles.color,
       salaryType: organizationMembers.salaryType,
       salaryAmount: organizationMembers.salaryAmount,
       joinedAt: organizationMembers.joinedAt,
@@ -45,8 +49,8 @@ export async function GET(request: NextRequest) {
     })
     .from(organizationMembers)
     .innerJoin(users, eq(organizationMembers.userId, users.id))
-    .where(eq(organizationMembers.organizationId, session.orgId))
-    ;
+    .leftJoin(orgRoles, eq(organizationMembers.orgRoleId, orgRoles.id))
+    .where(eq(organizationMembers.organizationId, session.orgId));
 
   return NextResponse.json({ members });
 }
@@ -109,6 +113,7 @@ export async function POST(request: NextRequest) {
       organizationId: session.orgId,
       userId: existingUser.id,
       role: data.role,
+      orgRoleId: data.orgRoleId || null,
       salaryType: data.salaryType,
       salaryAmount: data.salaryAmount,
       joinedAt: data.joinedAt || new Date().toISOString().split("T")[0],

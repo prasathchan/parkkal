@@ -16,11 +16,31 @@ interface Member {
   dateOfBirth: string | null;
   gender: string | null;
   role: string;
+  orgRoleId: string | null;
+  orgRoleName: string | null;
+  orgRoleColor: string | null;
   salaryType: string;
   salaryAmount: number;
   joinedAt: string | null;
   isActive: number;
 }
+
+interface OrgRole {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
+// Maps org role slug → system role enum (used when saving member)
+const SLUG_TO_SYSTEM_ROLE: Record<string, string> = {
+  administrator: "ADMIN",
+  doctor: "DOCTOR",
+  nurse: "NURSE",
+  receptionist: "RECEPTIONIST",
+  attendant: "ATTENDANT",
+  helper: "HELPER",
+};
 
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: "bg-red-100 text-red-700",
@@ -31,12 +51,11 @@ const ROLE_COLORS: Record<string, string> = {
   HELPER: "bg-gray-100 text-gray-700",
 };
 
-const ROLES = ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"] as const;
-
 export default function StaffPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [orgRoles, setOrgRoles] = useState<OrgRole[]>([]);
   const [form, setForm] = useState({
     email: "",
     name: "",
@@ -46,7 +65,7 @@ export default function StaffPage() {
     bloodGroup: "",
     panNumber: "",
     aadhaarNumber: "",
-    role: "RECEPTIONIST" as typeof ROLES[number],
+    orgRoleId: "",
     salaryType: "FIXED",
     salaryAmount: "",
     joinedAt: new Date().toISOString().split("T")[0],
@@ -74,6 +93,10 @@ export default function StaffPage() {
 
   useEffect(() => {
     fetchMembers();
+    fetch("/api/org/roles")
+      .then(r => r.json())
+      .then(d => setOrgRoles(d.roles || []))
+      .catch(() => {});
   }, []);
 
   async function fetchMembers() {
@@ -89,8 +112,11 @@ export default function StaffPage() {
       setTouched(t => ({ ...t, [field]: true }));
       setForm(f => {
         const updated = { ...f, [field]: e.target.value };
-        if (field === "role") {
-          updated.salaryType = e.target.value === "DOCTOR" ? "PER_APPOINTMENT" : "FIXED";
+        if (field === "orgRoleId") {
+          const selectedRole = orgRoles.find(r => r.id === e.target.value);
+          const slug = selectedRole?.slug || "";
+          // Auto-set salary type based on role
+          updated.salaryType = slug === "doctor" ? "PER_APPOINTMENT" : "FIXED";
         }
         return updated;
       });
@@ -98,7 +124,7 @@ export default function StaffPage() {
   }
 
   const staffHasErrors = Object.values(fieldErrors).some(Boolean);
-  const staffCanSubmit = form.email.trim() && form.role && form.ecName?.trim() && form.ecRelationship && form.ecPhone?.trim() && !staffHasErrors;
+  const staffCanSubmit = form.email.trim() && form.orgRoleId && form.ecName?.trim() && form.ecRelationship && form.ecPhone?.trim() && !staffHasErrors;
 
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
@@ -129,7 +155,11 @@ export default function StaffPage() {
           address: addressString || undefined,
           panNumber: form.panNumber || undefined,
           aadhaarNumber: form.aadhaarNumber || undefined,
-          role: form.role,
+          role: (() => {
+            const selectedRole = orgRoles.find(r => r.id === form.orgRoleId);
+            return SLUG_TO_SYSTEM_ROLE[selectedRole?.slug || ""] || "ATTENDANT";
+          })(),
+          orgRoleId: form.orgRoleId || undefined,
           salaryType: form.salaryType,
           salaryAmount: parseFloat(form.salaryAmount) || 0,
           joinedAt: form.joinedAt,
@@ -209,9 +239,18 @@ export default function StaffPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] || "bg-gray-100 text-gray-700"}`}>
-                        {m.role}
-                      </span>
+                      {m.orgRoleName ? (
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full text-white"
+                          style={{ backgroundColor: m.orgRoleColor || "#6B7280" }}
+                        >
+                          {m.orgRoleName}
+                        </span>
+                      ) : (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] || "bg-gray-100 text-gray-700"}`}>
+                          {m.role}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-700">{m.salaryType}</td>
                     <td className="px-4 py-3 text-slate-700">
@@ -328,12 +367,15 @@ export default function StaffPage() {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Role *</label>
                   <select
-                    value={form.role}
-                    onChange={updateForm("role")}
+                    value={form.orgRoleId}
+                    onChange={updateForm("orgRoleId")}
                     required
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    <option value="">— Select Role —</option>
+                    {orgRoles.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
