@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { payments, visits } from "@/db/schema";
+import { payments, visits, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -89,6 +89,12 @@ export async function POST(
     status: isFullyPaid ? "COMPLETED" : visit.status,
     updatedAt: Date.now(),
   }).where(eq(visits.id, id));
+
+  if (isFullyPaid && visit.appointmentId) {
+    await db.update(appointments)
+      .set({ status: "COMPLETED" })
+      .where(and(eq(appointments.id, visit.appointmentId), eq(appointments.organizationId, session.orgId)));
+  }
 
   return NextResponse.json({ payment: newPayment }, { status: 201 });
 }
