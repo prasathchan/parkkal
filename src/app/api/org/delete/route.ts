@@ -84,8 +84,10 @@ export async function POST(request: NextRequest) {
   await db.delete(treatments).where(eq(treatments.organizationId, orgId));
   await db.delete(prescriptions).where(eq(prescriptions.organizationId, orgId));
   await db.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId));
-  await db.delete(attachments).where(eq(attachments.organizationId, orgId));
-  await db.delete(featureFlags).where(eq(featureFlags.organizationId, orgId));
+  if (visitIds.length > 0) {
+    await db.delete(attachments).where(inArray(attachments.visitId, visitIds));
+  }
+  await db.delete(featureFlags).where(eq(featureFlags.orgId, orgId));
 
   if (patientIds.length > 0) {
     await db.delete(emergencyContacts).where(
