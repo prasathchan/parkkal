@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 
 function validatePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -53,14 +54,7 @@ export default function NewPatientPage() {
     ecPhone: "",
     ecEmail: "",
   });
-  const [addressData, setAddressData] = useState<AddressValue>({
-    country: "India",
-    state: "",
-    district: "",
-    city: "",
-    pincode: "",
-    fullAddress: "",
-  });
+  const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
 
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -87,20 +81,7 @@ export default function NewPatientPage() {
     setError("");
     setLoading(true);
 
-    const addressString = [
-      addressData.fullAddress,
-      addressData.city,
-      addressData.district,
-      addressData.state
-        ? addressData.pincode
-          ? `${addressData.state} - ${addressData.pincode}`
-          : addressData.state
-        : "",
-      addressData.country,
-    ]
-      .filter(Boolean)
-      .join(", ")
-      .trim();
+    const addressString = serializeAddress(addressData);
 
     const payload = {
       name: form.name,

@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import Link from "next/link";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 
 interface Member {
   memberId: string;
@@ -54,14 +55,7 @@ export default function StaffPage() {
     ecRelationship: "",
     ecPhone: "",
   });
-  const [staffAddress, setStaffAddress] = useState<AddressValue>({
-    country: "India",
-    state: "",
-    district: "",
-    city: "",
-    pincode: "",
-    fullAddress: "",
-  });
+  const [staffAddress, setStaffAddress] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -120,20 +114,7 @@ export default function StaffPage() {
     setFormError("");
     setSaving(true);
     try {
-      const addressString = [
-        staffAddress.fullAddress,
-        staffAddress.city,
-        staffAddress.district,
-        staffAddress.state
-          ? staffAddress.pincode
-            ? `${staffAddress.state} - ${staffAddress.pincode}`
-            : staffAddress.state
-          : "",
-        staffAddress.country,
-      ]
-        .filter(Boolean)
-        .join(", ")
-        .trim();
+      const addressString = serializeAddress(staffAddress);
 
       const res = await fetch("/api/org/members", {
         method: "POST",

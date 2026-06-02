@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { parseAddress, serializeAddress, formatAddressDisplay, EMPTY_ADDRESS } from "@/lib/address";
 
 interface Member {
   memberId: string;
@@ -73,12 +75,12 @@ export default function StaffDetailPage() {
     phone: "",
     dateOfBirth: "",
     gender: "",
-    address: "",
     role: "",
     salaryType: "FIXED",
     salaryAmount: "0",
     isActive: true,
   });
+  const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
@@ -99,12 +101,12 @@ export default function StaffDetailPage() {
         phone: found.phone || "",
         dateOfBirth: found.dateOfBirth || "",
         gender: found.gender || "",
-        address: found.address || "",
         role: found.role,
         salaryType: found.salaryType,
         salaryAmount: String(found.salaryAmount),
         isActive: found.isActive === 1,
       });
+      setAddressData(parseAddress(found.address));
     }
     setLoading(false);
   }
@@ -148,7 +150,7 @@ export default function StaffDetailPage() {
           phone: editForm.phone || null,
           dateOfBirth: editForm.dateOfBirth || null,
           gender: editForm.gender || null,
-          address: editForm.address || null,
+          address: serializeAddress(addressData) || null,
         }),
       });
       if (!userRes.ok) {
@@ -284,7 +286,7 @@ export default function StaffDetailPage() {
               {member.address && (
                 <div className="col-span-2 sm:col-span-3">
                   <p className="text-xs text-slate-400 mb-0.5">Address</p>
-                  <p className="font-medium text-slate-900">{member.address}</p>
+                  <p className="font-medium text-slate-900">{formatAddressDisplay(parseAddress(member.address))}</p>
                 </div>
               )}
             </div>
@@ -339,13 +341,7 @@ export default function StaffDetailPage() {
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
-                    <textarea
-                      value={editForm.address}
-                      onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
-                      rows={2}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                      placeholder="Street, City, State, Pincode"
-                    />
+                    <AddressForm value={addressData} onChange={setAddressData} />
                   </div>
                 </div>
 

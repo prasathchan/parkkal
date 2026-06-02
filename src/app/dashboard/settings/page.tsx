@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Header } from "@/components/header";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
+import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 
 interface OrgProfile {
   id: string;
@@ -17,14 +18,6 @@ interface OrgProfile {
   themeConfig: string | null;
 }
 
-function parseAddress(raw: string | null): AddressValue {
-  return { country: "India", state: "", district: "", city: "", pincode: "", fullAddress: raw || "" };
-}
-
-function serializeAddress(a: AddressValue): string {
-  const parts = [a.fullAddress, a.city, a.district, a.state ? (a.pincode ? `${a.state} - ${a.pincode}` : a.state) : "", a.country].filter(Boolean);
-  return parts.join(", ");
-}
 
 type Tab = "profile" | "appearance" | "security";
 
@@ -32,7 +25,7 @@ export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
   const [tab, setTab] = useState<Tab>("profile");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
-  const [addressData, setAddressData] = useState<AddressValue>({ country: "India", state: "", district: "", city: "", pincode: "", fullAddress: "" });
+  const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [theme, setTheme] = useState<OrgThemeConfig>(DEFAULT_THEME);
   const [customColor, setCustomColor] = useState("#2563eb");
   const [loading, setLoading] = useState(true);

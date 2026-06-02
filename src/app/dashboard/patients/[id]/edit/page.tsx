@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 
 interface Patient {
@@ -49,14 +50,7 @@ export default function PatientEditPage() {
     panNumber: "",
     aadhaarNumber: "",
   });
-  const [addressData, setAddressData] = useState<AddressValue>({
-    country: "India",
-    state: "",
-    district: "",
-    city: "",
-    pincode: "",
-    fullAddress: "",
-  });
+  const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -76,14 +70,7 @@ export default function PatientEditPage() {
           panNumber: p.panNumber || "",
           aadhaarNumber: p.aadhaarNumber || "",
         });
-        setAddressData({
-          country: "India",
-          state: "",
-          district: "",
-          city: "",
-          pincode: "",
-          fullAddress: p.address || "",
-        });
+        setAddressData(parseAddress(p.address));
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -123,17 +110,7 @@ export default function PatientEditPage() {
           email: form.email.trim() || undefined,
           dateOfBirth: form.dateOfBirth || undefined,
           gender: form.gender || undefined,
-          address: [
-            addressData.fullAddress,
-            addressData.city,
-            addressData.district,
-            addressData.state
-              ? addressData.pincode
-                ? `${addressData.state} - ${addressData.pincode}`
-                : addressData.state
-              : "",
-            addressData.country,
-          ].filter(Boolean).join(", ") || undefined,
+          address: serializeAddress(addressData) || undefined,
           medicalHistory: form.medicalHistory || undefined,
           bloodGroup: form.bloodGroup || undefined,
           panNumber: form.panNumber || null,
