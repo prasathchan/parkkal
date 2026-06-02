@@ -181,7 +181,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
           )}
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: colors.textActive }}>
-              {user.orgName || "Root Dental"}
+              {user.orgName || "Parkkal Dental"}
             </p>
             <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>Clinic Management</p>
           </div>

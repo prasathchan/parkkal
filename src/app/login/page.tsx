@@ -58,8 +58,8 @@ export default function LoginPage() {
               <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Root Dental</h1>
-          <p className="text-slate-500 text-sm mt-1">Deep Care, Strong Roots</p>
+          <h1 className="text-2xl font-bold text-slate-900">Parkkal Dental</h1>
+          <p className="text-slate-500 text-sm mt-1">Smile, We Care</p>
         </div>
 
         <h2 className="text-xl font-semibold text-slate-800 mb-6 text-center">
@@ -81,7 +81,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              placeholder="admin@rootdental.in"
+              placeholder="admin@parkkal.com"
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>
@@ -122,9 +122,9 @@ export default function LoginPage() {
 
         <div className="mt-6 pt-6 border-t border-slate-100 text-center">
           <p className="text-sm text-slate-500">
-            New to Root Dental?{" "}
+            New to Parkkal?{" "}
             <a
-              href="https://app.rootdental.in/signup"
+              href="https://app.parkkal.com/signup"
               className="text-blue-600 font-medium hover:text-blue-700 hover:underline transition"
             >
               Create a clinic account
@@ -133,7 +133,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-slate-400 mt-6">
-          © 2026 Root Dental · app.rootdental.in
+          © 2024 Parkkal Dental Clinic · app.parkkal.com
         </p>
       </div>
     </div>
