@@ -7,9 +7,14 @@ let warned = false;
 
 function getSecret(): Uint8Array {
   if (cachedSecret) return cachedSecret;
-  if (!process.env.JWT_SECRET && !warned) {
-    warned = true;
-    console.warn("[SECURITY] JWT_SECRET env var is not set. Using insecure default. Set JWT_SECRET before production deployment.");
+  if (!process.env.JWT_SECRET) {
+    if (!warned) {
+      warned = true;
+      console.error("[SECURITY] JWT_SECRET env var is not set. Using insecure default — DO NOT use in production.");
+    }
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("JWT_SECRET must be set in production");
+    }
   }
   cachedSecret = new TextEncoder().encode(
     process.env.JWT_SECRET || "parkkal-dental-secret-key-change-in-production"
@@ -45,7 +50,7 @@ export async function createOrgToken(payload: OrgSessionPayload): Promise<string
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime("24h")
     .sign(getSecret());
 }
 

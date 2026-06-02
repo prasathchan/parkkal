@@ -3,15 +3,22 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers, organizations } from "@/db/schema";
 import { getPreOrgSession, createOrgToken } from "@/lib/auth";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "strict" as const,
   path: "/",
 };
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`select-org:${ip}`, { limit: 20, windowMs: 15 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const preSession = await getPreOrgSession(request);
   if (!preSession) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ success: true });
     response.cookies.set("pkd_org_session", orgToken, {
       ...COOKIE_OPTS,
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24,
     });
     response.cookies.delete("pkd_session");
     return response;

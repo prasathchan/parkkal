@@ -60,6 +60,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { userId } = await params;
+
+  if (userId === session.userId) {
+    return NextResponse.json({ error: "You cannot remove yourself from the organization" }, { status: 400 });
+  }
   const db = getDb();
 
   // Verify member belongs to this org before deleting

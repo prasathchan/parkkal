@@ -26,6 +26,24 @@ export async function GET(request: NextRequest) {
   if (!entityType || !entityId) return NextResponse.json({ contacts: [] });
 
   const db = getDb();
+
+  // Verify entity belongs to this org before returning contacts
+  if (entityType === "PATIENT") {
+    const [membership] = await db
+      .select({ patientId: organizationPatients.patientId })
+      .from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, entityId)));
+    if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } else if (entityType === "USER") {
+    const [membership] = await db
+      .select({ userId: organizationMembers.userId })
+      .from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, entityId)));
+    if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } else {
+    return NextResponse.json({ error: "Invalid entityType" }, { status: 400 });
+  }
+
   const contacts = await db.select().from(emergencyContacts)
     .where(and(eq(emergencyContacts.entityType, entityType), eq(emergencyContacts.entityId, entityId)));
 

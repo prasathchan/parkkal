@@ -16,7 +16,7 @@ const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 }; // 10 attempts
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "strict" as const,
   path: "/",
 };
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       const response = NextResponse.json({ redirect: "/dashboard" });
       response.cookies.set("pkd_org_session", orgToken, {
         ...COOKIE_OPTS,
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 60 * 60 * 24,
       });
       return response;
     }

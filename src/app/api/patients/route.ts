@@ -77,7 +77,14 @@ export async function GET(request: NextRequest) {
     .orderBy(desc(patients.createdAt))
     .limit(limit);
 
-  return NextResponse.json({ patients: results });
+  type PatientRow = typeof results[number];
+  const masked = results.map((p: PatientRow) => ({
+    ...p,
+    panNumber: p.panNumber ? `****${p.panNumber.slice(-4)}` : null,
+    aadhaarNumber: p.aadhaarNumber ? `****${p.aadhaarNumber.slice(-4)}` : null,
+  }));
+
+  return NextResponse.json({ patients: masked });
 }
 
 export async function POST(request: NextRequest) {
