@@ -120,7 +120,19 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-400 mt-8">
+        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+          <p className="text-sm text-slate-500">
+            New to Parkkal?{" "}
+            <a
+              href="https://app.parkkal.com/signup"
+              className="text-blue-600 font-medium hover:text-blue-700 hover:underline transition"
+            >
+              Create a clinic account
+            </a>
+          </p>
+        </div>
+
+        <p className="text-center text-xs text-slate-400 mt-6">
           © 2024 Parkkal Dental Clinic · app.parkkal.com
         </p>
       </div>
