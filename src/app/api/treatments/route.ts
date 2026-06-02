@@ -25,12 +25,14 @@ export async function GET(request: NextRequest) {
   const patientIdFilter = searchParams.get("patientId");
   const dateFilter = searchParams.get("date");
   const visitIdFilter = searchParams.get("visitId");
+  const doctorIdFilter = searchParams.get("doctorId");
 
   const db = getDb();
 
   const conditions = [eq(treatments.organizationId, session.orgId)];
   if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
   if (visitIdFilter) conditions.push(eq(treatments.visitId, visitIdFilter));
+  if (doctorIdFilter) conditions.push(eq(treatments.doctorId, doctorIdFilter));
   if (dateFilter) {
     const dayStart = new Date(dateFilter + "T00:00:00").getTime();
     const dayEnd = new Date(dateFilter + "T23:59:59.999").getTime();

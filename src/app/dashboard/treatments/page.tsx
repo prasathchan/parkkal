@@ -67,6 +67,9 @@ export default function TreatmentsPage() {
   const [formPatients, setFormPatients] = useState<Patient[]>([]);
   const [showFormPatientDropdown, setShowFormPatientDropdown] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState("");
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserName, setCurrentUserName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
@@ -74,16 +77,31 @@ export default function TreatmentsPage() {
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setCurrentUserRole(d.user.role);
+          setCurrentUserId(d.user.userId);
+          setCurrentUserName(d.user.name || "");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const fetchTreatments = useCallback(async () => {
+    if (currentUserRole === "" && !currentUserId) return;
     setLoading(true);
     const params = new URLSearchParams();
     if (filterPatientId) params.set("patientId", filterPatientId);
     if (dateFilter) params.set("date", dateFilter);
+    if (currentUserRole === "DOCTOR" && currentUserId) params.set("doctorId", currentUserId);
     const res = await fetch(`/api/treatments?${params}`);
     const data = await res.json();
     setTreatments(data.treatments || []);
     setLoading(false);
-  }, [filterPatientId, dateFilter]);
+  }, [filterPatientId, dateFilter, currentUserRole, currentUserId]);
 
   useEffect(() => {
     fetchTreatments();
@@ -121,9 +139,9 @@ export default function TreatmentsPage() {
     }, 300);
   }, [formPatientSearch]);
 
-  // Fetch members when slideover opens
+  // Fetch members when slideover opens (only needed for non-doctor roles)
   useEffect(() => {
-    if (showSlideover && members.length === 0) {
+    if (showSlideover && members.length === 0 && currentUserRole !== "DOCTOR") {
       fetch("/api/org/members")
         .then((r) => r.json())
         .then((d) => {
@@ -132,10 +150,10 @@ export default function TreatmentsPage() {
         })
         .catch(() => {});
     }
-  }, [showSlideover, members.length]);
+  }, [showSlideover, members.length, currentUserRole]);
 
   function openSlideover() {
-    setForm({ patientId: "", doctorId: "", description: "", procedure: "", toothNumbers: [], cost: "0" });
+    setForm({ patientId: "", doctorId: currentUserRole === "DOCTOR" ? currentUserId : "", description: "", procedure: "", toothNumbers: [], cost: "0" });
     setFormPatientSearch("");
     setFormPatients([]);
     setSubmitError("");
@@ -430,21 +448,27 @@ export default function TreatmentsPage() {
               {/* Doctor */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Doctor <span className="text-red-500">*</span>
+                  Doctor {currentUserRole !== "DOCTOR" && <span className="text-red-500">*</span>}
                 </label>
-                <select
-                  value={form.doctorId}
-                  onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
-                  required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select doctor...</option>
-                  {members.map((m) => (
-                    <option key={m.userId} value={m.userId}>
-                      {m.name} ({m.role})
-                    </option>
-                  ))}
-                </select>
+                {currentUserRole === "DOCTOR" ? (
+                  <p className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
+                    {currentUserName}
+                  </p>
+                ) : (
+                  <select
+                    value={form.doctorId}
+                    onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
+                    required
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select doctor...</option>
+                    {members.map((m) => (
+                      <option key={m.userId} value={m.userId}>
+                        {m.name} ({m.role})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Description */}
