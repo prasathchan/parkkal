@@ -24,7 +24,11 @@ interface Patient {
   aadhaarNumber: string | null;
 }
 
-const GENDERS = ["Male", "Female", "Other", "Prefer not to say"];
+const GENDERS: { value: string; label: string }[] = [
+  { value: "MALE", label: "Male" },
+  { value: "FEMALE", label: "Female" },
+  { value: "OTHER", label: "Other" },
+];
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function PatientEditPage() {
@@ -230,7 +234,7 @@ export default function PatientEditPage() {
                     className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select gender</option>
-                    {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+                    {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
                 </div>
               </div>
