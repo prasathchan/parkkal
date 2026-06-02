@@ -219,29 +219,29 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
 
       {/* User info + logout */}
       <div className="px-4 py-4" style={{ borderTop: `1px solid ${colors.divider}` }}>
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: theme.primaryColor }}>
             <span className="text-white text-xs font-bold">
               {user.name.charAt(0).toUpperCase()}
             </span>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-medium truncate" style={{ color: colors.userText }}>{user.name}</p>
             <p className="text-xs truncate" style={{ color: colors.userSubText }}>{user.role}</p>
           </div>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+            style={{ color: colors.text }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.background = colors.hoverBg; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = colors.text; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+            </svg>
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors"
-          style={{ color: colors.text }}
-          onMouseEnter={e => (e.currentTarget.style.background = colors.hoverBg)}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          Sign out
-        </button>
       </div>
     </aside>
   );

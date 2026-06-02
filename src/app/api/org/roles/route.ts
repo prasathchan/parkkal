@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
+
+// Maps system role enum → default role slug
+const SYSTEM_ROLE_TO_SLUG: Record<string, string> = {
+  ADMIN: "administrator",
+  DOCTOR: "doctor",
+  NURSE: "nurse",
+  RECEPTIONIST: "receptionist",
+  ATTENDANT: "attendant",
+  HELPER: "attendant",
+};
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -66,6 +76,29 @@ export async function GET(request: NextRequest) {
     } catch (e) {
       console.error("Role seeding failed:", e);
     }
+  }
+
+  // Auto-assign orgRoleId to members whose orgRoleId is null, based on their system role
+  try {
+    const slugToId: Record<string, string> = {};
+    for (const r of roles) slugToId[r.slug] = r.id;
+
+    const unassigned = await db
+      .select({ id: organizationMembers.id, role: organizationMembers.role })
+      .from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
+
+    for (const m of unassigned) {
+      const slug = SYSTEM_ROLE_TO_SLUG[m.role];
+      const roleId = slug ? slugToId[slug] : null;
+      if (roleId) {
+        await db.update(organizationMembers)
+          .set({ orgRoleId: roleId })
+          .where(eq(organizationMembers.id, m.id));
+      }
+    }
+  } catch (e) {
+    console.error("Member role auto-assign failed:", e);
   }
 
   // Get user counts per role
