@@ -10,6 +10,7 @@ export const organizations = sqliteTable("organizations", {
   logoUrl: text("logo_url"),
   themeConfig: text("theme_config"),
   isActive: integer("is_active").notNull().default(1),
+  scheduledDeleteAt: integer("scheduled_delete_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

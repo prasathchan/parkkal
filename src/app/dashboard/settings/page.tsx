@@ -25,7 +25,7 @@ interface AdminMember {
 }
 
 
-type Tab = "profile" | "appearance" | "security";
+type Tab = "profile" | "appearance" | "security" | "danger";
 
 export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
@@ -44,6 +44,10 @@ export default function SettingsPage() {
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   useEffect(() => {
     fetch("/api/org/profile")
@@ -131,10 +135,34 @@ export default function SettingsPage() {
 
   if (loading) return <div className="flex-1 p-6 text-slate-500" style={{ color: "var(--muted-foreground)" }}>Loading...</div>;
 
+  async function handleDeleteOrg() {
+    setDeleteError("");
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch("/api/org/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmName: deleteConfirmName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data.error || "Failed to schedule deletion.");
+        setDeleteSubmitting(false);
+        return;
+      }
+      await fetch("/api/auth/logout", { method: "POST" });
+      window.location.href = "/login";
+    } catch {
+      setDeleteError("Something went wrong.");
+      setDeleteSubmitting(false);
+    }
+  }
+
   const tabs: { id: Tab; label: string }[] = [
     { id: "profile", label: "Organization Profile" },
     { id: "appearance", label: "Appearance" },
     { id: "security", label: "Security" },
+    { id: "danger", label: "Danger Zone" },
   ];
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -177,8 +205,8 @@ export default function SettingsPage() {
               onClick={() => { setTab(t.id); setMessage(""); }}
               className="px-4 py-2 rounded-md text-sm font-medium transition-all"
               style={tab === t.id
-                ? { background: "var(--card)", color: "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
-                : { color: "var(--muted-foreground)" }
+                ? { background: t.id === "danger" ? "#dc2626" : "var(--card)", color: t.id === "danger" ? "#fff" : "var(--foreground)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                : { color: t.id === "danger" ? "#dc2626" : "var(--muted-foreground)" }
               }
             >
               {t.label}
@@ -384,10 +412,93 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {org && (
+        {org && tab !== "danger" && (
           <div className="mt-4 rounded-xl border p-4" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
             <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
             <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Slug: <code style={{ color: "var(--foreground)" }}>{org.slug}</code></p>
+          </div>
+        )}
+
+        {tab === "danger" && org && (
+          <div className="rounded-xl border-2 p-6" style={{ borderColor: "#fca5a5", background: "#fff5f5" }}>
+            <h2 className="text-lg font-semibold text-red-700 mb-1">Danger Zone</h2>
+            <p className="text-sm text-red-600 mb-6">Actions here are irreversible. Proceed with caution.</p>
+
+            <div className="rounded-lg border p-4 bg-white" style={{ borderColor: "#fca5a5" }}>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-medium text-slate-800">Delete this organization</h3>
+                  <p className="text-sm text-slate-500 mt-1">The organization will be deactivated immediately and permanently deleted after 15 days. All data including patients, appointments, and records will be erased.</p>
+                </div>
+                <button
+                  onClick={() => { setShowDeleteDialog(true); setDeleteConfirmName(""); setDeleteError(""); }}
+                  className="flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
+                  style={{ background: "#dc2626" }}
+                >
+                  Delete Organization
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation dialog */}
+        {showDeleteDialog && org && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900">Delete Organization</h3>
+                  <p className="text-xs text-slate-500">This cannot be undone</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-600 mb-4">
+                This will immediately deactivate <strong>{org.name}</strong> and schedule all data for permanent deletion in <strong>15 days</strong>.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Type <strong>{org.name}</strong> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={e => setDeleteConfirmName(e.target.value)}
+                  placeholder={org.name}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+
+              {deleteError && (
+                <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteDialog(false)}
+                  className="flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                  style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteOrg}
+                  disabled={deleteSubmitting || deleteConfirmName !== org.name}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
+                  style={{ background: "#dc2626" }}
+                >
+                  {deleteSubmitting ? "Deleting..." : "Delete Organization"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
