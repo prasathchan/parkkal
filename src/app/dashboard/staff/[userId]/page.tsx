@@ -14,11 +14,21 @@ interface Member {
   phone: string | null;
   dateOfBirth: string | null;
   gender: string | null;
+  address: string | null;
   role: string;
   salaryType: string;
   salaryAmount: number;
   joinedAt: string | null;
   isActive: number;
+}
+
+interface EmergencyContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  email: string | null;
+  address: string | null;
 }
 
 type SalaryRecord = {
@@ -48,16 +58,22 @@ export default function StaffDetailPage() {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [addingEC, setAddingEC] = useState(false);
+  const [ecForm, setEcForm] = useState({ name: "", relationship: "", phone: "", email: "" });
+  const [ecSaving, setEcSaving] = useState(false);
+  const [ecError, setEcError] = useState("");
 
   const [editForm, setEditForm] = useState({
     name: "",
     phone: "",
     dateOfBirth: "",
     gender: "",
+    address: "",
     role: "",
     salaryType: "FIXED",
     salaryAmount: "0",
@@ -67,6 +83,7 @@ export default function StaffDetailPage() {
   useEffect(() => {
     fetchMember();
     fetchSalary();
+    fetchEmergencyContacts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -81,6 +98,7 @@ export default function StaffDetailPage() {
         phone: found.phone || "",
         dateOfBirth: found.dateOfBirth || "",
         gender: found.gender || "",
+        address: found.address || "",
         role: found.role,
         salaryType: found.salaryType,
         salaryAmount: String(found.salaryAmount),
@@ -88,6 +106,14 @@ export default function StaffDetailPage() {
       });
     }
     setLoading(false);
+  }
+
+  async function fetchEmergencyContacts() {
+    const res = await fetch(`/api/emergency-contacts?entityType=USER&entityId=${userId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setEmergencyContacts(data.contacts || []);
+    }
   }
 
   async function fetchSalary() {
@@ -110,6 +136,7 @@ export default function StaffDetailPage() {
           phone: editForm.phone || null,
           dateOfBirth: editForm.dateOfBirth || null,
           gender: editForm.gender || null,
+          address: editForm.address || null,
         }),
       });
       if (!userRes.ok) {
@@ -141,6 +168,25 @@ export default function StaffDetailPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleAddEC() {
+    setEcSaving(true);
+    setEcError("");
+    const res = await fetch("/api/emergency-contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entityType: "USER", entityId: userId, ...ecForm }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      setEcError(d.error || "Failed to save");
+    } else {
+      setAddingEC(false);
+      setEcForm({ name: "", relationship: "", phone: "", email: "" });
+      await fetchEmergencyContacts();
+    }
+    setEcSaving(false);
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
@@ -223,6 +269,12 @@ export default function StaffDetailPage() {
                   {member.salaryType === "PER_APPOINTMENT" ? "/appt" : "/month"}
                 </p>
               </div>
+              {member.address && (
+                <div className="col-span-2 sm:col-span-3">
+                  <p className="text-xs text-slate-400 mb-0.5">Address</p>
+                  <p className="font-medium text-slate-900">{member.address}</p>
+                </div>
+              )}
             </div>
 
             {/* Edit Form */}
@@ -270,6 +322,16 @@ export default function StaffDetailPage() {
                       <option value="FEMALE">Female</option>
                       <option value="OTHER">Other</option>
                     </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                    <textarea
+                      value={editForm.address}
+                      onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      placeholder="Street, City, State, Pincode"
+                    />
                   </div>
                 </div>
 
@@ -345,6 +407,66 @@ export default function StaffDetailPage() {
             {saveSuccess && (
               <div className="mt-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
                 Changes saved successfully.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Emergency Contacts */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Emergency Contacts</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => { setAddingEC(true); setEcError(""); }}>
+                + Add
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {emergencyContacts.length === 0 && !addingEC && (
+              <p className="text-sm text-slate-400">No emergency contacts added.</p>
+            )}
+            {emergencyContacts.map((ec) => (
+              <div key={ec.id} className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 border-b border-slate-100 last:border-0">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-900">{ec.name} <span className="text-slate-400 font-normal">({ec.relationship})</span></p>
+                  <p className="text-sm text-slate-600">{ec.phone}{ec.email ? ` · ${ec.email}` : ""}</p>
+                  {ec.address && <p className="text-xs text-slate-400 mt-0.5">{ec.address}</p>}
+                </div>
+              </div>
+            ))}
+            {addingEC && (
+              <div className="mt-3 space-y-3 border-t border-slate-100 pt-4">
+                {ecError && <p className="text-sm text-red-600">{ecError}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+                    <input type="text" value={ecForm.name} onChange={(e) => setEcForm((f) => ({ ...f, name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Relationship *</label>
+                    <input type="text" value={ecForm.relationship} onChange={(e) => setEcForm((f) => ({ ...f, relationship: e.target.value }))}
+                      placeholder="Spouse, Parent, Sibling…"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Phone *</label>
+                    <input type="tel" value={ecForm.phone} onChange={(e) => setEcForm((f) => ({ ...f, phone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+                    <input type="email" value={ecForm.email} onChange={(e) => setEcForm((f) => ({ ...f, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleAddEC} disabled={ecSaving || !ecForm.name || !ecForm.relationship || !ecForm.phone}>
+                    {ecSaving ? "Saving…" : "Save Contact"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setAddingEC(false); setEcError(""); }}>Cancel</Button>
+                </div>
               </div>
             )}
           </CardContent>

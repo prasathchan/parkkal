@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
       phone: users.phone,
       dateOfBirth: users.dateOfBirth,
       gender: users.gender,
+      address: users.address,
       role: organizationMembers.role,
       salaryType: organizationMembers.salaryType,
       salaryAmount: organizationMembers.salaryAmount,

@@ -10,6 +10,7 @@ const updateSchema = z.object({
   phone: z.string().optional().nullable(),
   dateOfBirth: z.string().optional().nullable(),
   gender: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
 });
 
 export async function PATCH(
@@ -38,7 +39,7 @@ export async function PATCH(
     const db = getDb();
     await db.update(users).set({ ...data, updatedAt: Date.now() }).where(eq(users.id, id));
     const [updated] = await db
-      .select({ id: users.id, name: users.name, phone: users.phone, email: users.email, dateOfBirth: users.dateOfBirth, gender: users.gender })
+      .select({ id: users.id, name: users.name, phone: users.phone, email: users.email, dateOfBirth: users.dateOfBirth, gender: users.gender, address: users.address })
       .from(users)
       .where(eq(users.id, id));
     return NextResponse.json({ user: updated });

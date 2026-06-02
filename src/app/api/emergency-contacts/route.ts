@@ -15,6 +15,23 @@ const createSchema = z.object({
   address: z.string().optional(),
 });
 
+export async function GET(request: NextRequest) {
+  const session = await getSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const entityType = searchParams.get("entityType") as "USER" | "PATIENT" | null;
+  const entityId = searchParams.get("entityId");
+
+  if (!entityType || !entityId) return NextResponse.json({ contacts: [] });
+
+  const db = getDb();
+  const contacts = await db.select().from(emergencyContacts)
+    .where(and(eq(emergencyContacts.entityType, entityType), eq(emergencyContacts.entityId, entityId)));
+
+  return NextResponse.json({ contacts });
+}
+
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

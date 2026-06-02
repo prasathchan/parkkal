@@ -8,7 +8,7 @@ import { z } from "zod";
 
 const createPatientSchema = z.object({
   name: z.string().min(1),
-  phone: z.string().min(10).max(15),
+  phone: z.string().refine((v) => { const d = v.replace(/\D/g, ""); return d.length >= 10 && d.length <= 15; }, "Phone must have 10–15 digits"),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
