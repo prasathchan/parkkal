@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const { userId, type } = resendSchema.parse(body);
 
     // Rate limit by userId
-    const rl = checkRateLimit(`resend-otp:${userId}:${type}`, RESEND_RATE_LIMIT);
+    const rl = await checkRateLimit(`resend-otp:${userId}:${type}`, RESEND_RATE_LIMIT);
     if (!rl.allowed) {
       const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
       return NextResponse.json(

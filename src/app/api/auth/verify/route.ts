@@ -26,7 +26,7 @@ const COOKIE_OPTS = {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const ipRl = checkRateLimit(`verify:ip:${ip}`, VERIFY_RATE_LIMIT);
+  const ipRl = await checkRateLimit(`verify:ip:${ip}`, VERIFY_RATE_LIMIT);
   if (!ipRl.allowed) {
     const retryAfter = Math.ceil((ipRl.resetAt - Date.now()) / 1000);
     return NextResponse.json(
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, emailCode, phoneCode } = verifySchema.parse(body);
 
-    const userRl = checkRateLimit(`verify:user:${userId}`, VERIFY_USER_RATE_LIMIT);
+    const userRl = await checkRateLimit(`verify:user:${userId}`, VERIFY_USER_RATE_LIMIT);
     if (!userRl.allowed) {
       const retryAfter = Math.ceil((userRl.resetAt - Date.now()) / 1000);
       return NextResponse.json(

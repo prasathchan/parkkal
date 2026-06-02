@@ -23,7 +23,7 @@ const COOKIE_OPTS = {
 export async function POST(request: NextRequest) {
   // Rate limiting: 10 attempts per IP per 15 minutes
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
+  const rl = await checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
   if (!rl.allowed) {
     const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
     return NextResponse.json(

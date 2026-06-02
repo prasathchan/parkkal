@@ -26,7 +26,7 @@ function serializeAddress(a: AddressValue): string {
   return parts.join(", ");
 }
 
-type Tab = "profile" | "appearance";
+type Tab = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
@@ -41,6 +41,9 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/org/profile")
@@ -120,7 +123,36 @@ export default function SettingsPage() {
   const tabs: { id: Tab; label: string }[] = [
     { id: "profile", label: "Organization Profile" },
     { id: "appearance", label: "Appearance" },
+    { id: "security", label: "Security" },
   ];
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwMessage({ type: "error", text: "New passwords do not match." });
+      return;
+    }
+    setPwSaving(true);
+    setPwMessage(null);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPwMessage({ type: "error", text: data.error || "Failed to change password." });
+      } else {
+        setPwMessage({ type: "success", text: "Password changed successfully." });
+        setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      }
+    } catch {
+      setPwMessage({ type: "error", text: "Something went wrong." });
+    } finally {
+      setPwSaving(false);
+    }
+  }
 
   return (
     <div className="flex-1 flex flex-col" style={{ background: "var(--background)", color: "var(--foreground)" }}>
@@ -332,6 +364,49 @@ export default function SettingsPage() {
             <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
             <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Slug: <code style={{ color: "var(--foreground)" }}>{org.slug}</code></p>
           </div>
+        )}
+
+        {tab === "security" && (
+          <form onSubmit={handleChangePassword} className="space-y-5">
+            <Section title="Change Password" subtitle="Update your account password. You must enter your current password to confirm.">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>Current Password</label>
+                  <input type="password" required autoComplete="current-password"
+                    value={pwForm.currentPassword}
+                    onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    style={{ background: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>New Password</label>
+                  <input type="password" required autoComplete="new-password" minLength={8}
+                    value={pwForm.newPassword}
+                    onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    style={{ background: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+                  <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Minimum 8 characters.</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--foreground)" }}>Confirm New Password</label>
+                  <input type="password" required autoComplete="new-password"
+                    value={pwForm.confirmPassword}
+                    onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    style={{ background: "var(--background)", borderColor: "var(--border)", color: "var(--foreground)" }} />
+                </div>
+                {pwMessage && (
+                  <div className="text-sm rounded-lg px-4 py-3 border"
+                    style={pwMessage.type === "success"
+                      ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
+                      : { background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626" }}>
+                    {pwMessage.text}
+                  </div>
+                )}
+                <SaveButton saving={pwSaving} label="Change Password" />
+              </div>
+            </Section>
+          </form>
         )}
       </main>
     </div>

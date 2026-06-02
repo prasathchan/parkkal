@@ -57,7 +57,7 @@ const DEFAULT_ROLES: { name: string; slug: string; color: string; isSystem: numb
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const rl = checkRateLimit(`signup:${ip}`, SIGNUP_RATE_LIMIT);
+  const rl = await checkRateLimit(`signup:${ip}`, SIGNUP_RATE_LIMIT);
   if (!rl.allowed) {
     const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
     return NextResponse.json(

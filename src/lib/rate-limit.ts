@@ -1,37 +1,5 @@
-/**
- * In-memory sliding-window rate limiter.
- * Works per-process (Cloudflare Workers: per isolate instance).
- * For multi-region production, replace the store with Workers KV or D1.
- */
-
-interface Window {
-  count: number;
-  resetAt: number;
-}
-
-const store = new Map<string, Window>();
-const CLEANUP_INTERVAL = 60_000; // evict expired entries every minute
-
-let cleanupTimer: ReturnType<typeof setInterval> | null = null;
-
-function ensureCleanup() {
-  if (cleanupTimer) return;
-  cleanupTimer = setInterval(() => {
-    const now = Date.now();
-    for (const [key, win] of store) {
-      if (win.resetAt < now) store.delete(key);
-    }
-  }, CLEANUP_INTERVAL);
-  // Don't keep the process alive for this alone (Node.js)
-  if (typeof cleanupTimer === "object" && cleanupTimer !== null && "unref" in cleanupTimer) {
-    (cleanupTimer as { unref(): void }).unref();
-  }
-}
-
 export interface RateLimitConfig {
-  /** Maximum requests allowed within the window */
   limit: number;
-  /** Window duration in milliseconds */
   windowMs: number;
 }
 
@@ -41,41 +9,100 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-/**
- * Check (and record) a request against the rate limit for a given key.
- * Key is typically the client IP + endpoint identifier.
- */
-export function checkRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
-  ensureCleanup();
+// ── D1-backed global rate limiter ─────────────────────────────────────────────
+// Uses the rate_limits table (migration 0007). Falls back to in-memory for
+// local development where the D1 binding is unavailable.
 
+async function getD1(): Promise<D1Database | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCloudflareContext } = require("@opennextjs/cloudflare");
+    const ctx = getCloudflareContext();
+    return (ctx?.env?.DB as D1Database) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function checkD1RateLimit(
+  db: D1Database,
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
   const now = Date.now();
-  const existing = store.get(key);
+  const windowStart = now - config.windowMs;
 
-  if (!existing || existing.resetAt < now) {
-    // Fresh window
-    const win: Window = { count: 1, resetAt: now + config.windowMs };
-    store.set(key, win);
-    return { allowed: true, remaining: config.limit - 1, resetAt: win.resetAt };
+  const row = await db
+    .prepare("SELECT count, window_start FROM rate_limits WHERE key = ?")
+    .bind(key)
+    .first<{ count: number; window_start: number }>();
+
+  let count: number;
+  let windowBegin: number;
+
+  if (!row || row.window_start < windowStart) {
+    count = 1;
+    windowBegin = now;
+    await db
+      .prepare(
+        "INSERT INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?) " +
+        "ON CONFLICT(key) DO UPDATE SET count = 1, window_start = excluded.window_start, updated_at = excluded.updated_at"
+      )
+      .bind(key, now, now)
+      .run();
+  } else {
+    count = row.count + 1;
+    windowBegin = row.window_start;
+    await db
+      .prepare("UPDATE rate_limits SET count = ?, updated_at = ? WHERE key = ?")
+      .bind(count, now, key)
+      .run();
   }
 
-  existing.count++;
-  const allowed = existing.count <= config.limit;
+  const resetAt = windowBegin + config.windowMs;
   return {
-    allowed,
-    remaining: Math.max(0, config.limit - existing.count),
-    resetAt: existing.resetAt,
+    allowed: count <= config.limit,
+    remaining: Math.max(0, config.limit - count),
+    resetAt,
   };
 }
 
-/**
- * Extract client IP from Next.js/Cloudflare request headers.
- */
+// ── In-memory fallback (local dev) ────────────────────────────────────────────
+interface MemWindow { count: number; resetAt: number }
+const memStore = new Map<string, MemWindow>();
+
+function checkMemRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+  const now = Date.now();
+  const win = memStore.get(key);
+  if (!win || win.resetAt <= now) {
+    const resetAt = now + config.windowMs;
+    memStore.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: config.limit - 1, resetAt };
+  }
+  win.count += 1;
+  return {
+    allowed: win.count <= config.limit,
+    remaining: Math.max(0, config.limit - win.count),
+    resetAt: win.resetAt,
+  };
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export async function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const db = await getD1();
+  if (db) return checkD1RateLimit(db, key, config);
+  return checkMemRateLimit(key, config);
+}
+
 export function getClientIp(request: Request): string {
-  const headers = request.headers;
   return (
-    headers.get("cf-connecting-ip") ??
-    headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    headers.get("x-real-ip") ??
+    request.headers.get("cf-connecting-ip") ??
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    request.headers.get("x-real-ip") ??
     "unknown"
   );
 }
