@@ -411,7 +411,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {org && (
+        {org && tab === "profile" && (
           <div className="mt-4 rounded-xl border p-4 space-y-3" style={{ background: "var(--muted)", borderColor: "var(--border)" }}>
             <div>
               <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Organization ID: <code style={{ color: "var(--foreground)" }}>{org.id}</code></p>
