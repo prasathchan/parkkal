@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       .from(organizationPatients)
       .where(inArray(organizationPatients.patientId, patientIds));
     const sharedIds = new Set(sharedPatients.map((r: { patientId: string }) => r.patientId));
-    const soloPatientIds = patientIds.filter(id => !sharedIds.has(id));
+    const soloPatientIds = patientIds.filter((id: string) => !sharedIds.has(id));
     if (soloPatientIds.length > 0) {
       await db.delete(patients).where(inArray(patients.id, soloPatientIds));
     }
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       .from(organizationMembers)
       .where(inArray(organizationMembers.userId, userIds));
     const stillMemberedIds = new Set(stillMembered.map((r: { userId: string }) => r.userId));
-    const soloUserIds = userIds.filter(id => !stillMemberedIds.has(id));
+    const soloUserIds = userIds.filter((id: string) => !stillMemberedIds.has(id));
 
     if (soloUserIds.length > 0) {
       await db.delete(verificationTokens).where(inArray(verificationTokens.userId, soloUserIds));
