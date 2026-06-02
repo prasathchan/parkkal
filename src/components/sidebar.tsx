@@ -135,7 +135,7 @@ const navItems: NavItem[] = [
     ),
   },
 ];
-  {
+
 interface SidebarProps {
   user: { name: string; role: string; orgName?: string };
   logoUrl?: string | null;
