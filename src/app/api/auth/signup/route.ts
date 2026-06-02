@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
+import { users, organizations, organizationMembers, verificationTokens, orgRoles } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailOTP } from "@/lib/email";
@@ -34,6 +34,26 @@ function generateSlug(name: string): string {
 function randomSuffix(): string {
   return Math.random().toString(36).slice(2, 6);
 }
+
+const ALL_PERMISSIONS = [
+  "patients.view", "patients.create", "patients.edit", "patients.delete",
+  "visits.view", "visits.create", "visits.edit",
+  "billing.view", "billing.manage",
+  "staff.view", "staff.manage",
+  "salary.view", "salary.manage",
+  "settings.manage",
+  "reports.view",
+  "roles.manage",
+];
+
+// Default roles seeded for every new organization so the roles screen and
+// permission system have sensible starting points.
+const DEFAULT_ROLES: { name: string; slug: string; color: string; isSystem: number; permissions: string[] }[] = [
+  { name: "Administrator", slug: "administrator", color: "#3B82F6", isSystem: 1, permissions: ALL_PERMISSIONS },
+  { name: "Doctor", slug: "doctor", color: "#10B981", isSystem: 0, permissions: ["patients.view", "patients.create", "patients.edit", "visits.view", "visits.create", "visits.edit", "billing.view", "reports.view"] },
+  { name: "Nurse", slug: "nurse", color: "#F59E0B", isSystem: 0, permissions: ["patients.view", "visits.view", "visits.create"] },
+  { name: "Receptionist", slug: "receptionist", color: "#8B5CF6", isSystem: 0, permissions: ["patients.view", "patients.create", "visits.view", "billing.view"] },
+];
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -113,12 +133,39 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
+    // Seed default org roles and capture the Administrator role id for the owner.
+    let adminRoleId: string | null = null;
+    try {
+      const roleRows = DEFAULT_ROLES.map((r) => {
+        const id = `role_${orgId}_${r.slug}_${now}`;
+        if (r.slug === "administrator") adminRoleId = id;
+        return {
+          id,
+          organizationId: orgId,
+          name: r.name,
+          slug: r.slug,
+          description: null,
+          color: r.color,
+          isSystem: r.isSystem,
+          permissions: JSON.stringify(r.permissions),
+          createdAt: now,
+          updatedAt: now,
+        };
+      });
+      await db.insert(orgRoles).values(roleRows);
+    } catch (e) {
+      // org_roles table may not exist on un-migrated DBs — don't block signup.
+      console.error("Default role seeding skipped:", e);
+      adminRoleId = null;
+    }
+
     // Create org member
     await db.insert(organizationMembers).values({
       id: memberId,
       organizationId: orgId,
       userId,
       role: "ADMIN",
+      orgRoleId: adminRoleId,
       isActive: 0,
       createdAt: now,
     });

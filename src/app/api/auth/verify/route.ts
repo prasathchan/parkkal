@@ -4,6 +4,12 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
 import { createOrgToken } from "@/lib/auth-edge";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+
+// Limit OTP guesses to prevent brute-forcing the 6-digit codes.
+// 10 attempts per 15 min per IP, and 20 per 15 min per userId.
+const VERIFY_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
+const VERIFY_USER_RATE_LIMIT = { limit: 20, windowMs: 15 * 60 * 1000 };
 
 const verifySchema = z.object({
   userId: z.string(),
@@ -19,9 +25,28 @@ const COOKIE_OPTS = {
 };
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const ipRl = checkRateLimit(`verify:ip:${ip}`, VERIFY_RATE_LIMIT);
+  if (!ipRl.allowed) {
+    const retryAfter = Math.ceil((ipRl.resetAt - Date.now()) / 1000);
+    return NextResponse.json(
+      { error: "Too many verification attempts. Please wait before trying again." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { userId, emailCode, phoneCode } = verifySchema.parse(body);
+
+    const userRl = checkRateLimit(`verify:user:${userId}`, VERIFY_USER_RATE_LIMIT);
+    if (!userRl.allowed) {
+      const retryAfter = Math.ceil((userRl.resetAt - Date.now()) / 1000);
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
 
     const db = getDb();
     const now = Date.now();
