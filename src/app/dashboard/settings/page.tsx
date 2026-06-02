@@ -18,6 +18,12 @@ interface OrgProfile {
   themeConfig: string | null;
 }
 
+interface AdminMember {
+  userId: string;
+  name: string;
+  email: string;
+}
+
 
 type Tab = "profile" | "appearance" | "security";
 
@@ -25,6 +31,7 @@ export default function SettingsPage() {
   const [org, setOrg] = useState<OrgProfile | null>(null);
   const [tab, setTab] = useState<Tab>("profile");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [theme, setTheme] = useState<OrgThemeConfig>(DEFAULT_THEME);
   const [customColor, setCustomColor] = useState("#2563eb");
@@ -52,6 +59,17 @@ export default function SettingsPage() {
         setLogoPreview(o.logoUrl);
         setLoading(false);
       });
+    fetch("/api/org/members")
+      .then(r => r.json())
+      .then(data => {
+        const admins = (data.members || []).filter((m: { role: string }) => m.role === "ADMIN");
+        setAdminMembers(admins.map((m: { userId: string; name: string; email: string }) => ({
+          userId: m.userId,
+          name: m.name,
+          email: m.email,
+        })));
+      })
+      .catch(() => {});
   }, []);
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -181,8 +199,22 @@ export default function SettingsPage() {
               <Field label="Phone">
                 <input type="text" value={form.phone} placeholder="+91 98765 43210" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="field-input" />
               </Field>
-              <Field label="Email">
-                <input type="email" value={form.email} placeholder="clinic@example.com" onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="field-input" />
+              <Field label="Contact Person">
+                <select
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  className="field-input"
+                >
+                  <option value="">— None —</option>
+                  {adminMembers.map(m => (
+                    <option key={m.userId} value={m.email}>
+                      {m.name} ({m.email})
+                    </option>
+                  ))}
+                </select>
+                {form.email && (
+                  <p className="text-xs text-slate-500 mt-1">Contact email: {form.email}</p>
+                )}
               </Field>
               <Field label="Address">
                 <AddressForm value={addressData} onChange={setAddressData} />
