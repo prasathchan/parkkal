@@ -297,10 +297,11 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
   const [pincodeError, setPincodeError] = useState("");
   const [pincodeSuccess, setPincodeSuccess] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   const isIndia = value.country === "India";
-  const districts = isIndia && value.state ? (INDIA_DISTRICTS[value.state] ?? []) : [];
-  const showDistrictDropdown = isIndia && value.state && districts.length > 0;
+  const districts = (isIndia && value.state) ? (INDIA_DISTRICTS[value.state] ?? []) : [];
 
   function update(field: keyof AddressValue, val: string) {
     onChange({ ...value, [field]: val });
@@ -344,10 +345,10 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       const res = await fetch(`/api/address/pincode?pincode=${pincode}`);
       const data = await res.json();
       if (data.found) {
-        onChange({ ...value, pincode, state: data.state || value.state, district: data.district || value.district });
+        const cur = valueRef.current;
+        onChange({ ...cur, pincode, state: data.state || cur.state, district: data.district || cur.district });
         setPincodeSuccess(true);
       }
-      // Silently ignore failures — state/district can always be filled manually
     } catch {
       // API unreachable — ignore silently
     } finally {
@@ -435,25 +436,18 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1">District</label>
-          {showDistrictDropdown ? (
-            <select
-              value={value.district}
-              onChange={(e) => handleDistrictChange(e.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Select District</option>
-              {districts.map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={value.district}
-              onChange={(e) => handleDistrictChange(e.target.value)}
-              placeholder="Enter district"
-              className={INPUT_CLASS}
-            />
+          <input
+            type="text"
+            list="district-options"
+            value={value.district}
+            onChange={(e) => handleDistrictChange(e.target.value)}
+            placeholder="Enter or select district"
+            className={INPUT_CLASS}
+          />
+          {districts.length > 0 && (
+            <datalist id="district-options">
+              {districts.map((d) => <option key={d} value={d} />)}
+            </datalist>
           )}
         </div>
         <div>

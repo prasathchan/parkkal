@@ -79,6 +79,7 @@ export default function StaffDetailPage() {
     salaryAmount: "0",
     isActive: true,
   });
+  const [phoneError, setPhoneError] = useState("");
 
   useEffect(() => {
     fetchMember();
@@ -122,7 +123,18 @@ export default function StaffDetailPage() {
     setSalaryRecords((data.records || []).filter((r: SalaryRecord & { userId: string }) => r.userId === userId));
   }
 
+  function validatePhone(phone: string) {
+    if (!phone) return "";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) return "Phone must have at least 10 digits";
+    if (digits.length > 15) return "Phone number is too long";
+    return "";
+  }
+
   async function handleSave() {
+    const pErr = validatePhone(editForm.phone);
+    if (pErr) { setPhoneError(pErr); return; }
+    setPhoneError("");
     setSaving(true);
     setSaveError("");
     setSaveSuccess(false);
@@ -295,11 +307,13 @@ export default function StaffDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
                     <input
-                      type="text"
+                      type="tel"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => { setEditForm((f) => ({ ...f, phone: e.target.value })); setPhoneError(""); }}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${phoneError ? "border-red-400" : "border-slate-300"}`}
+                      placeholder="+91 98765 43210"
                     />
+                    {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Date of Birth</label>
@@ -397,7 +411,7 @@ export default function StaffDetailPage() {
                   <Button onClick={handleSave} disabled={saving}>
                     {saving ? "Saving..." : "Save Changes"}
                   </Button>
-                  <Button variant="outline" onClick={() => { setEditing(false); setSaveError(""); }}>
+                  <Button variant="outline" onClick={() => { setEditing(false); setSaveError(""); setPhoneError(""); }}>
                     Cancel
                   </Button>
                 </div>
