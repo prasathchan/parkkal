@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visits, visitItems, payments, attachments, prescriptions, patients, users } from "@/db/schema";
+import { visits, visitItems, payments, attachments, prescriptions, patients, users, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
 export async function GET(
@@ -62,7 +62,7 @@ export async function PATCH(
   const { id } = await params;
   const db = getDb();
 
-  const [existingVisit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+  const [existingVisit] = await db.select({ organizationId: visits.organizationId, appointmentId: visits.appointmentId }).from(visits).where(eq(visits.id, id));
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (existingVisit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
@@ -84,6 +84,14 @@ export async function PATCH(
   }
 
   await db.update(visits).set(updates).where(eq(visits.id, id));
+
+  // When visit is completed, also mark the linked appointment as COMPLETED
+  if (body.status === "COMPLETED" && existingVisit.appointmentId) {
+    await db.update(appointments)
+      .set({ status: "COMPLETED" })
+      .where(and(eq(appointments.id, existingVisit.appointmentId), eq(appointments.organizationId, session.orgId)));
+  }
+
   const [updated] = await db.select().from(visits).where(eq(visits.id, id));
   return NextResponse.json({ visit: updated });
 }
