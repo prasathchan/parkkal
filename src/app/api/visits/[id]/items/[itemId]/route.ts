@@ -3,6 +3,16 @@ import { eq, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const patchItemSchema = z.object({
+  itemName: z.string().min(1).optional(),
+  category: z.enum(["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"]).optional(),
+  toothNumber: z.string().optional().nullable(),
+  quantity: z.number().min(0.01).optional(),
+  unitPrice: z.number().min(0).optional(),
+  notes: z.string().optional().nullable(),
+});
 
 export async function PATCH(
   request: NextRequest,
@@ -19,14 +29,20 @@ export async function PATCH(
   if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json();
-  const updates: Record<string, unknown> = {};
-  if ("itemName" in body) updates.itemName = body.itemName;
-  if ("category" in body) updates.category = body.category;
-  if ("toothNumber" in body) updates.toothNumber = body.toothNumber;
-  if ("notes" in body) updates.notes = body.notes;
+  const parsed = patchItemSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
+  }
 
-  const qty = "quantity" in body ? Number(body.quantity) : undefined;
-  const price = "unitPrice" in body ? Number(body.unitPrice) : undefined;
+  const data = parsed.data;
+  const updates: Record<string, unknown> = {};
+  if (data.itemName !== undefined) updates.itemName = data.itemName;
+  if (data.category !== undefined) updates.category = data.category;
+  if (data.toothNumber !== undefined) updates.toothNumber = data.toothNumber;
+  if (data.notes !== undefined) updates.notes = data.notes;
+
+  const qty = data.quantity;
+  const price = data.unitPrice;
 
   if (qty !== undefined) updates.quantity = qty;
   if (price !== undefined) updates.unitPrice = price;

@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+
+const ALLOWED_MIME_TYPES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "application/pdf": ".pdf",
+  "image/dicom": ".dcm",
+};
+
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
+const VALID_FILE_TYPES = ["XRAY", "PRESCRIPTION", "DOCTOR_NOTE", "LAB_REPORT", "OTHER"] as const;
+type AttachmentFileType = typeof VALID_FILE_TYPES[number];
 
 export async function GET(
   request: NextRequest,
@@ -33,36 +47,63 @@ export async function POST(
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
-  const fileType = (formData.get("fileType") as string) || "OTHER";
-  const patientId = formData.get("patientId") as string;
+  const fileTypeRaw = (formData.get("fileType") as string) || "OTHER";
 
-  if (!file || !patientId) {
-    return NextResponse.json({ error: "file and patientId are required" }, { status: 400 });
+  if (!file) {
+    return NextResponse.json({ error: "file is required" }, { status: 400 });
+  }
+
+  // Validate file type enum
+  const fileType: AttachmentFileType = VALID_FILE_TYPES.includes(fileTypeRaw as AttachmentFileType)
+    ? (fileTypeRaw as AttachmentFileType)
+    : "OTHER";
+
+  // Validate MIME type against allowlist
+  const allowedExt = ALLOWED_MIME_TYPES[file.type];
+  if (!allowedExt) {
+    return NextResponse.json(
+      { error: "File type not allowed. Allowed: JPEG, PNG, WebP, GIF, PDF" },
+      { status: 400 }
+    );
+  }
+
+  // Server-side file size limit
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json({ error: "File must be under 10 MB" }, { status: 400 });
   }
 
   const db = getDb();
-  const [visitRow] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
+
+  // Fetch visit to get patientId from DB — never trust caller for this
+  const [visitRow] = await db
+    .select({ organizationId: visits.organizationId, patientId: visits.patientId })
+    .from(visits)
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visitRow) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visitRow.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const patientId = visitRow.patientId;
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const ext = path.extname(file.name) || "";
-  const fileName = `${crypto.randomUUID()}${ext}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", patientId);
+  // Use only the MIME-derived extension — never trust the filename extension
+  const fileName = `${crypto.randomUUID()}${allowedExt}`;
+
+  // Store outside public/ so files are not publicly accessible
+  const uploadDir = path.join(process.cwd(), "private_uploads", patientId);
   await mkdir(uploadDir, { recursive: true });
   await writeFile(path.join(uploadDir, fileName), buffer);
 
-  const fileUrl = `/uploads/${patientId}/${fileName}`;
+  // fileUrl stores the logical path used by the authenticated /api/files route
+  const fileUrl = `/api/files/${patientId}/${fileName}`;
 
   const newAttachment = {
     id: crypto.randomUUID(),
     visitId: id,
     patientId,
     fileName,
-    originalName: file.name,
-    fileType: fileType as "XRAY" | "PRESCRIPTION" | "DOCTOR_NOTE" | "LAB_REPORT" | "OTHER",
+    originalName: file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
+    fileType,
     mimeType: file.type,
     fileSize: file.size,
     fileUrl,

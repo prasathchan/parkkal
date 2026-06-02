@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, notInArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { appointments } from "@/db/schema";
+import { appointments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -77,4 +77,35 @@ export async function PATCH(
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const db = getDb();
+
+  const [appt] = await db
+    .select({ id: appointments.id, organizationId: appointments.organizationId })
+    .from(appointments)
+    .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+
+  if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Prevent deleting if a visit already exists for this appointment
+  const [linked] = await db
+    .select({ id: visits.id })
+    .from(visits)
+    .where(and(eq(visits.appointmentId, id), eq(visits.organizationId, session.orgId)));
+
+  if (linked) {
+    return NextResponse.json({ error: "Cannot delete appointment: a visit is linked to it" }, { status: 409 });
+  }
+
+  await db.delete(appointments).where(eq(appointments.id, id));
+  return NextResponse.json({ success: true });
 }

@@ -3,6 +3,17 @@ import { eq, desc, and, count, like, or } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const createVisitSchema = z.object({
+  patientId: z.string().min(1),
+  doctorId: z.string().min(1),
+  visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "visitDate must be YYYY-MM-DD"),
+  chiefComplaint: z.string().optional(),
+  doctorNotes: z.string().optional(),
+  appointmentId: z.string().optional(),
+  visitType: z.enum(["APPOINTMENT", "WALKIN"]).default("WALKIN"),
+});
 
 function generateVisitCode(date: string, seq: number): string {
   const d = date.replace(/-/g, "");
@@ -64,11 +75,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { patientId, doctorId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = body;
-
-    if (!patientId || !doctorId || !visitDate) {
-      return NextResponse.json({ error: "patientId, doctorId, visitDate are required" }, { status: 400 });
+    const parsed = createVisitSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
     }
+    const { patientId, doctorId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
 
     const db = getDb();
 
@@ -144,6 +155,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });
   } catch (error) {
+    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     console.error("Create visit error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

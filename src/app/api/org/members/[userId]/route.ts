@@ -3,6 +3,15 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { z } from "zod";
+
+const patchSchema = z.object({
+  role: z.enum(["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"]).optional(),
+  salaryType: z.enum(["FIXED", "PER_APPOINTMENT"]).optional(),
+  salaryAmount: z.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+  orgRoleId: z.string().optional().nullable(),
+});
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const session = await getSession(request);
@@ -12,20 +21,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { userId } = await params;
     const body = await request.json();
-    const { role, salaryType, salaryAmount, isActive } = body;
+    const parsed = patchSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
+    }
 
+    const data = parsed.data;
     const db = getDb();
+
+    // Verify the target user is actually a member of this org
+    const [membership] = await db
+      .select({ id: organizationMembers.id })
+      .from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId)));
+    if (!membership) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+
     const updates: Record<string, unknown> = {};
-    if (role !== undefined) updates.role = role;
-    if (salaryType !== undefined) updates.salaryType = salaryType;
-    if (salaryAmount !== undefined) updates.salaryAmount = salaryAmount;
-    if (isActive !== undefined) updates.isActive = isActive ? 1 : 0;
+    if (data.role !== undefined) updates.role = data.role;
+    if (data.salaryType !== undefined) updates.salaryType = data.salaryType;
+    if (data.salaryAmount !== undefined) updates.salaryAmount = data.salaryAmount;
+    if (data.isActive !== undefined) updates.isActive = data.isActive ? 1 : 0;
+    if (data.orgRoleId !== undefined) updates.orgRoleId = data.orgRoleId;
 
     await db.update(organizationMembers).set(updates).where(
       and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
     );
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     console.error("Update member error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -38,6 +61,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
   const { userId } = await params;
   const db = getDb();
+
+  // Verify member belongs to this org before deleting
+  const [membership] = await db
+    .select({ id: organizationMembers.id })
+    .from(organizationMembers)
+    .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId)));
+  if (!membership) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+
   await db.delete(organizationMembers).where(
     and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
   );

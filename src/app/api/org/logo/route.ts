@@ -6,7 +6,12 @@ import { getDb } from "@/lib/db";
 import { organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+// SVG is excluded: it can contain embedded JavaScript and be served as HTML by some browsers
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB
 
 export async function POST(request: NextRequest) {
@@ -18,15 +23,16 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("logo") as File | null;
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Only JPEG, PNG, WebP, or SVG allowed" }, { status: 400 });
+    const allowedExt = ALLOWED_TYPES[file.type];
+    if (!allowedExt) {
+      return NextResponse.json({ error: "Only JPEG, PNG, or WebP allowed" }, { status: 400 });
     }
     if (file.size > MAX_SIZE) {
       return NextResponse.json({ error: "File must be under 2MB" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const fileName = `${session.orgId}.${ext}`;
+    // Use MIME-derived extension, not the filename extension
+    const fileName = `${session.orgId}${allowedExt}`;
     const uploadDir = path.join(process.cwd(), "public", "uploads", "logos");
     await mkdir(uploadDir, { recursive: true });
 

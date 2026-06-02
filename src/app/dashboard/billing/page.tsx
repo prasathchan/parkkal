@@ -74,7 +74,6 @@ export default function BillingPage() {
         body: JSON.stringify({
           amount: due,
           paymentMethod: payMethod,
-          patientId: visit.patientId,
         }),
       });
       if (res.ok) {
