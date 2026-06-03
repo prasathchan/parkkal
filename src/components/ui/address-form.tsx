@@ -381,31 +381,8 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
         </select>
       </div>
 
-      {/* Row 2: State + Pincode */}
+      {/* Row 2: Pincode + State — Pincode first so auto-fill populates State before user picks it */}
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">State</label>
-          {isIndia ? (
-            <select
-              value={value.state}
-              onChange={(e) => handleStateChange(e.target.value)}
-              className={INPUT_CLASS}
-            >
-              <option value="">Select State</option>
-              {INDIA_STATES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={value.state}
-              onChange={(e) => update("state", e.target.value)}
-              placeholder="Enter state"
-              className={INPUT_CLASS}
-            />
-          )}
-        </div>
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1">Pincode / ZIP</label>
           <div className="relative">
@@ -428,6 +405,29 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
           </div>
           {pincodeError && (
             <p className="text-xs text-red-500 mt-0.5">{pincodeError}</p>
+          )}
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-700 mb-1">State</label>
+          {isIndia ? (
+            <select
+              value={value.state}
+              onChange={(e) => handleStateChange(e.target.value)}
+              className={INPUT_CLASS}
+            >
+              <option value="">Select State</option>
+              {INDIA_STATES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={value.state}
+              onChange={(e) => update("state", e.target.value)}
+              placeholder="Enter state"
+              className={INPUT_CLASS}
+            />
           )}
         </div>
       </div>
