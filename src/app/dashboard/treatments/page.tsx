@@ -503,10 +503,12 @@ export default function TreatmentsPage() {
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Tooth Selection (FDI)
                 </label>
-                <ToothChart
-                  value={form.toothNumbers}
-                  onChange={(teeth) => setForm((f) => ({ ...f, toothNumbers: teeth }))}
-                />
+                <div className="flex justify-center">
+                  <ToothChart
+                    value={form.toothNumbers}
+                    onChange={(teeth) => setForm((f) => ({ ...f, toothNumbers: teeth }))}
+                  />
+                </div>
               </div>
 
               {/* Cost */}
