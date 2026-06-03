@@ -9,3 +9,8 @@ binding = "DB"
 database_name = "parkkal-db"
 database_id = "9928a95f-17d2-4e84-80a1-c7b30d779704"
 migrations_dir = "drizzle/migrations"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "parkkal-files"
+

@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { readFile } from "fs/promises";
-import path from "path";
 import { getDb } from "@/lib/db";
-import { attachments, visits, organizationPatients } from "@/db/schema";
+import { attachments, visits, organizationPatients, organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
-
-const MIME_BY_EXT: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-  ".pdf": "application/pdf",
-  ".dcm": "application/dicom",
-};
+import { getFile } from "@/lib/storage";
 
 export async function GET(
   request: NextRequest,
@@ -24,17 +13,56 @@ export async function GET(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { path: segments } = await params;
-
-  // Expect exactly [patientId, fileName]
-  if (!segments || segments.length !== 2) {
+  if (!segments || segments.length < 2) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const [patientId, fileName] = segments;
-
-  // Reject path traversal attempts
-  if (patientId.includes("..") || patientId.includes("/") || fileName.includes("..") || fileName.includes("/")) {
+  // Reject path traversal
+  if (segments.some((s) => s.includes("..") || s.includes("/"))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const folder = segments[0];
+
+  // ── Logo: /api/files/logos/<fileName> ─────────────────────────────────────
+  if (folder === "logos") {
+    const db = getDb();
+    const [org] = await db
+      .select({ logoUrl: organizations.logoUrl })
+      .from(organizations)
+      .where(eq(organizations.id, session.orgId));
+
+    const expectedUrl = `/api/files/${segments.join("/")}`;
+    if (!org || org.logoUrl !== expectedUrl) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const file = await getFile(segments.join("/"));
+    if (!file) return NextResponse.json({ error: "File not found" }, { status: 404 });
+
+    return new NextResponse(file.data, {
+      headers: {
+        "Content-Type": file.mimeType,
+        "Cache-Control": "private, max-age=86400",
+        "Content-Disposition": `inline; filename="${segments[segments.length - 1]}"`,
+      },
+    });
+  }
+
+  // ── Patient file: /api/files/patients/<patientId>/<fileName> ─────────────
+  // Also supports legacy format /api/files/<patientId>/<fileName>
+  let patientId: string;
+  let storageKey: string;
+
+  if (folder === "patients" && segments.length === 3) {
+    patientId = segments[1];
+    storageKey = segments.join("/");
+  } else if (segments.length === 2) {
+    // Legacy format — migrate key to new structure transparently
+    patientId = segments[0];
+    storageKey = `patients/${segments[0]}/${segments[1]}`;
+  } else {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const db = getDb();
@@ -43,16 +71,21 @@ export async function GET(
   const [orgLink] = await db
     .select({ patientId: organizationPatients.patientId })
     .from(organizationPatients)
-    .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)));
-
+    .where(
+      and(
+        eq(organizationPatients.organizationId, session.orgId),
+        eq(organizationPatients.patientId, patientId)
+      )
+    );
   if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Verify this attachment record exists in the DB
+  const fileName = segments[segments.length - 1];
+
+  // Verify attachment record exists
   const [att] = await db
     .select({ id: attachments.id, mimeType: attachments.mimeType, visitId: attachments.visitId })
     .from(attachments)
     .where(and(eq(attachments.patientId, patientId), eq(attachments.fileName, fileName)));
-
   if (!att) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Verify the visit belongs to this org
@@ -60,24 +93,16 @@ export async function GET(
     .select({ organizationId: visits.organizationId })
     .from(visits)
     .where(and(eq(visits.id, att.visitId), eq(visits.organizationId, session.orgId)));
-
   if (!visit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  try {
-    const filePath = path.join(process.cwd(), "private_uploads", patientId, fileName);
-    const data = await readFile(filePath);
+  const file = await getFile(storageKey);
+  if (!file) return NextResponse.json({ error: "File not found" }, { status: 404 });
 
-    const ext = path.extname(fileName).toLowerCase();
-    const contentType = MIME_BY_EXT[ext] ?? att.mimeType ?? "application/octet-stream";
-
-    return new NextResponse(data, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "private, max-age=3600",
-        "Content-Disposition": `inline; filename="${fileName}"`,
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
-  }
+  return new NextResponse(file.data, {
+    headers: {
+      "Content-Type": file.mimeType,
+      "Cache-Control": "private, max-age=3600",
+      "Content-Disposition": `inline; filename="${fileName}"`,
+    },
+  });
 }
