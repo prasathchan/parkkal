@@ -139,6 +139,9 @@ export default function VisitDetailPage() {
   const [txSubmitting, setTxSubmitting] = useState(false);
   const [txError, setTxError] = useState("");
   const [txUpdating, setTxUpdating] = useState<string | null>(null);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkablePlans, setLinkablePlans] = useState<Treatment[]>([]);
+  const [linkLoading, setLinkLoading] = useState(false);
 
   const fetchVisit = useCallback(async () => {
     setLoading(true);
@@ -333,6 +336,30 @@ export default function VisitDetailPage() {
   async function handleDeleteTreatment(txId: string) {
     if (!confirm("Delete this treatment?")) return;
     await fetch(`/api/treatments/${txId}`, { method: "DELETE" });
+    await fetchVisit();
+  }
+
+  async function handleOpenLinkModal() {
+    if (!visit) return;
+    setLinkLoading(true);
+    setShowLinkModal(true);
+    const res = await fetch(`/api/treatments?patientId=${visit.patientId}`);
+    if (res.ok) {
+      const d = await res.json();
+      // Only show plans that aren't already linked to any visit
+      const linkedIds = new Set(treatments.map(t => t.id));
+      setLinkablePlans((d.treatments || []).filter((t: Treatment & { visitId?: string | null }) => !t.visitId && !linkedIds.has(t.id)));
+    }
+    setLinkLoading(false);
+  }
+
+  async function handleLinkPlan(txId: string) {
+    await fetch(`/api/treatments/${txId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitId: id }),
+    });
+    setShowLinkModal(false);
     await fetchVisit();
   }
 
@@ -862,7 +889,16 @@ export default function VisitDetailPage() {
               <div className="space-y-5">
                 {visit.status !== "CANCELLED" && (
                   <form onSubmit={handleAddTreatment} className="bg-slate-50 rounded-xl p-4 space-y-3 border border-slate-200">
-                    <p className="text-sm font-semibold text-slate-700">Add Treatment Item</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-slate-700">Add Treatment Item</p>
+                      <button
+                        type="button"
+                        onClick={handleOpenLinkModal}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        + Link Existing Plan
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
@@ -984,6 +1020,46 @@ export default function VisitDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* Link Existing Plan Modal */}
+      {showLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-900">Link Existing Treatment Plan</h3>
+              <button onClick={() => setShowLinkModal(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5 space-y-3">
+              {linkLoading ? (
+                <p className="text-sm text-slate-500 text-center py-6">Loading...</p>
+              ) : linkablePlans.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-6">No unlinked treatment plans found for this patient.</p>
+              ) : (
+                linkablePlans.map(plan => (
+                  <div key={plan.id} className="border border-slate-200 rounded-xl p-4 flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-800">{plan.description}</p>
+                      {plan.procedure && <p className="text-xs text-slate-500 mt-0.5">{plan.procedure}</p>}
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-yellow-50 text-yellow-700" : plan.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>
+                          {plan.status === "IN_PROGRESS" ? "In Progress" : plan.status.charAt(0) + plan.status.slice(1).toLowerCase()}
+                        </span>
+                        <span className="text-xs text-slate-500">{formatCurrency(plan.cost)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleLinkPlan(plan.id)}
+                      className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition font-medium flex-shrink-0"
+                    >
+                      Link
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPayModal && (

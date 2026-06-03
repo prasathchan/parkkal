@@ -11,6 +11,7 @@ const patchSchema = z.object({
   procedure: z.string().optional().nullable(),
   toothNumbers: z.string().optional().nullable(),
   cost: z.number().min(0).optional(),
+  visitId: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -41,6 +42,7 @@ export async function PATCH(
     if (data.procedure !== undefined) updates.procedure = data.procedure;
     if (data.toothNumbers !== undefined) updates.toothNumbers = data.toothNumbers;
     if (data.cost !== undefined) updates.cost = data.cost;
+    if (data.visitId !== undefined) updates.visitId = data.visitId;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
