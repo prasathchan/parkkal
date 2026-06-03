@@ -162,7 +162,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
   return (
     <aside
       data-sidebar=""
-      className="print:hidden w-64 flex-shrink-0 min-h-screen flex flex-col transition-colors duration-200"
+      className="print:hidden w-64 flex-shrink-0 h-screen sticky top-0 flex flex-col transition-colors duration-200"
       style={{ background: colors.bg, borderRight: isLight ? `1px solid ${colors.border}` : "none" }}
     >
       {/* Logo / Org Name */}
@@ -189,7 +189,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {visibleItems.map((item) => {
           const isActive =
             item.href === "/dashboard"

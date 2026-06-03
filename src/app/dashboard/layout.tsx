@@ -35,7 +35,7 @@ export default async function DashboardLayout({
           user={{ name: session.name, role: session.role, orgName: session.orgName }}
           logoUrl={org?.logoUrl ?? null}
         />
-        <div className="flex-1 flex flex-col min-w-0">{children}</div>
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">{children}</div>
       </div>
     </ThemeProvider>
   );
