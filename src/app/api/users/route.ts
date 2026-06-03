@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     })
     .from(organizationMembers)
     .innerJoin(users, eq(organizationMembers.userId, users.id))
-    .where(eq(organizationMembers.organizationId, session.orgId))
+    .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)))
     ;
 
   return NextResponse.json({ users: rows });

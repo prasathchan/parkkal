@@ -66,9 +66,9 @@ export async function POST(
     return NextResponse.json({ error: "Cannot add payment to a cancelled visit" }, { status: 400 });
   }
 
-  if (visit.status === "COMPLETED") {
-    return NextResponse.json({ error: "Visit is already completed" }, { status: 400 });
-  }
+  // COMPLETED visits can still receive payments — clinical workflow:
+  // doctor marks visit done, then receptionist collects payment at checkout.
+  // Only CANCELLED visits are locked.
 
   const due = visit.totalAmount - visit.paidAmount;
   if (due <= 0.001) {

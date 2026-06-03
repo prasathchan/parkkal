@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const db = getDb();
-  const members = await db
+  const rows = await db
     .select({
       memberId: organizationMembers.id,
       userId: users.id,
@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
       dateOfBirth: users.dateOfBirth,
       gender: users.gender,
       address: users.address,
+      panNumber: users.panNumber,
+      aadhaarNumber: users.aadhaarNumber,
       role: organizationMembers.role,
       orgRoleId: organizationMembers.orgRoleId,
       orgRoleName: orgRoles.name,
@@ -53,6 +55,16 @@ export async function GET(request: NextRequest) {
     .innerJoin(users, eq(organizationMembers.userId, users.id))
     .leftJoin(orgRoles, eq(organizationMembers.orgRoleId, orgRoles.id))
     .where(eq(organizationMembers.organizationId, session.orgId));
+
+  // Strip national IDs and salary info from non-ADMIN callers
+  type MemberRow = (typeof rows)[number];
+  const members: unknown[] = session.role === "ADMIN"
+    ? rows
+    : rows.map((r: MemberRow) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { panNumber, aadhaarNumber, salaryType, salaryAmount, ...rest } = r;
+        return rest;
+      });
 
   return NextResponse.json({ members });
 }

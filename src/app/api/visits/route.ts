@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const patientId = searchParams.get("patientId");
-  const doctorId = searchParams.get("doctorId");
+  // RBAC: DOCTOR role may only see their own visits.
+  const doctorId = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
   const status = searchParams.get("status");
   const date = searchParams.get("date");
   const search = searchParams.get("search");
@@ -79,7 +80,9 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
     }
-    const { patientId, doctorId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
+    const { patientId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
+    // RBAC: DOCTOR role can only create visits for themselves
+    const doctorId = session.role === "DOCTOR" ? session.userId : parsed.data.doctorId;
 
     const db = getDb();
 

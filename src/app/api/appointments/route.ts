@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createSchema.parse(body);
+    // RBAC: DOCTOR role can only create appointments for themselves
+    if (session.role === "DOCTOR") data.doctorId = session.userId;
 
     const db = getDb();
 
