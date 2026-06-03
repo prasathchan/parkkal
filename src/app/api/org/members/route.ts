@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       const activationUrl = `https://app.parkkal.com/activate?token=${tokenCode}`;
 
       try {
-        await sendStaffInviteEmail(data.email, data.name, orgName, activationUrl);
+        await sendStaffInviteEmail(data.email, data.name ?? data.email, orgName, activationUrl);
       } catch (emailErr) {
         console.error("Failed to send invite email:", emailErr);
         // Don't fail the request if email fails
