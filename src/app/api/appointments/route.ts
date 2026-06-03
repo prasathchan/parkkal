@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and, notInArray } from "drizzle-orm";
+import { eq, desc, asc, and, notInArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -9,8 +9,8 @@ import { z } from "zod";
 const createSchema = z.object({
   patientId: z.string().min(1),
   doctorId: z.string().min(1),
-  appointmentDate: z.string().min(1),
-  appointmentTime: z.string().min(1),
+  appointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "appointmentDate must be YYYY-MM-DD"),
+  appointmentTime: z.string().regex(/^\d{2}:\d{2}$/, "appointmentTime must be HH:MM"),
   type: z.enum(["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"]).default("CONSULTATION"),
   notes: z.string().optional(),
 });
@@ -23,13 +23,25 @@ export async function GET(request: NextRequest) {
   const dateFilter = searchParams.get("date");
   const statusFilter = searchParams.get("status");
   const patientIdFilter = searchParams.get("patientId");
-  const doctorIdFilter = searchParams.get("doctorId");
+
+  // RBAC: DOCTOR role may only see their own appointments.
+  // Ignore any doctorId passed by the client — derive it server-side.
+  const doctorIdFilter =
+    session.role === "DOCTOR"
+      ? session.userId
+      : searchParams.get("doctorId");
 
   const db = getDb();
 
   const conditions = [eq(appointments.organizationId, session.orgId)];
   if (dateFilter) conditions.push(eq(appointments.appointmentDate, dateFilter));
-  if (statusFilter) conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
+  if (statusFilter)
+    conditions.push(
+      eq(
+        appointments.status,
+        statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"
+      )
+    );
   if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
   if (doctorIdFilter) conditions.push(eq(appointments.doctorId, doctorIdFilter));
 
@@ -50,9 +62,9 @@ export async function GET(request: NextRequest) {
     .from(appointments)
     .leftJoin(patients, eq(appointments.patientId, patients.id))
     .leftJoin(users, eq(appointments.doctorId, users.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(appointments.createdAt))
-    ;
+    .where(and(...conditions))
+    // Clinic staff need chronological schedule, not creation-order.
+    .orderBy(asc(appointments.appointmentDate), asc(appointments.appointmentTime));
 
   return NextResponse.json({ appointments: rows });
 }

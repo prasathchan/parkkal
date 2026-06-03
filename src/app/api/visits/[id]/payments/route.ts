@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { payments, visits, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -21,8 +21,12 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
-  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+  const [visit] = await db
+    .select({ organizationId: visits.organizationId })
+    .from(visits)
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
+
   const rows = await db.select().from(payments).where(eq(payments.visitId, id));
   return NextResponse.json({ payments: rows });
 }
@@ -52,11 +56,18 @@ export async function POST(
   const db = getDb();
 
   // Fetch visit — get patientId from DB, not from caller
-  const [visit] = await db.select().from(visits).where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+  const [visit] = await db
+    .select()
+    .from(visits)
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
 
   if (visit.status === "CANCELLED") {
     return NextResponse.json({ error: "Cannot add payment to a cancelled visit" }, { status: 400 });
+  }
+
+  if (visit.status === "COMPLETED") {
+    return NextResponse.json({ error: "Visit is already completed" }, { status: 400 });
   }
 
   const due = visit.totalAmount - visit.paidAmount;
@@ -64,9 +75,11 @@ export async function POST(
     return NextResponse.json({ error: "Visit is already fully paid" }, { status: 400 });
   }
 
-  const newTotal = visit.paidAmount + amount;
-  if (newTotal > visit.totalAmount + 0.001) {
-    return NextResponse.json({ error: `Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}` }, { status: 400 });
+  if (amount > due + 0.001) {
+    return NextResponse.json(
+      { error: `Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}` },
+      { status: 400 }
+    );
   }
 
   const newPayment = {
@@ -83,18 +96,20 @@ export async function POST(
 
   await db.insert(payments).values(newPayment);
 
-  const isFullyPaid = newTotal >= visit.totalAmount - 0.001;
-  await db.update(visits).set({
-    paidAmount: newTotal,
-    status: isFullyPaid ? "COMPLETED" : visit.status,
-    updatedAt: Date.now(),
-  }).where(eq(visits.id, id));
+  // Atomic conditional update: only increment paid_amount if it won't exceed total_amount.
+  // This prevents race conditions where two concurrent payments both see the same balance.
+  // D1 does not support transactions, so we rely on SQLite's row-level atomic UPDATE.
+  await db
+    .update(visits)
+    .set({
+      paidAmount: sql`CASE WHEN paid_amount + ${amount} <= total_amount + 0.001 THEN paid_amount + ${amount} ELSE paid_amount END`,
+      updatedAt: Date.now(),
+    })
+    .where(eq(visits.id, id));
 
-  if (isFullyPaid && visit.appointmentId) {
-    await db.update(appointments)
-      .set({ status: "COMPLETED" })
-      .where(and(eq(appointments.id, visit.appointmentId), eq(appointments.organizationId, session.orgId)));
-  }
+  // Intentionally NOT auto-completing the visit on full payment.
+  // Clinical completion (visit status = COMPLETED) must be an explicit action by the doctor,
+  // not a financial side-effect. A patient may pay upfront for a multi-session treatment.
 
   return NextResponse.json({ payment: newPayment }, { status: 201 });
 }

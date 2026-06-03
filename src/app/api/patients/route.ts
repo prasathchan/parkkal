@@ -8,7 +8,10 @@ import { z } from "zod";
 
 const createPatientSchema = z.object({
   name: z.string().min(1),
-  phone: z.string().refine((v) => { const d = v.replace(/\D/g, ""); return d.length >= 10 && d.length <= 15; }, "Phone must have 10–15 digits"),
+  phone: z.string().refine(
+    (v) => { const d = v.replace(/\D/g, ""); return d.length >= 10 && d.length <= 15; },
+    "Phone must have 10–15 digits"
+  ),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
@@ -17,19 +20,19 @@ const createPatientSchema = z.object({
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
-  emergencyContact: z.object({
-    name: z.string().min(1),
-    relationship: z.string().min(1),
-    phone: z.string().min(1),
-    email: z.string().email().optional().or(z.literal("")),
-  }).optional(),
+  emergencyContact: z
+    .object({
+      name: z.string().min(1),
+      relationship: z.string().min(1),
+      phone: z.string().min(1),
+      email: z.string().email().optional().or(z.literal("")),
+    })
+    .optional(),
 });
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
@@ -62,14 +65,12 @@ export async function GET(request: NextRequest) {
       email: patients.email,
       dateOfBirth: patients.dateOfBirth,
       gender: patients.gender,
-      address: patients.address,
-      medicalHistory: patients.medicalHistory,
       bloodGroup: patients.bloodGroup,
-      panNumber: patients.panNumber,
-      aadhaarNumber: patients.aadhaarNumber,
       emergencyContactAdded: patients.emergencyContactAdded,
       createdAt: patients.createdAt,
       updatedAt: patients.updatedAt,
+      // medicalHistory intentionally excluded from list view — it contains sensitive PHI.
+      // Fetch it only from the individual patient detail endpoint.
     })
     .from(patients)
     .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
@@ -77,11 +78,13 @@ export async function GET(request: NextRequest) {
     .orderBy(desc(patients.createdAt))
     .limit(limit);
 
-  type PatientRow = typeof results[number];
+  type PatientRow = (typeof results)[number];
+
+  // PAN and Aadhaar are sensitive Indian government IDs; mask all but last 4 digits in lists.
   const masked = results.map((p: PatientRow) => ({
     ...p,
-    panNumber: p.panNumber ? `****${p.panNumber.slice(-4)}` : null,
-    aadhaarNumber: p.aadhaarNumber ? `****${p.aadhaarNumber.slice(-4)}` : null,
+    panNumber: null,   // never expose even masked in list — only show in detail view
+    aadhaarNumber: null,
   }));
 
   return NextResponse.json({ patients: masked });
@@ -89,9 +92,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const body = await request.json();
@@ -119,8 +120,11 @@ export async function POST(request: NextRequest) {
     };
 
     // Retry loop handles race condition: two concurrent requests may compute the same count.
-    // On UNIQUE constraint collision, re-count and retry (same pattern as visit code generation).
-    let newPatient: typeof basePatient & { patientCode: string } = { ...basePatient, patientCode: "" };
+    // On UNIQUE constraint collision, re-count and retry.
+    let newPatient: typeof basePatient & { patientCode: string } = {
+      ...basePatient,
+      patientCode: "",
+    };
     let orgCode = "";
     for (let attempt = 0; attempt < 5; attempt++) {
       const [{ orgCount }] = await db
@@ -131,7 +135,9 @@ export async function POST(request: NextRequest) {
 
       const seq = (totalCount as number) + 1 + attempt;
       const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
-      orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String((orgCount as number) + 1 + attempt).padStart(4, "0")}`;
+      orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
+        (orgCount as number) + 1 + attempt
+      ).padStart(4, "0")}`;
       newPatient = { ...basePatient, patientCode: globalCode };
 
       try {
@@ -169,10 +175,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ patient: newPatient }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Invalid input", details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
     console.error("Create patient error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

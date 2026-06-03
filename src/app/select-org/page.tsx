@@ -23,17 +23,27 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function SelectOrgPage() {
   const router = useRouter();
-  const [orgs, setOrgs] = useState<OrgOption[]>([]);
+  const [orgs, setOrgs] = useState<OrgOption[] | null>(null); // null = loading, [] = not found
   const [selecting, setSelecting] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // orgs are stored in sessionStorage from login response
-    const stored = sessionStorage.getItem("pkd_orgs");
-    if (stored) {
-      setOrgs(JSON.parse(stored));
+    try {
+      const stored = sessionStorage.getItem("pkd_orgs");
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setOrgs(parsed as OrgOption[]);
+          return;
+        }
+      }
+    } catch {
+      // sessionStorage unavailable or JSON corrupt
     }
-  }, []);
+    // No orgs in storage — the pre-org session cookie is still valid (middleware guards this
+    // page), but the org list is gone. Redirect to login so the user can re-authenticate.
+    router.replace("/login");
+  }, [router]);
 
   async function selectOrg(orgId: string) {
     setSelecting(orgId);
@@ -59,6 +69,15 @@ export default function SelectOrgPage() {
     }
   }
 
+  // Show spinner while checking sessionStorage to avoid a flash of "No organizations found"
+  if (orgs === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="text-slate-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
@@ -78,43 +97,50 @@ export default function SelectOrgPage() {
           </div>
         )}
 
-        {orgs.length === 0 ? (
-          <div className="text-center text-slate-500 py-8">
-            <p>No organizations found.</p>
-            <p className="text-sm mt-1">Please log in again.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {orgs.map((org) => (
-              <button
-                key={org.id}
-                onClick={() => selectOrg(org.id)}
-                disabled={selecting === org.id}
-                className="w-full text-left p-4 border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all group disabled:opacity-60"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-slate-900 text-base truncate">{org.name}</p>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[org.role] || "bg-gray-100 text-gray-700"}`}>
-                        {org.role}
-                      </span>
-                    </div>
-                    {org.address && (
-                      <p className="text-sm text-slate-500 truncate">{org.address}</p>
-                    )}
+        <div className="space-y-3">
+          {orgs.map((org) => (
+            <button
+              key={org.id}
+              onClick={() => selectOrg(org.id)}
+              disabled={selecting === org.id}
+              className="w-full text-left p-4 border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all group disabled:opacity-60"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-slate-900 text-base truncate">{org.name}</p>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        ROLE_COLORS[org.role] || "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {org.role}
+                    </span>
                   </div>
-                  <svg className="w-5 h-5 text-slate-400 group-hover:text-blue-500 flex-shrink-0 ml-3 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  {org.address && (
+                    <p className="text-sm text-slate-500 truncate">{org.address}</p>
+                  )}
                 </div>
-                {selecting === org.id && (
-                  <p className="text-xs text-blue-600 mt-1">Signing in...</p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+                <svg
+                  className="w-5 h-5 text-slate-400 group-hover:text-blue-500 flex-shrink-0 ml-3 transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </div>
+              {selecting === org.id && (
+                <p className="text-xs text-blue-600 mt-1">Signing in...</p>
+              )}
+            </button>
+          ))}
+        </div>
 
         <div className="mt-6 text-center">
           <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800 transition-colors">
