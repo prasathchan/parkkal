@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sum } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -81,11 +81,10 @@ export async function POST(
   };
 
   await db.insert(visitItems).values(newItem);
-  const [{ total }] = await db
-    .select({ total: sum(visitItems.amount) })
-    .from(visitItems)
-    .where(eq(visitItems.visitId, id));
-  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+  await db
+    .update(visits)
+    .set({ totalAmount: sql`total_amount + ${amount}`, updatedAt: Date.now() })
+    .where(eq(visits.id, id));
 
   return NextResponse.json({ item: newItem }, { status: 201 });
 }

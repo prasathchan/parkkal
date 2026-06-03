@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
   const patientIdFilter = searchParams.get("patientId");
   const dateFilter = searchParams.get("date");
   const visitIdFilter = searchParams.get("visitId");
-  const doctorIdFilter = searchParams.get("doctorId");
+  const doctorIdFilter =
+    session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
 
   const db = getDb();
 
