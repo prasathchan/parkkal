@@ -1,22 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users, organizationMembers } from "@/db/schema";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 OTP verify attempts per IP per 15 minutes
+  const ip = getClientIp(request);
+  const rl = await checkRateLimit(`verify-otp:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many verification attempts. Please wait before trying again." },
+      { status: 429 }
+    );
+  }
+
   try {
-    const body = await request.json() as { userId?: unknown; code?: unknown };
-    const userId = typeof body.userId === "string" ? body.userId : null;
-    const code = typeof body.code === "string" ? body.code.trim() : null;
+    const body = await request.json() as { userId?: string; code?: string };
+    const { userId, code } = body;
 
     if (!userId || !code) {
-      return NextResponse.json({ error: "userId and code are required" }, { status: 400 });
+      return NextResponse.json({ error: "User ID and code are required" }, { status: 400 });
     }
 
     const db = getDb();
     const now = Date.now();
 
-    const vtRecord = (await db
+    const [tokenRecord] = await db
       .select()
       .from(verificationTokens)
       .where(
@@ -24,33 +34,25 @@ export async function POST(request: NextRequest) {
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "PHONE_OTP"),
           eq(verificationTokens.code, code),
-          eq(verificationTokens.used, 0),
-          gt(verificationTokens.expiresAt, now)
+          eq(verificationTokens.used, 0)
         )
-      )
-    )[0];
+      );
 
-    if (!vtRecord) {
-      return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+    if (!tokenRecord || tokenRecord.expiresAt < now) {
+      return NextResponse.json({ error: "Invalid or expired verification code" }, { status: 400 });
     }
 
-    // Activate user
-    await db
-      .update(users)
+    await db.update(users)
       .set({ isActive: 1, isVerified: 1, updatedAt: now })
       .where(eq(users.id, userId));
 
-    // Activate all org members for this user
-    await db
-      .update(organizationMembers)
+    await db.update(organizationMembers)
       .set({ isActive: 1 })
       .where(eq(organizationMembers.userId, userId));
 
-    // Mark token used
-    await db
-      .update(verificationTokens)
+    await db.update(verificationTokens)
       .set({ used: 1 })
-      .where(eq(verificationTokens.id, vtRecord.id));
+      .where(eq(verificationTokens.id, tokenRecord.id));
 
     return NextResponse.json({ activated: true });
   } catch (error) {

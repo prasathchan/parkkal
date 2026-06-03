@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
       salaryAmount: organizationMembers.salaryAmount,
       joinedAt: organizationMembers.joinedAt,
       isActive: organizationMembers.isActive,
+      isVerified: users.isVerified,
       createdAt: organizationMembers.createdAt,
     })
     .from(organizationMembers)

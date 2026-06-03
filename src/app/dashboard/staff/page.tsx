@@ -23,6 +23,7 @@ interface Member {
   salaryAmount: number;
   joinedAt: string | null;
   isActive: number;
+  isVerified: number;
 }
 
 interface OrgRole {
@@ -260,8 +261,8 @@ export default function StaffPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-500">{m.joinedAt || "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
-                        {m.isActive ? "Active" : "Inactive"}
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-green-100 text-green-700" : m.isVerified === 0 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-500"}`}>
+                        {m.isActive ? "Active" : m.isVerified === 0 ? "Pending Setup" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -311,16 +312,6 @@ export default function StaffPage() {
                     value={form.name}
                     onChange={updateForm("name")}
                     placeholder="Dr. Rajan Kumar"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Password (for new user)</label>
-                  <input
-                    type="password"
-                    value={form.password}
-                    onChange={updateForm("password")}
-                    placeholder="min 6 chars"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

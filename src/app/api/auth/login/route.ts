@@ -11,7 +11,7 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 }; // 10 attempts per 15 min
+const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -21,7 +21,6 @@ const COOKIE_OPTS = {
 };
 
 export async function POST(request: NextRequest) {
-  // Rate limiting: 10 attempts per IP per 15 minutes
   const ip = getClientIp(request);
   const rl = await checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
   if (!rl.allowed) {
@@ -45,57 +44,54 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body);
 
     const db = getDb();
-    const user = (await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      )[0];
+    const user = (await db.select().from(users).where(eq(users.email, email)))[0];
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
     if (user.isActive === 0) {
-      return NextResponse.json(
-        { error: "Account is inactive" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Account is inactive. Check your email to complete setup." }, { status: 401 });
+    }
+
+    // Reject empty-hash accounts (invited but never activated)
+    if (!user.passwordHash) {
+      return NextResponse.json({ error: "Account setup incomplete. Check your invite email." }, { status: 401 });
     }
 
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid email or password" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Find all orgs this user belongs to
+    // Find all active orgs this user belongs to (both org and membership must be active)
     const memberships = await db
       .select({
         orgId: organizations.id,
         orgName: organizations.name,
         orgSlug: organizations.slug,
         orgAddress: organizations.address,
+        orgIsActive: organizations.isActive,
         role: organizationMembers.role,
+        memberIsActive: organizationMembers.isActive,
       })
       .from(organizationMembers)
       .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
       .where(eq(organizationMembers.userId, user.id));
 
-    if (memberships.length === 0) {
+    const activeMemberships = memberships.filter(
+      (m: (typeof memberships)[number]) => m.memberIsActive === 1 && m.orgIsActive === 1
+    );
+
+    if (activeMemberships.length === 0) {
       return NextResponse.json(
         { error: "No organization access. Contact your administrator." },
         { status: 403 }
       );
     }
 
-    if (memberships.length === 1) {
-      // Auto-select the only org
-      const m = memberships[0];
+    if (activeMemberships.length === 1) {
+      const m = activeMemberships[0];
       const orgToken = await createOrgToken({
         userId: user.id,
         email: user.email,
@@ -121,7 +117,7 @@ export async function POST(request: NextRequest) {
     });
     const response = NextResponse.json({
       requireOrgSelection: true,
-      organizations: memberships.map((m: (typeof memberships)[number]) => ({
+      organizations: activeMemberships.map((m: (typeof activeMemberships)[number]) => ({
         id: m.orgId,
         name: m.orgName,
         slug: m.orgSlug,
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
     });
     response.cookies.set("pkd_session", preToken, {
       ...COOKIE_OPTS,
-      maxAge: 60 * 60, // 1 hour
+      maxAge: 60 * 60,
     });
     return response;
   } catch (error) {
