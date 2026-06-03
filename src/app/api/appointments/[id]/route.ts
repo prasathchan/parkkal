@@ -70,8 +70,8 @@ export async function PATCH(
       }
     }
 
-    await db.update(appointments).set(data).where(eq(appointments.id, id));
-    const updated = (await db.select().from(appointments).where(eq(appointments.id, id)))[0];
+    await db.update(appointments).set(data).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    const updated = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
     return NextResponse.json({ appointment: updated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -106,6 +106,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Cannot delete appointment: a visit is linked to it" }, { status: 409 });
   }
 
-  await db.delete(appointments).where(eq(appointments.id, id));
+  await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
   return NextResponse.json({ success: true });
 }

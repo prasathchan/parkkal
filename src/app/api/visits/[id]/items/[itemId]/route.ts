@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sum } from "drizzle-orm";
+import { eq, and, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -49,7 +49,7 @@ export async function PATCH(
 
   // Recalc amount if qty or price changed
   if (qty !== undefined || price !== undefined) {
-    const [existing] = await db.select().from(visitItems).where(eq(visitItems.id, itemId));
+    const [existing] = await db.select().from(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
     if (existing) {
       const newQty = qty ?? existing.quantity;
       const newPrice = price ?? existing.unitPrice;
@@ -58,7 +58,7 @@ export async function PATCH(
   }
 
   const runPatch = async (tx: typeof db) => {
-    await tx.update(visitItems).set(updates).where(eq(visitItems.id, itemId));
+    await tx.update(visitItems).set(updates).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
     const [{ total }] = await tx
       .select({ total: sum(visitItems.amount) })
       .from(visitItems)
@@ -72,7 +72,7 @@ export async function PATCH(
     await runPatch(db);
   }
 
-  const [updated] = await db.select().from(visitItems).where(eq(visitItems.id, itemId));
+  const [updated] = await db.select().from(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
   return NextResponse.json({ item: updated });
 }
 
@@ -91,7 +91,7 @@ export async function DELETE(
   if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const runDelete = async (tx: typeof db) => {
-    await tx.delete(visitItems).where(eq(visitItems.id, itemId));
+    await tx.delete(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
     const [{ total }] = await tx
       .select({ total: sum(visitItems.amount) })
       .from(visitItems)

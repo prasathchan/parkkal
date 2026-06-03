@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -15,11 +15,13 @@ export async function DELETE(
   const { id, attachmentId } = await params;
   const db = getDb();
 
-  const [att] = await db.select().from(attachments).where(eq(attachments.id, attachmentId));
-  if (!att) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Verify the visit belongs to this org
+  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+  if (!visit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
-  if (!visit || visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  // Verify attachment belongs to this specific visit (prevents cross-visit deletion within same org)
+  const [att] = await db.select().from(attachments).where(and(eq(attachments.id, attachmentId), eq(attachments.visitId, id)));
+  if (!att) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Delete from storage (R2 in production, local in dev)
   const key = att.fileUrl.startsWith("/api/files/")
@@ -27,6 +29,6 @@ export async function DELETE(
     : `patients/${att.patientId}/${att.fileName}`;
   await deleteFile(key).catch(() => {});
 
-  await db.delete(attachments).where(eq(attachments.id, attachmentId));
+  await db.delete(attachments).where(and(eq(attachments.id, attachmentId), eq(attachments.visitId, id)));
   return NextResponse.json({ success: true });
 }

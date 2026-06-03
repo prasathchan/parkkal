@@ -111,7 +111,7 @@ export async function PATCH(
         updatedAt: invoices.updatedAt,
       })
       .from(invoices)
-      .where(eq(invoices.id, id));
+      .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
     return NextResponse.json({ invoice: updated[0] });
   } catch (error) {
