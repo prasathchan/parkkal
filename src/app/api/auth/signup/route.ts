@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens, orgRoles } from "@/db/schema";
@@ -71,22 +71,30 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
-    // Check email uniqueness
+    // Check email uniqueness — allow re-registration only if the previous attempt was never verified
     const existingEmail = await db
-      .select({ id: users.id })
+      .select({ id: users.id, isVerified: users.isVerified })
       .from(users)
       .where(eq(users.email, email));
     if (existingEmail.length > 0) {
-      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      if (existingEmail[0].isVerified) {
+        return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      }
+      // Stale unverified account — delete it so re-registration can proceed
+      await db.delete(users).where(and(eq(users.email, email), eq(users.isVerified, 0)));
     }
 
-    // Check phone uniqueness
+    // Check phone uniqueness — same: allow re-registration if never verified
     const existingPhone = await db
-      .select({ id: users.id })
+      .select({ id: users.id, isVerified: users.isVerified })
       .from(users)
       .where(eq(users.phone, phone));
     if (existingPhone.length > 0) {
-      return NextResponse.json({ error: "Phone number already registered" }, { status: 409 });
+      if (existingPhone[0].isVerified) {
+        return NextResponse.json({ error: "Phone number already registered" }, { status: 409 });
+      }
+      // Stale unverified account — delete it so re-registration can proceed
+      await db.delete(users).where(and(eq(users.phone, phone), eq(users.isVerified, 0)));
     }
 
     const passwordHash = await hashPassword(password);
