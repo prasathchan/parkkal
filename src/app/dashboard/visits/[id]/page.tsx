@@ -78,6 +78,12 @@ interface Treatment {
   cost: number;
   status: "PLANNED" | "IN_PROGRESS" | "COMPLETED";
   createdAt: number;
+  visitId?: string | null;
+  consentStatus: string;
+  consentDocumentUrl?: string | null;
+  consentDocumentName?: string | null;
+  consentUploadedAt?: number | null;
+  consentNotes?: string | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -142,6 +148,17 @@ export default function VisitDetailPage() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkablePlans, setLinkablePlans] = useState<Treatment[]>([]);
   const [linkLoading, setLinkLoading] = useState(false);
+
+  // Consent
+  const [consentUploading, setConsentUploading] = useState<string | null>(null);
+  const [consentUploadError, setConsentUploadError] = useState<Record<string, string>>({});
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideTxId, setOverrideTxId] = useState<string | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [overrideError, setOverrideError] = useState("");
+  // IN_PROGRESS warning
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ txId: string; status: string } | null>(null);
 
   const fetchVisit = useCallback(async () => {
     setLoading(true);
@@ -337,6 +354,52 @@ export default function VisitDetailPage() {
     if (!confirm("Delete this treatment?")) return;
     await fetch(`/api/treatments/${txId}`, { method: "DELETE" });
     await fetchVisit();
+  }
+
+  async function handleConsentUpload(txId: string, file: File) {
+    setConsentUploading(txId);
+    setConsentUploadError(prev => ({ ...prev, [txId]: "" }));
+    const fd = new FormData();
+    fd.append("document", file);
+    const res = await fetch(`/api/treatments/${txId}/consent/upload`, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      setConsentUploadError(prev => ({ ...prev, [txId]: data.error || "Upload failed" }));
+    } else {
+      await fetchVisit();
+    }
+    setConsentUploading(null);
+  }
+
+  async function handleEmergencyOverride() {
+    if (!overrideTxId) return;
+    setOverrideSubmitting(true);
+    setOverrideError("");
+    const res = await fetch(`/api/treatments/${overrideTxId}/consent`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: overrideReason }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setOverrideError(data.error || "Override failed");
+      setOverrideSubmitting(false);
+      return;
+    }
+    setShowOverrideModal(false);
+    setOverrideTxId(null);
+    setOverrideReason("");
+    setOverrideSubmitting(false);
+    await fetchVisit();
+  }
+
+  function handleTreatmentStatusChange(tx: Treatment, newStatus: string) {
+    const needsConsent = newStatus === "IN_PROGRESS" && !["VERIFIED", "EMERGENCY_OVERRIDE"].includes(tx.consentStatus);
+    if (needsConsent) {
+      setPendingStatusChange({ txId: tx.id, status: newStatus });
+    } else {
+      handleUpdateTreatmentStatus(tx.id, newStatus);
+    }
   }
 
   async function handleOpenLinkModal() {
@@ -961,48 +1024,115 @@ export default function VisitDetailPage() {
                 ) : (
                   <>
                     <div className="space-y-3">
-                      {treatments.map((tx) => (
-                        <div key={tx.id} className={`border rounded-xl p-4 flex flex-wrap items-start justify-between gap-3 transition ${tx.status === "COMPLETED" ? "bg-slate-50 border-slate-200 opacity-75" : "bg-white border-slate-200"}`}>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className={`text-sm font-semibold ${tx.status === "COMPLETED" ? "line-through text-slate-400" : "text-slate-900"}`}>{tx.description}</p>
-                              {tx.toothNumbers && (
-                                <ToothChart
-                                  value={tx.toothNumbers.split(",").map(s => s.trim()).filter(Boolean)}
-                                  readOnly
-                                  compact
-                                />
+                      {treatments.map((tx) => {
+                        const consentBadge: Record<string, string> = {
+                          PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
+                          UPLOADED: "bg-blue-50 text-blue-700 border-blue-200",
+                          VERIFIED: "bg-green-50 text-green-700 border-green-200",
+                          REJECTED: "bg-red-50 text-red-700 border-red-200",
+                          EMERGENCY_OVERRIDE: "bg-orange-50 text-orange-700 border-orange-200",
+                        };
+                        const consentLabel: Record<string, string> = {
+                          PENDING: "⚠ Consent Pending",
+                          UPLOADED: "⏳ Awaiting Verification",
+                          VERIFIED: "✓ Consent Verified",
+                          REJECTED: "✗ Consent Rejected",
+                          EMERGENCY_OVERRIDE: "⚡ Emergency Override",
+                        };
+                        return (
+                        <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-slate-50 border-slate-200 opacity-75" : "bg-white border-slate-200"}`}>
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className={`text-sm font-semibold ${tx.status === "COMPLETED" ? "line-through text-slate-400" : "text-slate-900"}`}>{tx.description}</p>
+                                {tx.toothNumbers && (
+                                  <ToothChart
+                                    value={tx.toothNumbers.split(",").map(s => s.trim()).filter(Boolean)}
+                                    readOnly
+                                    compact
+                                  />
+                                )}
+                              </div>
+                              {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}
+                              <p className="text-sm font-medium text-slate-700 mt-1">{formatCurrency(tx.cost)}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <select
+                                value={tx.status}
+                                disabled={txUpdating === tx.id}
+                                onChange={(e) => handleTreatmentStatusChange(tx, e.target.value)}
+                                className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
+                                  tx.status === "PLANNED" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                                  : tx.status === "IN_PROGRESS" ? "bg-blue-50 border-blue-200 text-blue-800"
+                                  : "bg-green-50 border-green-200 text-green-800"
+                                }`}
+                              >
+                                <option value="PLANNED">Planned</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                              </select>
+                              {visit.status !== "CANCELLED" && (
+                                <button
+                                  onClick={() => handleDeleteTreatment(tx.id)}
+                                  className="text-xs text-red-500 hover:text-red-700"
+                                >
+                                  Delete
+                                </button>
                               )}
                             </div>
-                            {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}
-                            <p className="text-sm font-medium text-slate-700 mt-1">{formatCurrency(tx.cost)}</p>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <select
-                              value={tx.status}
-                              disabled={txUpdating === tx.id}
-                              onChange={(e) => handleUpdateTreatmentStatus(tx.id, e.target.value)}
-                              className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 ${
-                                tx.status === "PLANNED" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-                                : tx.status === "IN_PROGRESS" ? "bg-blue-50 border-blue-200 text-blue-800"
-                                : "bg-green-50 border-green-200 text-green-800"
-                              }`}
-                            >
-                              <option value="PLANNED">Planned</option>
-                              <option value="IN_PROGRESS">In Progress</option>
-                              <option value="COMPLETED">Completed</option>
-                            </select>
-                            {visit.status !== "CANCELLED" && (
-                              <button
-                                onClick={() => handleDeleteTreatment(tx.id)}
-                                className="text-xs text-red-500 hover:text-red-700"
+
+                          {/* Consent row */}
+                          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${consentBadge[tx.consentStatus] ?? consentBadge.PENDING}`}>
+                              {consentLabel[tx.consentStatus] ?? tx.consentStatus}
+                            </span>
+                            {tx.consentNotes && (
+                              <span className="text-xs text-slate-400 italic">{tx.consentNotes}</span>
+                            )}
+                            {tx.consentDocumentUrl && (
+                              <a href={tx.consentDocumentUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">
+                                View document
+                              </a>
+                            )}
+                            <div className="flex items-center gap-2 ml-auto flex-wrap">
+                              <a
+                                href="/dashboard/treatments/consent"
+                                target="_blank"
+                                className="text-xs text-slate-500 hover:text-blue-600"
                               >
-                                Delete
+                                Print Form
+                              </a>
+                              {tx.consentStatus !== "VERIFIED" && tx.consentStatus !== "EMERGENCY_OVERRIDE" && (
+                                <label className={`text-xs px-2 py-1 rounded-lg font-medium cursor-pointer transition ${consentUploading === tx.id ? "bg-slate-100 text-slate-400" : "bg-blue-50 text-blue-700 hover:bg-blue-100"}`}>
+                                  {consentUploading === tx.id ? "Uploading..." : "Upload Consent"}
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                                    className="hidden"
+                                    disabled={consentUploading === tx.id}
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) handleConsentUpload(tx.id, f);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                              )}
+                              <button
+                                onClick={() => { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }}
+                                className="text-xs text-orange-600 hover:text-orange-800 font-medium"
+                              >
+                                Emergency Override
                               </button>
+                            </div>
+                            {consentUploadError[tx.id] && (
+                              <p className="w-full text-xs text-red-600 mt-1">{consentUploadError[tx.id]}</p>
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm">
                       <span className="text-slate-500">
@@ -1056,6 +1186,85 @@ export default function VisitDetailPage() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Override Modal */}
+      {showOverrideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">Emergency Override</h3>
+            <p className="text-sm text-slate-500 mb-4">Record a clinical reason to proceed without a signed consent form.</p>
+            {overrideError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">{overrideError}</div>
+            )}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Reason <span className="text-red-500">*</span></label>
+              <textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                rows={3}
+                placeholder="Describe the clinical reason for proceeding without consent (min 5 characters)..."
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleEmergencyOverride}
+                disabled={overrideSubmitting || overrideReason.trim().length < 5}
+                className="flex-1 bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition"
+              >
+                {overrideSubmitting ? "Saving..." : "Apply Override"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowOverrideModal(false)}
+                className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* IN_PROGRESS without consent warning */}
+      {pendingStatusChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">⚠️ Consent Not Verified</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              This treatment does not have a verified consent form. Starting treatment without consent may have legal and clinical implications.
+            </p>
+            <p className="text-sm text-slate-600 mb-6">Do you want to proceed anyway or apply an emergency override?</p>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={() => {
+                  handleUpdateTreatmentStatus(pendingStatusChange.txId, pendingStatusChange.status);
+                  setPendingStatusChange(null);
+                }}
+                className="flex-1 bg-slate-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-800 transition"
+              >
+                Proceed Anyway
+              </button>
+              <button
+                onClick={() => {
+                  const tx = treatments.find(t => t.id === pendingStatusChange.txId);
+                  if (tx) { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }
+                  setPendingStatusChange(null);
+                }}
+                className="flex-1 bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 transition"
+              >
+                Emergency Override
+              </button>
+              <button
+                onClick={() => setPendingStatusChange(null)}
+                className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

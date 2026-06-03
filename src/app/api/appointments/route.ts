@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, asc, and, notInArray } from "drizzle-orm";
+import { eq, desc, asc, and, notInArray, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments, patients, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -45,6 +45,14 @@ export async function GET(request: NextRequest) {
   if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
   if (doctorIdFilter) conditions.push(eq(appointments.doctorId, doctorIdFilter));
 
+  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+  const offset = Number(searchParams.get("offset") ?? 0);
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(appointments)
+    .where(and(...conditions));
+
   const rows = await db
     .select({
       id: appointments.id,
@@ -64,9 +72,11 @@ export async function GET(request: NextRequest) {
     .leftJoin(users, eq(appointments.doctorId, users.id))
     .where(and(...conditions))
     // Clinic staff need chronological schedule, not creation-order.
-    .orderBy(asc(appointments.appointmentDate), asc(appointments.appointmentTime));
+    .orderBy(asc(appointments.appointmentDate), asc(appointments.appointmentTime))
+    .limit(limit)
+    .offset(offset);
 
-  return NextResponse.json({ appointments: rows });
+  return NextResponse.json({ appointments: rows, total, hasMore: offset + rows.length < total });
 }
 
 export async function POST(request: NextRequest) {

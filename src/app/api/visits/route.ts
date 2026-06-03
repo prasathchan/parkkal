@@ -45,6 +45,15 @@ export async function GET(request: NextRequest) {
     if (searchCondition) conditions.push(searchCondition);
   }
 
+  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+  const offset = Number(searchParams.get("offset") ?? 0);
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(visits)
+    .leftJoin(patients, eq(visits.patientId, patients.id))
+    .where(and(...conditions));
+
   const rows = await db
     .select({
       id: visits.id,
@@ -65,9 +74,11 @@ export async function GET(request: NextRequest) {
     .leftJoin(patients, eq(visits.patientId, patients.id))
     .leftJoin(users, eq(visits.doctorId, users.id))
     .where(and(...conditions))
-    .orderBy(desc(visits.createdAt));
+    .orderBy(desc(visits.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return NextResponse.json({ visits: rows });
+  return NextResponse.json({ visits: rows, total, hasMore: offset + rows.length < total });
 }
 
 export async function POST(request: NextRequest) {

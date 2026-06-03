@@ -134,6 +134,14 @@ export const treatments = sqliteTable("treatments", {
   procedure: text("procedure"),
   cost: real("cost").notNull().default(0),
   status: text("status").notNull().default("PLANNED"),
+  consentStatus: text("consent_status").notNull().default("PENDING"),
+  consentDocumentUrl: text("consent_document_url"),
+  consentDocumentName: text("consent_document_name"),
+  consentUploadedAt: integer("consent_uploaded_at"),
+  consentVerifiedAt: integer("consent_verified_at"),
+  consentNotes: text("consent_notes"),
+  emergencyOverride: integer("emergency_override").notNull().default(0),
+  emergencyReason: text("emergency_reason"),
   createdAt: integer("created_at").notNull(),
 });
 

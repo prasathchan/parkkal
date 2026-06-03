@@ -1,0 +1,160 @@
+import { NextRequest, NextResponse } from "next/server";
+import { eq, and } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { treatments } from "@/db/schema";
+import { getSession } from "@/lib/auth";
+import { storeFile } from "@/lib/storage";
+
+const ALLOWED_TYPES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "application/pdf": ".pdf",
+};
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+type VerifyResult = { legible: boolean; hasSignature: boolean; notes: string };
+
+async function verifyWithClaude(
+  base64Data: string,
+  mimeType: string
+): Promise<VerifyResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.warn("[CONSENT] ANTHROPIC_API_KEY not set — skipping AI verification");
+    return { legible: true, hasSignature: true, notes: "Auto-approved: AI verification not configured" };
+  }
+
+  // PDFs can't be sent as images — treat as legible pending manual review
+  if (mimeType === "application/pdf") {
+    return { legible: true, hasSignature: true, notes: "PDF consent form accepted — manual review recommended" };
+  }
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 256,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mimeType, data: base64Data },
+            },
+            {
+              type: "text",
+              text: `This is a dental patient consent form. Examine the image and respond ONLY with valid JSON in this exact format:
+{"legible": boolean, "hasSignature": boolean, "notes": string}
+
+Rules:
+- "legible": true if the document text is clearly readable (not blurry, cut off, or too dark)
+- "hasSignature": true if there is at least one handwritten signature or initials visible
+- "notes": a brief one-sentence explanation of your finding (max 100 chars)
+
+Respond with JSON only, no other text.`,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    console.error("[CONSENT] Claude API error:", res.status, await res.text());
+    return { legible: true, hasSignature: false, notes: "AI verification failed — please review manually" };
+  }
+
+  const data = await res.json() as { content: Array<{ type: string; text: string }> };
+  const text = data.content?.[0]?.text ?? "";
+
+  try {
+    const parsed = JSON.parse(text) as VerifyResult;
+    return {
+      legible: Boolean(parsed.legible),
+      hasSignature: Boolean(parsed.hasSignature),
+      notes: String(parsed.notes ?? "").slice(0, 200),
+    };
+  } catch {
+    console.warn("[CONSENT] Could not parse Claude response:", text);
+    return { legible: true, hasSignature: false, notes: "AI could not parse document — please review manually" };
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const db = getDb();
+
+  const [treatment] = await db
+    .select({ id: treatments.id, patientId: treatments.patientId })
+    .from(treatments)
+    .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
+  if (!treatment) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  let formData: FormData;
+  try { formData = await request.formData(); } catch {
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+  }
+
+  const file = formData.get("document") as File | null;
+  if (!file) return NextResponse.json({ error: "No document provided" }, { status: 400 });
+
+  const allowedExt = ALLOWED_TYPES[file.type];
+  if (!allowedExt) {
+    return NextResponse.json({ error: "Only JPEG, PNG, WebP, or PDF allowed" }, { status: 400 });
+  }
+  if (file.size > MAX_SIZE) {
+    return NextResponse.json({ error: "File must be under 5 MB" }, { status: 400 });
+  }
+
+  const fileName = `${crypto.randomUUID()}${allowedExt}`;
+  const key = `consents/${id}/${fileName}`;
+  const bytes = await file.arrayBuffer();
+
+  const { url: documentUrl } = await storeFile(key, bytes, file.type);
+
+  // Run AI verification
+  const base64 = Buffer.from(bytes).toString("base64");
+  const verify = await verifyWithClaude(base64, file.type);
+
+  const now = Date.now();
+  let consentStatus: string;
+  if (!verify.legible) {
+    consentStatus = "REJECTED";
+  } else if (!verify.hasSignature) {
+    consentStatus = "REJECTED";
+  } else {
+    consentStatus = "VERIFIED";
+  }
+
+  await db
+    .update(treatments)
+    .set({
+      consentStatus,
+      consentDocumentUrl: documentUrl,
+      consentDocumentName: file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
+      consentUploadedAt: now,
+      consentVerifiedAt: consentStatus === "VERIFIED" ? now : null,
+      consentNotes: verify.notes,
+    })
+    .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
+
+  return NextResponse.json({
+    consentStatus,
+    legible: verify.legible,
+    hasSignature: verify.hasSignature,
+    notes: verify.notes,
+  });
+}

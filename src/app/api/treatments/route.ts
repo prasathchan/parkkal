@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and, gte, lte } from "drizzle-orm";
+import { eq, desc, and, gte, lte, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { treatments, patients, users, organizationPatients, organizationMembers, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -41,6 +41,14 @@ export async function GET(request: NextRequest) {
     conditions.push(lte(treatments.createdAt, dayEnd));
   }
 
+  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+  const offset = Number(searchParams.get("offset") ?? 0);
+
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(treatments)
+    .where(and(...conditions));
+
   const rows = await db
     .select({
       id: treatments.id,
@@ -54,6 +62,11 @@ export async function GET(request: NextRequest) {
       cost: treatments.cost,
       status: treatments.status,
       createdAt: treatments.createdAt,
+      consentStatus: treatments.consentStatus,
+      consentDocumentUrl: treatments.consentDocumentUrl,
+      consentDocumentName: treatments.consentDocumentName,
+      consentUploadedAt: treatments.consentUploadedAt,
+      consentNotes: treatments.consentNotes,
       patientName: patients.name,
       patientCode: patients.patientCode,
       doctorName: users.name,
@@ -62,9 +75,11 @@ export async function GET(request: NextRequest) {
     .leftJoin(patients, eq(treatments.patientId, patients.id))
     .leftJoin(users, eq(treatments.doctorId, users.id))
     .where(and(...conditions))
-    .orderBy(desc(treatments.createdAt));
+    .orderBy(desc(treatments.createdAt))
+    .limit(limit)
+    .offset(offset);
 
-  return NextResponse.json({ treatments: rows });
+  return NextResponse.json({ treatments: rows, total, hasMore: offset + rows.length < total });
 }
 
 export async function POST(request: NextRequest) {
