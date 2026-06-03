@@ -74,6 +74,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = createTreatmentSchema.parse(body);
+
+    // DOCTOR role can only create treatments assigned to themselves
+    if (session.role === "DOCTOR") {
+      data.doctorId = session.userId;
+    }
+
     const db = getDb();
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
