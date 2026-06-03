@@ -381,17 +381,15 @@ export default function TreatmentsPage() {
         </div>
       </main>
 
-      {/* Slideover overlay */}
+      {/* Modal */}
       {showSlideover && (
-        <div className="fixed inset-0 z-40 flex">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div
-            className="flex-1 bg-black/30"
-            onClick={closeSlideover}
-          />
-          {/* Panel */}
-          <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <div className="absolute inset-0 bg-black/40" onClick={closeSlideover} />
+
+          {/* Panel — centered, scrollable, never crops tooth chart */}
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
               <h2 className="text-base font-semibold text-slate-900">New Treatment Plan</h2>
               <button
                 onClick={closeSlideover}
@@ -403,7 +401,7 @@ export default function TreatmentsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 px-6 py-5 space-y-5">
+            <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5">
               {/* Patient */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -532,7 +530,7 @@ export default function TreatmentsPage() {
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 pb-2">
                 <button
                   type="submit"
                   disabled={submitting || !form.patientId || !form.doctorId || !form.description.trim()}
