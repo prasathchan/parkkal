@@ -8,7 +8,7 @@ import { verifyOrgToken } from "@/lib/auth";
 import { isFeatureEnabled } from "@/lib/flags";
 import { getDb } from "@/lib/db";
 import { organizationPatients, appointments, payments, visits, patients, users } from "@/db/schema";
-import { eq, and, ne, count, sum, gte, desc } from "drizzle-orm";
+import { eq, and, count, sum, gte, desc } from "drizzle-orm";
 
 async function getDashboardStats(orgId: string) {
   const db = getDb();
@@ -34,8 +34,8 @@ async function getDashboardStats(orgId: string) {
     db.select({ val: sum(payments.amount) }).from(payments)
       .innerJoin(visits, eq(payments.visitId, visits.id))
       .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, monthStart))),
-    db.select({ val: sum(visits.totalAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
-    db.select({ val: sum(visits.paidAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
+    db.select({ val: sum(visits.totalAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+    db.select({ val: sum(visits.paidAmount) }).from(visits).where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
     db.select({ val: sum(payments.amount) }).from(payments)
       .innerJoin(visits, eq(payments.visitId, visits.id))
       .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart))),

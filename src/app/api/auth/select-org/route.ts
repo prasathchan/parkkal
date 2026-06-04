@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
         orgName: organizations.name,
         orgSlug: organizations.slug,
         role: organizationMembers.role,
+        memberIsActive: organizationMembers.isActive,
+        orgIsActive: organizations.isActive,
       })
       .from(organizationMembers)
       .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
@@ -50,6 +52,10 @@ export async function POST(request: NextRequest) {
 
     if (!membership) {
       return NextResponse.json({ error: "Not a member of this organization" }, { status: 403 });
+    }
+
+    if (!membership.memberIsActive || !membership.orgIsActive) {
+      return NextResponse.json({ error: "Your account or organization is inactive" }, { status: 403 });
     }
 
     const orgToken = await createOrgToken({

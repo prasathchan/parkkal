@@ -44,10 +44,16 @@ export async function PATCH(
     const body = await request.json();
     const data = updateSchema.parse(body);
 
+    const RESCHEDULE_ROLES = ["ADMIN", "RECEPTIONIST", "DOCTOR"];
+    const dateOrTimeChanged = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
+
+    if (dateOrTimeChanged && !RESCHEDULE_ROLES.includes(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     // If date or time is being changed, check for doctor conflicts
     const newDate = data.appointmentDate ?? appt.appointmentDate;
     const newTime = data.appointmentTime ?? appt.appointmentTime;
-    const dateOrTimeChanged = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
 
     if (dateOrTimeChanged) {
       const [conflict] = await db
@@ -85,6 +91,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!["ADMIN", "RECEPTIONIST"].includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();

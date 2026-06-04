@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ redirect: "/dashboard" });
     response.cookies.set("pkd_org_session", orgToken, {
       ...COOKIE_OPTS,
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24,
     });
 
     return response;

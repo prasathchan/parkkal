@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-  const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  const rawMonth = searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(rawMonth)) {
+    return NextResponse.json({ error: "Invalid month format. Use YYYY-MM" }, { status: 400 });
+  }
+  const month = rawMonth;
 
   const db = getDb();
   const records = await db
@@ -43,7 +47,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json() as Record<string, unknown>;
-    const month = (body.month as string | undefined) || new Date().toISOString().slice(0, 7);
+    const rawMonth = (body.month as string | undefined) || new Date().toISOString().slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(rawMonth)) {
+      return NextResponse.json({ error: "Invalid month format. Use YYYY-MM" }, { status: 400 });
+    }
+    const month = rawMonth;
 
     const db = getDb();
     const now = Date.now();

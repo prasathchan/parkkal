@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { attachments, visits, organizationPatients, organizations } from "@/db/schema";
+import { attachments, visits, organizationPatients, organizations, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { getFile } from "@/lib/storage";
 
@@ -45,6 +45,38 @@ export async function GET(
         "Content-Type": file.mimeType,
         "Cache-Control": "private, max-age=86400",
         "Content-Disposition": `inline; filename="${segments[segments.length - 1]}"`,
+      },
+    });
+  }
+
+  // ── Consent document: /api/files/consents/<treatmentId>/<fileName> ───────
+  if (folder === "consents" && segments.length === 3) {
+    const treatmentId = segments[1];
+    const db = getDb();
+
+    // Verify treatment belongs to this org
+    const [treatment] = await db
+      .select({ id: treatments.id, organizationId: treatments.organizationId, consentDocumentUrl: treatments.consentDocumentUrl })
+      .from(treatments)
+      .where(and(eq(treatments.id, treatmentId), eq(treatments.organizationId, session.orgId)));
+
+    if (!treatment) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Ensure requested file matches the stored consent document URL
+    const expectedUrl = `/api/files/${segments.join("/")}`;
+    if (treatment.consentDocumentUrl !== expectedUrl) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const file = await getFile(segments.join("/"));
+    if (!file) return NextResponse.json({ error: "File not found" }, { status: 404 });
+
+    const fileName = segments[segments.length - 1];
+    return new NextResponse(file.data, {
+      headers: {
+        "Content-Type": file.mimeType,
+        "Cache-Control": "private, no-store",
+        "Content-Disposition": `inline; filename="${fileName}"`,
       },
     });
   }
