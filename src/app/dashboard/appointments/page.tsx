@@ -35,26 +35,49 @@ const TYPE_LABELS: Record<string, string> = {
   FOLLOWUP: "Follow-up",
 };
 
+const LIMIT = 50;
+
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [dateFilter, setDateFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [currentUserRole, setCurrentUserRole] = useState("");
-  const [currentUserId, setCurrentUserId] = useState("");
+
+  // The server enforces RBAC — DOCTOR role only sees their own appointments
+  // regardless of any doctorId param. No need to fetch /api/auth/me here.
+  const fetchAppointments = useCallback(async (pageOffset: number, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pageOffset) });
+    if (dateFilter) params.set("date", dateFilter);
+    if (statusFilter) params.set("status", statusFilter);
+
+    try {
+      const res = await fetch(`/api/appointments?${params}`);
+      const data = await res.json();
+      const rows: Appointment[] = data.appointments || [];
+      if (append) {
+        setAppointments((prev) => [...prev, ...rows]);
+      } else {
+        setAppointments(rows);
+      }
+      setTotal(data.total ?? 0);
+      setOffset(pageOffset + rows.length);
+    } finally {
+      if (append) setLoadingMore(false);
+      else setLoading(false);
+    }
+  }, [dateFilter, statusFilter]);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.user) {
-          setCurrentUserRole(d.user.role);
-          setCurrentUserId(d.user.userId);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    setOffset(0);
+    fetchAppointments(0, false);
+  }, [fetchAppointments]);
 
   async function updateStatus(id: string, status: string) {
     setUpdatingId(id);
@@ -63,29 +86,11 @@ export default function AppointmentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    await fetchAppointments();
+    await fetchAppointments(0, false);
     setUpdatingId(null);
   }
 
-  const fetchAppointments = useCallback(async () => {
-    if (!currentUserId && currentUserRole === "") return;
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (dateFilter) params.set("date", dateFilter);
-    if (statusFilter) params.set("status", statusFilter);
-    if (currentUserRole === "DOCTOR" && currentUserId) params.set("doctorId", currentUserId);
-    try {
-      const res = await fetch(`/api/appointments?${params}`);
-      const data = await res.json();
-      setAppointments(data.appointments || []);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateFilter, statusFilter, currentUserRole, currentUserId]);
-
-  useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+  const hasMore = offset < total;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -97,7 +102,7 @@ export default function AppointmentsPage() {
       <main className="flex-1 p-6">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-3 flex-wrap items-center">
               <input
                 type="date"
                 value={dateFilter}
@@ -124,6 +129,11 @@ export default function AppointmentsPage() {
                   Clear filters
                 </button>
               )}
+              {!loading && total > 0 && (
+                <span className="text-xs text-slate-400">
+                  {total} appointment{total !== 1 ? "s" : ""}
+                </span>
+              )}
             </div>
             <Link href="/dashboard/appointments/new">
               <Button size="sm">
@@ -140,7 +150,7 @@ export default function AppointmentsPage() {
               <tr>
                 <TableHeadCell>Patient</TableHeadCell>
                 <TableHeadCell>Doctor</TableHeadCell>
-                <TableHeadCell>Date & Time</TableHeadCell>
+                <TableHeadCell>Date &amp; Time</TableHeadCell>
                 <TableHeadCell>Type</TableHeadCell>
                 <TableHeadCell>Status</TableHeadCell>
                 <TableHeadCell>Actions</TableHeadCell>
@@ -221,6 +231,24 @@ export default function AppointmentsPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination footer */}
+          {!loading && hasMore && (
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Showing {appointments.length} of {total}
+              </span>
+              <button
+                onClick={() => fetchAppointments(offset, true)}
+                disabled={loadingMore}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+              >
+                {loadingMore
+                  ? "Loading..."
+                  : `Load more (${total - appointments.length} remaining)`}
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 
 interface Visit {
@@ -24,28 +23,62 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
+const LIMIT = 50;
+
 export default function VisitsPage() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [search, setSearch] = useState("");
-
-  const fetchVisits = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (statusFilter) params.set("status", statusFilter);
-    if (dateFilter) params.set("date", dateFilter);
-    if (search.trim()) params.set("search", search.trim());
-    const res = await fetch(`/api/visits?${params}`);
-    const data = await res.json();
-    setVisits(data.visits || []);
-    setLoading(false);
-  }, [statusFilter, dateFilter, search]);
+  // Debounced copy — fetchVisits depends on this, not the raw input state.
+  // This ensures we only fire a request 300 ms after the user stops typing.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    fetchVisits();
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
+  }, [search]);
+
+  const fetchVisits = useCallback(async (pageOffset: number, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pageOffset) });
+    if (statusFilter) params.set("status", statusFilter);
+    if (dateFilter) params.set("date", dateFilter);
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+
+    try {
+      const res = await fetch(`/api/visits?${params}`);
+      const data = await res.json();
+      const rows: Visit[] = data.visits || [];
+      if (append) {
+        setVisits((prev) => [...prev, ...rows]);
+      } else {
+        setVisits(rows);
+      }
+      setTotal(data.total ?? 0);
+      setOffset(pageOffset + rows.length);
+    } finally {
+      if (append) setLoadingMore(false);
+      else setLoading(false);
+    }
+  }, [statusFilter, dateFilter, debouncedSearch]);
+
+  // When the fetchVisits callback changes (filter/search updated), reset to page 0
+  useEffect(() => {
+    setOffset(0);
+    fetchVisits(0, false);
   }, [fetchVisits]);
+
+  const hasMore = offset < total;
+  const filtersActive = !!(statusFilter || dateFilter || debouncedSearch);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -74,20 +107,32 @@ export default function VisitsPage() {
           />
           <input
             type="text"
-            placeholder="Search patient..."
+            placeholder="Search patient or visit code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
           />
-          {(statusFilter || dateFilter || search) && (
+          {filtersActive && (
             <button
-              onClick={() => { setStatusFilter(""); setDateFilter(""); setSearch(""); }}
+              onClick={() => {
+                setStatusFilter("");
+                setDateFilter("");
+                setSearch("");
+                setDebouncedSearch("");
+              }}
               className="text-sm text-slate-500 hover:text-slate-700 underline"
             >
               Clear filters
             </button>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            {!loading && total > 0 && (
+              <span className="text-xs text-slate-400">
+                {filtersActive
+                  ? `${visits.length} of ${total} match`
+                  : `${total} total`}
+              </span>
+            )}
             <Link
               href="/dashboard/visits/new"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
@@ -120,14 +165,29 @@ export default function VisitsPage() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-10 text-slate-400">
-                      Loading...
-                    </td>
+                    <td colSpan={9} className="text-center py-10 text-slate-400">Loading...</td>
                   </tr>
                 ) : visits.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-10 text-slate-400">
-                      No visits found
+                    <td colSpan={9} className="text-center py-10">
+                      <p className="text-slate-400">
+                        {filtersActive
+                          ? "No visits match your filters."
+                          : "No visits yet."}
+                      </p>
+                      {filtersActive && (
+                        <button
+                          onClick={() => {
+                            setStatusFilter("");
+                            setDateFilter("");
+                            setSearch("");
+                            setDebouncedSearch("");
+                          }}
+                          className="text-blue-600 hover:underline text-sm mt-1"
+                        >
+                          Clear filters
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -167,6 +227,29 @@ export default function VisitsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination footer */}
+          {!loading && hasMore && (
+            <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Showing {visits.length} of {total}
+              </span>
+              <button
+                onClick={() => fetchVisits(offset, true)}
+                disabled={loadingMore}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+              >
+                {loadingMore
+                  ? "Loading..."
+                  : `Load more (${total - visits.length} remaining)`}
+              </button>
+            </div>
+          )}
+          {!loading && !hasMore && total > LIMIT && (
+            <div className="px-4 py-3 border-t border-slate-100 text-center text-xs text-slate-400">
+              All {total} visits loaded
+            </div>
+          )}
         </div>
       </main>
     </div>

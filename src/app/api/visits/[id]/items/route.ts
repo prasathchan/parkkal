@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -9,7 +9,7 @@ const createItemSchema = z.object({
   itemName: z.string().min(1),
   category: z.enum(["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"]),
   toothNumber: z.string().optional(),
-  quantity: z.number().min(1, "Quantity must be at least 1"),
+  quantity: z.number().min(0.01, "Quantity must be greater than 0"),
   unitPrice: z.number().min(0, "Unit price cannot be negative"),
   notes: z.string().optional(),
 });
@@ -23,9 +23,11 @@ export async function GET(
 
   const { id } = await params;
   const db = getDb();
-  const [visit] = await db.select({ organizationId: visits.organizationId }).from(visits).where(eq(visits.id, id));
-  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const [visit] = await db
+    .select({ organizationId: visits.organizationId })
+    .from(visits)
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+  if (!visit) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
   return NextResponse.json({ items });
 }
@@ -63,9 +65,11 @@ export async function POST(
 
   const db = getDb();
 
-  const [visit] = await db.select({ organizationId: visits.organizationId, status: visits.status }).from(visits).where(eq(visits.id, id));
-  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const [visit] = await db
+    .select({ status: visits.status })
+    .from(visits)
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+  if (!visit) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (visit.status === "CANCELLED") return NextResponse.json({ error: "Cannot add items to a cancelled visit" }, { status: 400 });
   const newItem = {
     id: crypto.randomUUID(),

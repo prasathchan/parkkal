@@ -39,7 +39,14 @@ export async function GET(
 
   if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  return NextResponse.json({ patient });
+  // PAN and Aadhaar are Indian national IDs equivalent to SSN.
+  // Only ADMIN may see them in the detail view; all other roles receive null.
+  const safePatient =
+    session.role === "ADMIN"
+      ? patient
+      : { ...patient, panNumber: null, aadhaarNumber: null };
+
+  return NextResponse.json({ patient: safePatient });
 }
 
 export async function PATCH(
@@ -60,9 +67,18 @@ export async function PATCH(
     const body = await request.json();
     const data = updatePatientSchema.parse(body);
 
+    // Non-ADMIN roles may not overwrite government IDs
+    if (session.role !== "ADMIN") {
+      delete (data as Partial<typeof data>).panNumber;
+      delete (data as Partial<typeof data>).aadhaarNumber;
+    }
+
     await db.update(patients).set({ ...data, updatedAt: Date.now() }).where(eq(patients.id, id));
     const updated = (await db.select().from(patients).where(eq(patients.id, id)))[0];
-    return NextResponse.json({ patient: updated });
+    // Mask IDs on the way out if non-ADMIN
+    const safeUpdated =
+      session.role === "ADMIN" ? updated : { ...updated, panNumber: null, aadhaarNumber: null };
+    return NextResponse.json({ patient: safeUpdated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     console.error("Update patient error:", error);

@@ -41,12 +41,18 @@ interface NewTreatmentForm {
   cost: string;
 }
 
+const LIMIT = 50;
+
 export default function TreatmentsPage() {
   const [treatments, setTreatments] = useState<TreatmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [patientSearch, setPatientSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [showSlideover, setShowSlideover] = useState(false);
+  const [statusError, setStatusError] = useState("");
 
   // Patient search for filter bar
   const [filterPatients, setFilterPatients] = useState<Patient[]>([]);
@@ -67,6 +73,7 @@ export default function TreatmentsPage() {
   const [formPatients, setFormPatients] = useState<Patient[]>([]);
   const [showFormPatientDropdown, setShowFormPatientDropdown] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  // Role fetched independently — does NOT block the list from loading
   const [currentUserRole, setCurrentUserRole] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
@@ -77,6 +84,7 @@ export default function TreatmentsPage() {
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Fetch role for the new-treatment form UI only — does not gate the list
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -90,21 +98,36 @@ export default function TreatmentsPage() {
       .catch(() => {});
   }, []);
 
-  const fetchTreatments = useCallback(async () => {
-    if (currentUserRole === "" && !currentUserId) return;
-    setLoading(true);
-    const params = new URLSearchParams();
+  // Server enforces RBAC: DOCTOR role automatically sees only their own treatments.
+  // No need to pass doctorId from the client — it would be ignored/overridden anyway.
+  const fetchTreatments = useCallback(async (pageOffset: number, append = false) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+
+    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pageOffset) });
     if (filterPatientId) params.set("patientId", filterPatientId);
     if (dateFilter) params.set("date", dateFilter);
-    if (currentUserRole === "DOCTOR" && currentUserId) params.set("doctorId", currentUserId);
-    const res = await fetch(`/api/treatments?${params}`);
-    const data = await res.json();
-    setTreatments(data.treatments || []);
-    setLoading(false);
-  }, [filterPatientId, dateFilter, currentUserRole, currentUserId]);
+
+    try {
+      const res = await fetch(`/api/treatments?${params}`);
+      const data = await res.json();
+      const rows: TreatmentRecord[] = data.treatments || [];
+      if (append) {
+        setTreatments((prev) => [...prev, ...rows]);
+      } else {
+        setTreatments(rows);
+      }
+      setTotal(data.total ?? 0);
+      setOffset(pageOffset + rows.length);
+    } finally {
+      if (append) setLoadingMore(false);
+      else setLoading(false);
+    }
+  }, [filterPatientId, dateFilter]);
 
   useEffect(() => {
-    fetchTreatments();
+    setOffset(0);
+    fetchTreatments(0, false);
   }, [fetchTreatments]);
 
   // Debounced filter patient search
@@ -153,7 +176,14 @@ export default function TreatmentsPage() {
   }, [showSlideover, members.length, currentUserRole]);
 
   function openSlideover() {
-    setForm({ patientId: "", doctorId: currentUserRole === "DOCTOR" ? currentUserId : "", description: "", procedure: "", toothNumbers: [], cost: "0" });
+    setForm({
+      patientId: "",
+      doctorId: currentUserRole === "DOCTOR" ? currentUserId : "",
+      description: "",
+      procedure: "",
+      toothNumbers: [],
+      cost: "0",
+    });
     setFormPatientSearch("");
     setFormPatients([]);
     setSubmitError("");
@@ -188,7 +218,8 @@ export default function TreatmentsPage() {
         return;
       }
       closeSlideover();
-      fetchTreatments();
+      setOffset(0);
+      fetchTreatments(0, false);
     } catch {
       setSubmitError("Something went wrong.");
     } finally {
@@ -203,31 +234,51 @@ export default function TreatmentsPage() {
     setDateFilter("");
   }
 
-  const hasFilters = filterPatientId || dateFilter;
+  const hasFilters = !!(filterPatientId || dateFilter);
 
   async function handleStatusChange(treatmentId: string, newStatus: TreatmentStatus) {
     setUpdatingStatus(treatmentId);
+    setStatusError("");
+    // Capture old status for rollback
+    const prev = treatments.find((t) => t.id === treatmentId)?.status ?? "PLANNED";
+    // Optimistic update
+    setTreatments((list) =>
+      list.map((t) => (t.id === treatmentId ? { ...t, status: newStatus } : t))
+    );
     try {
-      await fetch(`/api/treatments/${treatmentId}`, {
+      const res = await fetch(`/api/treatments/${treatmentId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      setTreatments((prev) =>
-        prev.map((t) => (t.id === treatmentId ? { ...t, status: newStatus } : t))
-      );
+      if (!res.ok) {
+        // Rollback on API error
+        setTreatments((list) =>
+          list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
+        );
+        const d = await res.json().catch(() => ({}));
+        setStatusError((d as { error?: string }).error || "Failed to update status. Please try again.");
+      }
     } catch {
-      // silently ignore
+      // Rollback on network error
+      setTreatments((list) =>
+        list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
+      );
+      setStatusError("Network error. Please try again.");
     } finally {
       setUpdatingStatus(null);
     }
   }
 
   function statusBadgeClass(status: TreatmentStatus): string {
-    if (status === "COMPLETED") return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700";
-    if (status === "IN_PROGRESS") return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700";
+    if (status === "COMPLETED")
+      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700";
+    if (status === "IN_PROGRESS")
+      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700";
     return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700";
   }
+
+  const hasMore = offset < total;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -237,6 +288,13 @@ export default function TreatmentsPage() {
       />
 
       <main className="flex-1 p-6 space-y-4">
+        {statusError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center justify-between">
+            <span>{statusError}</span>
+            <button onClick={() => setStatusError("")} className="text-red-500 hover:text-red-700 ml-4">✕</button>
+          </div>
+        )}
+
         {/* Filter bar */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Patient search filter */}
@@ -292,7 +350,14 @@ export default function TreatmentsPage() {
             </button>
           )}
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
+            {!loading && total > 0 && (
+              <span className="text-xs text-slate-400">
+                {filterPatientName
+                  ? `${total} for ${filterPatientName}`
+                  : `${total} total`}
+              </span>
+            )}
             <button
               onClick={openSlideover}
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
@@ -328,7 +393,7 @@ export default function TreatmentsPage() {
                 ) : treatments.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-10 text-slate-400">
-                      No treatment records found
+                      {hasFilters ? "No treatments match your filters." : "No treatment records found"}
                     </td>
                   </tr>
                 ) : (
@@ -362,7 +427,7 @@ export default function TreatmentsPage() {
                           value={t.status || "PLANNED"}
                           disabled={updatingStatus === t.id}
                           onChange={(e) => handleStatusChange(t.id, e.target.value as TreatmentStatus)}
-                          className={`${statusBadgeClass((t.status || "PLANNED") as TreatmentStatus)} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 pr-6`}
+                          className={`${statusBadgeClass((t.status || "PLANNED") as TreatmentStatus)} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 pr-6 disabled:opacity-50`}
                         >
                           <option value="PLANNED">PLANNED</option>
                           <option value="IN_PROGRESS">IN_PROGRESS</option>
@@ -378,16 +443,32 @@ export default function TreatmentsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination footer */}
+          {!loading && hasMore && (
+            <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-400">
+                Showing {treatments.length} of {total}
+              </span>
+              <button
+                onClick={() => fetchTreatments(offset, true)}
+                disabled={loadingMore}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+              >
+                {loadingMore
+                  ? "Loading..."
+                  : `Load more (${total - treatments.length} remaining)`}
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Modal */}
+      {/* New Treatment Plan Modal */}
       {showSlideover && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/40" onClick={closeSlideover} />
 
-          {/* Panel — centered, scrollable, never crops tooth chart */}
           <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
               <h2 className="text-base font-semibold text-slate-900">New Treatment Plan</h2>
@@ -486,9 +567,7 @@ export default function TreatmentsPage() {
 
               {/* Procedure */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Procedure
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Procedure</label>
                 <input
                   type="text"
                   value={form.procedure}
@@ -513,9 +592,7 @@ export default function TreatmentsPage() {
 
               {/* Cost */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Cost
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Cost (₹)</label>
                 <input
                   type="number"
                   min="0"

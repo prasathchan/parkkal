@@ -19,7 +19,10 @@ const signupSchema = z.object({
 const SIGNUP_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 }; // 5 per hour per IP
 
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Math.random() is not cryptographically secure — use getRandomValues instead.
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return String(100000 + (buf[0] % 900000));
 }
 
 function generateSlug(name: string): string {
