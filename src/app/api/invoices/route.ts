@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { invoices, invoiceTreatments, patients, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -20,35 +20,49 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const patientIdFilter = searchParams.get("patientId");
+  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 200);
+  const offset = parseInt(searchParams.get("offset") ?? "0", 10);
 
   const db = getDb();
 
-  const rows = await db
-    .select({
-      id: invoices.id,
-      patientId: invoices.patientId,
-      totalAmount: invoices.totalAmount,
-      paidAmount: invoices.paidAmount,
-      status: invoices.status,
-      notes: invoices.notes,
-      createdAt: invoices.createdAt,
-      updatedAt: invoices.updatedAt,
-      patientName: patients.name,
-    })
-    .from(invoices)
-    .leftJoin(patients, eq(invoices.patientId, patients.id))
-    .where(patientIdFilter
-      ? and(eq(invoices.organizationId, session.orgId), eq(invoices.patientId, patientIdFilter))
-      : eq(invoices.organizationId, session.orgId)
-    )
-    .orderBy(desc(invoices.createdAt));
+  const whereClause = patientIdFilter
+    ? and(eq(invoices.organizationId, session.orgId), eq(invoices.patientId, patientIdFilter))
+    : eq(invoices.organizationId, session.orgId);
 
-  return NextResponse.json({ invoices: rows });
+  const [totalResult, rows] = await Promise.all([
+    db.select({ count: count() }).from(invoices).where(whereClause),
+    db
+      .select({
+        id: invoices.id,
+        patientId: invoices.patientId,
+        totalAmount: invoices.totalAmount,
+        paidAmount: invoices.paidAmount,
+        status: invoices.status,
+        notes: invoices.notes,
+        createdAt: invoices.createdAt,
+        updatedAt: invoices.updatedAt,
+        patientName: patients.name,
+      })
+      .from(invoices)
+      .leftJoin(patients, eq(invoices.patientId, patients.id))
+      .where(whereClause)
+      .orderBy(desc(invoices.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = totalResult[0]?.count ?? 0;
+  return NextResponse.json({ invoices: rows, total, hasMore: offset + rows.length < total });
 }
 
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const ALLOWED_ROLES = ["ADMIN", "RECEPTIONIST"];
+  if (!ALLOWED_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json();

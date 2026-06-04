@@ -15,7 +15,9 @@ const resendSchema = z.object({
 const RESEND_RATE_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId
 
 function generateOTP(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return String(100000 + (buf[0] % 900000));
 }
 
 export async function POST(request: NextRequest) {

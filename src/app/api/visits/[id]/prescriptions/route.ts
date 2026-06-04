@@ -72,7 +72,7 @@ export async function POST(
   }
 
   const data = parsed.data;
-  const rxId = `rx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const rxId = crypto.randomUUID();
   const now = Date.now();
 
   const [prescription] = await db
