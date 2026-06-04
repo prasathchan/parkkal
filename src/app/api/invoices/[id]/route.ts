@@ -44,12 +44,17 @@ export async function GET(
   return NextResponse.json({ invoice: rows[0] });
 }
 
+const BILLING_ROLES = ["ADMIN", "RECEPTIONIST"];
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!BILLING_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
 

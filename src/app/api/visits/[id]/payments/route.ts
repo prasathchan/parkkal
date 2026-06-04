@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { payments, visits, appointments } from "@/db/schema";
+import { payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -55,7 +55,6 @@ export async function POST(
   const { amount, paymentMethod, referenceNumber, notes } = parsed.data;
   const db = getDb();
 
-  // Fetch visit — get patientId from DB, not from caller
   const [visit] = await db
     .select()
     .from(visits)
@@ -65,10 +64,6 @@ export async function POST(
   if (visit.status === "CANCELLED") {
     return NextResponse.json({ error: "Cannot add payment to a cancelled visit" }, { status: 400 });
   }
-
-  // COMPLETED visits can still receive payments — clinical workflow:
-  // doctor marks visit done, then receptionist collects payment at checkout.
-  // Only CANCELLED visits are locked.
 
   const due = visit.totalAmount - visit.paidAmount;
   if (due <= 0.001) {
@@ -96,20 +91,20 @@ export async function POST(
 
   await db.insert(payments).values(newPayment);
 
-  // Atomic conditional update: only increment paid_amount if it won't exceed total_amount.
-  // This prevents race conditions where two concurrent payments both see the same balance.
-  // D1 does not support transactions, so we rely on SQLite's row-level atomic UPDATE.
+  // Recompute paidAmount from SUM of all payment records — self-healing against drift.
+  // A CASE-based incremental update is not race-safe: two concurrent requests can both
+  // pass the balance check on a stale read, INSERT their records, but only one increment
+  // applies. SUM recompute is always authoritative regardless of concurrency.
   await db
     .update(visits)
     .set({
-      paidAmount: sql`CASE WHEN paid_amount + ${amount} <= total_amount + 0.001 THEN paid_amount + ${amount} ELSE paid_amount END`,
+      paidAmount: sql`MIN(total_amount, (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE visit_id = ${id}))`,
       updatedAt: Date.now(),
     })
     .where(eq(visits.id, id));
 
   // Intentionally NOT auto-completing the visit on full payment.
-  // Clinical completion (visit status = COMPLETED) must be an explicit action by the doctor,
-  // not a financial side-effect. A patient may pay upfront for a multi-session treatment.
+  // Clinical completion must be an explicit doctor action, not a financial side-effect.
 
   return NextResponse.json({ payment: newPayment }, { status: 201 });
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 interface OrgOption {
@@ -21,8 +21,10 @@ const ROLE_COLORS: Record<string, string> = {
   HELPER: "bg-gray-100 text-gray-700",
 };
 
-export default function SelectOrgPage() {
+function SelectOrgInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const [orgs, setOrgs] = useState<OrgOption[] | null>(null); // null = loading, [] = not found
   const [selecting, setSelecting] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -60,7 +62,7 @@ export default function SelectOrgPage() {
         return;
       }
       sessionStorage.removeItem("pkd_orgs");
-      router.push("/dashboard");
+      router.push(from || "/dashboard");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -149,5 +151,13 @@ export default function SelectOrgPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SelectOrgPage() {
+  return (
+    <Suspense>
+      <SelectOrgInner />
+    </Suspense>
   );
 }
