@@ -33,9 +33,12 @@ function getBillingStatus(visit: VisitBilling): "PAID" | "PARTIAL" | "PENDING" {
 
 type PaymentMethod = "CASH" | "CARD" | "UPI" | "BANK_TRANSFER";
 
+type BillingFilter = "UNPAID" | "ALL";
+
 export default function BillingPage() {
   const [visits, setVisits] = useState<VisitBilling[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<BillingFilter>("UNPAID");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [payModal, setPayModal] = useState<{ visit: VisitBilling; due: number } | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
@@ -43,7 +46,8 @@ export default function BillingPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/visits");
+      // Default to OPEN visits only so staff see actionable dues, not all history.
+      const res = await fetch("/api/visits?status=OPEN&limit=200");
       const data = await res.json();
       setVisits(data.visits || []);
     } finally {
@@ -87,9 +91,14 @@ export default function BillingPage() {
     }
   }
 
-  const pending = visits.filter((v) => getBillingStatus(v) === "PENDING").length;
-  const partial = visits.filter((v) => getBillingStatus(v) === "PARTIAL").length;
-  const paid = visits.filter((v) => getBillingStatus(v) === "PAID").length;
+  const allBillingStatuses = visits.map(getBillingStatus);
+  const pending = allBillingStatuses.filter((s) => s === "PENDING").length;
+  const partial = allBillingStatuses.filter((s) => s === "PARTIAL").length;
+  const paid = allBillingStatuses.filter((s) => s === "PAID").length;
+
+  const displayedVisits = filter === "UNPAID"
+    ? visits.filter((v) => getBillingStatus(v) !== "PAID")
+    : visits;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -105,16 +114,24 @@ export default function BillingPage() {
               <h2 className="font-semibold text-slate-900">Visit Billing Summary</h2>
               <p className="text-xs text-slate-500 mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
             </div>
-            <div className="flex gap-2 text-xs">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
-                {pending} Pending
-              </span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                {partial} Partial
-              </span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                {paid} Paid
-              </span>
+            <div className="flex items-center gap-2 text-xs flex-wrap">
+              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">{pending} Pending</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{partial} Partial</span>
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">{paid} Paid</span>
+              <div className="flex gap-1 ml-2">
+                <button
+                  onClick={() => setFilter("UNPAID")}
+                  className={`px-3 py-1 rounded-lg font-medium transition ${filter === "UNPAID" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  Unpaid Only
+                </button>
+                <button
+                  onClick={() => setFilter("ALL")}
+                  className={`px-3 py-1 rounded-lg font-medium transition ${filter === "ALL" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                >
+                  All Open
+                </button>
+              </div>
             </div>
           </div>
 
@@ -145,8 +162,14 @@ export default function BillingPage() {
                     No visits found
                   </TableCell>
                 </TableRow>
+              ) : displayedVisits.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8 text-slate-400">
+                    {filter === "UNPAID" ? "No unpaid visits — all clear!" : "No visits found"}
+                  </TableCell>
+                </TableRow>
               ) : (
-                visits.map((v) => {
+                displayedVisits.map((v) => {
                   const due = v.totalAmount - v.paidAmount;
                   const billingStatus = getBillingStatus(v);
                   const statusColors: Record<string, string> = {

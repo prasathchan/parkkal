@@ -70,6 +70,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Derive base URL from the incoming request so invite links work in any environment
+  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!["ADMIN"].includes(session.role)) {
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
       const org = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, session.orgId)))[0];
       const orgName = org?.name ?? "your clinic";
 
-      const activationUrl = `https://app.parkkal.com/activate?token=${tokenCode}`;
+      const activationUrl = `${appBaseUrl}/activate?token=${tokenCode}`;
 
       try {
         await sendStaffInviteEmail(data.email, data.name ?? data.email, orgName, activationUrl);

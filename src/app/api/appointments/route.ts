@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, asc, and, notInArray, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { appointments, patients, users } from "@/db/schema";
+import { appointments, patients, users, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
@@ -90,6 +90,15 @@ export async function POST(request: NextRequest) {
     if (session.role === "DOCTOR") data.doctorId = session.userId;
 
     const db = getDb();
+
+    // Verify patient belongs to this org
+    const [patientLink] = await db
+      .select({ patientId: organizationPatients.patientId })
+      .from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
+    if (!patientLink) {
+      return NextResponse.json({ error: "Patient does not belong to this organization" }, { status: 400 });
+    }
 
     // Check for doctor time conflict
     const [conflict] = await db

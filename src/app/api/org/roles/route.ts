@@ -78,7 +78,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Auto-assign orgRoleId to members whose orgRoleId is null, based on their system role
+  // One-time backfill: auto-assign orgRoleId to members that still have null.
+  // Guard with an early count to avoid N+1 writes on every GET after backfill is done.
   try {
     const slugToId: Record<string, string> = {};
     for (const r of roles) slugToId[r.slug] = r.id;
@@ -88,13 +89,15 @@ export async function GET(request: NextRequest) {
       .from(organizationMembers)
       .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
 
-    for (const m of unassigned) {
-      const slug = SYSTEM_ROLE_TO_SLUG[m.role];
-      const roleId = slug ? slugToId[slug] : null;
-      if (roleId) {
-        await db.update(organizationMembers)
-          .set({ orgRoleId: roleId })
-          .where(eq(organizationMembers.id, m.id));
+    if (unassigned.length > 0) {
+      for (const m of unassigned) {
+        const slug = SYSTEM_ROLE_TO_SLUG[m.role];
+        const roleId = slug ? slugToId[slug] : null;
+        if (roleId) {
+          await db.update(organizationMembers)
+            .set({ orgRoleId: roleId })
+            .where(eq(organizationMembers.id, m.id));
+        }
       }
     }
   } catch (e) {

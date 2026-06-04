@@ -135,8 +135,9 @@ export async function POST(request: NextRequest) {
 
       const seq = (totalCount as number) + 1 + attempt;
       const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
+      // orgCount is re-queried on each attempt, so no +attempt offset needed here.
       orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
-        (orgCount as number) + 1 + attempt
+        (orgCount as number) + 1
       ).padStart(4, "0")}`;
       newPatient = { ...basePatient, patientCode: globalCode };
 

@@ -32,34 +32,29 @@ async function checkD1RateLimit(
   const now = Date.now();
   const windowStart = now - config.windowMs;
 
+  // Reset the window if it has expired, then atomically increment.
+  // The UPSERT + atomic UPDATE pattern avoids the read-then-write race condition
+  // where two concurrent requests both read count=N and both pass the limit check.
+  await db
+    .prepare(
+      "INSERT INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?) " +
+      "ON CONFLICT(key) DO UPDATE SET " +
+      "  count = CASE WHEN window_start < ? THEN 1 ELSE count + 1 END, " +
+      "  window_start = CASE WHEN window_start < ? THEN excluded.window_start ELSE window_start END, " +
+      "  updated_at = excluded.updated_at"
+    )
+    .bind(key, now, now, windowStart, windowStart)
+    .run();
+
   const row = await db
     .prepare("SELECT count, window_start FROM rate_limits WHERE key = ?")
     .bind(key)
     .first<{ count: number; window_start: number }>();
 
-  let count: number;
-  let windowBegin: number;
-
-  if (!row || row.window_start < windowStart) {
-    count = 1;
-    windowBegin = now;
-    await db
-      .prepare(
-        "INSERT INTO rate_limits (key, count, window_start, updated_at) VALUES (?, 1, ?, ?) " +
-        "ON CONFLICT(key) DO UPDATE SET count = 1, window_start = excluded.window_start, updated_at = excluded.updated_at"
-      )
-      .bind(key, now, now)
-      .run();
-  } else {
-    count = row.count + 1;
-    windowBegin = row.window_start;
-    await db
-      .prepare("UPDATE rate_limits SET count = ?, updated_at = ? WHERE key = ?")
-      .bind(count, now, key)
-      .run();
-  }
-
+  const count = row?.count ?? 1;
+  const windowBegin = row?.window_start ?? now;
   const resetAt = windowBegin + config.windowMs;
+
   return {
     allowed: count <= config.limit,
     remaining: Math.max(0, config.limit - count),
