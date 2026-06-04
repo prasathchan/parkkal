@@ -7,6 +7,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get("message");
+  const from = searchParams.get("from");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,9 +34,10 @@ function LoginForm() {
 
       if (data.requireOrgSelection) {
         sessionStorage.setItem("pkd_orgs", JSON.stringify(data.organizations));
-        router.push("/select-org");
+        const nextUrl = from ? `/select-org?from=${encodeURIComponent(from)}` : "/select-org";
+        router.push(nextUrl);
       } else {
-        router.push(data.redirect || "/dashboard");
+        router.push(from || data.redirect || "/dashboard");
       }
       router.refresh();
     } catch {

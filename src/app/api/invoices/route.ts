@@ -14,9 +14,15 @@ const createSchema = z.object({
   treatmentIds: z.array(z.string()).optional(),
 });
 
+const BILLING_ROLES = ["ADMIN", "RECEPTIONIST", "DOCTOR"];
+
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!BILLING_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const patientIdFilter = searchParams.get("patientId");

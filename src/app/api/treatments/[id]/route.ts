@@ -14,6 +14,14 @@ const patchSchema = z.object({
   visitId: z.string().nullable().optional(),
 });
 
+// Valid forward transitions for non-ADMIN roles.
+// ADMIN can freely correct status; doctors follow the clinical state machine.
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  PLANNED: ["IN_PROGRESS", "COMPLETED"],
+  IN_PROGRESS: ["COMPLETED", "PLANNED"],
+  COMPLETED: [], // only ADMIN can reopen a completed treatment
+};
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,16 +33,28 @@ export async function PATCH(
   const db = getDb();
 
   const [existing] = await db
-    .select({ id: treatments.id, organizationId: treatments.organizationId })
+    .select({ id: treatments.id, status: treatments.status })
     .from(treatments)
-    .where(eq(treatments.id, id));
+    .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
     const body = await request.json();
     const data = patchSchema.parse(body);
+
+    // Enforce status state machine for non-ADMIN roles
+    if (data.status !== undefined && data.status !== existing.status) {
+      if (session.role !== "ADMIN") {
+        const allowed = ALLOWED_TRANSITIONS[existing.status] ?? [];
+        if (!allowed.includes(data.status)) {
+          return NextResponse.json(
+            { error: `Cannot transition treatment from ${existing.status} to ${data.status}` },
+            { status: 422 }
+          );
+        }
+      }
+    }
 
     const updates: Record<string, unknown> = {};
     if (data.status !== undefined) updates.status = data.status;
@@ -72,12 +92,11 @@ export async function DELETE(
   const db = getDb();
 
   const [existing] = await db
-    .select({ id: treatments.id, organizationId: treatments.organizationId })
+    .select({ id: treatments.id })
     .from(treatments)
-    .where(eq(treatments.id, id));
+    .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (existing.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await db.delete(treatments).where(
     and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId))

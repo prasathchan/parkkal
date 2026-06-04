@@ -25,9 +25,10 @@ async function verifyWithClaude(
     return { legible: true, hasSignature: true, notes: "Auto-approved: AI verification not configured" };
   }
 
-  // PDFs can't be sent as images — treat as legible pending manual review
+  // PDFs cannot be inspected visually — mark as UPLOADED pending manual review by staff.
+  // Auto-approving PDFs without reading them is a clinical compliance risk.
   if (mimeType === "application/pdf") {
-    return { legible: true, hasSignature: true, notes: "PDF consent form accepted — manual review recommended" };
+    return { legible: true, hasSignature: false, notes: "PDF uploaded — staff must verify signature manually before proceeding" };
   }
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -134,7 +135,9 @@ export async function POST(
   if (!verify.legible) {
     consentStatus = "REJECTED";
   } else if (!verify.hasSignature) {
-    consentStatus = "REJECTED";
+    // Legible but no detected signature — uploaded, needs staff review (not auto-rejected).
+    // This also covers PDFs which always return hasSignature=false.
+    consentStatus = "UPLOADED";
   } else {
     consentStatus = "VERIFIED";
   }

@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
 
@@ -12,7 +12,8 @@ const resendSchema = z.object({
   type: z.enum(["EMAIL", "PHONE"]),
 });
 
-const RESEND_RATE_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId
+const RESEND_USER_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId
+const RESEND_IP_LIMIT = { limit: 10, windowMs: 60 * 60 * 1000 };  // 10 per hour per IP
 
 function generateOTP(): string {
   const buf = new Uint32Array(1);
@@ -21,12 +22,23 @@ function generateOTP(): string {
 }
 
 export async function POST(request: NextRequest) {
+  // IP-level gate first — prevents userId enumeration via cycling IDs
+  const ip = getClientIp(request);
+  const ipRl = await checkRateLimit(`resend-otp-ip:${ip}`, RESEND_IP_LIMIT);
+  if (!ipRl.allowed) {
+    const retryAfter = Math.ceil((ipRl.resetAt - Date.now()) / 1000);
+    return NextResponse.json(
+      { error: "Too many resend attempts. Please wait before trying again." },
+      { status: 429, headers: { "Retry-After": String(retryAfter) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const { userId, type } = resendSchema.parse(body);
 
-    // Rate limit by userId
-    const rl = await checkRateLimit(`resend-otp:${userId}:${type}`, RESEND_RATE_LIMIT);
+    // Per-user rate limit as secondary guard
+    const rl = await checkRateLimit(`resend-otp:${userId}:${type}`, RESEND_USER_LIMIT);
     if (!rl.allowed) {
       const retryAfter = Math.ceil((rl.resetAt - Date.now()) / 1000);
       return NextResponse.json(

@@ -79,7 +79,8 @@ export default function AppointmentsPage() {
     fetchAppointments(0, false);
   }, [fetchAppointments]);
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: string, label: string) {
+    if (!confirm(`Mark this appointment as "${label}"? This cannot be undone.`)) return;
     setUpdatingId(id);
     await fetch(`/api/appointments/${id}`, {
       method: "PATCH",
@@ -206,14 +207,14 @@ export default function AppointmentsPage() {
                         {apt.status === "SCHEDULED" && (
                           <>
                             <button
-                              onClick={() => updateStatus(apt.id, "NO_SHOW")}
+                              onClick={() => updateStatus(apt.id, "NO_SHOW", "No Show")}
                               disabled={updatingId === apt.id}
                               className="text-xs text-amber-600 hover:text-amber-800 border border-amber-200 hover:bg-amber-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
                             >
                               No Show
                             </button>
                             <button
-                              onClick={() => updateStatus(apt.id, "CANCELLED")}
+                              onClick={() => updateStatus(apt.id, "CANCELLED", "Cancelled")}
                               disabled={updatingId === apt.id}
                               className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
                             >

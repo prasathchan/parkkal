@@ -81,13 +81,11 @@ export async function PATCH(
   const db = getDb();
 
   const [existingVisit] = await db
-    .select({ organizationId: visits.organizationId, appointmentId: visits.appointmentId })
+    .select({ appointmentId: visits.appointmentId })
     .from(visits)
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (existingVisit.organizationId !== session.orgId)
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await request.json() as Record<string, unknown>;
 
