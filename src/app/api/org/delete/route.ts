@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb, type DbInstance } from "@/lib/db";
 import {
   organizations,
   organizationMembers,
@@ -46,110 +46,111 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Organization name does not match" }, { status: 400 });
   }
 
-  // ── Collect IDs needed for cascading deletes ──────────────────────────────
+  // ── Phase 1: read-only ID collection (outside the transaction) ────────────
+  // All reads happen here so Phase 2 (the transaction) contains pure writes.
+  // D1's batch API sends the entire write phase atomically in one HTTP round-trip.
 
-  const members = await db
+  const memberRows = await db
     .select({ userId: organizationMembers.userId })
     .from(organizationMembers)
     .where(eq(organizationMembers.organizationId, orgId));
-  const userIds = members.map((m: { userId: string }) => m.userId);
+  const userIds = memberRows.map((r: { userId: string }) => r.userId);
 
-  const orgPatientRows = await db
+  const patientRows = await db
     .select({ patientId: organizationPatients.patientId })
     .from(organizationPatients)
     .where(eq(organizationPatients.organizationId, orgId));
-  const patientIds = orgPatientRows.map((r: { patientId: string }) => r.patientId);
+  const patientIds = patientRows.map((r: { patientId: string }) => r.patientId);
 
-  const orgVisits = await db
+  const visitRows = await db
     .select({ id: visits.id })
     .from(visits)
     .where(eq(visits.organizationId, orgId));
-  const visitIds = orgVisits.map((v: { id: string }) => v.id);
+  const visitIds = visitRows.map((r: { id: string }) => r.id);
 
-  const orgInvoices = await db
+  const invoiceRows = await db
     .select({ id: invoices.id })
     .from(invoices)
     .where(eq(invoices.organizationId, orgId));
-  const invoiceIds = orgInvoices.map((i: { id: string }) => i.id);
+  const invoiceIds = invoiceRows.map((r: { id: string }) => r.id);
 
-  // ── Delete in FK-safe order (leaf records first) ──────────────────────────
-
-  if (visitIds.length > 0) {
-    await db.delete(payments).where(inArray(payments.visitId, visitIds));
-    await db.delete(visitItems).where(inArray(visitItems.visitId, visitIds));
-    await db.delete(attachments).where(inArray(attachments.visitId, visitIds));
-  }
-  if (invoiceIds.length > 0) {
-    await db.delete(invoiceTreatments).where(inArray(invoiceTreatments.invoiceId, invoiceIds));
-  }
-
-  await db.delete(visits).where(eq(visits.organizationId, orgId));
-  await db.delete(invoices).where(eq(invoices.organizationId, orgId));
-  await db.delete(appointments).where(eq(appointments.organizationId, orgId));
-  await db.delete(treatments).where(eq(treatments.organizationId, orgId));
-  await db.delete(prescriptions).where(eq(prescriptions.organizationId, orgId));
-  await db.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId));
-  await db.delete(featureFlags).where(eq(featureFlags.orgId, orgId));
-
-  // Delete emergency contacts for patients in this org
+  // Patients linked to more than one org must not be hard-deleted.
+  let exclusivePatientIds: string[] = patientIds;
   if (patientIds.length > 0) {
-    await db.delete(emergencyContacts).where(
-      and(
-        eq(emergencyContacts.entityType, "PATIENT"),
-        inArray(emergencyContacts.entityId, patientIds)
-      )
-    );
-  }
-
-  // Delete emergency contacts for staff members in this org.
-  // Previously missing — this left orphaned emergency_contacts rows for users.
-  if (userIds.length > 0) {
-    await db.delete(emergencyContacts).where(
-      and(
-        eq(emergencyContacts.entityType, "USER"),
-        inArray(emergencyContacts.entityId, userIds)
-      )
-    );
-  }
-
-  await db.delete(organizationPatients).where(eq(organizationPatients.organizationId, orgId));
-
-  // Delete patients who belong only to this org
-  if (patientIds.length > 0) {
-    const sharedPatients = await db
+    const allPatientLinks = await db
       .select({ patientId: organizationPatients.patientId })
       .from(organizationPatients)
       .where(inArray(organizationPatients.patientId, patientIds));
-    const sharedIds = new Set(sharedPatients.map((r: { patientId: string }) => r.patientId));
-    const soloPatientIds = patientIds.filter((pid: string) => !sharedIds.has(pid));
-    if (soloPatientIds.length > 0) {
-      await db.delete(patients).where(inArray(patients.id, soloPatientIds));
+    const linkCount = new Map<string, number>();
+    for (const { patientId } of allPatientLinks) {
+      linkCount.set(patientId, (linkCount.get(patientId) ?? 0) + 1);
     }
+    exclusivePatientIds = patientIds.filter((pid: string) => (linkCount.get(pid) ?? 0) <= 1);
   }
 
-  await db.delete(organizationMembers).where(eq(organizationMembers.organizationId, orgId));
-  await db.delete(orgRoles).where(eq(orgRoles.organizationId, orgId));
-
-  // Delete users who are not members of any other org, and clean their tokens
+  // Users who are members of another org must not be hard-deleted.
+  let exclusiveUserIds: string[] = userIds;
   if (userIds.length > 0) {
-    const stillMembered = await db
+    const allUserMemberships = await db
       .select({ userId: organizationMembers.userId })
       .from(organizationMembers)
       .where(inArray(organizationMembers.userId, userIds));
-    const stillMemberedIds = new Set(
-      stillMembered.map((r: { userId: string }) => r.userId)
-    );
-    const soloUserIds = userIds.filter((uid: string) => !stillMemberedIds.has(uid));
-
-    if (soloUserIds.length > 0) {
-      await db.delete(verificationTokens).where(
-        inArray(verificationTokens.userId, soloUserIds)
-      );
-      await db.delete(users).where(inArray(users.id, soloUserIds));
+    const membershipCount = new Map<string, number>();
+    for (const { userId } of allUserMemberships) {
+      membershipCount.set(userId, (membershipCount.get(userId) ?? 0) + 1);
     }
+    exclusiveUserIds = userIds.filter((uid: string) => (membershipCount.get(uid) ?? 0) <= 1);
   }
 
-  await db.delete(organizations).where(eq(organizations.id, orgId));
+  // ── Phase 2: atomic cascade delete ───────────────────────────────────────
+  // db.transaction() uses D1's batch API in production (atomic single round-trip)
+  // and a real SQLite transaction in dev (libsql). If any statement throws, no
+  // rows are deleted — the org is left fully intact.
+  await db.transaction(async (tx: DbInstance) => {
+    if (visitIds.length > 0) {
+      await tx.delete(payments).where(inArray(payments.visitId, visitIds));
+      await tx.delete(visitItems).where(inArray(visitItems.visitId, visitIds));
+      await tx.delete(attachments).where(inArray(attachments.visitId, visitIds));
+    }
+    if (invoiceIds.length > 0) {
+      await tx.delete(invoiceTreatments).where(inArray(invoiceTreatments.invoiceId, invoiceIds));
+    }
+
+    await tx.delete(visits).where(eq(visits.organizationId, orgId));
+    await tx.delete(invoices).where(eq(invoices.organizationId, orgId));
+    await tx.delete(appointments).where(eq(appointments.organizationId, orgId));
+    await tx.delete(treatments).where(eq(treatments.organizationId, orgId));
+    await tx.delete(prescriptions).where(eq(prescriptions.organizationId, orgId));
+    await tx.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId));
+    await tx.delete(featureFlags).where(eq(featureFlags.orgId, orgId));
+
+    if (patientIds.length > 0) {
+      await tx.delete(emergencyContacts).where(
+        and(eq(emergencyContacts.entityType, "PATIENT"), inArray(emergencyContacts.entityId, patientIds))
+      );
+    }
+    if (userIds.length > 0) {
+      await tx.delete(emergencyContacts).where(
+        and(eq(emergencyContacts.entityType, "USER"), inArray(emergencyContacts.entityId, userIds))
+      );
+    }
+
+    await tx.delete(organizationPatients).where(eq(organizationPatients.organizationId, orgId));
+
+    if (exclusivePatientIds.length > 0) {
+      await tx.delete(patients).where(inArray(patients.id, exclusivePatientIds));
+    }
+
+    await tx.delete(organizationMembers).where(eq(organizationMembers.organizationId, orgId));
+    await tx.delete(orgRoles).where(eq(orgRoles.organizationId, orgId));
+
+    if (exclusiveUserIds.length > 0) {
+      await tx.delete(verificationTokens).where(inArray(verificationTokens.userId, exclusiveUserIds));
+      await tx.delete(users).where(inArray(users.id, exclusiveUserIds));
+    }
+
+    await tx.delete(organizations).where(eq(organizations.id, orgId));
+  });
 
   return NextResponse.json({ deleted: true });
 }

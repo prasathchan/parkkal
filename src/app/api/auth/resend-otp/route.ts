@@ -9,7 +9,7 @@ import { sendSMSOTP } from "@/lib/sms";
 
 const resendSchema = z.object({
   userId: z.string(),
-  type: z.enum(["EMAIL", "PHONE"]),
+  type: z.enum(["EMAIL", "PHONE"] as const),
 });
 
 const RESEND_USER_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId

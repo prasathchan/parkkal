@@ -133,8 +133,8 @@ export const treatments = sqliteTable("treatments", {
   toothNumbers: text("tooth_numbers"),
   procedure: text("procedure"),
   cost: real("cost").notNull().default(0),
-  status: text("status").notNull().default("PLANNED"),
-  consentStatus: text("consent_status").notNull().default("PENDING"),
+  status: text("status", { enum: ["PLANNED", "IN_PROGRESS", "COMPLETED"] }).notNull().default("PLANNED"),
+  consentStatus: text("consent_status", { enum: ["PENDING", "UPLOADED", "VERIFIED", "REJECTED", "EMERGENCY_OVERRIDE"] }).notNull().default("PENDING"),
   consentDocumentUrl: text("consent_document_url"),
   consentDocumentName: text("consent_document_name"),
   consentUploadedAt: integer("consent_uploaded_at"),
@@ -259,7 +259,7 @@ export const attachments = sqliteTable("attachments", {
 export const verificationTokens = sqliteTable("verification_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
-  type: text("type").notNull(), // 'EMAIL' | 'PHONE'
+  type: text("type", { enum: ["EMAIL", "PHONE", "STAFF_INVITE", "PHONE_OTP"] }).notNull(),
   code: text("code").notNull(),
   expiresAt: integer("expires_at").notNull(),
   used: integer("used").notNull().default(0),
