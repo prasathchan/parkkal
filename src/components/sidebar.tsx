@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import { getSidebarColors } from "@/lib/theme";
+
+type SidebarColors = ReturnType<typeof getSidebarColors>;
 
 interface NavItem {
   label: string;
@@ -132,6 +135,62 @@ const navItems: NavItem[] = [
   },
 ];
 
+// Isolated components with their own hover state so React reconciliation handles
+// all style updates — no direct DOM style mutation via event handlers.
+function NavLink({
+  item,
+  isActive,
+  colors,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  colors: SidebarColors;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Link
+      href={item.href}
+      className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors")}
+      style={{
+        background: isActive ? colors.activeBg : hovered ? colors.hoverBg : "transparent",
+        color: isActive ? colors.textActive : colors.text,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {item.icon}
+      {item.label}
+    </Link>
+  );
+}
+
+function LogoutButton({
+  onLogout,
+  colors,
+}: {
+  onLogout: () => void;
+  colors: SidebarColors;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onLogout}
+      title="Sign out"
+      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+      style={{
+        color: hovered ? "#ef4444" : colors.text,
+        background: hovered ? colors.hoverBg : "transparent",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+      </svg>
+    </button>
+  );
+}
+
 interface SidebarProps {
   user: { name: string; role: string; orgName?: string };
   logoUrl?: string | null;
@@ -191,24 +250,8 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
             item.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(item.href);
-
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-              )}
-              style={{
-                background: isActive ? colors.activeBg : "transparent",
-                color: isActive ? colors.textActive : colors.text,
-              }}
-              onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = colors.hoverBg; }}
-              onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
+            <NavLink key={item.href} item={item} isActive={isActive} colors={colors} />
           );
         })}
       </nav>
@@ -225,18 +268,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
             <p className="text-xs font-medium truncate" style={{ color: colors.userText }}>{user.name}</p>
             <p className="text-xs truncate" style={{ color: colors.userSubText }}>{user.role}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
-            style={{ color: colors.text }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.background = colors.hoverBg; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = colors.text; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
-            </svg>
-          </button>
+          <LogoutButton onLogout={handleLogout} colors={colors} />
         </div>
       </div>
     </aside>

@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOrgToken, verifyToken } from "@/lib/auth-edge";
 
+// Content-Security-Policy for the app.
+// Next.js 15 App Router injects inline scripts for hydration and RSC payloads,
+// so script-src requires 'unsafe-inline'. img-src covers R2 CDN and data URIs
+// used by the logo preview. connect-src covers Resend for email sending.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' blob: data: https:",
+  "connect-src 'self' https://api.resend.com",
+  "font-src 'self' data:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -45,6 +61,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
+  response.headers.set("Content-Security-Policy", CSP);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-XSS-Protection", "1; mode=block");

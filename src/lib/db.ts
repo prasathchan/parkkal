@@ -2,7 +2,6 @@
 import * as schema from "@/db/schema";
 
 function getD1(): D1Database {
-  // In Cloudflare Workers, bindings are not in process.env — use getCloudflareContext()
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCloudflareContext } = require("@opennextjs/cloudflare");
@@ -14,6 +13,20 @@ function getD1(): D1Database {
   throw new Error("D1 database binding not found. Ensure DB is bound in wrangler.toml.");
 }
 
+// Cache the dev client at module scope — libsql opens a real TCP/file connection and
+// recreating it on every API call wastes connections in long-running dev servers.
+let devDbCache: ReturnType<typeof createDevDb> | null = null;
+
+function createDevDb() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { createClient } = require("@libsql/client");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { drizzle } = require("drizzle-orm/libsql");
+  const url = process.env.DATABASE_URL || "file:local.db";
+  const client = createClient({ url });
+  return drizzle(client, { schema });
+}
+
 export function getDb(env?: { DB: D1Database }) {
   if (env?.DB) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -22,12 +35,8 @@ export function getDb(env?: { DB: D1Database }) {
   }
 
   if (process.env.NODE_ENV !== "production") {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createClient } = require("@libsql/client");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { drizzle } = require("drizzle-orm/libsql");
-    const client = createClient({ url: "file:local.db" });
-    return drizzle(client, { schema });
+    if (!devDbCache) devDbCache = createDevDb();
+    return devDbCache;
   }
 
   const d1 = getD1();

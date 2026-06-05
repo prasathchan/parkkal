@@ -128,7 +128,7 @@ function ActivateForm() {
         )}
 
         <p className="text-center text-xs text-slate-400 mt-8">
-          © 2024 Parkkal Dental Clinic · app.parkkal.com
+          © {new Date().getFullYear()} Parkkal Dental Clinic
         </p>
       </div>
     </div>

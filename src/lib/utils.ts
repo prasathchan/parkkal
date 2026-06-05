@@ -14,13 +14,11 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(timestamp: number | string): string {
-  const date =
-    typeof timestamp === "number" ? new Date(timestamp) : new Date(timestamp);
   return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(date);
+  }).format(new Date(timestamp as number));
 }
 
 export function calculateAge(dateOfBirth: string): number {

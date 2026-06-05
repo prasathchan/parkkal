@@ -42,7 +42,7 @@ export async function sendStaffInviteEmail(
           </p>
         </div>
         <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© 2024 Parkkal Dental Clinic · app.parkkal.com</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal Dental Clinic</p>
         </div>
       </div>
     </body>
@@ -99,7 +99,7 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">If you didn't request this, you can safely ignore this email.</p>
         </div>
         <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© 2024 Parkkal Dental Clinic · app.parkkal.com</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal Dental Clinic</p>
         </div>
       </div>
     </body>

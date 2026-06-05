@@ -118,7 +118,9 @@ export async function PATCH(
     if (key in body) updates[key] = body[key];
   }
 
-  await db.update(visits).set(updates).where(eq(visits.id, id));
+  await db.update(visits).set(updates).where(
+    and(eq(visits.id, id), eq(visits.organizationId, session.orgId))
+  );
 
   // When the doctor explicitly marks a visit as COMPLETED, sync the appointment status.
   if (body.status === "COMPLETED" && existingVisit.appointmentId) {
@@ -133,7 +135,9 @@ export async function PATCH(
       );
   }
 
-  const [updated] = await db.select().from(visits).where(eq(visits.id, id));
+  const [updated] = await db.select().from(visits).where(
+    and(eq(visits.id, id), eq(visits.organizationId, session.orgId))
+  );
   return NextResponse.json({ visit: updated });
 }
 

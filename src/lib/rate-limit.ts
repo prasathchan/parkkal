@@ -66,7 +66,15 @@ async function checkD1RateLimit(
 interface MemWindow { count: number; resetAt: number }
 const memStore = new Map<string, MemWindow>();
 
+function evictExpired(): void {
+  const now = Date.now();
+  for (const [k, win] of memStore) {
+    if (win.resetAt <= now) memStore.delete(k);
+  }
+}
+
 function checkMemRateLimit(key: string, config: RateLimitConfig): RateLimitResult {
+  evictExpired();
   const now = Date.now();
   const win = memStore.get(key);
   if (!win || win.resetAt <= now) {
