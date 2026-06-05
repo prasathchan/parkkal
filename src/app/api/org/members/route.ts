@@ -138,6 +138,8 @@ export async function POST(request: NextRequest) {
       salaryAmount: data.salaryAmount,
       joinedAt: data.joinedAt || new Date().toISOString().split("T")[0],
       isActive: memberIsActive,
+      // HELPER role has no portal access by default; all other roles do.
+      portalAccess: data.role === "HELPER" ? 0 : 1,
       createdAt: now,
     };
 

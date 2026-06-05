@@ -58,6 +58,7 @@ export const organizationMembers = sqliteTable("organization_members", {
   salaryAmount: real("salary_amount").notNull().default(0),
   joinedAt: text("joined_at"),
   isActive: integer("is_active").notNull().default(1),
+  portalAccess: integer("portal_access").notNull().default(0),
   createdAt: integer("created_at").notNull(),
 }, (t) => ({
   uniqOrgUser: unique().on(t.organizationId, t.userId),

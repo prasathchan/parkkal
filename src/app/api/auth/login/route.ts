@@ -74,13 +74,17 @@ export async function POST(request: NextRequest) {
         orgIsActive: organizations.isActive,
         role: organizationMembers.role,
         memberIsActive: organizationMembers.isActive,
+        portalAccess: organizationMembers.portalAccess,
       })
       .from(organizationMembers)
       .innerJoin(organizations, eq(organizationMembers.organizationId, organizations.id))
       .where(eq(organizationMembers.userId, user.id));
 
     const activeMemberships = memberships.filter(
-      (m: (typeof memberships)[number]) => m.memberIsActive === 1 && m.orgIsActive === 1
+      (m: (typeof memberships)[number]) =>
+        m.memberIsActive === 1 &&
+        m.orgIsActive === 1 &&
+        (m.role !== "HELPER" || m.portalAccess === 1)
     );
 
     if (activeMemberships.length === 0) {
