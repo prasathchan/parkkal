@@ -26,6 +26,16 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
+    // Guard: only allow verifying users who are not yet active.
+    // Prevents an attacker from targeting already-active accounts via this endpoint.
+    const [targetUser] = await db
+      .select({ id: users.id, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (!targetUser || targetUser.isActive === 1) {
+      return NextResponse.json({ error: "Invalid or expired verification code" }, { status: 400 });
+    }
+
     const [tokenRecord] = await db
       .select()
       .from(verificationTokens)
