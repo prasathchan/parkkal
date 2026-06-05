@@ -98,14 +98,22 @@ export async function POST(request: NextRequest) {
     const db = getDb();
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
-      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
+      .where(and(
+        eq(organizationPatients.organizationId, session.orgId),
+        eq(organizationPatients.patientId, data.patientId),
+        eq(organizationPatients.isActive, 1),
+      ));
     if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    // Verify doctor belongs to this org
+    // Verify doctor belongs to this org and is active
     const [doctorMembership] = await db
       .select({ userId: organizationMembers.userId })
       .from(organizationMembers)
-      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, data.doctorId)));
+      .where(and(
+        eq(organizationMembers.organizationId, session.orgId),
+        eq(organizationMembers.userId, data.doctorId),
+        eq(organizationMembers.isActive, 1),
+      ));
     if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
 
     if (data.visitId) {

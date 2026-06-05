@@ -160,6 +160,9 @@ export default function VisitDetailPage() {
   // IN_PROGRESS warning
   const [pendingStatusChange, setPendingStatusChange] = useState<{ txId: string; status: string } | null>(null);
 
+  // Generic action error (delete / complete / status update)
+  const [pageError, setPageError] = useState("");
+
   const fetchVisit = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/visits/${id}`);
@@ -221,14 +224,21 @@ export default function VisitDetailPage() {
 
   async function handleDeleteItem(itemId: string) {
     if (!confirm("Delete this item?")) return;
-    await fetch(`/api/visits/${id}/items/${itemId}`, { method: "DELETE" });
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}/items/${itemId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to delete item");
+      return;
+    }
     await fetchVisit();
   }
 
   async function handleSaveNotes(e: React.FormEvent) {
     e.preventDefault();
     setSavingNotes(true);
-    await fetch(`/api/visits/${id}`, {
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -237,6 +247,12 @@ export default function VisitDetailPage() {
         diagnosis: notesForm.diagnosis || null,
       }),
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to save notes");
+      setSavingNotes(false);
+      return;
+    }
     await fetchVisit();
     setEditingNotes(false);
     setSavingNotes(false);
@@ -288,7 +304,13 @@ export default function VisitDetailPage() {
 
   async function handleDeleteAttachment(attId: string) {
     if (!confirm("Delete this attachment?")) return;
-    await fetch(`/api/visits/${id}/attachments/${attId}`, { method: "DELETE" });
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}/attachments/${attId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to delete attachment");
+      return;
+    }
     await fetchVisit();
   }
 
@@ -302,11 +324,18 @@ export default function VisitDetailPage() {
       if (!confirmed) return;
     }
     setCompletingVisit(true);
-    await fetch(`/api/visits/${id}`, {
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "COMPLETED" }),
     });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to complete visit");
+      setCompletingVisit(false);
+      return;
+    }
     await fetchVisit();
     setCompletingVisit(false);
   }
@@ -341,18 +370,30 @@ export default function VisitDetailPage() {
 
   async function handleUpdateTreatmentStatus(txId: string, status: string) {
     setTxUpdating(txId);
-    await fetch(`/api/treatments/${txId}`, {
+    setPageError("");
+    const res = await fetch(`/api/treatments/${txId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    await fetchVisit();
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to update treatment status");
+    } else {
+      await fetchVisit();
+    }
     setTxUpdating(null);
   }
 
   async function handleDeleteTreatment(txId: string) {
     if (!confirm("Delete this treatment?")) return;
-    await fetch(`/api/treatments/${txId}`, { method: "DELETE" });
+    setPageError("");
+    const res = await fetch(`/api/treatments/${txId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to delete treatment");
+      return;
+    }
     await fetchVisit();
   }
 
@@ -464,6 +505,12 @@ export default function VisitDetailPage() {
         ]}
       />
       <main className="flex-1 p-6 space-y-5">
+        {pageError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center justify-between">
+            <span>{pageError}</span>
+            <button onClick={() => setPageError("")} className="ml-4 text-red-400 hover:text-red-600 font-bold leading-none">&times;</button>
+          </div>
+        )}
         {/* Appointment Banner */}
         {visit.appointmentId && appointmentStatus && appointmentStatus !== "COMPLETED" && visit.status !== "COMPLETED" && visit.status !== "CANCELLED" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
