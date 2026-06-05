@@ -22,12 +22,21 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   COMPLETED: [], // only ADMIN can reopen a completed treatment
 };
 
+// Clinical narrative fields require a clinical role to edit
+const CLINICAL_ROLES = ["ADMIN", "DOCTOR", "NURSE"];
+// Broader set that may edit cost, visitId, and status
+const TREATMENT_EDIT_ROLES = ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST"];
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!TREATMENT_EDIT_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();
@@ -42,6 +51,18 @@ export async function PATCH(
   try {
     const body = await request.json();
     const data = patchSchema.parse(body);
+
+    // Clinical narrative fields are PHI — restrict to clinical roles
+    const hasClinicalEdits =
+      data.description !== undefined ||
+      data.procedure !== undefined ||
+      data.toothNumbers !== undefined;
+    if (hasClinicalEdits && !CLINICAL_ROLES.includes(session.role)) {
+      return NextResponse.json(
+        { error: "Forbidden: only clinical staff can edit treatment details" },
+        { status: 403 }
+      );
+    }
 
     // Enforce status state machine for non-ADMIN roles
     if (data.status !== undefined && data.status !== existing.status) {
@@ -87,6 +108,11 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Treatment deletion is irreversible clinical record destruction — ADMIN and DOCTOR only
+  if (!["ADMIN", "DOCTOR"].includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();

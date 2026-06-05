@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { invoices, invoiceTreatments, patients, organizationPatients } from "@/db/schema";
+import { invoices, invoiceTreatments, patients, organizationPatients, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
@@ -12,6 +12,9 @@ const createSchema = z.object({
   paidAmount: z.number().min(0).default(0),
   notes: z.string().optional(),
   treatmentIds: z.array(z.string()).optional(),
+}).refine((d) => d.paidAmount <= d.totalAmount, {
+  message: "paidAmount cannot exceed totalAmount",
+  path: ["paidAmount"],
 });
 
 const BILLING_ROLES = ["ADMIN", "RECEPTIONIST", "DOCTOR"];
@@ -76,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     const now = Date.now();
     const status =
-      data.paidAmount >= data.totalAmount
+      data.paidAmount >= data.totalAmount && data.totalAmount > 0
         ? "PAID"
         : data.paidAmount > 0
         ? "PARTIAL"
@@ -84,9 +87,34 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
-    const [patientOrgLink] = await db.select().from(organizationPatients)
-      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.patientId)));
+    // Verify patient is an active member of this org
+    const [patientOrgLink] = await db
+      .select({ patientId: organizationPatients.patientId })
+      .from(organizationPatients)
+      .where(
+        and(
+          eq(organizationPatients.organizationId, session.orgId),
+          eq(organizationPatients.patientId, data.patientId),
+          eq(organizationPatients.isActive, 1)
+        )
+      );
     if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    // Verify all referenced treatments belong to this org before linking
+    if (data.treatmentIds && data.treatmentIds.length > 0) {
+      const validTreatments = await db
+        .select({ id: treatments.id })
+        .from(treatments)
+        .where(
+          and(
+            inArray(treatments.id, data.treatmentIds),
+            eq(treatments.organizationId, session.orgId)
+          )
+        );
+      if (validTreatments.length !== data.treatmentIds.length) {
+        return NextResponse.json({ error: "One or more treatments are invalid" }, { status: 400 });
+      }
+    }
 
     const invoiceId = generateId();
     const newInvoice = {
@@ -103,7 +131,6 @@ export async function POST(request: NextRequest) {
 
     await db.insert(invoices).values(newInvoice);
 
-    // Link treatments to invoice if provided
     if (data.treatmentIds && data.treatmentIds.length > 0) {
       await db.insert(invoiceTreatments).values(
         data.treatmentIds.map((treatmentId) => ({ invoiceId, treatmentId }))
@@ -113,7 +140,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ invoice: newInvoice }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
     console.error("Create invoice error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

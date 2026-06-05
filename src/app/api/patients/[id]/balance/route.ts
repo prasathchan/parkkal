@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, ne, sum, count, max } from "drizzle-orm";
+import { eq, and, sum, count, max } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -34,7 +34,7 @@ export async function GET(
     db.select({
       totalBilled: sum(visits.totalAmount),
       totalPaid: sum(visits.paidAmount),
-    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
+    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
 
     db.select({ pendingVisits: count() })
       .from(visits)
