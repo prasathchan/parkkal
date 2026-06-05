@@ -3,7 +3,6 @@ import { getDb } from "@/lib/db";
 import { featureFlags } from "@/db/schema";
 import { eq, or, isNull } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { nanoid } from "nanoid";
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);

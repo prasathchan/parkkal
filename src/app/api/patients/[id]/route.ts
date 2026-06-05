@@ -119,7 +119,7 @@ export async function DELETE(
 
     await tx.delete(treatments).where(eq(treatments.patientId, id));
     await tx.delete(appointments).where(eq(appointments.patientId, id));
-    await tx.delete(emergencyContacts).where(eq(emergencyContacts.entityId, id));
+    await tx.delete(emergencyContacts).where(and(eq(emergencyContacts.entityId, id), eq(emergencyContacts.entityType, "PATIENT")));
     await tx.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
     await tx.delete(patients).where(eq(patients.id, id));
   };

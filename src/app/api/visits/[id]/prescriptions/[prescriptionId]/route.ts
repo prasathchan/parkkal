@@ -17,10 +17,9 @@ export async function DELETE(
   const [visit] = await db
     .select({ organizationId: visits.organizationId })
     .from(visits)
-    .where(eq(visits.id, id));
+    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
-  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.organizationId !== session.orgId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!visit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await db.delete(prescriptions).where(
     and(eq(prescriptions.id, prescriptionId), eq(prescriptions.visitId, id))

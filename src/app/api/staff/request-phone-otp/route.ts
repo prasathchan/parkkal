@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+
+// Activation window: a STAFF_INVITE token must have been used within this many ms
+// for the userId to be considered "in activation flow" and allowed to set their phone.
+const ACTIVATION_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -40,9 +44,37 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+    // Guard: only allow this endpoint for users who are not yet active (i.e., in the
+    // staff onboarding flow). Active users must use the authenticated profile endpoint.
+    const [user] = await db
+      .select({ id: users.id, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, userId));
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    if (user.isActive === 1) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Guard: require proof of recent activation — a STAFF_INVITE token for this user
+    // must have been marked used within the last 30 minutes. Without this, any caller
+    // who knows a userId could overwrite the user's phone number.
+    const windowStart = now - ACTIVATION_WINDOW_MS;
+    const [recentInvite] = await db
+      .select({ id: verificationTokens.id })
+      .from(verificationTokens)
+      .where(
+        and(
+          eq(verificationTokens.userId, userId),
+          eq(verificationTokens.type, "STAFF_INVITE"),
+          eq(verificationTokens.used, 1),
+          gt(verificationTokens.expiresAt, windowStart)
+        )
+      );
+
+    if (!recentInvite) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await db.update(users).set({ phone: phoneDigits, updatedAt: now }).where(eq(users.id, userId));
