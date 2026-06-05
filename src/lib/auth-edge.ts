@@ -36,6 +36,7 @@ export interface OrgSessionPayload {
   orgName: string;
   orgSlug: string;
   role: string;
+  orgRoleId?: string | null;
 }
 
 export async function createToken(payload: JWTPayload): Promise<string> {

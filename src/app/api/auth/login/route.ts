@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         orgAddress: organizations.address,
         orgIsActive: organizations.isActive,
         role: organizationMembers.role,
+        orgRoleId: organizationMembers.orgRoleId,
         memberIsActive: organizationMembers.isActive,
         portalAccess: organizationMembers.portalAccess,
       })
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
         orgName: m.orgName,
         orgSlug: m.orgSlug,
         role: m.role,
+        orgRoleId: m.orgRoleId ?? null,
       });
       const response = NextResponse.json({ redirect: "/dashboard" });
       response.cookies.set("pkd_org_session", orgToken, {

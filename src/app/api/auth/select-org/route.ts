@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         orgName: organizations.name,
         orgSlug: organizations.slug,
         role: organizationMembers.role,
+        orgRoleId: organizationMembers.orgRoleId,
         memberIsActive: organizationMembers.isActive,
         orgIsActive: organizations.isActive,
       })
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
       orgName: membership.orgName,
       orgSlug: membership.orgSlug,
       role: membership.role,
+      orgRoleId: membership.orgRoleId ?? null,
     });
 
     const response = NextResponse.json({ success: true });

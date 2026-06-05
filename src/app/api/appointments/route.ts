@@ -3,6 +3,7 @@ import { eq, desc, asc, and, notInArray, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments, patients, users, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
 
@@ -18,6 +19,9 @@ const createSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.APPOINTMENTS_VIEW)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const dateFilter = searchParams.get("date");
@@ -82,6 +86,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.APPOINTMENTS_CREATE)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json();
