@@ -3,6 +3,7 @@ import { eq, and, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
 
 const patchItemSchema = z.object({
@@ -20,6 +21,9 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id, itemId } = await params;
   const db = getDb();
@@ -88,6 +92,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id, itemId } = await params;
   const db = getDb();

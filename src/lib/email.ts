@@ -73,7 +73,11 @@ export async function sendStaffInviteEmail(
 export async function sendEmailOTP(to: string, name: string, code: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.warn("[EMAIL] RESEND_API_KEY not set — skipping email send. OTP:", code);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[EMAIL] RESEND_API_KEY not set — skipping email send. OTP:", code);
+    } else {
+      console.warn("[EMAIL] RESEND_API_KEY not set — skipping email send.");
+    }
     return;
   }
 

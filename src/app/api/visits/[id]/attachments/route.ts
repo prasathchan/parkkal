@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { storeFile } from "@/lib/storage";
 
 const ALLOWED_MIME_TYPES: Record<string, string> = {
@@ -25,6 +26,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.VISITS_VIEW)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();
@@ -44,6 +48,9 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
 

@@ -101,7 +101,11 @@ export async function POST(request: NextRequest) {
     const from = process.env.TWILIO_PHONE_NUMBER;
 
     if (!sid || !authToken || !from) {
-      console.warn("[SMS] Twilio not configured — OTP:", otp);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[SMS] Twilio not configured — OTP:", otp);
+      } else {
+        console.warn("[SMS] Twilio not configured — skipping SMS send.");
+      }
       return NextResponse.json({ sent: true });
     }
 

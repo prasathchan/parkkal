@@ -3,6 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { payments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
 
 const createPaymentSchema = z.object({
@@ -18,6 +19,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.BILLING_VIEW)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();
@@ -37,6 +41,9 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.BILLING_CREATE)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
 
