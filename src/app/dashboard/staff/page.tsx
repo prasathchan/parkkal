@@ -81,7 +81,6 @@ export default function StaffPage() {
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function touch(field: string) { setTouched(t => ({ ...t, [field]: true })); }
 
   const fieldErrors = {
@@ -292,6 +291,7 @@ export default function StaffPage() {
                     type="text"
                     value={form.email}
                     onChange={updateForm("email")}
+                    onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -315,6 +315,7 @@ export default function StaffPage() {
                     type="text"
                     value={form.phone}
                     onChange={updateForm("phone")}
+                    onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
                     className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
                   />
@@ -414,6 +415,7 @@ export default function StaffPage() {
                       type="text"
                       value={form.panNumber}
                       onChange={updateForm("panNumber")}
+                      onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -426,6 +428,7 @@ export default function StaffPage() {
                       type="text"
                       value={form.aadhaarNumber}
                       onChange={updateForm("aadhaarNumber")}
+                      onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
@@ -527,6 +530,7 @@ export default function StaffPage() {
                       type="text"
                       value={form.ecPhone}
                       onChange={updateForm("ecPhone")}
+                      onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
                       className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}

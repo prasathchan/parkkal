@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { coarseRoleHasPermission, hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 // Mock the DB so hasPermission's slow path doesn't need a real database.
