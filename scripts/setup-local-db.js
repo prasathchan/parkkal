@@ -310,9 +310,15 @@ async function main() {
            AND id != OLD.id
        );
      END`,
-    // 0022: fix permission string mismatch (billing.manage → billing.create,billing.edit)
+    // 0022: fix permission string mismatch
     `UPDATE org_roles SET permissions = REPLACE(permissions, '"billing.manage"', '"billing.create","billing.edit"') WHERE permissions LIKE '%"billing.manage"%'`,
     `UPDATE org_roles SET permissions = REPLACE(permissions, '"settings.manage"', '"org.settings"') WHERE permissions LIKE '%"settings.manage"%'`,
+    // 0023: NOT NULL guards for organization_id via triggers
+    `CREATE TRIGGER IF NOT EXISTS trg_appointments_org_id_not_null BEFORE INSERT ON appointments FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on appointments'); END`,
+    `CREATE TRIGGER IF NOT EXISTS trg_treatments_org_id_not_null BEFORE INSERT ON treatments FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on treatments'); END`,
+    `CREATE TRIGGER IF NOT EXISTS trg_visits_org_id_not_null BEFORE INSERT ON visits FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on visits'); END`,
+    `CREATE TRIGGER IF NOT EXISTS trg_invoices_org_id_not_null BEFORE INSERT ON invoices FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on invoices'); END`,
+    `CREATE TRIGGER IF NOT EXISTS trg_prescriptions_org_id_not_null BEFORE INSERT ON prescriptions FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on prescriptions'); END`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

@@ -108,7 +108,7 @@ export const emergencyContacts = sqliteTable("emergency_contacts", {
 
 export const appointments = sqliteTable("appointments", {
   id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
   doctorId: text("doctor_id").notNull().references(() => users.id),
   appointmentDate: text("appointment_date").notNull(),
@@ -125,7 +125,7 @@ export const appointments = sqliteTable("appointments", {
 
 export const treatments = sqliteTable("treatments", {
   id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
   appointmentId: text("appointment_id").references(() => appointments.id),
   doctorId: text("doctor_id").notNull().references(() => users.id),
@@ -147,7 +147,7 @@ export const treatments = sqliteTable("treatments", {
 
 export const prescriptions = sqliteTable("prescriptions", {
   id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
   visitId: text("visit_id").notNull().references(() => visits.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
   doctorId: text("doctor_id").notNull().references(() => users.id),
@@ -158,7 +158,7 @@ export const prescriptions = sqliteTable("prescriptions", {
 
 export const invoices = sqliteTable("invoices", {
   id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
   totalAmount: real("total_amount").notNull(),
   paidAmount: real("paid_amount").notNull().default(0),
@@ -200,7 +200,7 @@ export const salaryRecords = sqliteTable("salary_records", {
 
 export const visits = sqliteTable("visits", {
   id: text("id").primaryKey(),
-  organizationId: text("organization_id").references(() => organizations.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
   visitCode: text("visit_code").notNull().unique(),
   patientId: text("patient_id").notNull().references(() => patients.id),
   doctorId: text("doctor_id").notNull().references(() => users.id),
