@@ -773,11 +773,12 @@ export default function VisitDetailPage() {
                                   return;
                                 }
                                 const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+                                const outstanding = Math.max(0, tx.cost - (tx.billedAmount ?? 0));
                                 setNewItem(n => ({
                                   ...n,
                                   linkedTreatmentId: tx.id,
                                   itemName: tx.description,
-                                  unitPrice: String(tx.cost),
+                                  unitPrice: String(outstanding > 0 ? outstanding : tx.cost),
                                   toothNumber: firstTooth,
                                 }));
                               }}
@@ -1236,12 +1237,13 @@ export default function VisitDetailPage() {
                                 <button
                                   onClick={() => {
                                     const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+                                    const outstanding = Math.max(0, tx.cost - (tx.billedAmount ?? 0));
                                     setNewItem({
                                       itemName: tx.description,
                                       category: "TREATMENT",
                                       toothNumber: firstTooth,
                                       quantity: "1",
-                                      unitPrice: String(tx.cost),
+                                      unitPrice: String(outstanding > 0 ? outstanding : tx.cost),
                                       notes: "",
                                       linkedTreatmentId: tx.id,
                                     });
