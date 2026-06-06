@@ -1,3 +1,17 @@
+/**
+ * dashboard/patients/page.tsx
+ *
+ * The patient list page — shows all patients for this clinic, with search
+ * and pagination. Clicking a patient goes to their detail page.
+ *
+ * HOW IT WORKS:
+ *  1. User types in the search box
+ *  2. useDebounce waits 300ms after typing stops (prevents API spam)
+ *  3. useEffect re-fetches patients whenever search or page changes
+ *  4. patientsApi.list() makes the typed API call
+ *
+ * TO ADD A NEW COLUMN: add it to the <TableHead> and <TableRow> sections below.
+ */
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,39 +27,40 @@ import {
   TableHeadCell,
 } from "@/components/ui/table";
 import { calculateAge, formatDate } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
+import { patientsApi } from "@/api/patients";
+import type { Patient } from "@/types";
 
-interface Patient {
-  id: string;
-  patientCode: string;
-  name: string;
-  phone: string;
-  email?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  createdAt: number;
-}
-
+// How many patients to show per page
 const PAGE_SIZE = 25;
 
 export default function PatientsPage() {
+  // ─── State ─────────────────────────────────────────────────────────────────
+
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");   // What the user is typing RIGHT NOW
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);              // Which page of results we're on
+  const [total, setTotal] = useState(0);                // Total number of matching patients
 
-  const fetchPatients = useCallback(async (q: string, off: number) => {
+  // Wait 300ms after the user stops typing before searching
+  // (prevents firing an API call on every single keystroke)
+  const search = useDebounce(searchInput, 300);
+
+  // ─── Data fetching ──────────────────────────────────────────────────────────
+
+  const fetchPatients = useCallback(async (query: string, pageOffset: number) => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(off) });
-      if (q) params.set("search", q);
-      const res = await fetch(`/api/patients?${params}`);
-      if (!res.ok) throw new Error(`Server error ${res.status}`);
-      const data = await res.json();
-      setPatients(data.patients || []);
-      setTotal(data.total ?? 0);
+      const result = await patientsApi.list({
+        search: query || undefined,
+        limit: PAGE_SIZE,
+        offset: pageOffset,
+      });
+      setPatients(result.patients);
+      setTotal(result.total);
     } catch {
       setErrorMsg("Failed to load patients. Please refresh the page.");
     } finally {
@@ -53,14 +68,15 @@ export default function PatientsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    setOffset(0);
-  }, [search]);
+  // Reset to page 1 whenever the search changes
+  useEffect(() => { setOffset(0); }, [search]);
 
+  // Fetch patients whenever search or page changes
   useEffect(() => {
-    const timer = setTimeout(() => fetchPatients(search, offset), 300);
-    return () => clearTimeout(timer);
+    fetchPatients(search, offset);
   }, [search, offset, fetchPatients]);
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex-1 flex flex-col">
@@ -70,20 +86,28 @@ export default function PatientsPage() {
       />
 
       <main className="flex-1 p-6">
+        {/* Error banner — shown if the API call fails */}
         {errorMsg && (
           <div className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
             <span>{errorMsg}</span>
-            <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 font-medium">✕</button>
+            <button
+              onClick={() => setErrorMsg(null)}
+              className="text-red-400 hover:text-red-600 font-medium"
+            >
+              ✕
+            </button>
           </div>
         )}
+
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+          {/* Search bar + New Patient button */}
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input
               type="search"
               aria-label="Search patients"
               placeholder="Search by name, phone, or patient code..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="w-full sm:max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Link href="/dashboard/patients/new">
@@ -96,6 +120,7 @@ export default function PatientsPage() {
             </Link>
           </div>
 
+          {/* Patient table */}
           <Table>
             <TableHead>
               <tr>
@@ -117,27 +142,27 @@ export default function PatientsPage() {
               ) : patients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-slate-400">
-                    No patients found
+                    {searchInput ? "No patients found matching your search" : "No patients yet"}
                   </TableCell>
                 </TableRow>
               ) : (
-                patients.map((p) => (
-                  <TableRow key={p.id}>
+                patients.map((patient) => (
+                  <TableRow key={patient.id}>
                     <TableCell className="font-mono text-xs font-medium text-blue-700">
-                      {p.patientCode}
+                      {patient.patientCode}
                     </TableCell>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.phone}</TableCell>
+                    <TableCell className="font-medium">{patient.name}</TableCell>
+                    <TableCell>{patient.phone}</TableCell>
                     <TableCell>
-                      {p.dateOfBirth ? `${calculateAge(p.dateOfBirth)} yrs` : "—"}
-                      {p.gender ? ` · ${p.gender}` : ""}
+                      {patient.dateOfBirth ? `${calculateAge(patient.dateOfBirth)} yrs` : "—"}
+                      {patient.gender ? ` · ${patient.gender}` : ""}
                     </TableCell>
                     <TableCell className="text-slate-500">
-                      {formatDate(p.createdAt)}
+                      {formatDate(patient.createdAt)}
                     </TableCell>
                     <TableCell>
                       <Link
-                        href={`/dashboard/patients/${p.id}`}
+                        href={`/dashboard/patients/${patient.id}`}
                         className="text-blue-600 hover:underline text-xs font-medium"
                       >
                         View
@@ -149,7 +174,7 @@ export default function PatientsPage() {
             </TableBody>
           </Table>
 
-          {/* Pagination footer */}
+          {/* Pagination — only shown when there are more than PAGE_SIZE results */}
           {total > PAGE_SIZE && (
             <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
               <span>

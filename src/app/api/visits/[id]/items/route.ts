@@ -1,3 +1,15 @@
+/**
+ * API Route: /api/visits/[id]/items
+ *
+ * GET  — List all bill items for a visit
+ * POST — Add a new bill item (updates visit.totalAmount automatically)
+ *
+ * Item categories: MEDICINE | PROCEDURE | XRAY | CONSULTATION | TREATMENT | OTHER
+ * When category = TREATMENT, pass linkedTreatmentId to track partial payments
+ * for multi-session treatment plans across multiple visits.
+ *
+ * Who can call this: billing.view (GET) / billing.create (POST)
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";

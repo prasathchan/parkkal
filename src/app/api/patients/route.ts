@@ -1,3 +1,15 @@
+/**
+ * API Route: /api/patients
+ *
+ * GET  — List patients for the current org (paginated, searchable)
+ * POST — Create a new patient record
+ *
+ * Who can call this:
+ *   GET  → any logged-in staff with patients.view permission
+ *   POST → staff with patients.create permission
+ *
+ * Request / response shapes live in: src/api/patients.ts
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { like, or, desc, count, eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";

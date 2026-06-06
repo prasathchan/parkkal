@@ -1,3 +1,19 @@
+/**
+ * lib/permissions.ts
+ *
+ * Controls who can do what in the app.
+ *
+ * PERMISSIONS are strings like "patients.view", "billing.create".
+ * They are stored in the JWT when a staff member logs in (so we don't
+ * need to hit the database on every API request).
+ *
+ * hasPermission(session, PERMISSIONS.PATIENTS_VIEW) → true/false
+ *
+ * ADDING A NEW PERMISSION:
+ *  1. Add the constant below (e.g. APPOINTMENTS_EXPORT: "appointments.export")
+ *  2. Add it to the relevant roles in src/lib/default-roles.ts
+ *  3. Use hasPermission() in the API route that needs protecting
+ */
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { orgRoles } from "@/db/schema";

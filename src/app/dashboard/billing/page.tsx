@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/header";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
+import { getBillingStatus } from "@/lib/billing";
+import { BILLING_STATUS_BADGE } from "@/constants/ui";
 import {
   Table,
   TableHead,
@@ -23,15 +25,6 @@ interface VisitBilling {
   totalAmount: number;
   paidAmount: number;
   status: string;
-}
-
-function getBillingStatus(visit: VisitBilling): "PAID" | "PARTIAL" | "PENDING" {
-  // A visit with ₹0 total (no billable items, or a free consultation) is considered PAID —
-  // there is nothing to collect. Only show PENDING/PARTIAL when there is an actual balance.
-  if (visit.totalAmount === 0) return "PAID";
-  if (visit.paidAmount >= visit.totalAmount) return "PAID";
-  if (visit.paidAmount > 0) return "PARTIAL";
-  return "PENDING";
 }
 
 type PaymentMethod = "CASH" | "CARD" | "UPI" | "BANK_TRANSFER";
@@ -127,13 +120,13 @@ export default function BillingPage() {
     }
   }
 
-  const allBillingStatuses = visits.map(getBillingStatus);
+  const allBillingStatuses = visits.map((v) => getBillingStatus(v.totalAmount, v.paidAmount));
   const pending = allBillingStatuses.filter((s) => s === "PENDING").length;
   const partial = allBillingStatuses.filter((s) => s === "PARTIAL").length;
   const paid = allBillingStatuses.filter((s) => s === "PAID").length;
 
   const displayedVisits = filter === "UNPAID"
-    ? visits.filter((v) => getBillingStatus(v) !== "PAID")
+    ? visits.filter((v) => getBillingStatus(v.totalAmount, v.paidAmount) !== "PAID")
     : visits;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -220,12 +213,7 @@ export default function BillingPage() {
               ) : (
                 displayedVisits.map((v) => {
                   const due = v.totalAmount - v.paidAmount;
-                  const billingStatus = getBillingStatus(v);
-                  const statusColors: Record<string, string> = {
-                    PAID: "bg-green-100 text-green-700",
-                    PARTIAL: "bg-blue-100 text-blue-700",
-                    PENDING: "bg-yellow-100 text-yellow-700",
-                  };
+                  const billingStatus = getBillingStatus(v.totalAmount, v.paidAmount);
                   return (
                     <TableRow key={v.id}>
                       <TableCell>
@@ -245,7 +233,7 @@ export default function BillingPage() {
                         {formatCurrency(due)}
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[billingStatus]}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${BILLING_STATUS_BADGE[billingStatus]}`}>
                           {billingStatus}
                         </span>
                       </TableCell>

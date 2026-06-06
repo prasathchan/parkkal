@@ -1,3 +1,16 @@
+/**
+ * API Route: /api/visits
+ *
+ * GET  — List visits (filterable by patient, doctor, status, date, billing status)
+ * POST — Create a new visit
+ *
+ * Who can call this:
+ *   GET  → staff with visits.view permission (DOCTOR only sees their own)
+ *   POST → staff with visits.create permission
+ *
+ * Query params for GET:
+ *   patientId, doctorId, status, date, search, billingStatus, limit, offset
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";

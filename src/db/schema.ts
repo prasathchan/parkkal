@@ -1,3 +1,51 @@
+/**
+ * db/schema.ts
+ *
+ * The DATABASE BLUEPRINT — every table, every column, every relationship.
+ *
+ * ─── QUICK MAP ───────────────────────────────────────────────────────────────
+ *
+ *  organizations       → The dental clinic itself (one per deployment)
+ *  users               → Every person with a login (staff + clinic owner)
+ *  organizationMembers → Links users to their clinic + stores role/salary
+ *  orgRoles            → Custom roles with permission lists (e.g. "Head Nurse")
+ *  patients            → Patient records (name, phone, DOB, medical history)
+ *  organizationPatients → Links patients to their clinic (many-to-many)
+ *  appointments        → Scheduled appointments
+ *  visits              → Actual clinic visits (walk-in or from appointment)
+ *  visitItems          → Bill line items on a visit (medicines, procedures, etc.)
+ *  payments            → Cash/UPI/Card payments recorded on a visit
+ *  prescriptions       → Medicines prescribed during a visit
+ *  attachments         → X-rays, lab reports, etc. uploaded to a visit
+ *  treatments          → Multi-session treatment plans (e.g. root canal, braces)
+ *  visitTreatments     → Links a treatment plan to a specific visit
+ *  invoices            → Formal invoices generated for a patient
+ *  salaryRecords       → Monthly salary calculations for staff
+ *  verificationTokens  → OTP codes for email/phone verification
+ *  emergencyContacts   → Emergency contact persons for patients and staff
+ *  consentAuditLog     → Audit trail of who gave consent for treatments
+ *
+ * ─── KEY RELATIONSHIPS ───────────────────────────────────────────────────────
+ *
+ *  visit → visitItems     (a visit has many bill items)
+ *  visit → payments       (a visit has many payments)
+ *  visit → prescriptions  (a visit has many prescriptions)
+ *  visit → visitTreatments → treatments  (a visit links to treatment plans)
+ *  visitItem.linkedTreatmentId → treatment  (payment towards a treatment plan)
+ *
+ * ─── HOW TO ADD A NEW TABLE ──────────────────────────────────────────────────
+ *
+ *  1. Define it here with sqliteTable()
+ *  2. Create a migration file in drizzle/migrations/NNNN_description.sql
+ *  3. Run: npx wrangler d1 execute parkkal-db --local --file=drizzle/migrations/NNNN_...sql
+ *  4. Update src/types/ with the matching TypeScript interface
+ *
+ * ─── D1 LIMITATIONS TO KNOW ─────────────────────────────────────────────────
+ *
+ *  - No ALTER COLUMN — to change a column type, recreate the table
+ *  - No multi-statement transactions in the batch API — use sequential awaits
+ *  - CHECK constraints ARE enforced — adding an enum value needs table recreation
+ */
 import { sqliteTable, text, real, integer, primaryKey, unique } from "drizzle-orm/sqlite-core";
 
 export const organizations = sqliteTable("organizations", {

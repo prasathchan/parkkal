@@ -1,7 +1,20 @@
+/**
+ * API Route: /api/visits/[id]/payments
+ *
+ * GET  — List all payments recorded for a visit
+ * POST — Record a new payment (updates visit.paidAmount automatically)
+ *
+ * Payment methods: CASH | CARD | UPI | BANK_TRANSFER
+ *
+ * NOTE: Payments are append-only. There is no DELETE — to void a payment,
+ * contact the ADMIN who can use database-level corrections if necessary.
+ *
+ * Who can call this: billing.view (GET) / billing.create (POST)
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { payments, visits } from "@/db/schema";
+import { payments, visits, visitTreatments, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
@@ -11,6 +24,7 @@ const createPaymentSchema = z.object({
   paymentMethod: z.enum(["CASH", "CARD", "UPI", "BANK_TRANSFER"]).default("CASH"),
   referenceNumber: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  treatmentId: z.string().optional().nullable(), // null = general; set = attributed to treatment plan
 });
 
 export async function GET(
@@ -31,7 +45,24 @@ export async function GET(
     .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
 
-  const rows = await db.select().from(payments).where(eq(payments.visitId, id));
+  const rows = await db
+    .select({
+      id: payments.id,
+      visitId: payments.visitId,
+      patientId: payments.patientId,
+      treatmentId: payments.treatmentId,
+      treatmentDescription: treatments.description,
+      amount: payments.amount,
+      paymentMethod: payments.paymentMethod,
+      referenceNumber: payments.referenceNumber,
+      notes: payments.notes,
+      paidAt: payments.paidAt,
+      recordedBy: payments.recordedBy,
+    })
+    .from(payments)
+    .leftJoin(treatments, eq(payments.treatmentId, treatments.id))
+    .where(eq(payments.visitId, id));
+
   return NextResponse.json({ payments: rows });
 }
 
@@ -59,7 +90,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
   }
 
-  const { amount, paymentMethod, referenceNumber, notes } = parsed.data;
+  const { amount, paymentMethod, referenceNumber, notes, treatmentId } = parsed.data;
   const db = getDb();
 
   const [visit] = await db
@@ -84,10 +115,22 @@ export async function POST(
     );
   }
 
+  // Validate treatmentId is linked to this visit
+  if (treatmentId) {
+    const [link] = await db
+      .select({ treatmentId: visitTreatments.treatmentId })
+      .from(visitTreatments)
+      .where(and(eq(visitTreatments.visitId, id), eq(visitTreatments.treatmentId, treatmentId)));
+    if (!link) {
+      return NextResponse.json({ error: "Treatment plan is not linked to this visit" }, { status: 422 });
+    }
+  }
+
   const newPayment = {
     id: crypto.randomUUID(),
     visitId: id,
     patientId: visit.patientId,
+    treatmentId: treatmentId || null,
     amount,
     paymentMethod,
     referenceNumber: referenceNumber || null,
@@ -99,9 +142,6 @@ export async function POST(
   await db.insert(payments).values(newPayment);
 
   // Recompute paidAmount from SUM of all payment records — self-healing against drift.
-  // A CASE-based incremental update is not race-safe: two concurrent requests can both
-  // pass the balance check on a stale read, INSERT their records, but only one increment
-  // applies. SUM recompute is always authoritative regardless of concurrency.
   await db
     .update(visits)
     .set({

@@ -1,3 +1,18 @@
+/**
+ * lib/db.ts
+ *
+ * Database connection factory.
+ *
+ * We use Cloudflare D1 (SQLite) in production and @libsql/client locally.
+ * Call getDb() in any API route to get the database instance.
+ *
+ * IMPORTANT: D1 DOES NOT support db.transaction() with async callbacks.
+ * Use sequential `await` statements instead. See ARCHITECTURE.md for details.
+ *
+ * @example
+ *   const db = getDb();
+ *   const rows = await db.select().from(patients).where(eq(patients.id, id));
+ */
 /// <reference types="@cloudflare/workers-types" />
 import * as schema from "@/db/schema";
 

@@ -1,3 +1,15 @@
+/**
+ * lib/rate-limit.ts
+ *
+ * Prevents brute-force attacks on login, OTP, and other sensitive endpoints.
+ *
+ * Works by storing request counts in memory (resets when the Worker restarts).
+ * For a more persistent solution, use Cloudflare KV or Durable Objects.
+ *
+ * HOW TO USE:
+ *   const result = await checkRateLimit("login:user@example.com", { limit: 5, windowMs: 60_000 });
+ *   if (!result.allowed) return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
+ */
 export interface RateLimitConfig {
   limit: number;
   windowMs: number;

@@ -1,3 +1,16 @@
+/**
+ * lib/utils.ts
+ *
+ * Small helper functions used throughout the app.
+ * These are all pure functions — no database, no API calls.
+ *
+ *  cn()                  → merge Tailwind CSS class names
+ *  formatCurrency(1500)  → "₹1,500"
+ *  formatDate(timestamp) → "01 Jan 2025"
+ *  calculateAge("1990-06-15") → 35
+ *  formatDoctorName("Ravi Kumar") → "Dr. Ravi Kumar"
+ *  generatePatientCode(42) → "PKL-000042"
+ */
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
