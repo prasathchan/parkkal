@@ -128,7 +128,6 @@ export const treatments = sqliteTable("treatments", {
   organizationId: text("organization_id").references(() => organizations.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
   appointmentId: text("appointment_id").references(() => appointments.id),
-  visitId: text("visit_id").references(() => visits.id),
   doctorId: text("doctor_id").notNull().references(() => users.id),
   description: text("description").notNull(),
   toothNumbers: text("tooth_numbers"),
@@ -218,6 +217,21 @@ export const visits = sqliteTable("visits", {
   updatedAt: integer("updated_at").notNull(),
 });
 
+// Junction table — a treatment plan can be worked on across many visits
+// and a visit can address many treatment plans.
+export const visitTreatments = sqliteTable(
+  "visit_treatments",
+  {
+    visitId: text("visit_id").notNull().references(() => visits.id),
+    treatmentId: text("treatment_id").notNull().references(() => treatments.id),
+    notes: text("notes"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.visitId, t.treatmentId] }),
+  })
+);
+
 export const visitItems = sqliteTable("visit_items", {
   id: text("id").primaryKey(),
   visitId: text("visit_id").notNull().references(() => visits.id),
@@ -235,6 +249,8 @@ export const payments = sqliteTable("payments", {
   id: text("id").primaryKey(),
   visitId: text("visit_id").notNull().references(() => visits.id),
   patientId: text("patient_id").notNull().references(() => patients.id),
+  // null = general visit payment; set = attributed to a specific treatment plan
+  treatmentId: text("treatment_id").references(() => treatments.id),
   amount: real("amount").notNull(),
   paymentMethod: text("payment_method", { enum: ["CASH", "CARD", "UPI", "BANK_TRANSFER"] }).notNull().default("CASH"),
   referenceNumber: text("reference_number"),
@@ -267,14 +283,14 @@ export const verificationTokens = sqliteTable("verification_tokens", {
   createdAt: integer("created_at").notNull(),
 });
 
-export const featureFlags = sqliteTable("feature_flags", {
+export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),
-  featureKey: text("feature_key").notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  orgId: text("org_id"),
-  isEnabled: integer("is_enabled").notNull().default(0),
-  rolloutPercent: integer("rollout_percent").notNull().default(100),
+  treatmentId: text("treatment_id").notNull().references(() => treatments.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  actorId: text("actor_id").notNull().references(() => users.id),
+  actorRole: text("actor_role").notNull(),
+  action: text("action").notNull(), // e.g. "EMERGENCY_OVERRIDE"
+  reason: text("reason"),
   createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
 });
+
