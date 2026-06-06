@@ -169,26 +169,17 @@ export default function StaffPage() {
           joinedAt: form.joinedAt,
           activationMode: form.activationMode,
           password: form.activationMode === "set_password" ? form.password : undefined,
+          emergencyContact: {
+            name: form.ecName,
+            relationship: form.ecRelationship,
+            phone: form.ecPhone,
+          },
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         setFormError(data.error || "Failed to add staff");
         return;
-      }
-      // Add emergency contact if provided
-      if (form.ecName && form.ecRelationship && form.ecPhone) {
-        await fetch("/api/emergency-contacts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            entityType: "USER",
-            entityId: data.user.id,
-            name: form.ecName,
-            relationship: form.ecRelationship,
-            phone: form.ecPhone,
-          }),
-        });
       }
       setShowModal(false);
       fetchMembers();
@@ -498,9 +489,10 @@ export default function StaffPage() {
                 )}
               </div>
 
-              {/* Emergency Contact */}
+              {/* Emergency Contact — mandatory for staff */}
               <div className="border border-slate-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-slate-900 mb-3">Emergency Contact *</p>
+                <p className="text-sm font-medium text-slate-900 mb-1">Emergency Contact <span className="text-red-500">*</span></p>
+                <p className="text-xs text-slate-500 mb-3">Required before the staff record can be saved.</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">Contact Name *</label>

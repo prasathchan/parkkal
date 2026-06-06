@@ -71,8 +71,12 @@ export default function NewPatientPage() {
     ecPhone: validatePhone(form.ecPhone),
   };
 
-  const requiredFilled = form.name.trim() && form.phone.trim() && form.ecName.trim() && form.ecRelationship && form.ecPhone.trim();
-  const hasValidationErrors = Object.values(fieldErrors).some(Boolean);
+  const requiredFilled = form.name.trim() && form.phone.trim();
+  // EC is optional; only block on ecPhone error if the user started filling EC fields
+  const ecPartiallyFilled = !!(form.ecName.trim() || form.ecRelationship || form.ecPhone.trim());
+  const hasValidationErrors =
+    !!fieldErrors.phone || !!fieldErrors.email || !!fieldErrors.panNumber || !!fieldErrors.aadhaarNumber ||
+    (ecPartiallyFilled && !!fieldErrors.ecPhone);
   const canSubmit = requiredFilled && !hasValidationErrors;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -219,22 +223,20 @@ export default function NewPatientPage() {
               </div>
 
               {/* Emergency Contact */}
-              <div className={`border-2 rounded-lg p-4 ${!form.ecName || !form.ecRelationship || !form.ecPhone ? "border-red-300" : "border-green-300"}`}>
-                <p className="text-sm font-semibold text-slate-900 mb-3">
-                  Emergency Contact <span className="text-red-500">*</span>
-                </p>
+              <div className="border border-slate-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-slate-900 mb-0.5">Emergency Contact</p>
+                <p className="text-xs text-slate-500 mb-3">Optional — recommended but not required to save.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     id="ec-name"
-                    label="Contact Name *"
+                    label="Contact Name"
                     value={form.ecName}
                     onChange={update("ecName")}
-                    required
                     placeholder="Full name"
                   />
                   <Select
                     id="ec-rel"
-                    label="Relationship *"
+                    label="Relationship"
                     value={form.ecRelationship}
                     onChange={update("ecRelationship")}
                   >
@@ -248,17 +250,16 @@ export default function NewPatientPage() {
                   </Select>
                   <Input
                     id="ec-phone"
-                    label="Phone *"
+                    label="Phone"
                     value={form.ecPhone}
                     onChange={update("ecPhone")}
-                    required
                     placeholder="+91 98765 43210"
-                    error={touched.ecPhone ? fieldErrors.ecPhone : ""}
+                    error={touched.ecPhone && ecPartiallyFilled ? fieldErrors.ecPhone : ""}
                   />
                   <Input
                     id="ec-email"
                     type="email"
-                    label="Email (optional)"
+                    label="Email"
                     value={form.ecEmail}
                     onChange={update("ecEmail")}
                     placeholder="emergency@example.com"

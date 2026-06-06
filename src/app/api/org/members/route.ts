@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { organizationMembers, users, organizations, orgRoles, verificationTokens } from "@/db/schema";
+import { organizationMembers, users, organizations, orgRoles, verificationTokens, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
@@ -28,6 +28,12 @@ const addMemberSchema = z.object({
   // no_login_verify → active HR record, login disabled, send device-verify link
   activationMode: z.enum(["invite_link", "set_password", "no_login_verify"]).default("invite_link"),
   password: z.string().min(6).optional(),
+  emergencyContact: z.object({
+    name: z.string().min(1),
+    relationship: z.string().min(1),
+    phone: z.string().min(1),
+    email: z.string().email().optional(),
+  }).optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -89,6 +95,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const data = addMemberSchema.parse(body);
+
+    // Emergency contact is mandatory for staff
+    if (!data.emergencyContact?.name || !data.emergencyContact?.relationship || !data.emergencyContact?.phone) {
+      return NextResponse.json({ error: "Emergency contact (name, relationship, phone) is required for staff" }, { status: 400 });
+    }
+
     const db = getDb();
     const now = Date.now();
 
@@ -205,6 +217,19 @@ export async function POST(request: NextRequest) {
         console.error("Failed to send invite email:", emailErr);
       }
     }
+
+    // Insert emergency contact
+    await db.insert(emergencyContacts).values({
+      id: crypto.randomUUID(),
+      entityType: "USER",
+      entityId: existingUser.id,
+      name: data.emergencyContact!.name,
+      relationship: data.emergencyContact!.relationship,
+      phone: data.emergencyContact!.phone,
+      email: data.emergencyContact!.email || null,
+      address: null,
+      createdAt: now,
+    });
 
     // Exclude passwordHash from response
     const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
