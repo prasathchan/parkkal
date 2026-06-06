@@ -12,7 +12,8 @@ const SQL = [
     id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL, phone TEXT, date_of_birth TEXT, gender TEXT,
     address TEXT, pan_number TEXT, aadhaar_number TEXT, profile_image_url TEXT,
-    is_active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, updated_at INTEGER
+    is_active INTEGER NOT NULL DEFAULT 1, is_verified INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL, updated_at INTEGER
   )`,
   `CREATE TABLE IF NOT EXISTS org_roles (
     id TEXT PRIMARY KEY, organization_id TEXT NOT NULL REFERENCES organizations(id),
@@ -28,6 +29,7 @@ const SQL = [
     org_role_id TEXT REFERENCES org_roles(id),
     salary_type TEXT NOT NULL DEFAULT 'FIXED' CHECK (salary_type IN ('FIXED','PER_APPOINTMENT')),
     salary_amount REAL NOT NULL DEFAULT 0, joined_at TEXT, is_active INTEGER NOT NULL DEFAULT 1,
+    portal_access INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL, UNIQUE(organization_id, user_id)
   )`,
   `CREATE TABLE IF NOT EXISTS emergency_contacts (
@@ -278,19 +280,20 @@ async function main() {
   const recepHash = await bcrypt.hash("Recep@123", 10);
   const nurseHash = await bcrypt.hash("Nurse@123", 10);
 
+  // Admin phone = org phone (rule: default admin phone is always the org phone)
   const users = [
-    ["usr_admin_parkkal","Admin User","admin@parkkal.com",adminHash],
-    ["usr_doctor_parkkal","Dr. Rajesh Kumar","doctor@parkkal.com",doctorHash],
-    ["usr_recep_parkkal","Priya Sharma","reception@parkkal.com",recepHash],
-    ["usr_admin_xmed","Admin XMed","admin@xmed.com",adminHash],
-    ["usr_admin_drsmile","Admin DrSmile","admin@drsmile.com",adminHash],
-    ["usr_nurse_drsmile","Anita Nurse","nurse@drsmile.com",nurseHash],
+    ["usr_admin_parkkal","Admin User","admin@parkkal.com",adminHash,"+91 9876543210"],
+    ["usr_doctor_parkkal","Dr. Rajesh Kumar","doctor@parkkal.com",doctorHash,null],
+    ["usr_recep_parkkal","Priya Sharma","reception@parkkal.com",recepHash,null],
+    ["usr_admin_xmed","Admin XMed","admin@xmed.com",adminHash,"+91 9876543211"],
+    ["usr_admin_drsmile","Admin DrSmile","admin@drsmile.com",adminHash,"+91 9876543212"],
+    ["usr_nurse_drsmile","Anita Nurse","nurse@drsmile.com",nurseHash,null],
   ];
 
-  for (const [id,name,email,hash] of users) {
+  for (const [id,name,email,hash,phone] of users) {
     await client.execute({
-      sql: `INSERT OR IGNORE INTO users (id,name,email,password_hash,is_active,created_at) VALUES (?,?,?,?,1,?)`,
-      args: [id,name,email,hash,now],
+      sql: `INSERT OR IGNORE INTO users (id,name,email,password_hash,phone,is_active,is_verified,created_at) VALUES (?,?,?,?,?,1,1,?)`,
+      args: [id,name,email,hash,phone,now],
     });
   }
 

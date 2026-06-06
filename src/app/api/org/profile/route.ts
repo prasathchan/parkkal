@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { organizations } from "@/db/schema";
+import { organizations, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -49,6 +49,21 @@ export async function PATCH(request: NextRequest) {
     if (themeConfig !== undefined) updates.themeConfig = typeof themeConfig === "string" ? themeConfig : JSON.stringify(themeConfig);
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
+
+    // Keep the default admin's phone in sync with the org phone
+    if (phone !== undefined && phone !== null) {
+      const [adminMember] = await db
+        .select({ userId: organizationMembers.userId })
+        .from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.role, "ADMIN")))
+        .limit(1);
+      if (adminMember) {
+        await db.update(users)
+          .set({ phone, updatedAt: Date.now() })
+          .where(eq(users.id, adminMember.userId));
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Update org error:", error);
