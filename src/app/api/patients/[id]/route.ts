@@ -3,20 +3,21 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { patients, organizationPatients, appointments, treatments, visitTreatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts, consentAuditLog } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const updatePatientSchema = z.object({
-  name: z.string().min(1).optional(),
+  name: z.string().min(1).max(200).optional(),
   phone: z.string().min(10).max(15).optional(),
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  address: z.string().optional(),
-  medicalHistory: z.string().optional(),
+  address: z.string().max(500).optional(),
+  medicalHistory: z.string().max(5000).optional(),
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional().nullable(),
-  panNumber: z.string().optional().nullable(),
-  aadhaarNumber: z.string().optional().nullable(),
+  panNumber: z.string().max(10).optional().nullable(),
+  aadhaarNumber: z.string().max(12).optional().nullable(),
 });
 
 export async function GET(
@@ -25,6 +26,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.PATIENTS_VIEW)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();
@@ -59,6 +63,9 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.PATIENTS_EDIT)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const { id } = await params;

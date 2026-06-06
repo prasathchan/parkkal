@@ -43,9 +43,14 @@ export interface OrgSessionPayload {
   permissions?: string[] | null;
 }
 
+// Audience constants — used to prevent a pre-org JWT from being accepted as an org session.
+const AUD_PRE_ORG = "pkd:pre-org";
+const AUD_ORG = "pkd:org";
+
 export async function createToken(payload: JWTPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
+    .setAudience(AUD_PRE_ORG)
     .setIssuedAt()
     .setExpirationTime("1h")
     .sign(getSecret());
@@ -54,6 +59,7 @@ export async function createToken(payload: JWTPayload): Promise<string> {
 export async function createOrgToken(payload: OrgSessionPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
+    .setAudience(AUD_ORG)
     .setIssuedAt()
     .setExpirationTime("24h")
     .sign(getSecret());
@@ -61,7 +67,7 @@ export async function createOrgToken(payload: OrgSessionPayload): Promise<string
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getSecret(), { audience: AUD_PRE_ORG });
     return payload as unknown as JWTPayload;
   } catch {
     return null;
@@ -70,7 +76,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 
 export async function verifyOrgToken(token: string): Promise<OrgSessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getSecret(), { audience: AUD_ORG });
     return payload as unknown as OrgSessionPayload;
   } catch {
     return null;

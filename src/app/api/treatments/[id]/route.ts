@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { treatments, visitTreatments, invoiceTreatments, consentAuditLog } from "@/db/schema";
+import { treatments, visitTreatments, invoiceTreatments, consentAuditLog, visitItems } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -120,6 +120,18 @@ export async function DELETE(
     .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Block deletion if any visit item has been billed against this treatment.
+  const [billedRow] = await db
+    .select({ total: sum(visitItems.amount) })
+    .from(visitItems)
+    .where(eq(visitItems.linkedTreatmentId, id));
+  if (Number(billedRow?.total ?? 0) > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete a treatment that has been billed. Remove the linked bill items first." },
+      { status: 422 }
+    );
+  }
 
   // Sequential deletes — avoids D1 transaction batch API limitations.
   await db.delete(visitTreatments).where(eq(visitTreatments.treatmentId, id));

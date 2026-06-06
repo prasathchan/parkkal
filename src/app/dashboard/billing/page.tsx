@@ -45,6 +45,7 @@ export default function BillingPage() {
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BillingFilter>("UNPAID");
+  const filterRef = useRef<BillingFilter>("UNPAID");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -61,9 +62,9 @@ export default function BillingPage() {
         offset: String(pageIdx * PAGE_SIZE),
       });
       if (searchStr) params.set("search", searchStr);
-      // UNPAID filter: pass status is handled client-side for summary badges,
-      // but for large datasets we let the server do the heavy lifting by not
-      // filtering status server-side (all statuses needed for summary counts).
+      // Pass billingStatus=UNPAID to the server so only unpaid visits are fetched —
+      // avoids loading hundreds of paid visits just to filter them client-side.
+      if (filterRef.current === "UNPAID") params.set("billingStatus", "UNPAID");
       const res = await fetch(`/api/visits?${params}`);
       if (!res.ok) throw new Error("Failed to load visits");
       const data = await res.json();
@@ -90,6 +91,7 @@ export default function BillingPage() {
   }
 
   function handleFilterChange(f: BillingFilter) {
+    filterRef.current = f;
     setFilter(f);
     setPage(0);
   }
@@ -114,6 +116,7 @@ export default function BillingPage() {
         body: JSON.stringify({ amount: due, paymentMethod: payMethod }),
       });
       if (res.ok) {
+        setErrorMsg(null);
         await fetchData(page, search);
       } else {
         const d = await res.json();

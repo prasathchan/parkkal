@@ -59,7 +59,8 @@ export async function POST(request: NextRequest) {
       .where(eq(users.id, userId));
 
     if (userRows.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      // Return success silently — don't reveal whether a userId exists.
+      return NextResponse.json({ success: true });
     }
 
     const user = userRows[0];
@@ -92,12 +93,22 @@ export async function POST(request: NextRequest) {
     });
 
     if (type === "EMAIL") {
-      await sendEmailOTP(user.email, user.name, code);
+      try {
+        await sendEmailOTP(user.email, user.name, code);
+      } catch (sendErr) {
+        console.error("[resend-otp] Email send failed:", sendErr);
+        return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
+      }
     } else {
       if (!user.phone) {
         return NextResponse.json({ error: "No phone number on file" }, { status: 400 });
       }
-      await sendSMSOTP(user.phone, code);
+      try {
+        await sendSMSOTP(user.phone, code);
+      } catch (sendErr) {
+        console.error("[resend-otp] SMS send failed:", sendErr);
+        return NextResponse.json({ error: "Failed to send SMS. Check your phone number or try again shortly." }, { status: 502 });
+      }
     }
 
     return NextResponse.json({ success: true });

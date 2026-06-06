@@ -39,6 +39,8 @@ async function seedDefaultRoles(db: ReturnType<typeof getDb>, orgId: string): Pr
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Role definitions (including permission lists) are admin-only configuration data.
+  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const db = getDb();
 
@@ -89,6 +91,8 @@ export async function GET(request: NextRequest) {
       .from(organizationMembers)
       .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
 
+    // This backfill is self-disabling: once all members have orgRoleId assigned the
+    // unassigned list will always be empty and no DB writes occur on subsequent GETs.
     if (unassigned.length > 0) {
       for (const m of unassigned) {
         const slug = SYSTEM_ROLE_TO_SLUG[m.role];

@@ -190,12 +190,20 @@ export async function DELETE(
   const db = getDb();
 
   const [existingVisit] = await db
-    .select({ organizationId: visits.organizationId })
+    .select({ organizationId: visits.organizationId, paidAmount: visits.paidAmount })
     .from(visits)
     .where(eq(visits.id, id));
   if (!existingVisit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
   if (existingVisit.organizationId !== session.orgId)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // Block deletion of visits that have recorded payments — financial records must be preserved.
+  if (existingVisit.paidAmount > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete a visit with recorded payments. Void the payments first." },
+      { status: 422 }
+    );
+  }
 
   // Sequential deletes — avoids D1 transaction batch API limitations.
   await db.delete(visitTreatments).where(eq(visitTreatments.visitId, id));

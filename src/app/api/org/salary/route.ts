@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { salaryRecords, organizationMembers, users, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -70,35 +70,58 @@ export async function POST(request: NextRequest) {
     const monthEnd = `${month}-${String(lastDay).padStart(2, "0")}`;
 
     const created = [];
-    for (const member of members) {
-      // Skip if already exists
-      const existing = (await db
-        .select()
-        .from(salaryRecords)
-        .where(and(eq(salaryRecords.organizationId, session.orgId), eq(salaryRecords.userId, member.userId), eq(salaryRecords.month, month)))
-        )[0];
 
-      if (existing) continue;
+    if (members.length === 0) return NextResponse.json({ created: 0, month });
 
-      let apptCount = 0;
-      let totalSalary = member.salaryAmount;
+    type MemberRow = (typeof members)[number];
 
-      if (member.salaryType === "PER_APPOINTMENT") {
-        const appts = await db
-          .select({ id: appointments.id })
-          .from(appointments)
-          .where(
-            and(
-              eq(appointments.organizationId, session.orgId),
-              eq(appointments.doctorId, member.userId),
-              eq(appointments.status, "COMPLETED"),
-              gte(appointments.appointmentDate, monthStart),
-              lte(appointments.appointmentDate, monthEnd)
-            )
-          );
-        apptCount = appts.length;
-        totalSalary = member.salaryAmount * apptCount;
+    const memberUserIds = members.map((m: MemberRow) => m.userId);
+
+    // Bulk fetch already-generated records for this month — avoids N+1 existence checks
+    const existingRecords = await db
+      .select({ userId: salaryRecords.userId })
+      .from(salaryRecords)
+      .where(and(
+        eq(salaryRecords.organizationId, session.orgId),
+        eq(salaryRecords.month, month),
+        inArray(salaryRecords.userId, memberUserIds)
+      ));
+    const alreadyGeneratedSet = new Set(existingRecords.map((r: { userId: string }) => r.userId));
+
+    const newMembers = members.filter((m: MemberRow) => !alreadyGeneratedSet.has(m.userId));
+    if (newMembers.length === 0) return NextResponse.json({ created: 0, month });
+
+    // Bulk fetch appointment counts for PER_APPOINTMENT members — one query instead of N
+    const perApptUserIds = newMembers
+      .filter((m: MemberRow) => m.salaryType === "PER_APPOINTMENT")
+      .map((m: MemberRow) => m.userId);
+
+    const apptCountMap: Record<string, number> = {};
+    if (perApptUserIds.length > 0) {
+      const apptRows = await db
+        .select({
+          doctorId: appointments.doctorId,
+          count: sql<number>`count(*)`,
+        })
+        .from(appointments)
+        .where(and(
+          eq(appointments.organizationId, session.orgId),
+          inArray(appointments.doctorId, perApptUserIds),
+          eq(appointments.status, "COMPLETED"),
+          gte(appointments.appointmentDate, monthStart),
+          lte(appointments.appointmentDate, monthEnd)
+        ))
+        .groupBy(appointments.doctorId);
+      for (const row of apptRows) {
+        if (row.doctorId) apptCountMap[row.doctorId] = Number(row.count);
       }
+    }
+
+    for (const member of newMembers) {
+      const apptCount = member.salaryType === "PER_APPOINTMENT" ? (apptCountMap[member.userId] ?? 0) : 0;
+      const totalSalary = member.salaryType === "PER_APPOINTMENT"
+        ? member.salaryAmount * apptCount
+        : member.salaryAmount;
 
       const record = {
         id: crypto.randomUUID(),

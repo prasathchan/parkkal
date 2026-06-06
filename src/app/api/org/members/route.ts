@@ -3,20 +3,21 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, orgRoles, verificationTokens, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { hashPassword } from "@/lib/auth";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { z } from "zod";
 
 const addMemberSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1).optional(),
-  phone: z.string().optional(),
+  email: z.string().email().max(254),
+  name: z.string().min(1).max(200).optional(),
+  phone: z.string().max(20).optional(),
   dateOfBirth: z.string().optional(),
   gender: z.string().optional(),
-  address: z.string().optional(),
-  panNumber: z.string().optional(),
-  aadhaarNumber: z.string().optional(),
+  address: z.string().max(500).optional(),
+  panNumber: z.string().max(10).optional(),
+  aadhaarNumber: z.string().max(12).optional(),
   bloodGroup: z.string().optional(),
   role: z.enum(["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"]),
   orgRoleId: z.string().optional(),
@@ -40,6 +41,9 @@ const addMemberSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.STAFF_VIEW)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const db = getDb();
   const rows = await db

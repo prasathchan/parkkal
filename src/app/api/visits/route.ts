@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, and, count, like, or } from "drizzle-orm";
+import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
   // RBAC: DOCTOR role may only see their own visits.
   const doctorId = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
   const status = searchParams.get("status");
+  const billingStatus = searchParams.get("billingStatus"); // "UNPAID" → paidAmount < totalAmount
   const date = searchParams.get("date");
   const search = searchParams.get("search");
 
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
   if (patientId) conditions.push(eq(visits.patientId, patientId));
   if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
   if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
+  if (billingStatus === "UNPAID") conditions.push(sql`${visits.paidAmount} < ${visits.totalAmount}`);
   if (date) conditions.push(eq(visits.visitDate, date));
   if (search) {
     // Escape LIKE special characters so user input is treated as a literal substring.
