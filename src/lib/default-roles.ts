@@ -40,7 +40,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
       "appointments.view", "appointments.create", "appointments.edit",
       "visits.view", "visits.create", "visits.edit",
       "treatments.view", "treatments.create", "treatments.edit",
-      "billing.view",
+      "billing.view", "billing.create", "billing.edit",
       "reports.view",
     ],
   },
