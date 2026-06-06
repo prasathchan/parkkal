@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { deleteFile } from "@/lib/storage";
 
 export async function DELETE(
@@ -11,6 +12,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id, attachmentId } = await params;
   const db = getDb();

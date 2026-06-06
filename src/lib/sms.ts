@@ -4,7 +4,11 @@ export async function sendSMSOTP(to: string, code: string): Promise<void> {
   const from = process.env.TWILIO_PHONE_NUMBER;
 
   if (!sid || !token || !from) {
-    console.warn("[SMS] Twilio not configured — skipping SMS. OTP:", code);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[SMS] Twilio not configured — skipping SMS. OTP:", code);
+    } else {
+      console.warn("[SMS] Twilio not configured — skipping SMS send.");
+    }
     return;
   }
 
