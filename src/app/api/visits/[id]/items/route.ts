@@ -105,18 +105,15 @@ export async function POST(
     createdAt: Date.now(),
   };
 
-  await db.insert(visitItems).values(newItem);
-  await db
-    .update(visits)
-    .set({ totalAmount: sql`total_amount + ${amount}`, updatedAt: Date.now() })
-    .where(eq(visits.id, id));
-
-  // Update treatment paidAmount so the treatment card shows accurate balance across visits
-  if (resolvedTreatmentId) {
+  try {
+    await db.insert(visitItems).values(newItem);
     await db
-      .update(treatments)
-      .set({ paidAmount: sql`paid_amount + ${amount}` })
-      .where(eq(treatments.id, resolvedTreatmentId));
+      .update(visits)
+      .set({ totalAmount: sql`total_amount + ${amount}`, updatedAt: Date.now() })
+      .where(eq(visits.id, id));
+  } catch (err) {
+    console.error("Add visit item error:", err);
+    return NextResponse.json({ error: "Failed to add item. Please try again." }, { status: 500 });
   }
 
   return NextResponse.json({ item: newItem }, { status: 201 });

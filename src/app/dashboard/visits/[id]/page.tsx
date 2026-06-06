@@ -77,6 +77,7 @@ interface Treatment {
   toothNumbers?: string | null;
   procedure?: string | null;
   cost: number;
+  billedAmount?: number; // sum of all visit items linked to this treatment across all visits
   status: "PLANNED" | "IN_PROGRESS" | "COMPLETED";
   createdAt: number;
   visitId?: string | null;
@@ -210,23 +211,28 @@ export default function VisitDetailPage() {
     e.preventDefault();
     setAddingItem(true);
     setAddItemError("");
-    const res = await fetch(`/api/visits/${id}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...newItem,
-        quantity: Number(newItem.quantity),
-        unitPrice: Number(newItem.unitPrice),
-      }),
-    });
-    if (res.ok) {
-      setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
-      await fetchVisit();
-    } else {
-      const d = await res.json();
-      setAddItemError(d.error || "Failed to add item");
+    try {
+      const res = await fetch(`/api/visits/${id}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newItem,
+          quantity: Number(newItem.quantity),
+          unitPrice: Number(newItem.unitPrice),
+        }),
+      });
+      if (res.ok) {
+        setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
+        await fetchVisit();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setAddItemError((d as { error?: string }).error || "Failed to add item");
+      }
+    } catch {
+      setAddItemError("Network error. Please try again.");
+    } finally {
+      setAddingItem(false);
     }
-    setAddingItem(false);
   }
 
   async function handleDeleteItem(itemId: string) {
@@ -1195,9 +1201,8 @@ export default function VisitDetailPage() {
                           REJECTED: "✗ Consent Rejected",
                           EMERGENCY_OVERRIDE: "⚡ Emergency Override",
                         };
-                        const txPaid = payments
-                          .filter(p => p.treatmentId === tx.id)
-                          .reduce((s, p) => s + p.amount, 0);
+                        // billedAmount = SUM of visit items linked to this treatment across ALL visits
+                        const txPaid = tx.billedAmount ?? 0;
                         const txOutstanding = Math.max(0, tx.cost - txPaid);
                         return (
                         <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-slate-50 border-slate-200 opacity-75" : "bg-white border-slate-200"}`}>

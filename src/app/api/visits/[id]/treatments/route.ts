@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import {
   visits,
   treatments,
   visitTreatments,
+  visitItems,
   organizationMembers,
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -60,7 +61,21 @@ export async function GET(request: NextRequest, { params }: Params) {
       )
     );
 
-  return NextResponse.json({ treatments: rows });
+  // Compute billedAmount per treatment across ALL visits (for cross-visit tracking)
+  type TreatmentRow = (typeof rows)[number];
+  const treatmentIds = rows.map((r: TreatmentRow) => r.id);
+  const billedMap: Record<string, number> = {};
+  for (const txId of treatmentIds) {
+    const [row] = await db
+      .select({ total: sum(visitItems.amount) })
+      .from(visitItems)
+      .where(eq(visitItems.linkedTreatmentId, txId));
+    billedMap[txId] = Number(row?.total ?? 0);
+  }
+
+  const rowsWithBilled = rows.map((r: TreatmentRow) => ({ ...r, billedAmount: billedMap[r.id] ?? 0 }));
+
+  return NextResponse.json({ treatments: rowsWithBilled });
 }
 
 // ── POST /api/visits/[id]/treatments ─────────────────────────────────────────
