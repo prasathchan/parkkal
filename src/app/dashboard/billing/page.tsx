@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Header } from "@/components/header";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import {
@@ -32,32 +32,64 @@ function getBillingStatus(visit: VisitBilling): "PAID" | "PARTIAL" | "PENDING" {
 }
 
 type PaymentMethod = "CASH" | "CARD" | "UPI" | "BANK_TRANSFER";
-
 type BillingFilter = "UNPAID" | "ALL";
+
+const PAGE_SIZE = 50;
 
 export default function BillingPage() {
   const [visits, setVisits] = useState<VisitBilling[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BillingFilter>("UNPAID");
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [payModal, setPayModal] = useState<{ visit: VisitBilling; due: number } | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (pageIdx: number, searchStr: string, filterVal: BillingFilter) => {
     setLoading(true);
     try {
-      // Default to OPEN visits only so staff see actionable dues, not all history.
-      const res = await fetch("/api/visits?status=OPEN&limit=200");
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(pageIdx * PAGE_SIZE),
+      });
+      if (searchStr) params.set("search", searchStr);
+      // UNPAID filter: pass status is handled client-side for summary badges,
+      // but for large datasets we let the server do the heavy lifting by not
+      // filtering status server-side (all statuses needed for summary counts).
+      const res = await fetch(`/api/visits?${params}`);
+      if (!res.ok) throw new Error("Failed to load visits");
       const data = await res.json();
       setVisits(data.visits || []);
+      setTotal(data.total ?? 0);
+    } catch {
+      setErrorMsg("Failed to load billing data. Please try again.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData(page, search, filter);
+  }, [fetchData, page, search, filter]);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearch(value);
+      setPage(0);
+    }, 300);
+  }
+
+  function handleFilterChange(f: BillingFilter) {
+    setFilter(f);
+    setPage(0);
+  }
 
   function handleMarkPaid(visit: VisitBilling) {
     const due = visit.totalAmount - visit.paidAmount;
@@ -71,20 +103,18 @@ export default function BillingPage() {
     const { visit, due } = payModal;
     setMarkingPaid(visit.id);
     setPayModal(null);
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/visits/${visit.id}/payments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: due,
-          paymentMethod: payMethod,
-        }),
+        body: JSON.stringify({ amount: due, paymentMethod: payMethod }),
       });
       if (res.ok) {
-        await fetchData();
+        await fetchData(page, search, filter);
       } else {
         const d = await res.json();
-        alert(d.error || "Failed to record payment");
+        setErrorMsg(d.error || "Failed to record payment");
       }
     } finally {
       setMarkingPaid(null);
@@ -100,6 +130,8 @@ export default function BillingPage() {
     ? visits.filter((v) => getBillingStatus(v) !== "PAID")
     : visits;
 
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
   return (
     <div className="flex-1 flex flex-col">
       <Header
@@ -108,30 +140,47 @@ export default function BillingPage() {
       />
 
       <main className="flex-1 p-6">
+        {errorMsg && (
+          <div className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <span>{errorMsg}</span>
+            <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 font-medium">✕</button>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-slate-900">Visit Billing Summary</h2>
               <p className="text-xs text-slate-500 mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
             </div>
-            <div className="flex items-center gap-2 text-xs flex-wrap">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">{pending} Pending</span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{partial} Partial</span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">{paid} Paid</span>
-              <div className="flex gap-1 ml-2">
-                <button
-                  onClick={() => setFilter("UNPAID")}
-                  className={`px-3 py-1 rounded-lg font-medium transition ${filter === "UNPAID" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-                >
-                  Unpaid Only
-                </button>
-                <button
-                  onClick={() => setFilter("ALL")}
-                  className={`px-3 py-1 rounded-lg font-medium transition ${filter === "ALL" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-                >
-                  All Open
-                </button>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">{pending} Pending</span>
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">{partial} Partial</span>
+              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{paid} Paid</span>
+            </div>
+          </div>
+
+          <div className="px-6 py-3 border-b border-slate-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <input
+              type="text"
+              placeholder="Search by patient name or visit code…"
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleFilterChange("UNPAID")}
+                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "UNPAID" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                Unpaid Only
+              </button>
+              <button
+                onClick={() => handleFilterChange("ALL")}
+                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "ALL" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+              >
+                All Visits
+              </button>
             </div>
           </div>
 
@@ -153,19 +202,13 @@ export default function BillingPage() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-slate-400">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : visits.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-slate-400">
-                    No visits found
+                    Loading…
                   </TableCell>
                 </TableRow>
               ) : displayedVisits.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-slate-400">
-                    {filter === "UNPAID" ? "No unpaid visits — all clear!" : "No visits found"}
+                    {filter === "UNPAID" && visits.length > 0 ? "No unpaid visits — all clear!" : "No visits found"}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -188,16 +231,10 @@ export default function BillingPage() {
                         <div>{v.patientName || v.patientId}</div>
                         {v.patientCode && <div className="text-xs text-slate-400">{v.patientCode}</div>}
                       </TableCell>
-                      <TableCell className="text-slate-600">
-                        {formatDoctorName(v.doctorName)}
-                      </TableCell>
+                      <TableCell className="text-slate-600">{formatDoctorName(v.doctorName)}</TableCell>
                       <TableCell className="text-slate-500">{v.visitDate}</TableCell>
-                      <TableCell className="font-semibold">
-                        {formatCurrency(v.totalAmount)}
-                      </TableCell>
-                      <TableCell className="text-green-700">
-                        {formatCurrency(v.paidAmount)}
-                      </TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(v.totalAmount)}</TableCell>
+                      <TableCell className="text-green-700">{formatCurrency(v.paidAmount)}</TableCell>
                       <TableCell className={`font-medium ${due > 0 ? "text-red-600" : "text-slate-400"}`}>
                         {formatCurrency(due)}
                       </TableCell>
@@ -213,7 +250,7 @@ export default function BillingPage() {
                             disabled={markingPaid === v.id}
                             className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
                           >
-                            {markingPaid === v.id ? "..." : "Mark Paid"}
+                            {markingPaid === v.id ? "…" : "Mark Paid"}
                           </button>
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
@@ -225,10 +262,33 @@ export default function BillingPage() {
               )}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-600">
+              <span>
+                Page {page + 1} of {totalPages} ({total} total)
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  ← Prev
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Payment Method Modal */}
       {payModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
