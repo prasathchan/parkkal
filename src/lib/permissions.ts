@@ -90,15 +90,21 @@ export function coarseRoleHasPermission(role: string, permission: Permission): b
 // ── Fine-grained permission check ─────────────────────────────────────────────
 
 export async function hasPermission(
-  session: { role: string; orgRoleId?: string | null },
+  session: { role: string; orgRoleId?: string | null; permissions?: string[] | null },
   permission: Permission
 ): Promise<boolean> {
   // ADMIN always has all permissions
   if (session.role === "ADMIN") return true;
 
+  // Fast path: permissions embedded in JWT (no DB query needed).
+  if (Array.isArray(session.permissions)) {
+    return session.permissions.includes(permission);
+  }
+
   // No custom role → fall back to coarse role defaults
   if (!session.orgRoleId) return coarseRoleHasPermission(session.role, permission);
 
+  // Slow path: legacy token without embedded permissions — query DB once.
   const db = getDb();
   const [role] = await db
     .select({ permissions: orgRoles.permissions })
@@ -112,5 +118,34 @@ export async function hasPermission(
     return perms.includes(permission);
   } catch {
     return coarseRoleHasPermission(session.role, permission);
+  }
+}
+
+// ── Helper: resolve permissions for a role at token-mint time ────────────────
+
+export async function resolveRolePermissions(
+  role: string,
+  orgRoleId: string | null | undefined
+): Promise<string[]> {
+  // ADMIN always gets all permissions
+  if (role === "ADMIN") return Object.values(PERMISSIONS);
+
+  if (!orgRoleId) {
+    // No custom role → return coarse defaults
+    return (ROLE_PERMS[role] ?? []) as string[];
+  }
+
+  const db = getDb();
+  const [row] = await db
+    .select({ permissions: orgRoles.permissions })
+    .from(orgRoles)
+    .where(eq(orgRoles.id, orgRoleId));
+
+  if (!row) return (ROLE_PERMS[role] ?? []) as string[];
+
+  try {
+    return JSON.parse(row.permissions) as string[];
+  } catch {
+    return (ROLE_PERMS[role] ?? []) as string[];
   }
 }

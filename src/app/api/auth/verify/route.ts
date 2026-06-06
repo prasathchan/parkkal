@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
 import { createOrgToken } from "@/lib/auth-edge";
+import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 // Limit OTP guesses to prevent brute-forcing the 6-digit codes.
@@ -144,7 +145,8 @@ export async function POST(request: NextRequest) {
 
     const user = userRows[0];
 
-    // Create org session JWT
+    // Create org session JWT — embed permissions to avoid per-request DB lookups
+    const permissions = await resolveRolePermissions(m.role, null);
     const orgToken = await createOrgToken({
       userId,
       email: user.email,
@@ -153,6 +155,7 @@ export async function POST(request: NextRequest) {
       orgName: m.orgName,
       orgSlug: m.orgSlug,
       role: m.role,
+      permissions,
     });
 
     const response = NextResponse.json({ redirect: "/dashboard" });

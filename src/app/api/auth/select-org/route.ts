@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers, organizations } from "@/db/schema";
 import { getPreOrgSession, createOrgToken } from "@/lib/auth";
+import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const COOKIE_OPTS = {
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Your account or organization is inactive" }, { status: 403 });
     }
 
+    const permissions = await resolveRolePermissions(membership.role, membership.orgRoleId ?? null);
     const orgToken = await createOrgToken({
       userId: preSession.userId,
       email: preSession.email,
@@ -68,6 +70,7 @@ export async function POST(request: NextRequest) {
       orgSlug: membership.orgSlug,
       role: membership.role,
       orgRoleId: membership.orgRoleId ?? null,
+      permissions,
     });
 
     const response = NextResponse.json({ success: true });

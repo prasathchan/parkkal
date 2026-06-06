@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, organizationMembers, organizations } from "@/db/schema";
 import { verifyPassword, createToken, createOrgToken } from "@/lib/auth";
+import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
 
     if (activeMemberships.length === 1) {
       const m = activeMemberships[0];
+      const permissions = await resolveRolePermissions(m.role, m.orgRoleId ?? null);
       const orgToken = await createOrgToken({
         userId: user.id,
         email: user.email,
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
         orgSlug: m.orgSlug,
         role: m.role,
         orgRoleId: m.orgRoleId ?? null,
+        permissions,
       });
       const response = NextResponse.json({ redirect: "/dashboard" });
       response.cookies.set("pkd_org_session", orgToken, {

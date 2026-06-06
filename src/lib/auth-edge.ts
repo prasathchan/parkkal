@@ -37,6 +37,10 @@ export interface OrgSessionPayload {
   orgSlug: string;
   role: string;
   orgRoleId?: string | null;
+  // Permission strings embedded at login time to avoid a DB round-trip on every
+  // permission check. Absent on tokens issued before this field was added —
+  // hasPermission() falls back to a DB lookup in that case.
+  permissions?: string[] | null;
 }
 
 export async function createToken(payload: JWTPayload): Promise<string> {
