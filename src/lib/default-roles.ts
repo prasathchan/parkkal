@@ -1,13 +1,14 @@
 export const ALL_PERMISSIONS = [
   "patients.view", "patients.create", "patients.edit", "patients.delete",
-  "visits.view", "visits.create", "visits.edit",
-  "billing.view", "billing.manage",
+  "appointments.view", "appointments.create", "appointments.edit", "appointments.delete",
+  "visits.view", "visits.create", "visits.edit", "visits.delete",
+  "treatments.view", "treatments.create", "treatments.edit", "treatments.delete",
+  "billing.view", "billing.create", "billing.edit",
   "staff.view", "staff.manage",
   "salary.view", "salary.manage",
-  "settings.manage",
+  "org.settings",
   "reports.view",
   "roles.manage",
-  "appointments.view", "appointments.create", "appointments.edit",
 ];
 
 export interface DefaultRole {
@@ -36,8 +37,9 @@ export const DEFAULT_ROLES: DefaultRole[] = [
     isSystem: 0,
     permissions: [
       "patients.view", "patients.create", "patients.edit",
-      "visits.view", "visits.create", "visits.edit",
       "appointments.view", "appointments.create", "appointments.edit",
+      "visits.view", "visits.create", "visits.edit",
+      "treatments.view", "treatments.create", "treatments.edit",
       "billing.view",
       "reports.view",
     ],
@@ -52,7 +54,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
       "patients.view", "patients.create",
       "appointments.view", "appointments.create", "appointments.edit",
       "visits.view",
-      "billing.view", "billing.manage",
+      "billing.view", "billing.create", "billing.edit",
     ],
   },
   {
@@ -63,8 +65,9 @@ export const DEFAULT_ROLES: DefaultRole[] = [
     isSystem: 0,
     permissions: [
       "patients.view",
-      "visits.view", "visits.create",
       "appointments.view",
+      "visits.view", "visits.create",
+      "treatments.view",
     ],
   },
   {

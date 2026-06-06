@@ -38,21 +38,7 @@ function randomSuffix(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 4);
 }
 
-const ALL_PERMISSIONS = [
-  "patients.view", "patients.create", "patients.edit", "patients.delete",
-  "visits.view", "visits.create", "visits.edit",
-  "billing.view", "billing.manage",
-  "staff.view", "staff.manage",
-  "salary.view", "salary.manage",
-  "settings.manage",
-  "reports.view",
-  "roles.manage",
-  "appointments.view", "appointments.create", "appointments.edit",
-];
-
-// Imported from shared module — kept here for reference; signup uses DEFAULT_ROLES from lib
 import { DEFAULT_ROLES } from "@/lib/default-roles";
-void ALL_PERMISSIONS; // used by lib/default-roles
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);

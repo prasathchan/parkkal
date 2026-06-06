@@ -310,6 +310,9 @@ async function main() {
            AND id != OLD.id
        );
      END`,
+    // 0022: fix permission string mismatch (billing.manage → billing.create,billing.edit)
+    `UPDATE org_roles SET permissions = REPLACE(permissions, '"billing.manage"', '"billing.create","billing.edit"') WHERE permissions LIKE '%"billing.manage"%'`,
+    `UPDATE org_roles SET permissions = REPLACE(permissions, '"settings.manage"', '"org.settings"') WHERE permissions LIKE '%"settings.manage"%'`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }
