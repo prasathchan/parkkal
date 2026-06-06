@@ -18,10 +18,12 @@ function getD1(): D1Database {
 let devDbCache: ReturnType<typeof createDevDb> | null = null;
 
 function createDevDb() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createClient } = require("@libsql/client");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { drizzle } = require("drizzle-orm/libsql");
+  // Use variable-based require to prevent esbuild from bundling this dev-only package
+  // into the Cloudflare Workers build (static require() strings are always resolved at bundle time).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, no-eval
+  const { createClient } = eval("require")("@libsql/client");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, no-eval
+  const { drizzle } = eval("require")("drizzle-orm/libsql");
   const url = process.env.DATABASE_URL || "file:local.db";
   const client = createClient({ url });
   return drizzle(client, { schema });
