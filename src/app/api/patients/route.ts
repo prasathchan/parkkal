@@ -5,6 +5,7 @@ import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
+import { encryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const createPatientSchema = z.object({
@@ -49,13 +50,15 @@ export async function GET(request: NextRequest) {
     eq(organizationPatients.isActive, 1)
   );
 
-  const whereCondition = search
+  // Escape LIKE special characters so user input is treated as a literal substring.
+  const escapedSearch = search?.replace(/[%_\\]/g, "\\$&");
+  const whereCondition = escapedSearch
     ? and(
         baseConditions,
         or(
-          like(patients.name, `%${search}%`),
-          like(patients.phone, `%${search}%`),
-          like(patients.patientCode, `%${search}%`)
+          like(patients.name, `%${escapedSearch}%`),
+          like(patients.phone, `%${escapedSearch}%`),
+          like(patients.patientCode, `%${escapedSearch}%`)
         )
       )
     : baseConditions;
@@ -119,8 +122,8 @@ export async function POST(request: NextRequest) {
       address: data.address || null,
       medicalHistory: data.medicalHistory || null,
       bloodGroup: data.bloodGroup || null,
-      panNumber: data.panNumber || null,
-      aadhaarNumber: data.aadhaarNumber || null,
+      panNumber: await encryptField(data.panNumber || null) ?? null,
+      aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
       emergencyContactAdded: data.emergencyContact ? 1 : 0,
       createdAt: now,
       updatedAt: now,

@@ -35,7 +35,7 @@ function generateSlug(name: string): string {
 }
 
 function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 6);
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 4);
 }
 
 const ALL_PERMISSIONS = [

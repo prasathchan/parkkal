@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
+import { getDb, type DbInstance } from "@/lib/db";
 import {
   visits,
   visitItems,
+  visitTreatments,
   payments,
   attachments,
   prescriptions,
   patients,
   users,
   appointments,
+  treatments,
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
@@ -60,7 +62,23 @@ export async function GET(
 
   const [items, paymentRows, attachmentRows, prescriptionRows] = await Promise.all([
     db.select().from(visitItems).where(eq(visitItems.visitId, id)),
-    db.select().from(payments).where(eq(payments.visitId, id)),
+    db
+      .select({
+        id: payments.id,
+        visitId: payments.visitId,
+        patientId: payments.patientId,
+        treatmentId: payments.treatmentId,
+        treatmentDescription: treatments.description,
+        amount: payments.amount,
+        paymentMethod: payments.paymentMethod,
+        referenceNumber: payments.referenceNumber,
+        notes: payments.notes,
+        paidAt: payments.paidAt,
+        recordedBy: payments.recordedBy,
+      })
+      .from(payments)
+      .leftJoin(treatments, eq(payments.treatmentId, treatments.id))
+      .where(eq(payments.visitId, id)),
     db.select().from(attachments).where(eq(attachments.visitId, id)),
     db.select().from(prescriptions).where(eq(prescriptions.visitId, id)),
   ]);
@@ -171,22 +189,14 @@ export async function DELETE(
   if (existingVisit.organizationId !== session.orgId)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const cascadeDelete = async (tx: typeof db) => {
+  await db.transaction(async (tx: DbInstance) => {
+    await tx.delete(visitTreatments).where(eq(visitTreatments.visitId, id));
     await tx.delete(prescriptions).where(eq(prescriptions.visitId, id));
     await tx.delete(attachments).where(eq(attachments.visitId, id));
     await tx.delete(payments).where(eq(payments.visitId, id));
     await tx.delete(visitItems).where(eq(visitItems.visitId, id));
     await tx.delete(visits).where(eq(visits.id, id));
-  };
-
-  type DbWithTx = typeof db & {
-    transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void>;
-  };
-  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
-    await (db as unknown as DbWithTx).transaction(cascadeDelete);
-  } else {
-    await cascadeDelete(db);
-  }
+  });
 
   return NextResponse.json({ success: true });
 }

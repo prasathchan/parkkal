@@ -83,7 +83,9 @@ export async function POST(request: NextRequest) {
     await db.delete(verificationTokens)
       .where(and(eq(verificationTokens.userId, userId), eq(verificationTokens.type, "PHONE_OTP")));
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const otp = String(100000 + (buf[0] % 900000));
     const expiresAt = now + 15 * 60 * 1000;
     const tokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 

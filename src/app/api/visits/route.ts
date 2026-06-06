@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
   if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
   if (date) conditions.push(eq(visits.visitDate, date));
   if (search) {
-    const likeSearch = `%${search}%`;
+    // Escape LIKE special characters so user input is treated as a literal substring.
+    const escapedSearch = search.replace(/[%_\\]/g, "\\$&");
+    const likeSearch = `%${escapedSearch}%`;
     const searchCondition = or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch));
     if (searchCondition) conditions.push(searchCondition);
   }

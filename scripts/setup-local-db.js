@@ -61,10 +61,14 @@ const SQL = [
   `CREATE TABLE IF NOT EXISTS treatments (
     id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
     patient_id TEXT NOT NULL REFERENCES patients(id), appointment_id TEXT REFERENCES appointments(id),
-    visit_id TEXT REFERENCES visits(id),
     doctor_id TEXT NOT NULL REFERENCES users(id), description TEXT NOT NULL,
     tooth_numbers TEXT, procedure TEXT, cost REAL NOT NULL DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'PLANNED', created_at INTEGER NOT NULL
+    status TEXT NOT NULL DEFAULT 'PLANNED',
+    consent_status TEXT NOT NULL DEFAULT 'PENDING',
+    consent_document_url TEXT, consent_document_name TEXT,
+    consent_uploaded_at INTEGER, consent_verified_at INTEGER, consent_notes TEXT,
+    emergency_override INTEGER NOT NULL DEFAULT 0, emergency_reason TEXT,
+    created_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS invoices (
     id TEXT PRIMARY KEY, organization_id TEXT REFERENCES organizations(id),
@@ -98,7 +102,9 @@ const SQL = [
   )`,
   `CREATE TABLE IF NOT EXISTS payments (
     id TEXT PRIMARY KEY, visit_id TEXT NOT NULL REFERENCES visits(id),
-    patient_id TEXT NOT NULL REFERENCES patients(id), amount REAL NOT NULL,
+    patient_id TEXT NOT NULL REFERENCES patients(id),
+    treatment_id TEXT REFERENCES treatments(id),
+    amount REAL NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'CASH' CHECK (payment_method IN ('CASH','CARD','UPI','BANK_TRANSFER')),
     reference_number TEXT, notes TEXT, paid_at INTEGER NOT NULL,
     recorded_by TEXT NOT NULL REFERENCES users(id)
@@ -119,6 +125,20 @@ const SQL = [
     appointment_count INTEGER NOT NULL DEFAULT 0, paid_amount REAL NOT NULL DEFAULT 0,
     paid_at INTEGER, status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','PARTIAL','PAID')),
     notes TEXT, created_at INTEGER NOT NULL, UNIQUE(organization_id, user_id, month)
+  )`,
+  `CREATE TABLE IF NOT EXISTS visit_treatments (
+    visit_id TEXT NOT NULL REFERENCES visits(id),
+    treatment_id TEXT NOT NULL REFERENCES treatments(id),
+    notes TEXT, created_at INTEGER NOT NULL,
+    PRIMARY KEY (visit_id, treatment_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS consent_audit_log (
+    id TEXT PRIMARY KEY NOT NULL,
+    treatment_id TEXT NOT NULL REFERENCES treatments(id),
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    actor_id TEXT NOT NULL REFERENCES users(id),
+    actor_role TEXT NOT NULL, action TEXT NOT NULL,
+    reason TEXT, created_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS feature_flags (
     id TEXT PRIMARY KEY,
@@ -248,7 +268,14 @@ async function main() {
     `ALTER TABLE appointments_new RENAME TO appointments`,
     `ALTER TABLE treatments ADD COLUMN status TEXT NOT NULL DEFAULT 'PLANNED'`,
     `ALTER TABLE patients ADD COLUMN blood_group TEXT`,
-    `ALTER TABLE treatments ADD COLUMN visit_id TEXT REFERENCES visits(id)`,
+    // visit_id column removed from treatments — replaced by visit_treatments junction table
+    // Drop the old column if it exists on legacy local DBs
+    `ALTER TABLE treatments DROP COLUMN visit_id`,
+    // 0019: treatment-attributed payments
+    `ALTER TABLE payments ADD COLUMN treatment_id TEXT REFERENCES treatments(id)`,
+    // 0020: indexes for 0017–0019 columns
+    `CREATE INDEX IF NOT EXISTS idx_payments_treatment ON payments(treatment_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_consent_audit_treatment ON consent_audit_log(treatment_id)`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

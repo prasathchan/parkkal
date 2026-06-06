@@ -61,11 +61,9 @@ export async function POST(request: NextRequest) {
     await db.delete(verificationTokens)
       .where(and(eq(verificationTokens.userId, userId), eq(verificationTokens.type, "EMAIL")));
 
-    const otp = Array.from(crypto.getRandomValues(new Uint8Array(3)))
-      .map(b => String(b % 10))
-      .join("") + Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => String(b % 10)).join("");
-
-    const sixDigit = (parseInt(otp) % 900000 + 100000).toString();
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    const sixDigit = String(100000 + (buf[0] % 900000));
 
     await db.insert(verificationTokens).values({
       id: `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
