@@ -236,12 +236,13 @@ export const visitItems = sqliteTable("visit_items", {
   id: text("id").primaryKey(),
   visitId: text("visit_id").notNull().references(() => visits.id),
   itemName: text("item_name").notNull(),
-  category: text("category", { enum: ["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"] }).notNull().default("OTHER"),
+  category: text("category", { enum: ["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "TREATMENT", "OTHER"] }).notNull().default("OTHER"),
   toothNumber: text("tooth_number"),
   quantity: real("quantity").notNull().default(1),
   unitPrice: real("unit_price").notNull().default(0),
   amount: real("amount").notNull().default(0),
   notes: text("notes"),
+  linkedTreatmentId: text("linked_treatment_id").references(() => treatments.id),
   createdAt: integer("created_at").notNull(),
 });
 

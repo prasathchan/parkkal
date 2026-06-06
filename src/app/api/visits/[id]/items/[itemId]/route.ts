@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and, sum } from "drizzle-orm";
+import { eq, and, sum, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { visitItems, visits } from "@/db/schema";
+import { visitItems, visits, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
 
 const patchItemSchema = z.object({
   itemName: z.string().min(1).optional(),
-  category: z.enum(["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "OTHER"]).optional(),
+  category: z.enum(["MEDICINE", "PROCEDURE", "XRAY", "CONSULTATION", "TREATMENT", "OTHER"]).optional(),
   toothNumber: z.string().optional().nullable(),
   quantity: z.number().min(0.01).optional(),
   unitPrice: z.number().min(0).optional(),
@@ -108,6 +108,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Cannot remove items from a cancelled visit" }, { status: 400 });
   }
 
+  // Read item before deleting so we can reverse the treatment paidAmount
+  const [itemToDelete] = await db
+    .select({ amount: visitItems.amount, linkedTreatmentId: visitItems.linkedTreatmentId })
+    .from(visitItems)
+    .where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+
   await db.delete(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
 
   // Full recompute from remaining items — prevents drift if prior increment crashed
@@ -116,6 +122,14 @@ export async function DELETE(
     .from(visitItems)
     .where(eq(visitItems.visitId, id));
   await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+
+  // Reverse treatment paidAmount so the treatment card stays accurate
+  if (itemToDelete?.linkedTreatmentId) {
+    await db
+      .update(treatments)
+      .set({ paidAmount: sql`MAX(0, paid_amount - ${itemToDelete.amount})` })
+      .where(eq(treatments.id, itemToDelete.linkedTreatmentId));
+  }
 
   return NextResponse.json({ success: true });
 }

@@ -93,7 +93,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
-const CATEGORIES = ["PROCEDURE", "MEDICINE", "XRAY", "CONSULTATION", "OTHER"];
+const CATEGORIES = ["PROCEDURE", "TREATMENT", "MEDICINE", "XRAY", "CONSULTATION", "OTHER"];
 const PAYMENT_METHODS = ["CASH", "CARD", "UPI", "BANK_TRANSFER"];
 
 function formatBytes(bytes: number) {
@@ -115,7 +115,7 @@ export default function VisitDetailPage() {
   const [loading, setLoading] = useState(true);
 
   // Item form
-  const [newItem, setNewItem] = useState({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
+  const [newItem, setNewItem] = useState({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
   const [addingItem, setAddingItem] = useState(false);
   const [addItemError, setAddItemError] = useState("");
 
@@ -220,7 +220,7 @@ export default function VisitDetailPage() {
       }),
     });
     if (res.ok) {
-      setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "" });
+      setNewItem({ itemName: "", category: "PROCEDURE", toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
       await fetchVisit();
     } else {
       const d = await res.json();
@@ -740,12 +740,58 @@ export default function VisitDetailPage() {
                         <label className="block text-xs text-slate-500 mb-1">Category</label>
                         <select
                           value={newItem.category}
-                          onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                          onChange={(e) => {
+                            const cat = e.target.value;
+                            setNewItem({ itemName: "", category: cat, toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
+                          }}
                           className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                          {CATEGORIES.map((c) => (
+                            <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
+                          ))}
                         </select>
                       </div>
+                      {/* Treatment picker — shown only when TREATMENT category is selected */}
+                      {newItem.category === "TREATMENT" && (
+                        <div className="col-span-full">
+                          <label className="block text-xs text-slate-500 mb-1">Select Treatment Plan *</label>
+                          {treatments.length === 0 ? (
+                            <p className="text-xs text-amber-600 mt-1">No treatment plans linked to this visit. Add one in the Treatment Plan tab first.</p>
+                          ) : (
+                            <select
+                              value={newItem.linkedTreatmentId}
+                              onChange={(e) => {
+                                const tx = treatments.find(t => t.id === e.target.value);
+                                if (!tx) {
+                                  setNewItem(n => ({ ...n, linkedTreatmentId: "", itemName: "", unitPrice: "0", toothNumber: "" }));
+                                  return;
+                                }
+                                const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+                                setNewItem(n => ({
+                                  ...n,
+                                  linkedTreatmentId: tx.id,
+                                  itemName: tx.description,
+                                  unitPrice: String(tx.cost),
+                                  toothNumber: firstTooth,
+                                }));
+                              }}
+                              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">— Pick a treatment plan —</option>
+                              {treatments.map(tx => (
+                                <option key={tx.id} value={tx.id}>
+                                  {tx.description}{tx.toothNumbers ? ` (Tooth ${tx.toothNumbers})` : ""} — Est. ₹{tx.cost.toLocaleString("en-IN")}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {newItem.linkedTreatmentId && (
+                            <p className="text-xs text-slate-400 mt-1">
+                              Estimated cost pre-filled. Edit the Unit Price below to match what the patient agreed to pay.
+                            </p>
+                          )}
+                        </div>
+                      )}
                       <div>
                         <label className="block text-xs text-slate-500 mb-1">Tooth #</label>
                         <select
@@ -1181,16 +1227,24 @@ export default function VisitDetailPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                              {visit.status !== "CANCELLED" && txOutstanding > 0 && (
+                              {visit.status !== "CANCELLED" && (
                                 <button
                                   onClick={() => {
-                                    setTxPayModal({ treatmentId: tx.id, description: tx.description, cost: tx.cost });
-                                    setTxPayForm({ amount: String(txOutstanding), paymentMethod: "CASH", referenceNumber: "", notes: "" });
-                                    setTxPayError("");
+                                    const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+                                    setNewItem({
+                                      itemName: tx.description,
+                                      category: "TREATMENT",
+                                      toothNumber: firstTooth,
+                                      quantity: "1",
+                                      unitPrice: String(tx.cost),
+                                      notes: "",
+                                      linkedTreatmentId: tx.id,
+                                    });
+                                    setTab("items");
                                   }}
                                   className="text-xs bg-purple-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-purple-700 transition font-medium"
                                 >
-                                  Record Payment
+                                  Add to Bill
                                 </button>
                               )}
                               <select
