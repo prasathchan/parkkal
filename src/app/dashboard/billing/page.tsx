@@ -26,7 +26,10 @@ interface VisitBilling {
 }
 
 function getBillingStatus(visit: VisitBilling): "PAID" | "PARTIAL" | "PENDING" {
-  if (visit.paidAmount >= visit.totalAmount && visit.totalAmount > 0) return "PAID";
+  // A visit with ₹0 total (no billable items, or a free consultation) is considered PAID —
+  // there is nothing to collect. Only show PENDING/PARTIAL when there is an actual balance.
+  if (visit.totalAmount === 0) return "PAID";
+  if (visit.paidAmount >= visit.totalAmount) return "PAID";
   if (visit.paidAmount > 0) return "PARTIAL";
   return "PENDING";
 }
