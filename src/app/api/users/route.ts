@@ -3,10 +3,13 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/users", session);
+  void log;
 
   const db = getDb();
   // Return org members with their role in this org

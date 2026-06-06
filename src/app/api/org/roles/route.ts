@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
+import { logger } from "@/lib/logger";
 
 // Maps system role enum → default role slug
 const SYSTEM_ROLE_TO_SLUG: Record<string, string> = {
@@ -39,8 +40,12 @@ async function seedDefaultRoles(db: ReturnType<typeof getDb>, orgId: string): Pr
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/org/roles", session);
   // Role definitions (including permission lists) are admin-only configuration data.
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can view roles", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const db = getDb();
 
@@ -76,7 +81,7 @@ export async function GET(request: NextRequest) {
         .where(eq(orgRoles.organizationId, session.orgId))
         .orderBy(orgRoles.name);
     } catch (e) {
-      console.error("Role seeding failed:", e);
+      log.warn("Role seeding failed", { error: String(e) });
     }
   }
 
@@ -105,7 +110,7 @@ export async function GET(request: NextRequest) {
       }
     }
   } catch (e) {
-    console.error("Member role auto-assign failed:", e);
+    log.warn("Member role auto-assign failed", { error: String(e) });
   }
 
   // Get user counts per role
@@ -140,7 +145,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("POST /api/org/roles", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can create roles", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json();
@@ -183,12 +192,13 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(orgRoles).values(newRole);
+    log.info("Role created", { roleId: newRole.id, roleName: newRole.name });
     return NextResponse.json(
       { role: { ...newRole, permissions: permissions || [] } },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Create role error:", error);
+    log.error("Failed to create role", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

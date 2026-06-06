@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   // Rate limit: 10 activation attempts per IP per 15 minutes.
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/staff/activate");
   try {
     const body = await request.json() as { token?: unknown; password?: unknown; mode?: unknown };
     const token = typeof body.token === "string" ? body.token : null;
@@ -55,12 +57,14 @@ export async function POST(request: NextRequest) {
     )[0];
 
     if (!vtRecord) {
+      log.security("Staff activation failed: invalid or expired token");
       return NextResponse.json({ error: "Invalid or expired activation link" }, { status: 400 });
     }
 
     if (mode === "verify") {
       // Mode 3: just validate the token so the OTP flow can begin
       await db.update(verificationTokens).set({ used: 1 }).where(eq(verificationTokens.id, vtRecord.id));
+      log.info("Staff activation token verified (device-verify mode)", { userId: vtRecord.userId });
       return NextResponse.json({ userId: vtRecord.userId, mode: "verify" });
     }
 
@@ -69,9 +73,10 @@ export async function POST(request: NextRequest) {
     await db.update(users).set({ passwordHash, updatedAt: now }).where(eq(users.id, vtRecord.userId));
     await db.update(verificationTokens).set({ used: 1 }).where(eq(verificationTokens.id, vtRecord.id));
 
+    log.info("Staff account activated", { userId: vtRecord.userId });
     return NextResponse.json({ userId: vtRecord.userId });
   } catch (error) {
-    console.error("Staff activate error:", error);
+    log.error("Staff activate error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

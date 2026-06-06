@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { storeFile } from "@/lib/storage";
+import { logger } from "@/lib/logger";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -21,7 +22,9 @@ async function verifyWithClaude(
 ): Promise<VerifyResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.warn("[CONSENT] ANTHROPIC_API_KEY not set — skipping AI verification");
+    // No session context here (module-level function), use sessionless logger
+    const log = logger.forRoute("POST /api/treatments/[id]/consent/upload");
+    log.warn("ANTHROPIC_API_KEY not set — skipping AI consent verification", {});
     return { legible: true, hasSignature: true, notes: "Auto-approved: AI verification not configured" };
   }
 
@@ -68,7 +71,8 @@ Respond with JSON only, no other text.`,
   });
 
   if (!res.ok) {
-    console.error("[CONSENT] Claude API error:", res.status, await res.text());
+    const errText = await res.text();
+    logger.forRoute("POST /api/treatments/[id]/consent/upload").warn("Claude API error during consent verification", { status: res.status, error: errText });
     return { legible: true, hasSignature: false, notes: "AI verification failed — please review manually" };
   }
 
@@ -83,7 +87,7 @@ Respond with JSON only, no other text.`,
       notes: String(parsed.notes ?? "").slice(0, 200),
     };
   } catch {
-    console.warn("[CONSENT] Could not parse Claude response:", text);
+    logger.forRoute("POST /api/treatments/[id]/consent/upload").warn("Could not parse Claude consent verification response", { responseText: text });
     return { legible: true, hasSignature: false, notes: "AI could not parse document — please review manually" };
   }
 }
@@ -94,6 +98,7 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/treatments/[id]/consent/upload", session);
 
   const { id } = await params;
   const db = getDb();
@@ -124,7 +129,13 @@ export async function POST(
   const key = `consents/${id}/${fileName}`;
   const bytes = await file.arrayBuffer();
 
-  const { url: documentUrl } = await storeFile(key, bytes, file.type);
+  let documentUrl: string;
+  try {
+    ({ url: documentUrl } = await storeFile(key, bytes, file.type));
+  } catch (err) {
+    log.error("Failed to store consent document", err, { treatmentId: id, key });
+    return NextResponse.json({ error: "Failed to upload document. Please try again." }, { status: 500 });
+  }
 
   // Run AI verification
   const base64 = Buffer.from(bytes).toString("base64");
@@ -142,18 +153,24 @@ export async function POST(
     consentStatus = "VERIFIED";
   }
 
-  await db
-    .update(treatments)
-    .set({
-      consentStatus,
-      consentDocumentUrl: documentUrl,
-      consentDocumentName: file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
-      consentUploadedAt: now,
-      consentVerifiedAt: consentStatus === "VERIFIED" ? now : null,
-      consentNotes: verify.notes,
-    })
-    .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
+  try {
+    await db
+      .update(treatments)
+      .set({
+        consentStatus,
+        consentDocumentUrl: documentUrl,
+        consentDocumentName: file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
+        consentUploadedAt: now,
+        consentVerifiedAt: consentStatus === "VERIFIED" ? now : null,
+        consentNotes: verify.notes,
+      })
+      .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
+  } catch (err) {
+    log.error("Failed to save consent status after upload", err, { treatmentId: id, consentStatus });
+    return NextResponse.json({ error: "Document uploaded but status could not be saved. Contact support." }, { status: 500 });
+  }
 
+  log.info("Consent document uploaded", { treatmentId: id, consentStatus, legible: verify.legible, hasSignature: verify.hasSignature });
   return NextResponse.json({
     consentStatus,
     legible: verify.legible,

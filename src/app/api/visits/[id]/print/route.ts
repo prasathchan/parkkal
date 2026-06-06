@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { visits, visitItems, payments, patients, users, prescriptions, organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +12,11 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasPermission(session, PERMISSIONS.VISITS_VIEW))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("GET /api/visits/[id]/print", session);
+  if (!(await hasPermission(session, PERMISSIONS.VISITS_VIEW))) {
+    log.security("Permission denied: VISITS_VIEW", {});
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();

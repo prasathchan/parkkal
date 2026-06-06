@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -14,25 +15,31 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/org/roles/[roleId]", session);
 
   const { roleId } = await params;
-  const db = getDb();
-  const [role] = await db.select().from(orgRoles).where(
-    and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId))
-  );
-  if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
+  try {
+    const db = getDb();
+    const [role] = await db.select().from(orgRoles).where(
+      and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId))
+    );
+    if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
 
-  const members = await db
-    .select({ id: users.id, name: users.name, email: users.email })
-    .from(organizationMembers)
-    .leftJoin(users, eq(organizationMembers.userId, users.id))
-    .where(and(
-      eq(organizationMembers.orgRoleId, roleId),
-      eq(organizationMembers.organizationId, session.orgId),
-      eq(organizationMembers.isActive, 1)
-    ));
+    const members = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(organizationMembers)
+      .leftJoin(users, eq(organizationMembers.userId, users.id))
+      .where(and(
+        eq(organizationMembers.orgRoleId, roleId),
+        eq(organizationMembers.organizationId, session.orgId),
+        eq(organizationMembers.isActive, 1)
+      ));
 
-  return NextResponse.json({ role: { ...role, permissions: JSON.parse(role.permissions || "[]") }, members });
+    return NextResponse.json({ role: { ...role, permissions: JSON.parse(role.permissions || "[]") }, members });
+  } catch (err) {
+    log.error("Failed to fetch role", err, { roleId });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PATCH(
@@ -41,7 +48,11 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("PATCH /api/org/roles/[roleId]", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can update roles", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { roleId } = await params;
   const db = getDb();
@@ -72,6 +83,7 @@ export async function PATCH(
   if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
 
   await db.update(orgRoles).set(updates).where(eq(orgRoles.id, roleId));
+  log.info("Role updated", { roleId, affectedUsers: membersWithRole.length });
   return NextResponse.json({
     role: { ...role, ...updates, permissions: permissions ?? JSON.parse(role.permissions || "[]") },
     affectedUsers: membersWithRole.length,
@@ -84,7 +96,11 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("DELETE /api/org/roles/[roleId]", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can delete roles", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { roleId } = await params;
   const db = getDb();
@@ -109,5 +125,6 @@ export async function DELETE(
   }
 
   await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
+  log.info("Role deleted", { roleId });
   return NextResponse.json({ success: true });
 }

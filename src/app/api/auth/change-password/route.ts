@@ -5,6 +5,7 @@ import { users } from "@/db/schema";
 import { getSession } from "@/lib/auth-edge";
 import { verifyPassword, hashPassword } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const schema = z.object({
@@ -20,6 +21,7 @@ const RATE_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 };
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/auth/change-password", session);
 
   const ip = getClientIp(request);
   const rl = await checkRateLimit(`change-password:${ip}:${session.userId}`, RATE_LIMIT);
@@ -42,6 +44,7 @@ export async function POST(request: NextRequest) {
 
     const valid = await verifyPassword(currentPassword, user.passwordHash);
     if (!valid) {
+      log.security("Change password failed: incorrect current password", { userId: session.userId });
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
     }
 
@@ -54,12 +57,13 @@ export async function POST(request: NextRequest) {
       .set({ passwordHash: newHash, updatedAt: Date.now() })
       .where(eq(users.id, session.userId));
 
+    log.info("Password changed successfully", { userId: session.userId });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    console.error("Change password error:", error);
+    log.error("Failed to change password", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

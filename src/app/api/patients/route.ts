@@ -17,6 +17,7 @@ import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { encryptField } from "@/lib/encryption";
 import { z } from "zod";
 
@@ -47,7 +48,9 @@ const createPatientSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/patients", session);
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_VIEW)) {
+    log.security("Permission denied: patients.view", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -123,7 +126,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/patients", session);
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_CREATE)) {
+    log.security("Permission denied: patients.create", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -206,12 +211,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    log.info("Patient created", { patientId, patientCode: newPatient.patientCode, orgCode });
     return NextResponse.json({ patient: newPatient }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("Create patient error:", error);
+    log.error("Failed to create patient", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -17,6 +17,7 @@ import { getDb } from "@/lib/db";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const createVisitSchema = z.object({
@@ -37,7 +38,9 @@ function generateVisitCode(date: string, seq: number): string {
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/visits", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_VIEW)) {
+    log.security("Permission denied: VISITS_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -105,7 +108,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/visits", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_CREATE)) {
+    log.security("Permission denied: VISITS_CREATE", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -191,10 +196,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    log.info("Visit created", { visitId: newVisit.id, visitCode, patientId, doctorId, visitDate });
     return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    console.error("Create visit error:", error);
+    log.error("Create visit error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

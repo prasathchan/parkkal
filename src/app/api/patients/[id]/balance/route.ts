@@ -3,6 +3,7 @@ import { eq, and, sum, count, max } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { visits, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/patients/[id]/balance", session);
 
   const { id } = await params;
   const db = getDb();
@@ -19,7 +21,10 @@ export async function GET(
     .select({ patientId: organizationPatients.patientId })
     .from(organizationPatients)
     .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
-  if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!orgLink) {
+    log.security("Forbidden: patient not in org", { patientId: id });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const orgId = session.orgId;
 

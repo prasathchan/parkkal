@@ -5,6 +5,7 @@ import { organizationMembers, organizations } from "@/db/schema";
 import { getPreOrgSession, createOrgToken } from "@/lib/auth";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  const log = logger.forRoute("POST /api/auth/select-org", preSession);
   try {
     const { orgId } = await request.json() as { orgId?: string };
     if (!orgId) {
@@ -53,10 +55,12 @@ export async function POST(request: NextRequest) {
       )[0];
 
     if (!membership) {
+      log.security("Org selection denied: not a member", { targetOrgId: orgId });
       return NextResponse.json({ error: "Not a member of this organization" }, { status: 403 });
     }
 
     if (!membership.memberIsActive || !membership.orgIsActive) {
+      log.security("Org selection denied: inactive account or org", { targetOrgId: orgId });
       return NextResponse.json({ error: "Your account or organization is inactive" }, { status: 403 });
     }
 
@@ -73,6 +77,7 @@ export async function POST(request: NextRequest) {
       permissions,
     });
 
+    log.info("Org selected", { selectedOrgId: orgId });
     const response = NextResponse.json({ success: true });
     response.cookies.set("pkd_org_session", orgToken, {
       ...COOKIE_OPTS,
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
     response.cookies.delete("pkd_session");
     return response;
   } catch (error) {
-    console.error("Select org error:", error);
+    log.error("Select org error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

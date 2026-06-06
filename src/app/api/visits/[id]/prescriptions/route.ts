@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { prescriptions, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const medicineSchema = z.object({
@@ -25,7 +26,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/visits/[id]/prescriptions", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_VIEW)) {
+    log.security("Permission denied: VISITS_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -53,7 +56,9 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/visits/[id]/prescriptions", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
+    log.security("Permission denied: VISITS_EDIT", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -96,5 +101,6 @@ export async function POST(
     })
     .returning();
 
+  log.info("Prescription created", { prescriptionId: rxId, visitId: id });
   return NextResponse.json({ prescription }, { status: 201 });
 }

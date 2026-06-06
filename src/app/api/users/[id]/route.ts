@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -19,12 +20,16 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/users/[id]", session);
 
   const { id } = await params;
 
   const isSelf = session.userId === id;
   if (!isSelf) {
-    if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (session.role !== "ADMIN") {
+      log.security("Permission denied: only ADMIN can update other users", { targetUserId: id, role: session.role });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     const db = getDb();
     const [membership] = await db.select().from(organizationMembers)
       .where(eq(organizationMembers.userId, id));
@@ -42,10 +47,11 @@ export async function PATCH(
       .select({ id: users.id, name: users.name, phone: users.phone, email: users.email, dateOfBirth: users.dateOfBirth, gender: users.gender, address: users.address })
       .from(users)
       .where(eq(users.id, id));
+    log.info("User profile updated", { targetUserId: id });
     return NextResponse.json({ user: updated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    console.error("Update user error:", error);
+    log.error("Update user error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

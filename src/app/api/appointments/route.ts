@@ -5,6 +5,7 @@ import { appointments, patients, users, organizationPatients } from "@/db/schema
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 // Detect the sentinel error raised by the BEFORE INSERT / BEFORE UPDATE triggers
@@ -26,7 +27,9 @@ const createSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/appointments", session);
   if (!await hasPermission(session, PERMISSIONS.APPOINTMENTS_VIEW)) {
+    log.security("Permission denied: appointments.view", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -93,7 +96,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/appointments", session);
   if (!await hasPermission(session, PERMISSIONS.APPOINTMENTS_CREATE)) {
+    log.security("Permission denied: appointments.create", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -128,6 +133,7 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(appointments).values(newAppt);
+    log.info("Appointment created", { appointmentId: newAppt.id, patientId: newAppt.patientId, doctorId: newAppt.doctorId });
     return NextResponse.json({ appointment: newAppt }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -139,7 +145,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    console.error("Create appointment error:", error);
+    log.error("Failed to create appointment", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

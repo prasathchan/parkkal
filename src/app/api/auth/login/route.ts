@@ -5,6 +5,7 @@ import { users, organizationMembers, organizations } from "@/db/schema";
 import { verifyPassword, createToken, createOrgToken } from "@/lib/auth";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/auth/login");
   try {
     const body = await request.json();
     const { email, password } = loginSchema.parse(body);
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
     const user = (await db.select().from(users).where(eq(users.email, email)))[0];
 
     if (!user) {
+      log.security("Login failed: user not found", { email });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
@@ -62,6 +65,7 @@ export async function POST(request: NextRequest) {
 
     const isValid = await verifyPassword(password, user.passwordHash);
     if (!isValid) {
+      log.security("Login failed: incorrect password", { userId: user.id });
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
     );
 
     if (activeMemberships.length === 0) {
+      log.security("Login failed: no active org memberships", { userId: user.id });
       return NextResponse.json(
         { error: "No organization access. Contact your administrator." },
         { status: 403 }
@@ -110,6 +115,7 @@ export async function POST(request: NextRequest) {
         orgRoleId: m.orgRoleId ?? null,
         permissions,
       });
+      log.info("Login successful: single org", { userId: user.id, orgId: m.orgId });
       const response = NextResponse.json({ redirect: "/dashboard" });
       response.cookies.set("pkd_org_session", orgToken, {
         ...COOKIE_OPTS,
@@ -134,6 +140,7 @@ export async function POST(request: NextRequest) {
         role: m.role,
       })),
     });
+    log.info("Login successful: multi-org selection required", { userId: user.id, orgCount: activeMemberships.length });
     response.cookies.set("pkd_session", preToken, {
       ...COOKIE_OPTS,
       maxAge: 60 * 60,
@@ -143,7 +150,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
-    console.error("Login error:", error);
+    log.error("Login error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

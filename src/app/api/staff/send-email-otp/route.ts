@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { sendEmailOTP } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const ACTIVATION_WINDOW_MS = 30 * 60 * 1000;
 
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many OTP requests. Please wait before trying again." }, { status: 429 });
   }
 
+  const log = logger.forRoute("POST /api/staff/send-email-otp");
   try {
     const body = await request.json() as { userId?: unknown };
     const userId = typeof body.userId === "string" ? body.userId : null;
@@ -78,13 +80,14 @@ export async function POST(request: NextRequest) {
     try {
       await sendEmailOTP(user.email, user.name, sixDigit);
     } catch (err) {
-      console.error("Failed to send email OTP:", err);
+      log.warn("Failed to send staff email OTP", { userId, error: String(err) });
     }
 
+    log.info("Staff email OTP sent", { userId });
     const masked = user.email.replace(/^(.{2}).*(@.*)$/, "$1***$2");
     return NextResponse.json({ sent: true, maskedEmail: masked });
   } catch (error) {
-    console.error("Send email OTP error:", error);
+    log.error("Send email OTP error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

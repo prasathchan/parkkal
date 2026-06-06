@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizations, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const updateOrgSchema = z.object({
@@ -17,18 +18,27 @@ const updateOrgSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/org/profile", session);
 
-  const db = getDb();
-  const org = (await db.select().from(organizations).where(eq(organizations.id, session.orgId)))[0];
-  if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-
-  return NextResponse.json({ organization: org });
+  try {
+    const db = getDb();
+    const org = (await db.select().from(organizations).where(eq(organizations.id, session.orgId)))[0];
+    if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    return NextResponse.json({ organization: org });
+  } catch (err) {
+    log.error("Failed to fetch org profile", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("PATCH /api/org/profile", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can update org profile", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json();
@@ -64,9 +74,10 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    log.info("Org profile updated");
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Update org error:", error);
+    log.error("Failed to update org profile", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const verifySchema = z.object({
@@ -12,6 +13,7 @@ const verifySchema = z.object({
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/auth/phone/verify-otp", session);
 
   try {
     const body = await request.json();
@@ -35,6 +37,7 @@ export async function POST(request: NextRequest) {
       );
 
     if (!token) {
+      log.security("Phone OTP verification failed: invalid or expired", { userId: session.userId });
       return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
     }
 
@@ -44,12 +47,13 @@ export async function POST(request: NextRequest) {
       .set({ used: 1 })
       .where(eq(verificationTokens.id, token.id));
 
+    log.info("Phone OTP verified", { userId: session.userId });
     return NextResponse.json({ verified: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("verify-otp error:", error);
+    log.error("Phone OTP verification error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

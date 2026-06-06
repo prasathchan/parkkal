@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users, organizationMembers } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   // Rate limit: 10 OTP verify attempts per IP per 15 minutes
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/staff/verify-phone");
   try {
     const body = await request.json() as { userId?: string; code?: string };
     const { userId, code } = body;
@@ -67,9 +69,10 @@ export async function POST(request: NextRequest) {
       .set({ used: 1 })
       .where(eq(verificationTokens.id, tokenRecord.id));
 
+    log.info("Staff phone verified and account activated", { userId });
     return NextResponse.json({ activated: true });
   } catch (error) {
-    console.error("Verify phone error:", error);
+    log.error("Verify phone error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { organizationMembers, users, organizations, orgRoles, verificationTokens
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { hashPassword } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { z } from "zod";
@@ -44,7 +45,9 @@ const addMemberSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/org/members", session);
   if (!await hasPermission(session, PERMISSIONS.STAFF_VIEW)) {
+    log.security("Permission denied: staff.view", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -103,7 +106,9 @@ export async function POST(request: NextRequest) {
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/org/members", session);
   if (!["ADMIN"].includes(session.role)) {
+    log.security("Permission denied: only ADMIN can add members", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -229,7 +234,7 @@ export async function POST(request: NextRequest) {
       try {
         await sendStaffInviteEmail(data.email, data.name ?? data.email, orgName, activationUrl);
       } catch (emailErr) {
-        console.error("Failed to send invite email:", emailErr);
+        log.warn("Failed to send staff invite email", { email: data.email, error: String(emailErr) });
       }
     }
 
@@ -249,12 +254,13 @@ export async function POST(request: NextRequest) {
     // Exclude passwordHash from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
+    log.info("Staff member added", { newUserId: existingUser.id, role: data.role, isNewUser, activationMode: data.activationMode });
     return NextResponse.json({ member, user: safeUser }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("Add member error:", error);
+    log.error("Failed to add member", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: NextRequest,
@@ -10,7 +11,11 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("POST /api/org/roles/[roleId]/migrate", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can migrate roles", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { roleId } = await params;
   const body = await request.json();
@@ -37,5 +42,7 @@ export async function POST(
   );
 
   await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
-  return NextResponse.json({ success: true, migratedCount: (result as { rowsAffected?: number }).rowsAffected ?? 0 });
+  const migratedCount = (result as { rowsAffected?: number }).rowsAffected ?? 0;
+  log.info("Role migrated and deleted", { sourceRoleId: roleId, targetRoleId, migratedCount });
+  return NextResponse.json({ success: true, migratedCount });
 }

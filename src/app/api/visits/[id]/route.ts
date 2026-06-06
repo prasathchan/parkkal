@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -22,7 +23,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/visits/[id]", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_VIEW)) {
+    log.security("Permission denied: VISITS_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -98,7 +101,9 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/visits/[id]", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
+    log.security("Permission denied: VISITS_EDIT", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -119,6 +124,7 @@ export async function PATCH(
   const CLINICAL_FIELDS = ["diagnosis", "doctorNotes", "status"] as const;
   const hasClinicalChange = CLINICAL_FIELDS.some((f) => f in body);
   if (hasClinicalChange && session.role !== "DOCTOR" && session.role !== "ADMIN") {
+    log.security("Permission denied: clinical changes require DOCTOR/ADMIN role", { role: session.role });
     return NextResponse.json(
       { error: "Only doctors and admins can update clinical records" },
       { status: 403 }
@@ -171,6 +177,7 @@ export async function PATCH(
   const [updated] = await db.select().from(visits).where(
     and(eq(visits.id, id), eq(visits.organizationId, session.orgId))
   );
+  log.info("Visit updated", { visitId: id, updatedFields: Object.keys(updates).filter(k => k !== "updatedAt") });
   return NextResponse.json({ visit: updated });
 }
 
@@ -180,9 +187,11 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/visits/[id]", session);
 
   // Only ADMIN can delete visit records — deletion destroys clinical history.
   if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can delete visits", { role: session.role });
     return NextResponse.json({ error: "Only admins can delete visits" }, { status: 403 });
   }
 
@@ -213,5 +222,6 @@ export async function DELETE(
   await db.delete(visitItems).where(eq(visitItems.visitId, id));
   await db.delete(visits).where(eq(visits.id, id));
 
+  log.info("Visit deleted", { visitId: id });
   return NextResponse.json({ success: true });
 }

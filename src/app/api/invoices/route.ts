@@ -5,6 +5,7 @@ import { invoices, invoiceTreatments, patients, organizationPatients, treatments
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -21,7 +22,9 @@ const createSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/invoices", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_VIEW)) {
+    log.security("Permission denied: billing.view", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -65,8 +68,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/invoices", session);
 
   if (!await hasPermission(session, PERMISSIONS.BILLING_CREATE)) {
+    log.security("Permission denied: billing.create", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -134,12 +139,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    log.info("Invoice created", { invoiceId, patientId: data.patientId, totalAmount: data.totalAmount });
     return NextResponse.json({ invoice: newInvoice }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("Create invoice error:", error);
+    log.error("Failed to create invoice", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

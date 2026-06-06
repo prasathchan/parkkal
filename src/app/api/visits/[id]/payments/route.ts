@@ -17,6 +17,7 @@ import { getDb } from "@/lib/db";
 import { payments, visits, visitTreatments, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const createPaymentSchema = z.object({
@@ -37,7 +38,10 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const log = logger.forRoute("GET /api/visits/[id]/payments", session);
   const { id } = await params;
+
+  try {
   const db = getDb();
   const [visit] = await db
     .select({ organizationId: visits.organizationId })
@@ -64,6 +68,10 @@ export async function GET(
     .where(eq(payments.visitId, id));
 
   return NextResponse.json({ payments: rows });
+  } catch (err) {
+    log.error("Failed to fetch payments", err, { visitId: id });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(
@@ -76,12 +84,14 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const log = logger.forRoute("POST /api/visits/[id]/payments", session);
   const { id } = await params;
 
   let body: unknown;
   try {
     body = await request.json();
-  } catch {
+  } catch (err) {
+    log.warn("Malformed JSON body", { visitId: id, error: String(err) });
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -139,19 +149,24 @@ export async function POST(
     recordedBy: session.userId,
   };
 
-  await db.insert(payments).values(newPayment);
+  try {
+    await db.insert(payments).values(newPayment);
 
-  // Recompute paidAmount from SUM of all payment records — self-healing against drift.
-  await db
-    .update(visits)
-    .set({
-      paidAmount: sql`MIN(total_amount, (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE visit_id = ${id}))`,
-      updatedAt: Date.now(),
-    })
-    .where(eq(visits.id, id));
+    // Recompute paidAmount from SUM of all payment records — self-healing against drift.
+    await db
+      .update(visits)
+      .set({
+        paidAmount: sql`MIN(total_amount, (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE visit_id = ${id}))`,
+        updatedAt: Date.now(),
+      })
+      .where(eq(visits.id, id));
+  } catch (err) {
+    log.error("Failed to insert payment", err, { visitId: id, amount, paymentMethod });
+    return NextResponse.json({ error: "Failed to record payment. Please try again." }, { status: 500 });
+  }
 
   // Intentionally NOT auto-completing the visit on full payment.
   // Clinical completion must be an explicit doctor action, not a financial side-effect.
-
+  log.info("Payment recorded", { visitId: id, paymentId: newPayment.id, amount, paymentMethod });
   return NextResponse.json({ payment: newPayment }, { status: 201 });
 }

@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { storeFile, deleteFile } from "@/lib/storage";
+import { logger } from "@/lib/logger";
 
 // SVG excluded: can contain embedded JS served as HTML by some browsers
 const ALLOWED_TYPES: Record<string, string> = {
@@ -16,7 +17,11 @@ const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("POST /api/org/logo", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can upload logo", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const formData = await request.formData();
@@ -48,9 +53,10 @@ export async function POST(request: NextRequest) {
       .set({ logoUrl, updatedAt: Date.now() })
       .where(eq(organizations.id, session.orgId));
 
+    log.info("Logo uploaded", { logoUrl });
     return NextResponse.json({ logoUrl });
   } catch (error) {
-    console.error("Logo upload error:", error);
+    log.error("Logo upload failed", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
@@ -58,7 +64,11 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("DELETE /api/org/logo", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can delete logo", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const db = getDb();
   const [org] = await db
@@ -77,5 +87,6 @@ export async function DELETE(request: NextRequest) {
     .set({ logoUrl: null, updatedAt: Date.now() })
     .where(eq(organizations.id, session.orgId));
 
+  log.info("Logo deleted");
   return NextResponse.json({ success: true });
 }

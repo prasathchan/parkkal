@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchItemSchema = z.object({
@@ -21,7 +22,9 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/visits/[id]/items/[itemId]", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
+    log.security("Permission denied: BILLING_EDIT", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -83,6 +86,7 @@ export async function PATCH(
   await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
 
   const [updated] = await db.select().from(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+  log.info("Visit item updated", { itemId, visitId: id });
   return NextResponse.json({ item: updated });
 }
 
@@ -92,7 +96,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/visits/[id]/items/[itemId]", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
+    log.security("Permission denied: BILLING_EDIT", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -117,5 +123,6 @@ export async function DELETE(
     .where(eq(visitItems.visitId, id));
   await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
 
+  log.info("Visit item deleted", { itemId, visitId: id });
   return NextResponse.json({ success: true });
 }

@@ -3,13 +3,15 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { emergencyContacts, organizationPatients, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/emergency-contacts/[id]", session);
+  const { id } = await params;
 
   try {
-    const { id } = await params;
     const db = getDb();
 
     const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
@@ -40,9 +42,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (address !== undefined) updates.address = address;
 
     await db.update(emergencyContacts).set(updates).where(eq(emergencyContacts.id, id));
+    log.info("Emergency contact updated", { contactId: id });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Update emergency contact error:", error);
+    log.error("Failed to update emergency contact", error, { contactId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -50,9 +53,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/emergency-contacts/[id]", session);
+  const { id } = await params;
 
   try {
-    const { id } = await params;
     const db = getDb();
 
     const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
@@ -74,9 +78,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
+    log.info("Emergency contact deleted", { contactId: id });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete emergency contact error:", error);
+    log.error("Failed to delete emergency contact", error, { contactId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

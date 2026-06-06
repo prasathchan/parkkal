@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { salaryRecords } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -16,10 +17,14 @@ const patchSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("PATCH /api/org/salary/[id]", session);
+  const { id } = await params;
+  if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) {
+    log.security("Permission denied: salary.manage", {});
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
-    const { id } = await params;
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) {
@@ -50,10 +55,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await db.update(salaryRecords).set(updates).where(
       and(eq(salaryRecords.id, id), eq(salaryRecords.organizationId, session.orgId))
     );
+    log.info("Salary record updated", { salaryRecordId: id });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    console.error("Update salary record error:", error);
+    log.error("Failed to update salary record", error, { salaryRecordId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

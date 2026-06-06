@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { deleteFile } from "@/lib/storage";
 
 export async function DELETE(
@@ -12,7 +13,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/visits/[id]/attachments/[attachmentId]", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
+    log.security("Permission denied: VISITS_EDIT", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -34,5 +37,6 @@ export async function DELETE(
   await deleteFile(key).catch(() => {});
 
   await db.delete(attachments).where(and(eq(attachments.id, attachmentId), eq(attachments.visitId, id)));
+  log.info("Attachment deleted", { attachmentId, visitId: id });
   return NextResponse.json({ success: true });
 }

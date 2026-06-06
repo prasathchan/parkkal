@@ -4,11 +4,16 @@ import { getDb } from "@/lib/db";
 import { salaryRecords, organizationMembers, users, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasPermission(session, PERMISSIONS.SALARY_VIEW))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("GET /api/org/salary", session);
+  if (!(await hasPermission(session, PERMISSIONS.SALARY_VIEW))) {
+    log.security("Permission denied: salary.view", {});
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const rawMonth = searchParams.get("month") || new Date().toISOString().slice(0, 7);
@@ -44,7 +49,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("POST /api/org/salary", session);
+  if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) {
+    log.security("Permission denied: salary.manage", {});
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json() as Record<string, unknown>;
@@ -142,9 +151,10 @@ export async function POST(request: NextRequest) {
       created.push(record);
     }
 
+    log.info("Salary records generated", { month, created: created.length });
     return NextResponse.json({ created: created.length, month });
   } catch (error) {
-    console.error("Generate salary error:", error);
+    log.error("Failed to generate salary records", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

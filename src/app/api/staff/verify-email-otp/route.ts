@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
@@ -11,6 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many verification attempts. Please wait." }, { status: 429 });
   }
 
+  const log = logger.forRoute("POST /api/staff/verify-email-otp");
   try {
     const body = await request.json() as { userId?: unknown; code?: unknown };
     const userId = typeof body.userId === "string" ? body.userId : null;
@@ -54,9 +56,10 @@ export async function POST(request: NextRequest) {
 
     await db.update(verificationTokens).set({ used: 1 }).where(eq(verificationTokens.id, tokenRecord.id));
 
+    log.info("Staff email OTP verified", { userId });
     return NextResponse.json({ verified: true });
   } catch (error) {
-    console.error("Verify email OTP error:", error);
+    log.error("Verify email OTP error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

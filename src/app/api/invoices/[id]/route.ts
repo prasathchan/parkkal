@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { invoices, patients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -17,31 +18,37 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/invoices/[id]", session);
 
   const { id } = await params;
-  const db = getDb();
-  const rows = await db
-    .select({
-      id: invoices.id,
-      patientId: invoices.patientId,
-      totalAmount: invoices.totalAmount,
-      paidAmount: invoices.paidAmount,
-      status: invoices.status,
-      notes: invoices.notes,
-      createdAt: invoices.createdAt,
-      updatedAt: invoices.updatedAt,
-      organizationId: invoices.organizationId,
-      patientName: patients.name,
-    })
-    .from(invoices)
-    .leftJoin(patients, eq(invoices.patientId, patients.id))
-    .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({
+        id: invoices.id,
+        patientId: invoices.patientId,
+        totalAmount: invoices.totalAmount,
+        paidAmount: invoices.paidAmount,
+        status: invoices.status,
+        notes: invoices.notes,
+        createdAt: invoices.createdAt,
+        updatedAt: invoices.updatedAt,
+        organizationId: invoices.organizationId,
+        patientName: patients.name,
+      })
+      .from(invoices)
+      .leftJoin(patients, eq(invoices.patientId, patients.id))
+      .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
-  if (rows.length === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ invoice: rows[0] });
+  } catch (err) {
+    log.error("Failed to fetch invoice", err, { invoiceId: id });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json({ invoice: rows[0] });
 }
 
 const BILLING_ROLES = ["ADMIN", "RECEPTIONIST"];
@@ -52,7 +59,9 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/invoices/[id]", session);
   if (!BILLING_ROLES.includes(session.role)) {
+    log.security("Permission denied: billing role required to update invoice", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -118,11 +127,13 @@ export async function PATCH(
       .from(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
+    log.info("Invoice updated", { invoiceId: id, status, newPaidAmount });
     return NextResponse.json({ invoice: updated[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
+    log.error("Failed to update invoice", error, { invoiceId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

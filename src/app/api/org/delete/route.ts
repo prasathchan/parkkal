@@ -24,12 +24,16 @@ import {
   users,
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN")
+  const log = logger.forRoute("POST /api/org/delete", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can delete org", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await request.json() as { confirmName?: string };
   if (!body.confirmName)
@@ -149,5 +153,6 @@ export async function POST(request: NextRequest) {
 
   await db.delete(organizations).where(eq(organizations.id, orgId));
 
+  log.info("Organization deleted", { deletedOrgId: orgId });
   return NextResponse.json({ deleted: true });
 }

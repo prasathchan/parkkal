@@ -7,6 +7,7 @@ import { hashPassword } from "@/lib/auth";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
+import { logger } from "@/lib/logger";
 
 const signupSchema = z.object({
   name: z.string().min(2),
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/auth/signup");
   try {
     const body = await request.json();
     const { name, email, password, phone, clinicName } = signupSchema.parse(body);
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
       await db.insert(orgRoles).values(roleRows);
     } catch (e) {
       // org_roles table may not exist on un-migrated DBs — don't block signup.
-      console.error("Default role seeding skipped:", e);
+      log.warn("Default role seeding skipped", { error: String(e) });
       adminRoleId = null;
     }
 
@@ -224,6 +226,7 @@ export async function POST(request: NextRequest) {
       sendSMSOTP(phone, phoneCode),
     ]);
 
+    log.info("Signup completed", { userId, orgId });
     return NextResponse.json({ userId });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -232,7 +235,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("Signup error:", error);
+    log.error("Signup error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

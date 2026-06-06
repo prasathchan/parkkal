@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 type Params = { params: Promise<{ id: string }> };
@@ -19,7 +20,9 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/visits/[id]/treatments", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_VIEW)) {
+    log.security("Permission denied: TREATMENTS_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -96,7 +99,9 @@ const createAndLinkSchema = z.object({
 export async function POST(request: NextRequest, { params }: Params) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/visits/[id]/treatments", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_CREATE)) {
+    log.security("Permission denied: TREATMENTS_CREATE", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -146,6 +151,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
     }
 
+    log.info("Treatment plan linked to visit", { visitId, treatmentId: parsed.data.treatmentId });
     return NextResponse.json({ success: true, treatmentId: parsed.data.treatmentId });
   }
 
@@ -196,6 +202,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     createdAt: now,
   });
 
+  log.info("Treatment plan created and linked to visit", { visitId, treatmentId });
   return NextResponse.json({ success: true, treatmentId }, { status: 201 });
 }
 
@@ -204,7 +211,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 export async function DELETE(request: NextRequest, { params }: Params) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/visits/[id]/treatments", session);
   if (!["ADMIN", "DOCTOR", "NURSE"].includes(session.role)) {
+    log.security("Permission denied: only ADMIN/DOCTOR/NURSE can unlink treatments", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -224,5 +233,6 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     and(eq(visitTreatments.visitId, visitId), eq(visitTreatments.treatmentId, treatmentId))
   );
 
+  log.info("Treatment plan unlinked from visit", { visitId, treatmentId });
   return NextResponse.json({ success: true });
 }

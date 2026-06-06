@@ -6,6 +6,7 @@ import { users, verificationTokens } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
+import { logger } from "@/lib/logger";
 
 const resendSchema = z.object({
   userId: z.string(),
@@ -33,6 +34,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/auth/resend-otp");
   try {
     const body = await request.json();
     const { userId, type } = resendSchema.parse(body);
@@ -96,7 +98,7 @@ export async function POST(request: NextRequest) {
       try {
         await sendEmailOTP(user.email, user.name, code);
       } catch (sendErr) {
-        console.error("[resend-otp] Email send failed:", sendErr);
+        log.warn("Email send failed for OTP resend", { userId, error: String(sendErr) });
         return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
       }
     } else {
@@ -106,17 +108,18 @@ export async function POST(request: NextRequest) {
       try {
         await sendSMSOTP(user.phone, code);
       } catch (sendErr) {
-        console.error("[resend-otp] SMS send failed:", sendErr);
+        log.warn("SMS send failed for OTP resend", { userId, error: String(sendErr) });
         return NextResponse.json({ error: "Failed to send SMS. Check your phone number or try again shortly." }, { status: 502 });
       }
     }
 
+    log.info("OTP resent", { userId, type });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
-    console.error("Resend OTP error:", error);
+    log.error("Resend OTP error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

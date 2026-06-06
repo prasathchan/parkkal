@@ -9,6 +9,7 @@ function isSlotTaken(err: unknown): boolean {
 import { getDb } from "@/lib/db";
 import { appointments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -25,12 +26,18 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/appointments/[id]", session);
 
   const { id } = await params;
-  const db = getDb();
-  const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
-  if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ appointment: appt });
+  try {
+    const db = getDb();
+    const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
+    if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ appointment: appt });
+  } catch (err) {
+    log.error("Failed to fetch appointment", err, { appointmentId: id });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function PATCH(
@@ -39,9 +46,10 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/appointments/[id]", session);
+  const { id } = await params;
 
   try {
-    const { id } = await params;
     const db = getDb();
 
     const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
@@ -84,6 +92,7 @@ export async function PATCH(
 
     await db.update(appointments).set(data).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     const updated = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
+    log.info("Appointment updated", { appointmentId: id });
     return NextResponse.json({ appointment: updated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -93,6 +102,7 @@ export async function PATCH(
         { status: 409 }
       );
     }
+    log.error("Failed to update appointment", error, { appointmentId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -103,7 +113,9 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/appointments/[id]", session);
   if (!["ADMIN", "RECEPTIONIST"].includes(session.role)) {
+    log.security("Permission denied: insufficient role to delete appointment", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -128,5 +140,6 @@ export async function DELETE(
   }
 
   await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+  log.info("Appointment deleted", { appointmentId: id });
   return NextResponse.json({ success: true });
 }

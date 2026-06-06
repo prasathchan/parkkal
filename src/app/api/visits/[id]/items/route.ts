@@ -16,6 +16,7 @@ import { getDb } from "@/lib/db";
 import { visitItems, visits, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const createItemSchema = z.object({
@@ -34,7 +35,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/visits/[id]/items", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_VIEW)) {
+    log.security("Permission denied: BILLING_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -55,7 +58,9 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/visits/[id]/items", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_CREATE)) {
+    log.security("Permission denied: BILLING_CREATE", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -124,9 +129,10 @@ export async function POST(
       .set({ totalAmount: sql`total_amount + ${amount}`, updatedAt: Date.now() })
       .where(eq(visits.id, id));
   } catch (err) {
-    console.error("Add visit item error:", err);
+    log.error("Add visit item error", err);
     return NextResponse.json({ error: "Failed to add item. Please try again." }, { status: 500 });
   }
 
+  log.info("Visit item added", { itemId: newItem.id, visitId: id, category, amount });
   return NextResponse.json({ item: newItem }, { status: 201 });
 }

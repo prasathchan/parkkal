@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { patients, organizationPatients, appointments, treatments, visitTreatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts, consentAuditLog } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
@@ -26,7 +27,9 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/patients/[id]", session);
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_VIEW)) {
+    log.security("Permission denied: patients.view", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -63,12 +66,14 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/patients/[id]", session);
+  const { id } = await params;
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_EDIT)) {
+    log.security("Permission denied: patients.edit", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
-    const { id } = await params;
     const db = getDb();
 
     const orgLink = (await db.select().from(organizationPatients)
@@ -102,10 +107,11 @@ export async function PATCH(
       };
       return NextResponse.json({ patient: decrypted });
     }
+    log.info("Patient updated", { patientId: id });
     return NextResponse.json({ patient: { ...updated, panNumber: null, aadhaarNumber: null } });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    console.error("Update patient error:", error);
+    log.error("Failed to update patient", error, { patientId: id });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -116,7 +122,11 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("DELETE /api/patients/[id]", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can delete patients", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
   const db = getDb();
@@ -159,5 +169,6 @@ export async function DELETE(
   await db.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
   await db.delete(patients).where(eq(patients.id, id));
 
+  log.info("Patient deleted", { patientId: id });
   return NextResponse.json({ success: true });
 }

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, gte, lte, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { treatments, patients, users, organizationPatients, organizationMembers, visits } from "@/db/schema";
+import { treatments, patients, users, organizationPatients, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const createTreatmentSchema = z.object({
@@ -15,20 +16,20 @@ const createTreatmentSchema = z.object({
   cost: z.number().default(0),
   status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED"]).default("PLANNED"),
   appointmentId: z.string().optional(),
-  visitId: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/treatments", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_VIEW)) {
+    log.security("Permission denied: TREATMENTS_VIEW", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
   const patientIdFilter = searchParams.get("patientId");
   const dateFilter = searchParams.get("date");
-  const visitIdFilter = searchParams.get("visitId");
   const doctorIdFilter =
     session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
 
@@ -36,7 +37,6 @@ export async function GET(request: NextRequest) {
 
   const conditions = [eq(treatments.organizationId, session.orgId)];
   if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
-  if (visitIdFilter) conditions.push(eq(treatments.visitId, visitIdFilter));
   if (doctorIdFilter) conditions.push(eq(treatments.doctorId, doctorIdFilter));
   if (dateFilter) {
     const dayStart = new Date(dateFilter + "T00:00:00").getTime();
@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
       id: treatments.id,
       patientId: treatments.patientId,
       doctorId: treatments.doctorId,
-      visitId: treatments.visitId,
       appointmentId: treatments.appointmentId,
       description: treatments.description,
       toothNumbers: treatments.toothNumbers,
@@ -89,7 +88,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("POST /api/treatments", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_CREATE)) {
+    log.security("Permission denied: TREATMENTS_CREATE", {});
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -123,12 +124,6 @@ export async function POST(request: NextRequest) {
       ));
     if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
 
-    if (data.visitId) {
-      const [visit] = await db.select({ id: visits.id }).from(visits)
-        .where(and(eq(visits.id, data.visitId), eq(visits.organizationId, session.orgId)));
-      if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-    }
-
     const treatment = {
       id: crypto.randomUUID(),
       organizationId: session.orgId,
@@ -140,18 +135,18 @@ export async function POST(request: NextRequest) {
       cost: data.cost,
       status: data.status,
       appointmentId: data.appointmentId ?? null,
-      visitId: data.visitId ?? null,
       createdAt: Date.now(),
     };
 
     await db.insert(treatments).values(treatment);
 
+    log.info("Treatment created", { treatmentId: treatment.id, patientId: treatment.patientId, doctorId: treatment.doctorId });
     return NextResponse.json({ treatment }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("Create treatment error:", error);
+    log.error("Create treatment error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

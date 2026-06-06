@@ -6,6 +6,7 @@ import { users, organizations, organizationMembers, verificationTokens } from "@
 import { createOrgToken } from "@/lib/auth-edge";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 // Limit OTP guesses to prevent brute-forcing the 6-digit codes.
 // 10 attempts per 15 min per IP, and 20 per 15 min per userId.
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/auth/verify");
   try {
     const body = await request.json();
     const { userId, emailCode, phoneCode } = verifySchema.parse(body);
@@ -68,6 +70,7 @@ export async function POST(request: NextRequest) {
 
     const emailToken = emailTokens[0];
     if (!emailToken) {
+      log.security("Signup verification failed: invalid email code", { userId });
       return NextResponse.json({ error: "Invalid email code" }, { status: 400 });
     }
 
@@ -87,6 +90,7 @@ export async function POST(request: NextRequest) {
 
     const phoneToken = phoneTokens[0];
     if (!phoneToken) {
+      log.security("Signup verification failed: invalid phone code", { userId });
       return NextResponse.json({ error: "Invalid phone code" }, { status: 400 });
     }
 
@@ -160,6 +164,7 @@ export async function POST(request: NextRequest) {
       permissions,
     });
 
+    log.info("Signup verification successful", { userId, orgId: m.orgId });
     const response = NextResponse.json({ redirect: "/dashboard" });
     response.cookies.set("pkd_org_session", orgToken, {
       ...COOKIE_OPTS,
@@ -171,7 +176,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
-    console.error("Verify error:", error);
+    log.error("Signup verification error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

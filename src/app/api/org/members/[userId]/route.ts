@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -16,10 +17,14 @@ const patchSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("PATCH /api/org/members/[userId]", session);
+  const { userId } = await params;
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can update members", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
-    const { userId } = await params;
     const body = await request.json();
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) {
@@ -46,10 +51,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await db.update(organizationMembers).set(updates).where(
       and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
     );
+    log.info("Member updated", { targetUserId: userId, updates: Object.keys(updates) });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    console.error("Update member error:", error);
+    log.error("Failed to update member", error, { targetUserId: userId });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -57,7 +63,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("DELETE /api/org/members/[userId]", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can remove members", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { userId } = await params;
 
@@ -76,5 +86,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   await db.delete(organizationMembers).where(
     and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
   );
+  log.info("Member removed from org", { targetUserId: userId });
   return NextResponse.json({ success: true });
 }

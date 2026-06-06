@@ -3,10 +3,12 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { emergencyContacts, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("GET /api/patients/[id]/emergency-contacts", session);
 
   try {
     const { id: patientId } = await params;
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ contacts });
   } catch (error) {
-    console.error("Get emergency contacts error:", error);
+    log.error("Failed to get patient emergency contacts", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

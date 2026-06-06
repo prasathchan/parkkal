@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -16,7 +17,11 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const log = logger.forRoute("PATCH /api/org/members/[userId]/portal-access", session);
+  if (session.role !== "ADMIN") {
+    log.security("Permission denied: only ADMIN can toggle portal access", { role: session.role });
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { userId } = await params;
 
@@ -101,7 +106,7 @@ export async function PATCH(
             activationUrl
           );
         } catch (emailErr) {
-          console.error("[portal-access] Failed to send invite email:", emailErr);
+          log.warn("Failed to send portal access invite email", { userId, error: String(emailErr) });
           // Don't fail — the membership update is already committed.
         }
       }
@@ -133,12 +138,13 @@ export async function PATCH(
       }
     }
 
+    log.info("Portal access updated", { targetUserId: userId, grant });
     return NextResponse.json({ success: true, portalAccess: grant ? 1 : 0 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
-    console.error("[portal-access] error:", error);
+    log.error("Failed to update portal access", error, { targetUserId: userId });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

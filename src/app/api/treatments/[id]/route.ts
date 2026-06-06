@@ -3,6 +3,7 @@ import { eq, and, sum } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { treatments, visitTreatments, invoiceTreatments, consentAuditLog, visitItems } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -31,8 +32,10 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("PATCH /api/treatments/[id]", session);
 
   if (!TREATMENT_EDIT_ROLES.includes(session.role)) {
+    log.security("Permission denied: role not in TREATMENT_EDIT_ROLES", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -56,6 +59,7 @@ export async function PATCH(
       data.procedure !== undefined ||
       data.toothNumbers !== undefined;
     if (hasClinicalEdits && !CLINICAL_ROLES.includes(session.role)) {
+      log.security("Permission denied: clinical edits require clinical role", { role: session.role });
       return NextResponse.json(
         { error: "Forbidden: only clinical staff can edit treatment details" },
         { status: 403 }
@@ -90,11 +94,13 @@ export async function PATCH(
       and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId))
     );
 
+    log.info("Treatment updated", { treatmentId: id, updatedFields: Object.keys(updates) });
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
     }
+    log.error("Update treatment error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -105,9 +111,11 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const log = logger.forRoute("DELETE /api/treatments/[id]", session);
 
   // Treatment deletion is irreversible clinical record destruction — ADMIN and DOCTOR only
   if (!["ADMIN", "DOCTOR"].includes(session.role)) {
+    log.security("Permission denied: only ADMIN/DOCTOR can delete treatments", { role: session.role });
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -141,5 +149,6 @@ export async function DELETE(
     and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId))
   );
 
+  log.info("Treatment deleted", { treatmentId: id });
   return NextResponse.json({ success: true });
 }

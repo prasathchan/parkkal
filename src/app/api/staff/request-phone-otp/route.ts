@@ -3,6 +3,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 // Activation window: a STAFF_INVITE token must have been used within this many ms
 // for the userId to be considered "in activation flow" and allowed to set their phone.
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const log = logger.forRoute("POST /api/staff/request-phone-otp");
   try {
     const body = await request.json() as { userId?: string; phone?: string };
     const { userId, phone } = body;
@@ -105,9 +107,9 @@ export async function POST(request: NextRequest) {
 
     if (!sid || !authToken || !from) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn("[SMS] Twilio not configured — OTP:", otp);
+        log.warn("Twilio not configured — skipping SMS send in dev", { userId });
       } else {
-        console.warn("[SMS] Twilio not configured — skipping SMS send.");
+        log.warn("Twilio not configured — skipping SMS send", {});
       }
       return NextResponse.json({ sent: true });
     }
@@ -131,13 +133,14 @@ export async function POST(request: NextRequest) {
 
     if (!smsRes.ok) {
       const err = await smsRes.text();
-      console.error("[SMS] Twilio error:", err);
+      log.error("Twilio SMS send failed", new Error(err), { userId });
       return NextResponse.json({ error: "Failed to send SMS. Please try again." }, { status: 500 });
     }
 
+    log.info("Phone OTP sent via Twilio", { userId });
     return NextResponse.json({ sent: true });
   } catch (error) {
-    console.error("Request phone OTP error:", error);
+    log.error("Request phone OTP error", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
