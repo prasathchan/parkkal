@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Find valid EMAIL token
+    // Find valid EMAIL token — expiry check pushed to SQL to avoid loading expired rows
     const emailTokens = await db
       .select()
       .from(verificationTokens)
@@ -61,16 +61,17 @@ export async function POST(request: NextRequest) {
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "EMAIL"),
           eq(verificationTokens.code, emailCode),
-          eq(verificationTokens.used, 0)
+          eq(verificationTokens.used, 0),
+          gt(verificationTokens.expiresAt, now)
         )
       );
 
-    const emailToken = emailTokens.find((t: (typeof emailTokens)[number]) => t.expiresAt > now);
+    const emailToken = emailTokens[0];
     if (!emailToken) {
       return NextResponse.json({ error: "Invalid email code" }, { status: 400 });
     }
 
-    // Find valid PHONE token
+    // Find valid PHONE token — expiry check pushed to SQL
     const phoneTokens = await db
       .select()
       .from(verificationTokens)
@@ -79,11 +80,12 @@ export async function POST(request: NextRequest) {
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "PHONE"),
           eq(verificationTokens.code, phoneCode),
-          eq(verificationTokens.used, 0)
+          eq(verificationTokens.used, 0),
+          gt(verificationTokens.expiresAt, now)
         )
       );
 
-    const phoneToken = phoneTokens.find((t: (typeof phoneTokens)[number]) => t.expiresAt > now);
+    const phoneToken = phoneTokens[0];
     if (!phoneToken) {
       return NextResponse.json({ error: "Invalid phone code" }, { status: 400 });
     }
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
       .where(eq(organizations.id, m.orgId));
     await db
       .update(organizationMembers)
-      .set({ isActive: 1 })
+      .set({ isActive: 1, portalAccess: 1 })
       .where(eq(organizationMembers.id, m.orgMemberId));
 
     // Load user details

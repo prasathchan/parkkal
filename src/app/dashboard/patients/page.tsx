@@ -31,18 +31,23 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
 
   const fetchPatients = useCallback(async (q: string, off: number) => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(off) });
       if (q) params.set("search", q);
       const res = await fetch(`/api/patients?${params}`);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       setPatients(data.patients || []);
       setTotal(data.total ?? 0);
+    } catch {
+      setErrorMsg("Failed to load patients. Please refresh the page.");
     } finally {
       setLoading(false);
     }
@@ -65,10 +70,17 @@ export default function PatientsPage() {
       />
 
       <main className="flex-1 p-6">
+        {errorMsg && (
+          <div className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <span>{errorMsg}</span>
+            <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 font-medium">✕</button>
+          </div>
+        )}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input
               type="search"
+              aria-label="Search patients"
               placeholder="Search by name, phone, or patient code..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}

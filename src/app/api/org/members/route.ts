@@ -29,7 +29,10 @@ const addMemberSchema = z.object({
   // set_password  → admin sets password, account active immediately
   // no_login_verify → active HR record, login disabled, send device-verify link
   activationMode: z.enum(["invite_link", "set_password", "no_login_verify"]).default("invite_link"),
-  password: z.string().min(6).optional(),
+  password: z.string().min(8).regex(
+    /^(?=.*[A-Za-z])(?=.*\d).+$/,
+    "Password must contain at least one letter and one number"
+  ).optional(),
   emergencyContact: z.object({
     name: z.string().min(1),
     relationship: z.string().min(1),

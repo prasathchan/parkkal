@@ -11,7 +11,10 @@ import { sendSMSOTP } from "@/lib/sms";
 const signupSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8).regex(
+    /^(?=.*[A-Za-z])(?=.*\d).+$/,
+    "Password must contain at least one letter and one number"
+  ),
   phone: z.string().min(10).max(16).transform((p) => {
     const digits = p.replace(/\D/g, "");
     if (p.startsWith("+")) return p;
