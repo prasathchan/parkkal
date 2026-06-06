@@ -50,7 +50,7 @@ export default function BillingPage() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchData = useCallback(async (pageIdx: number, searchStr: string, filterVal: BillingFilter) => {
+  const fetchData = useCallback(async (pageIdx: number, searchStr: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -74,7 +74,7 @@ export default function BillingPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(page, search, filter);
+    fetchData(page, search);
   }, [fetchData, page, search, filter]);
 
   function handleSearchChange(value: string) {
@@ -111,7 +111,7 @@ export default function BillingPage() {
         body: JSON.stringify({ amount: due, paymentMethod: payMethod }),
       });
       if (res.ok) {
-        await fetchData(page, search, filter);
+        await fetchData(page, search);
       } else {
         const d = await res.json();
         setErrorMsg(d.error || "Failed to record payment");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/header";
 
 interface SalaryRecord {
@@ -26,17 +26,17 @@ export default function SalaryPage() {
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    fetchRecords();
-  }, [month]);
-
-  async function fetchRecords() {
+  const fetchRecords = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`/api/org/salary?month=${month}`);
     const data = await res.json();
     setRecords(data.records || []);
     setLoading(false);
-  }
+  }, [month]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   async function generateRecords() {
     setGenerating(true);
@@ -120,7 +120,7 @@ export default function SalaryPage() {
         ) : records.length === 0 ? (
           <div className="text-center py-12 text-slate-500">
             <p>No salary records for {month}.</p>
-            <p className="text-sm mt-1">Click "Generate Records" to create them.</p>
+            <p className="text-sm mt-1">Click &ldquo;Generate Records&rdquo; to create them.</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">

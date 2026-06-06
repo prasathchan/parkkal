@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, orgRoles, verificationTokens, emergencyContacts } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { z } from "zod";
 
@@ -72,13 +73,20 @@ export async function GET(request: NextRequest) {
 
   // Strip national IDs and salary info from non-ADMIN callers
   type MemberRow = (typeof rows)[number];
-  const members: unknown[] = session.role === "ADMIN"
-    ? rows
-    : rows.map((r: MemberRow) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { panNumber, aadhaarNumber, salaryType, salaryAmount, ...rest } = r;
-        return rest;
-      });
+  let members: unknown[];
+  if (session.role === "ADMIN") {
+    members = await Promise.all(rows.map(async (r: MemberRow) => ({
+      ...r,
+      panNumber: await decryptField(r.panNumber) ?? null,
+      aadhaarNumber: await decryptField(r.aadhaarNumber) ?? null,
+    })));
+  } else {
+    members = rows.map((r: MemberRow) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { panNumber, aadhaarNumber, salaryType, salaryAmount, ...rest } = r;
+      return rest;
+    });
+  }
 
   return NextResponse.json({ members });
 }
@@ -134,8 +142,8 @@ export async function POST(request: NextRequest) {
         dateOfBirth: data.dateOfBirth || null,
         gender: data.gender || null,
         address: data.address || null,
-        panNumber: data.panNumber || null,
-        aadhaarNumber: data.aadhaarNumber || null,
+        panNumber: await encryptField(data.panNumber || null) ?? null,
+        aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
         profileImageUrl: null,
         isActive: userIsActive,
         isVerified: userIsVerified,
@@ -232,6 +240,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Exclude passwordHash from response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
     return NextResponse.json({ member, user: safeUser }, { status: 201 });
   } catch (error) {

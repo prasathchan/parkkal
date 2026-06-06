@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
-import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
+import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 
 function validatePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");

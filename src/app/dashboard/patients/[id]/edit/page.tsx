@@ -30,7 +30,6 @@ const GENDERS: { value: string; label: string }[] = [
   { value: "FEMALE", label: "Female" },
   { value: "OTHER", label: "Other" },
 ];
-const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function PatientEditPage() {
   const { id } = useParams<{ id: string }>();

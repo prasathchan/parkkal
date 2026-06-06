@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/header";
-import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 
@@ -48,6 +47,8 @@ interface Payment {
   notes?: string | null;
   paidAt: number;
   recordedBy: string;
+  treatmentId?: string | null;
+  treatmentDescription?: string | null;
 }
 
 interface Attachment {
@@ -118,11 +119,17 @@ export default function VisitDetailPage() {
   const [addingItem, setAddingItem] = useState(false);
   const [addItemError, setAddItemError] = useState("");
 
-  // Payment modal
+  // General payment modal
   const [showPayModal, setShowPayModal] = useState(false);
   const [payForm, setPayForm] = useState({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
   const [payError, setPayError] = useState("");
   const [paySubmitting, setPaySubmitting] = useState(false);
+
+  // Treatment-attributed payment modal
+  const [txPayModal, setTxPayModal] = useState<{ treatmentId: string; description: string; cost: number } | null>(null);
+  const [txPayForm, setTxPayForm] = useState({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
+  const [txPayError, setTxPayError] = useState("");
+  const [txPaySubmitting, setTxPaySubmitting] = useState(false);
 
   // Appointment
   const [markingApptDone, setMarkingApptDone] = useState(false);
@@ -181,7 +188,7 @@ export default function VisitDetailPage() {
     } else {
       setAppointmentStatus(null);
     }
-    const txRes = await fetch(`/api/treatments?visitId=${id}`);
+    const txRes = await fetch(`/api/visits/${id}/treatments`);
     if (txRes.ok) {
       const txData = await txRes.json();
       setTreatments(txData.treatments || []);
@@ -284,6 +291,34 @@ export default function VisitDetailPage() {
     setPaySubmitting(false);
   }
 
+  async function handleAddTreatmentPayment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!txPayModal) return;
+    setTxPayError("");
+    setTxPaySubmitting(true);
+    const res = await fetch(`/api/visits/${id}/payments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: Number(txPayForm.amount),
+        paymentMethod: txPayForm.paymentMethod,
+        referenceNumber: txPayForm.referenceNumber || null,
+        notes: txPayForm.notes || null,
+        treatmentId: txPayModal.treatmentId,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setTxPayError(data.error || "Payment failed");
+      setTxPaySubmitting(false);
+      return;
+    }
+    setTxPayModal(null);
+    setTxPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
+    await fetchVisit();
+    setTxPaySubmitting(false);
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !visit) return;
@@ -345,13 +380,10 @@ export default function VisitDetailPage() {
     if (!visit) return;
     setTxSubmitting(true);
     setTxError("");
-    const res = await fetch("/api/treatments", {
+    const res = await fetch(`/api/visits/${id}/treatments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        patientId: visit.patientId,
-        doctorId: visit.doctorId,
-        visitId: id,
         description: txForm.description,
         toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
         procedure: txForm.procedure || undefined,
@@ -385,6 +417,7 @@ export default function VisitDetailPage() {
     setTxUpdating(null);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function handleDeleteTreatment(txId: string) {
     if (!confirm("Delete this treatment?")) return;
     setPageError("");
@@ -451,19 +484,32 @@ export default function VisitDetailPage() {
     if (res.ok) {
       const d = await res.json();
       // Only show plans that aren't already linked to any visit
+      // Show all the patient's treatment plans except those already linked to this visit
       const linkedIds = new Set(treatments.map(t => t.id));
-      setLinkablePlans((d.treatments || []).filter((t: Treatment & { visitId?: string | null }) => !t.visitId && !linkedIds.has(t.id)));
+      setLinkablePlans((d.treatments || []).filter((t: Treatment) => !linkedIds.has(t.id)));
     }
     setLinkLoading(false);
   }
 
   async function handleLinkPlan(txId: string) {
-    await fetch(`/api/treatments/${txId}`, {
-      method: "PATCH",
+    await fetch(`/api/visits/${id}/treatments`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitId: id }),
+      body: JSON.stringify({ treatmentId: txId }),
     });
     setShowLinkModal(false);
+    await fetchVisit();
+  }
+
+  async function handleUnlinkTreatment(txId: string) {
+    if (!confirm("Unlink this treatment plan from this visit? The plan itself will not be deleted.")) return;
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}/treatments?treatmentId=${txId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError(d.error || "Failed to unlink treatment");
+      return;
+    }
     await fetchVisit();
   }
 
@@ -859,6 +905,7 @@ export default function VisitDetailPage() {
                     <thead className="bg-slate-50">
                       <tr>
                         <th className="text-left px-3 py-2 font-semibold text-slate-600">Date</th>
+                        <th className="text-left px-3 py-2 font-semibold text-slate-600">For</th>
                         <th className="text-right px-3 py-2 font-semibold text-slate-600">Amount</th>
                         <th className="text-left px-3 py-2 font-semibold text-slate-600">Method</th>
                         <th className="text-left px-3 py-2 font-semibold text-slate-600">Reference</th>
@@ -868,12 +915,23 @@ export default function VisitDetailPage() {
                     <tbody className="divide-y divide-slate-100">
                       {payments.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-6 text-slate-400">No payments recorded yet</td>
+                          <td colSpan={6} className="text-center py-6 text-slate-400">No payments recorded yet</td>
                         </tr>
                       ) : (
                         payments.map((p) => (
                           <tr key={p.id} className="hover:bg-slate-50">
-                            <td className="px-3 py-2.5">{new Date(p.paidAt).toLocaleString("en-IN")}</td>
+                            <td className="px-3 py-2.5 text-slate-500 whitespace-nowrap">{new Date(p.paidAt).toLocaleString("en-IN")}</td>
+                            <td className="px-3 py-2.5">
+                              {p.treatmentId ? (
+                                <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+                                  🦷 {p.treatmentDescription ?? "Treatment Plan"}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                                  General
+                                </span>
+                              )}
+                            </td>
                             <td className="px-3 py-2.5 text-right font-semibold text-green-700">{formatCurrency(p.amount)}</td>
                             <td className="px-3 py-2.5">
                               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{p.paymentMethod}</span>
@@ -1086,6 +1144,10 @@ export default function VisitDetailPage() {
                           REJECTED: "✗ Consent Rejected",
                           EMERGENCY_OVERRIDE: "⚡ Emergency Override",
                         };
+                        const txPaid = payments
+                          .filter(p => p.treatmentId === tx.id)
+                          .reduce((s, p) => s + p.amount, 0);
+                        const txOutstanding = Math.max(0, tx.cost - txPaid);
                         return (
                         <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-slate-50 border-slate-200 opacity-75" : "bg-white border-slate-200"}`}>
                           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1101,9 +1163,31 @@ export default function VisitDetailPage() {
                                 )}
                               </div>
                               {tx.procedure && <p className="text-xs text-slate-500 mt-0.5">{tx.procedure}</p>}
-                              <p className="text-sm font-medium text-slate-700 mt-1">{formatCurrency(tx.cost)}</p>
+                              {/* Financial mini-summary for this treatment plan */}
+                              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                <span className="text-sm font-medium text-slate-700">Cost: {formatCurrency(tx.cost)}</span>
+                                <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Paid: {formatCurrency(txPaid)}</span>
+                                {txOutstanding > 0 && (
+                                  <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Due: {formatCurrency(txOutstanding)}</span>
+                                )}
+                                {txOutstanding === 0 && txPaid > 0 && (
+                                  <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-medium">✓ Settled</span>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                              {visit.status !== "CANCELLED" && txOutstanding > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setTxPayModal({ treatmentId: tx.id, description: tx.description, cost: tx.cost });
+                                    setTxPayForm({ amount: String(txOutstanding), paymentMethod: "CASH", referenceNumber: "", notes: "" });
+                                    setTxPayError("");
+                                  }}
+                                  className="text-xs bg-purple-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-purple-700 transition font-medium"
+                                >
+                                  Record Payment
+                                </button>
+                              )}
                               <select
                                 value={tx.status}
                                 disabled={txUpdating === tx.id}
@@ -1120,10 +1204,11 @@ export default function VisitDetailPage() {
                               </select>
                               {visit.status !== "CANCELLED" && (
                                 <button
-                                  onClick={() => handleDeleteTreatment(tx.id)}
-                                  className="text-xs text-red-500 hover:text-red-700"
+                                  onClick={() => handleUnlinkTreatment(tx.id)}
+                                  className="text-xs text-slate-400 hover:text-red-600"
+                                  title="Unlink from this visit"
                                 >
-                                  Delete
+                                  Unlink
                                 </button>
                               )}
                             </div>
@@ -1198,6 +1283,72 @@ export default function VisitDetailPage() {
         </div>
       </main>
 
+      {/* Treatment Payment Modal */}
+      {txPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Record Treatment Payment</h3>
+              <p className="text-sm text-slate-500 mt-0.5">
+                For: <span className="font-medium text-purple-700">🦷 {txPayModal.description}</span>
+              </p>
+            </div>
+            {txPayError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">{txPayError}</div>
+            )}
+            <form onSubmit={handleAddTreatmentPayment} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Amount (₹) *</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  value={txPayForm.amount}
+                  onChange={(e) => setTxPayForm(f => ({ ...f, amount: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+                <select
+                  value={txPayForm.paymentMethod}
+                  onChange={(e) => setTxPayForm(f => ({ ...f, paymentMethod: e.target.value }))}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Reference No.</label>
+                <input
+                  value={txPayForm.referenceNumber}
+                  onChange={(e) => setTxPayForm(f => ({ ...f, referenceNumber: e.target.value }))}
+                  placeholder="Optional"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="submit"
+                  disabled={txPaySubmitting}
+                  className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition"
+                >
+                  {txPaySubmitting ? "Saving..." : "Confirm Payment"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTxPayModal(null)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Link Existing Plan Modal */}
       {showLinkModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -1210,14 +1361,14 @@ export default function VisitDetailPage() {
               {linkLoading ? (
                 <p className="text-sm text-slate-500 text-center py-6">Loading...</p>
               ) : linkablePlans.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-6">No unlinked treatment plans found for this patient.</p>
+                <p className="text-sm text-slate-400 text-center py-6">No treatment plans found for this patient. Create one from the Treatment Plans page first.</p>
               ) : (
                 linkablePlans.map(plan => (
                   <div key={plan.id} className="border border-slate-200 rounded-xl p-4 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-800">{plan.description}</p>
                       {plan.procedure && <p className="text-xs text-slate-500 mt-0.5">{plan.procedure}</p>}
-                      <div className="flex items-center gap-3 mt-1">
+                      <div className="flex items-center gap-3 mt-1.5">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-yellow-50 text-yellow-700" : plan.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>
                           {plan.status === "IN_PROGRESS" ? "In Progress" : plan.status.charAt(0) + plan.status.slice(1).toLowerCase()}
                         </span>

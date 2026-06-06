@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 // FDI layout — displayed as dentist sees patient (mirror image)

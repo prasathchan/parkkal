@@ -81,9 +81,8 @@ export default function StaffPage() {
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  function touch(field: string) {
-    setTouched(t => ({ ...t, [field]: true }));
-  }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  function touch(field: string) { setTouched(t => ({ ...t, [field]: true })); }
 
   const fieldErrors = {
     email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? "Enter a valid email address" : "",
