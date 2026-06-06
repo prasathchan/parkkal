@@ -26,13 +26,12 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Guard: only allow verifying users who are not yet active.
-    // Prevents an attacker from targeting already-active accounts via this endpoint.
+    // Guard: allow Mode 1 (isActive=0) and Mode 3 (isActive=1, isVerified=0)
     const [targetUser] = await db
-      .select({ id: users.id, isActive: users.isActive })
+      .select({ id: users.id, isActive: users.isActive, isVerified: users.isVerified })
       .from(users)
       .where(eq(users.id, userId));
-    if (!targetUser || targetUser.isActive === 1) {
+    if (!targetUser || (targetUser.isActive === 1 && targetUser.isVerified === 1)) {
       return NextResponse.json({ error: "Invalid or expired verification code" }, { status: 400 });
     }
 
@@ -56,9 +55,13 @@ export async function POST(request: NextRequest) {
       .set({ isActive: 1, isVerified: 1, updatedAt: now })
       .where(eq(users.id, userId));
 
-    await db.update(organizationMembers)
-      .set({ isActive: 1 })
-      .where(eq(organizationMembers.userId, userId));
+    // For Mode 1 (was inactive), activate the member record too.
+    // For Mode 3 (already active), member record stays as-is (portal_access=0 preserved).
+    if (targetUser.isActive === 0) {
+      await db.update(organizationMembers)
+        .set({ isActive: 1 })
+        .where(eq(organizationMembers.userId, userId));
+    }
 
     await db.update(verificationTokens)
       .set({ used: 1 })

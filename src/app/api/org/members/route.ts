@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, orgRoles, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { z } from "zod";
 
@@ -15,11 +16,17 @@ const addMemberSchema = z.object({
   address: z.string().optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
+  bloodGroup: z.string().optional(),
   role: z.enum(["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"]),
   orgRoleId: z.string().optional(),
   salaryType: z.enum(["FIXED", "PER_APPOINTMENT"]).default("FIXED"),
   salaryAmount: z.number().default(0),
   joinedAt: z.string().optional(),
+  // activationMode controls how the new staff member's account is set up
+  // invite_link   → inactive account, send activation email link (default)
+  // set_password  → admin sets password, account active immediately
+  // no_login_verify → active HR record, login disabled, send device-verify link
+  activationMode: z.enum(["invite_link", "set_password", "no_login_verify"]).default("invite_link"),
   password: z.string().min(6).optional(),
 });
 
@@ -49,6 +56,7 @@ export async function GET(request: NextRequest) {
       joinedAt: organizationMembers.joinedAt,
       isActive: organizationMembers.isActive,
       isVerified: users.isVerified,
+      portalAccess: organizationMembers.portalAccess,
       createdAt: organizationMembers.createdAt,
     })
     .from(organizationMembers)
@@ -93,12 +101,23 @@ export async function POST(request: NextRequest) {
       if (!data.name) {
         return NextResponse.json({ error: "New user requires a name" }, { status: 400 });
       }
+      if (data.activationMode === "set_password" && !data.password) {
+        return NextResponse.json({ error: "Password is required for immediate activation" }, { status: 400 });
+      }
+
       isNewUser = true;
+      const passwordHash = data.activationMode === "set_password" && data.password
+        ? await hashPassword(data.password)
+        : "";
+
+      const userIsActive = data.activationMode === "set_password" ? 1 : (data.activationMode === "no_login_verify" ? 1 : 0);
+      const userIsVerified = data.activationMode === "set_password" ? 1 : 0;
+
       const newUser = {
         id: crypto.randomUUID(),
         name: data.name,
         email: data.email,
-        passwordHash: "",
+        passwordHash,
         phone: data.phone || null,
         dateOfBirth: data.dateOfBirth || null,
         gender: data.gender || null,
@@ -106,8 +125,8 @@ export async function POST(request: NextRequest) {
         panNumber: data.panNumber || null,
         aadhaarNumber: data.aadhaarNumber || null,
         profileImageUrl: null,
-        isActive: 0,
-        isVerified: 0,
+        isActive: userIsActive,
+        isVerified: userIsVerified,
         createdAt: now,
         updatedAt: now,
       };
@@ -126,7 +145,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User is already a member of this organization" }, { status: 409 });
     }
 
-    const memberIsActive = isNewUser ? 0 : 1;
+    // portal_access:
+    //   invite_link     → 1 (will be able to login after activation)
+    //   set_password    → 1 (login enabled immediately)
+    //   no_login_verify → 0 (login disabled; stays disabled after verify)
+    //   existing user   → 1 (they already have an account)
+    const portalAccess = !isNewUser ? 1
+      : data.activationMode === "no_login_verify" ? 0 : 1;
+
+    // member is_active:
+    //   invite_link  → 0 until user activates
+    //   set_password → 1 immediately
+    //   no_login_verify → 1 (HR record is active)
+    //   existing user → 1
+    const memberIsActive = !isNewUser ? 1
+      : data.activationMode === "invite_link" ? 0 : 1;
 
     const member = {
       id: crypto.randomUUID(),
@@ -138,15 +171,14 @@ export async function POST(request: NextRequest) {
       salaryAmount: data.salaryAmount,
       joinedAt: data.joinedAt || new Date().toISOString().split("T")[0],
       isActive: memberIsActive,
-      // HELPER role has no portal access by default; all other roles do.
-      portalAccess: data.role === "HELPER" ? 0 : 1,
+      portalAccess,
       createdAt: now,
     };
 
     await db.insert(organizationMembers).values(member);
 
-    if (isNewUser) {
-      // Generate STAFF_INVITE token
+    // Send activation/verification email for invite_link and no_login_verify modes
+    if (isNewUser && data.activationMode !== "set_password") {
       const tokenCode = crypto.randomUUID();
       const tokenId = `vt_${Array.from(crypto.getRandomValues(new Uint8Array(12)), (b: number) => b.toString(16).padStart(2, "0")).join("")}`;
       const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -161,17 +193,16 @@ export async function POST(request: NextRequest) {
         createdAt: now,
       });
 
-      // Get org name
       const org = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, session.orgId)))[0];
       const orgName = org?.name ?? "your clinic";
 
-      const activationUrl = `${appBaseUrl}/activate?token=${tokenCode}`;
+      const modeParam = data.activationMode === "no_login_verify" ? "&mode=verify" : "";
+      const activationUrl = `${appBaseUrl}/activate?token=${tokenCode}${modeParam}`;
 
       try {
         await sendStaffInviteEmail(data.email, data.name ?? data.email, orgName, activationUrl);
       } catch (emailErr) {
         console.error("Failed to send invite email:", emailErr);
-        // Don't fail the request if email fails
       }
     }
 

@@ -70,6 +70,7 @@ export default function StaffPage() {
     salaryType: "FIXED",
     salaryAmount: "",
     joinedAt: new Date().toISOString().split("T")[0],
+    activationMode: "invite_link" as "invite_link" | "set_password" | "no_login_verify",
     password: "",
     ecName: "",
     ecRelationship: "",
@@ -125,7 +126,9 @@ export default function StaffPage() {
   }
 
   const staffHasErrors = Object.values(fieldErrors).some(Boolean);
-  const staffCanSubmit = form.email.trim() && form.orgRoleId && form.ecName?.trim() && form.ecRelationship && form.ecPhone?.trim() && !staffHasErrors;
+  const needsPassword = form.activationMode === "set_password";
+  const staffCanSubmit = form.email.trim() && form.orgRoleId && form.ecName?.trim() && form.ecRelationship && form.ecPhone?.trim() && !staffHasErrors
+    && (!needsPassword || form.password.length >= 8);
 
   async function handleAddStaff(e: React.FormEvent) {
     e.preventDefault();
@@ -164,7 +167,8 @@ export default function StaffPage() {
           salaryType: form.salaryType,
           salaryAmount: parseFloat(form.salaryAmount) || 0,
           joinedAt: form.joinedAt,
-          password: form.password || undefined,
+          activationMode: form.activationMode,
+          password: form.activationMode === "set_password" ? form.password : undefined,
         }),
       });
       const data = await res.json();
@@ -439,6 +443,59 @@ export default function StaffPage() {
                     {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>}
                   </div>
                 </div>
+              </div>
+
+              {/* Activation Mode */}
+              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-slate-900">Login &amp; Activation *</p>
+                {[
+                  {
+                    value: "invite_link",
+                    label: "Send activation link",
+                    desc: "User receives an email link. They set their own password and verify both email and phone before they can log in.",
+                  },
+                  {
+                    value: "set_password",
+                    label: "Set password now — activate immediately",
+                    desc: "You set the password. The account is ready to log in right away. The user can verify their email and phone later.",
+                  },
+                  {
+                    value: "no_login_verify",
+                    label: "No login — verify devices only",
+                    desc: "The HR record is created as active (visible in staff, salary). A verification link is sent so the user can confirm their email and phone. Login remains disabled until you enable it.",
+                  },
+                ].map((opt) => (
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${form.activationMode === opt.value ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                    <input
+                      type="radio"
+                      name="activationMode"
+                      value={opt.value}
+                      checked={form.activationMode === opt.value}
+                      onChange={() => setForm(f => ({ ...f, activationMode: opt.value as typeof f.activationMode, password: "" }))}
+                      className="mt-0.5 accent-blue-600"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{opt.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+                {form.activationMode === "set_password" && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Password *</label>
+                    <input
+                      type="password"
+                      value={form.password}
+                      onChange={updateForm("password")}
+                      placeholder="Min. 8 characters"
+                      autoComplete="new-password"
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {form.password && form.password.length < 8 && (
+                      <p className="text-xs text-red-600 mt-1">Password must be at least 8 characters</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Emergency Contact */}

@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       (m: (typeof memberships)[number]) =>
         m.memberIsActive === 1 &&
         m.orgIsActive === 1 &&
-        (m.role !== "HELPER" || m.portalAccess === 1)
+        m.portalAccess === 1
     );
 
     if (activeMemberships.length === 0) {

@@ -19,16 +19,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json() as { token?: unknown; password?: unknown };
+    const body = await request.json() as { token?: unknown; password?: unknown; mode?: unknown };
     const token = typeof body.token === "string" ? body.token : null;
     const password = typeof body.password === "string" ? body.password : null;
+    // mode="verify" = Mode 3: validate token only, no password required
+    const mode = typeof body.mode === "string" ? body.mode : "activate";
 
-    if (!token || !password) {
-      return NextResponse.json({ error: "Token and password are required" }, { status: 400 });
+    if (!token) {
+      return NextResponse.json({ error: "Token is required" }, { status: 400 });
     }
 
-    if (password.length < 8) {
-      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+    if (mode !== "verify") {
+      if (!password) {
+        return NextResponse.json({ error: "Token and password are required" }, { status: 400 });
+      }
+      if (password.length < 8) {
+        return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+      }
     }
 
     const db = getDb();
@@ -51,17 +58,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid or expired activation link" }, { status: 400 });
     }
 
-    const passwordHash = await hashPassword(password);
+    if (mode === "verify") {
+      // Mode 3: just validate the token so the OTP flow can begin
+      await db.update(verificationTokens).set({ used: 1 }).where(eq(verificationTokens.id, vtRecord.id));
+      return NextResponse.json({ userId: vtRecord.userId, mode: "verify" });
+    }
 
-    await db
-      .update(users)
-      .set({ passwordHash, updatedAt: now })
-      .where(eq(users.id, vtRecord.userId));
-
-    await db
-      .update(verificationTokens)
-      .set({ used: 1 })
-      .where(eq(verificationTokens.id, vtRecord.id));
+    // Mode 1: set password, mark token used
+    const passwordHash = await hashPassword(password!);
+    await db.update(users).set({ passwordHash, updatedAt: now }).where(eq(users.id, vtRecord.userId));
+    await db.update(verificationTokens).set({ used: 1 }).where(eq(verificationTokens.id, vtRecord.id));
 
     return NextResponse.json({ userId: vtRecord.userId });
   } catch (error) {

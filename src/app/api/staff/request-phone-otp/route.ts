@@ -44,16 +44,17 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Guard: only allow this endpoint for users who are not yet active (i.e., in the
-    // staff onboarding flow). Active users must use the authenticated profile endpoint.
+    // Guard: allow only users in activation flow:
+    //   Mode 1 — isActive=0 (not yet activated)
+    //   Mode 3 — isActive=1, isVerified=0 (HR active, devices unverified)
     const [user] = await db
-      .select({ id: users.id, isActive: users.isActive })
+      .select({ id: users.id, isActive: users.isActive, isVerified: users.isVerified })
       .from(users)
       .where(eq(users.id, userId));
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    if (user.isActive === 1) {
+    if (user.isActive === 1 && user.isVerified === 1) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

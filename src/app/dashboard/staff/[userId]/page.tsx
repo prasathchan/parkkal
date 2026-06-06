@@ -22,6 +22,8 @@ interface Member {
   salaryAmount: number;
   joinedAt: string | null;
   isActive: number;
+  isVerified: number;
+  portalAccess: number;
 }
 
 interface EmergencyContact {
@@ -69,6 +71,10 @@ export default function StaffDetailPage() {
   const [ecForm, setEcForm] = useState({ name: "", relationship: "", phone: "", email: "" });
   const [ecSaving, setEcSaving] = useState(false);
   const [ecError, setEcError] = useState("");
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const [linkMode, setLinkMode] = useState<"invite_link" | "no_login_verify">("invite_link");
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -106,6 +112,8 @@ export default function StaffDetailPage() {
         salaryAmount: String(found.salaryAmount),
         isActive: found.isActive === 1,
       });
+      // default link mode based on current portal access
+      setLinkMode(found.portalAccess === 1 ? "invite_link" : "no_login_verify");
       setAddressData(parseAddress(found.address));
     }
     setLoading(false);
@@ -201,6 +209,24 @@ export default function StaffDetailPage() {
       await fetchEmergencyContacts();
     }
     setEcSaving(false);
+  }
+
+  async function handleSendLink() {
+    setSendingLink(true);
+    setLinkError("");
+    setLinkSent(false);
+    const res = await fetch(`/api/org/members/${userId}/send-activation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: linkMode }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      setLinkError(d.error || "Failed to send link");
+    } else {
+      setLinkSent(true);
+    }
+    setSendingLink(false);
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
@@ -479,6 +505,49 @@ export default function StaffDetailPage() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Account Access */}
+        <Card>
+          <CardHeader><CardTitle>Account Access</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2 text-sm">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                {member.isActive ? "HR Active" : "HR Inactive"}
+              </span>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.portalAccess ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
+                {member.portalAccess ? "Login Enabled" : "Login Disabled"}
+              </span>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isVerified ? "bg-teal-100 text-teal-700" : "bg-orange-100 text-orange-700"}`}>
+                {member.isVerified ? "Devices Verified" : "Unverified"}
+              </span>
+            </div>
+
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <p className="text-sm font-medium text-slate-700">Send activation / verification link</p>
+              <div className="space-y-2">
+                {[
+                  { value: "invite_link" as const, label: "Activation link (enable login)", desc: "User sets their own password and verifies email + phone. Login is enabled after." },
+                  { value: "no_login_verify" as const, label: "Verification link (no login)", desc: "User verifies their email and phone. Login access remains disabled." },
+                ].map(opt => (
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${linkMode === opt.value ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                    <input type="radio" name="linkMode" value={opt.value} checked={linkMode === opt.value}
+                      onChange={() => { setLinkMode(opt.value); setLinkSent(false); setLinkError(""); }}
+                      className="mt-0.5 accent-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{opt.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              {linkError && <p className="text-sm text-red-600">{linkError}</p>}
+              {linkSent && <p className="text-sm text-green-600">Link sent to {member.email}</p>}
+              <Button size="sm" onClick={handleSendLink} disabled={sendingLink}>
+                {sendingLink ? "Sending..." : "Send link"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
