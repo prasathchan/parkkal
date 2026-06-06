@@ -3,11 +3,12 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { salaryRecords, organizationMembers, users, appointments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await hasPermission(session, PERMISSIONS.SALARY_VIEW))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const rawMonth = searchParams.get("month") || new Date().toISOString().slice(0, 7);
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
     const body = await request.json() as Record<string, unknown>;

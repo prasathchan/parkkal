@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens, orgRoles } from "@/db/schema";
@@ -12,7 +12,13 @@ const signupSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
-  phone: z.string().min(10).max(15),
+  phone: z.string().min(10).max(16).transform((p) => {
+    const digits = p.replace(/\D/g, "");
+    if (p.startsWith("+")) return p;
+    if (digits.length === 10) return `+91${digits}`;
+    if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+    return p;
+  }),
   clinicName: z.string().min(2),
 });
 
@@ -60,6 +66,22 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
 
+    // Helper: fully purge a stale unverified user and their orphaned org
+    async function purgeUnverifiedUser(userId: string) {
+      const memberships = await db
+        .select({ orgId: organizationMembers.organizationId })
+        .from(organizationMembers)
+        .where(eq(organizationMembers.userId, userId));
+      for (const { orgId: staleOrgId } of memberships) {
+        // Delete members first (FK: organization_members.org_role_id -> org_roles.id)
+        await db.delete(organizationMembers).where(eq(organizationMembers.organizationId, staleOrgId));
+        await db.delete(orgRoles).where(eq(orgRoles.organizationId, staleOrgId));
+        await db.delete(organizations).where(eq(organizations.id, staleOrgId));
+      }
+      await db.delete(verificationTokens).where(eq(verificationTokens.userId, userId));
+      await db.delete(users).where(eq(users.id, userId));
+    }
+
     // Check email uniqueness — allow re-registration only if the previous attempt was never verified
     const existingEmail = await db
       .select({ id: users.id, isVerified: users.isVerified })
@@ -69,8 +91,7 @@ export async function POST(request: NextRequest) {
       if (existingEmail[0].isVerified) {
         return NextResponse.json({ error: "Email already registered" }, { status: 409 });
       }
-      // Stale unverified account — delete it so re-registration can proceed
-      await db.delete(users).where(and(eq(users.email, email), eq(users.isVerified, 0)));
+      await purgeUnverifiedUser(existingEmail[0].id);
     }
 
     // Check phone uniqueness — same: allow re-registration if never verified
@@ -82,8 +103,10 @@ export async function POST(request: NextRequest) {
       if (existingPhone[0].isVerified) {
         return NextResponse.json({ error: "Phone number already registered" }, { status: 409 });
       }
-      // Stale unverified account — delete it so re-registration can proceed
-      await db.delete(users).where(and(eq(users.phone, phone), eq(users.isVerified, 0)));
+      // Only purge if different user (email check may have already removed them)
+      if (existingPhone[0].id !== existingEmail[0]?.id) {
+        await purgeUnverifiedUser(existingPhone[0].id);
+      }
     }
 
     const passwordHash = await hashPassword(password);

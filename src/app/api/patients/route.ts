@@ -17,8 +17,8 @@ const createPatientSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   dateOfBirth: z.string().optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  address: z.string().optional(),
-  medicalHistory: z.string().optional(),
+  address: z.string().max(500).optional(),
+  medicalHistory: z.string().max(5000).optional(),
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
-  const limit = Math.min(Number(searchParams.get("limit") || "200"), 500);
+  const limit = Math.min(Number(searchParams.get("limit") || "25"), 100);
+  const offset = Math.max(Number(searchParams.get("offset") || "0"), 0);
 
   const db = getDb();
 
@@ -63,27 +64,37 @@ export async function GET(request: NextRequest) {
       )
     : baseConditions;
 
-  const results = await db
-    .select({
-      id: patients.id,
-      patientCode: patients.patientCode,
-      name: patients.name,
-      phone: patients.phone,
-      email: patients.email,
-      dateOfBirth: patients.dateOfBirth,
-      gender: patients.gender,
-      bloodGroup: patients.bloodGroup,
-      emergencyContactAdded: patients.emergencyContactAdded,
-      createdAt: patients.createdAt,
-      updatedAt: patients.updatedAt,
-      // medicalHistory intentionally excluded from list view — it contains sensitive PHI.
-      // Fetch it only from the individual patient detail endpoint.
-    })
-    .from(patients)
-    .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
-    .where(whereCondition)
-    .orderBy(desc(patients.createdAt))
-    .limit(limit);
+  const [totalRow, results] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(patients)
+      .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
+      .where(whereCondition),
+    db
+      .select({
+        id: patients.id,
+        patientCode: patients.patientCode,
+        name: patients.name,
+        phone: patients.phone,
+        email: patients.email,
+        dateOfBirth: patients.dateOfBirth,
+        gender: patients.gender,
+        bloodGroup: patients.bloodGroup,
+        emergencyContactAdded: patients.emergencyContactAdded,
+        createdAt: patients.createdAt,
+        updatedAt: patients.updatedAt,
+        // medicalHistory intentionally excluded from list view — it contains sensitive PHI.
+        // Fetch it only from the individual patient detail endpoint.
+      })
+      .from(patients)
+      .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
+      .where(whereCondition)
+      .orderBy(desc(patients.createdAt))
+      .limit(limit)
+      .offset(offset),
+  ]);
+
+  const total = totalRow[0]?.total ?? 0;
 
   type PatientRow = (typeof results)[number];
 
@@ -94,7 +105,7 @@ export async function GET(request: NextRequest) {
     aadhaarNumber: null,
   }));
 
-  return NextResponse.json({ patients: masked });
+  return NextResponse.json({ patients: masked, total, limit, offset });
 }
 
 export async function POST(request: NextRequest) {

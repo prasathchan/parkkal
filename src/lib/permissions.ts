@@ -32,10 +32,15 @@ export const PERMISSIONS = {
   // Staff
   STAFF_VIEW: "staff.view",
   STAFF_MANAGE: "staff.manage",
+  // Salary
+  SALARY_VIEW: "salary.view",
+  SALARY_MANAGE: "salary.manage",
   // Org
   ORG_SETTINGS: "org.settings",
   // Reports
   REPORTS_VIEW: "reports.view",
+  // Roles
+  ROLES_MANAGE: "roles.manage",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

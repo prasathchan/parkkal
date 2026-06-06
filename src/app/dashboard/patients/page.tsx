@@ -25,27 +25,37 @@ interface Patient {
   createdAt: number;
 }
 
+const PAGE_SIZE = 25;
+
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
 
-  const fetchPatients = useCallback(async (q: string) => {
+  const fetchPatients = useCallback(async (q: string, off: number) => {
     setLoading(true);
     try {
-      const url = q ? `/api/patients?search=${encodeURIComponent(q)}` : "/api/patients";
-      const res = await fetch(url);
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(off) });
+      if (q) params.set("search", q);
+      const res = await fetch(`/api/patients?${params}`);
       const data = await res.json();
       setPatients(data.patients || []);
+      setTotal(data.total ?? 0);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchPatients(search), 300);
+    setOffset(0);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPatients(search, offset), 300);
     return () => clearTimeout(timer);
-  }, [search, fetchPatients]);
+  }, [search, offset, fetchPatients]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -126,6 +136,31 @@ export default function PatientsPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination footer */}
+          {total > PAGE_SIZE && (
+            <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
+              <span>
+                {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total} patients
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                  disabled={offset === 0}
+                  className="px-3 py-1 rounded-md border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setOffset(offset + PAGE_SIZE)}
+                  disabled={offset + PAGE_SIZE >= total}
+                  className="px-3 py-1 rounded-md border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

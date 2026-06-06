@@ -10,8 +10,8 @@ const createVisitSchema = z.object({
   patientId: z.string().min(1),
   doctorId: z.string().min(1),
   visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "visitDate must be YYYY-MM-DD"),
-  chiefComplaint: z.string().optional(),
-  doctorNotes: z.string().optional(),
+  chiefComplaint: z.string().max(500).optional(),
+  doctorNotes: z.string().max(5000).optional(),
   appointmentId: z.string().nullable().optional(),
   visitType: z.enum(["APPOINTMENT", "WALKIN"]).default("WALKIN"),
 });

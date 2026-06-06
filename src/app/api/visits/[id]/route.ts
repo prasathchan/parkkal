@@ -137,6 +137,14 @@ export async function PATCH(
     return NextResponse.json({ error: "visitDate must be YYYY-MM-DD" }, { status: 400 });
   }
 
+  // Validate free-text lengths to prevent oversized payloads.
+  const TEXT_LIMITS: Record<string, number> = { chiefComplaint: 500, doctorNotes: 5000, diagnosis: 1000 };
+  for (const [field, maxLen] of Object.entries(TEXT_LIMITS)) {
+    if (field in body && typeof body[field] === "string" && (body[field] as string).length > maxLen) {
+      return NextResponse.json({ error: `${field} exceeds maximum length of ${maxLen}` }, { status: 400 });
+    }
+  }
+
   const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate"];
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
   for (const key of allowed) {
