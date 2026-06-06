@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { treatments } from "@/db/schema";
+import { treatments, visitTreatments, invoiceTreatments, consentAuditLog } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { z } from "zod";
 
@@ -11,7 +11,6 @@ const patchSchema = z.object({
   procedure: z.string().optional().nullable(),
   toothNumbers: z.string().optional().nullable(),
   cost: z.number().min(0).optional(),
-  visitId: z.string().nullable().optional(),
 });
 
 // Valid forward transitions for non-ADMIN roles.
@@ -24,7 +23,6 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
 
 // Clinical narrative fields require a clinical role to edit
 const CLINICAL_ROLES = ["ADMIN", "DOCTOR", "NURSE"];
-// Broader set that may edit cost, visitId, and status
 const TREATMENT_EDIT_ROLES = ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST"];
 
 export async function PATCH(
@@ -83,7 +81,6 @@ export async function PATCH(
     if (data.procedure !== undefined) updates.procedure = data.procedure;
     if (data.toothNumbers !== undefined) updates.toothNumbers = data.toothNumbers;
     if (data.cost !== undefined) updates.cost = data.cost;
-    if (data.visitId !== undefined) updates.visitId = data.visitId;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
@@ -124,6 +121,10 @@ export async function DELETE(
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Sequential deletes — avoids D1 transaction batch API limitations.
+  await db.delete(visitTreatments).where(eq(visitTreatments.treatmentId, id));
+  await db.delete(invoiceTreatments).where(eq(invoiceTreatments.treatmentId, id));
+  await db.delete(consentAuditLog).where(eq(consentAuditLog.treatmentId, id));
   await db.delete(treatments).where(
     and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId))
   );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { getDb, type DbInstance } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
   organizations,
   organizationMembers,
@@ -10,6 +10,8 @@ import {
   emergencyContacts,
   appointments,
   treatments,
+  visitTreatments,
+  consentAuditLog,
   prescriptions,
   invoices,
   invoiceTreatments,
@@ -19,7 +21,6 @@ import {
   payments,
   attachments,
   verificationTokens,
-  featureFlags,
   users,
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -102,55 +103,51 @@ export async function POST(request: NextRequest) {
     exclusiveUserIds = userIds.filter((uid: string) => (membershipCount.get(uid) ?? 0) <= 1);
   }
 
-  // ── Phase 2: atomic cascade delete ───────────────────────────────────────
-  // db.transaction() uses D1's batch API in production (atomic single round-trip)
-  // and a real SQLite transaction in dev (libsql). If any statement throws, no
-  // rows are deleted — the org is left fully intact.
-  await db.transaction(async (tx: DbInstance) => {
-    if (visitIds.length > 0) {
-      await tx.delete(payments).where(inArray(payments.visitId, visitIds));
-      await tx.delete(visitItems).where(inArray(visitItems.visitId, visitIds));
-      await tx.delete(attachments).where(inArray(attachments.visitId, visitIds));
-    }
-    if (invoiceIds.length > 0) {
-      await tx.delete(invoiceTreatments).where(inArray(invoiceTreatments.invoiceId, invoiceIds));
-    }
+  // ── Phase 2: cascade delete (sequential — avoids D1 transaction batch API limitations) ──
+  if (visitIds.length > 0) {
+    await db.delete(visitTreatments).where(inArray(visitTreatments.visitId, visitIds));
+    await db.delete(payments).where(inArray(payments.visitId, visitIds));
+    await db.delete(visitItems).where(inArray(visitItems.visitId, visitIds));
+    await db.delete(attachments).where(inArray(attachments.visitId, visitIds));
+  }
+  if (invoiceIds.length > 0) {
+    await db.delete(invoiceTreatments).where(inArray(invoiceTreatments.invoiceId, invoiceIds));
+  }
 
-    await tx.delete(visits).where(eq(visits.organizationId, orgId));
-    await tx.delete(invoices).where(eq(invoices.organizationId, orgId));
-    await tx.delete(appointments).where(eq(appointments.organizationId, orgId));
-    await tx.delete(treatments).where(eq(treatments.organizationId, orgId));
-    await tx.delete(prescriptions).where(eq(prescriptions.organizationId, orgId));
-    await tx.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId));
-    await tx.delete(featureFlags).where(eq(featureFlags.orgId, orgId));
+  await db.delete(consentAuditLog).where(eq(consentAuditLog.organizationId, orgId));
+  await db.delete(visits).where(eq(visits.organizationId, orgId));
+  await db.delete(invoices).where(eq(invoices.organizationId, orgId));
+  await db.delete(appointments).where(eq(appointments.organizationId, orgId));
+  await db.delete(treatments).where(eq(treatments.organizationId, orgId));
+  await db.delete(prescriptions).where(eq(prescriptions.organizationId, orgId));
+  await db.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId));
 
-    if (patientIds.length > 0) {
-      await tx.delete(emergencyContacts).where(
-        and(eq(emergencyContacts.entityType, "PATIENT"), inArray(emergencyContacts.entityId, patientIds))
-      );
-    }
-    if (userIds.length > 0) {
-      await tx.delete(emergencyContacts).where(
-        and(eq(emergencyContacts.entityType, "USER"), inArray(emergencyContacts.entityId, userIds))
-      );
-    }
+  if (patientIds.length > 0) {
+    await db.delete(emergencyContacts).where(
+      and(eq(emergencyContacts.entityType, "PATIENT"), inArray(emergencyContacts.entityId, patientIds))
+    );
+  }
+  if (userIds.length > 0) {
+    await db.delete(emergencyContacts).where(
+      and(eq(emergencyContacts.entityType, "USER"), inArray(emergencyContacts.entityId, userIds))
+    );
+  }
 
-    await tx.delete(organizationPatients).where(eq(organizationPatients.organizationId, orgId));
+  await db.delete(organizationPatients).where(eq(organizationPatients.organizationId, orgId));
 
-    if (exclusivePatientIds.length > 0) {
-      await tx.delete(patients).where(inArray(patients.id, exclusivePatientIds));
-    }
+  if (exclusivePatientIds.length > 0) {
+    await db.delete(patients).where(inArray(patients.id, exclusivePatientIds));
+  }
 
-    await tx.delete(organizationMembers).where(eq(organizationMembers.organizationId, orgId));
-    await tx.delete(orgRoles).where(eq(orgRoles.organizationId, orgId));
+  await db.delete(organizationMembers).where(eq(organizationMembers.organizationId, orgId));
+  await db.delete(orgRoles).where(eq(orgRoles.organizationId, orgId));
 
-    if (exclusiveUserIds.length > 0) {
-      await tx.delete(verificationTokens).where(inArray(verificationTokens.userId, exclusiveUserIds));
-      await tx.delete(users).where(inArray(users.id, exclusiveUserIds));
-    }
+  if (exclusiveUserIds.length > 0) {
+    await db.delete(verificationTokens).where(inArray(verificationTokens.userId, exclusiveUserIds));
+    await db.delete(users).where(inArray(users.id, exclusiveUserIds));
+  }
 
-    await tx.delete(organizations).where(eq(organizations.id, orgId));
-  });
+  await db.delete(organizations).where(eq(organizations.id, orgId));
 
   return NextResponse.json({ deleted: true });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb, type DbInstance } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
   visits,
   treatments,
@@ -155,29 +155,30 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const treatmentId = crypto.randomUUID();
 
-  await db.transaction(async (tx: DbInstance) => {
-    await tx.insert(treatments).values({
-      id: treatmentId,
-      organizationId: session.orgId,
-      patientId: visit.patientId,
-      doctorId,
-      description: parsed.data.description,
-      procedure: parsed.data.procedure ?? null,
-      toothNumbers: parsed.data.toothNumbers ?? null,
-      cost: parsed.data.cost,
-      status: "PLANNED",
-      appointmentId: null,
-      consentStatus: "PENDING",
-      emergencyOverride: 0,
-      createdAt: now,
-    });
+  // D1's Drizzle transaction adapter uses the batch API and can hang with async callbacks.
+  // Two sequential inserts are safe here: a treatment without a visit link is orphaned
+  // but non-destructive, and the extremely unlikely partial failure is recoverable.
+  await db.insert(treatments).values({
+    id: treatmentId,
+    organizationId: session.orgId,
+    patientId: visit.patientId,
+    doctorId,
+    description: parsed.data.description,
+    procedure: parsed.data.procedure ?? null,
+    toothNumbers: parsed.data.toothNumbers ?? null,
+    cost: parsed.data.cost,
+    status: "PLANNED",
+    appointmentId: null,
+    consentStatus: "PENDING",
+    emergencyOverride: 0,
+    createdAt: now,
+  });
 
-    await tx.insert(visitTreatments).values({
-      visitId,
-      treatmentId,
-      notes: parsed.data.notes ?? null,
-      createdAt: now,
-    });
+  await db.insert(visitTreatments).values({
+    visitId,
+    treatmentId,
+    notes: parsed.data.notes ?? null,
+    createdAt: now,
   });
 
   return NextResponse.json({ success: true, treatmentId }, { status: 201 });

@@ -380,24 +380,29 @@ export default function VisitDetailPage() {
     if (!visit) return;
     setTxSubmitting(true);
     setTxError("");
-    const res = await fetch(`/api/visits/${id}/treatments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        description: txForm.description,
-        toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
-        procedure: txForm.procedure || undefined,
-        cost: Number(txForm.cost),
-      }),
-    });
-    if (res.ok) {
-      setTxForm({ description: "", toothNumbers: [], procedure: "", cost: "0" });
-      await fetchVisit();
-    } else {
-      const d = await res.json();
-      setTxError(d.error || "Failed to add treatment");
+    try {
+      const res = await fetch(`/api/visits/${id}/treatments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: txForm.description,
+          toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
+          procedure: txForm.procedure || undefined,
+          cost: Number(txForm.cost),
+        }),
+      });
+      if (res.ok) {
+        setTxForm({ description: "", toothNumbers: [], procedure: "", cost: "0" });
+        await fetchVisit();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setTxError((d as { error?: string }).error || "Failed to add treatment");
+      }
+    } catch {
+      setTxError("Network error. Please try again.");
+    } finally {
+      setTxSubmitting(false);
     }
-    setTxSubmitting(false);
   }
 
   async function handleUpdateTreatmentStatus(txId: string, status: string) {

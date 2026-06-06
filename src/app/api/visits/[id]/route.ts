@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb, type DbInstance } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
   visits,
   visitItems,
@@ -197,14 +197,13 @@ export async function DELETE(
   if (existingVisit.organizationId !== session.orgId)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  await db.transaction(async (tx: DbInstance) => {
-    await tx.delete(visitTreatments).where(eq(visitTreatments.visitId, id));
-    await tx.delete(prescriptions).where(eq(prescriptions.visitId, id));
-    await tx.delete(attachments).where(eq(attachments.visitId, id));
-    await tx.delete(payments).where(eq(payments.visitId, id));
-    await tx.delete(visitItems).where(eq(visitItems.visitId, id));
-    await tx.delete(visits).where(eq(visits.id, id));
-  });
+  // Sequential deletes — avoids D1 transaction batch API limitations.
+  await db.delete(visitTreatments).where(eq(visitTreatments.visitId, id));
+  await db.delete(prescriptions).where(eq(prescriptions.visitId, id));
+  await db.delete(attachments).where(eq(attachments.visitId, id));
+  await db.delete(payments).where(eq(payments.visitId, id));
+  await db.delete(visitItems).where(eq(visitItems.visitId, id));
+  await db.delete(visits).where(eq(visits.id, id));
 
   return NextResponse.json({ success: true });
 }

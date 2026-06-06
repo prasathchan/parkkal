@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { patients, organizationPatients, appointments, treatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts } from "@/db/schema";
+import { patients, organizationPatients, appointments, treatments, visitTreatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts, consentAuditLog } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const updatePatientSchema = z.object({
@@ -41,12 +42,15 @@ export async function GET(
 
   // PAN and Aadhaar are Indian national IDs equivalent to SSN.
   // Only ADMIN may see them in the detail view; all other roles receive null.
-  const safePatient =
-    session.role === "ADMIN"
-      ? patient
-      : { ...patient, panNumber: null, aadhaarNumber: null };
-
-  return NextResponse.json({ patient: safePatient });
+  if (session.role === "ADMIN") {
+    const decrypted = {
+      ...patient,
+      panNumber: await decryptField(patient.panNumber) ?? null,
+      aadhaarNumber: await decryptField(patient.aadhaarNumber) ?? null,
+    };
+    return NextResponse.json({ patient: decrypted });
+  }
+  return NextResponse.json({ patient: { ...patient, panNumber: null, aadhaarNumber: null } });
 }
 
 export async function PATCH(
@@ -73,12 +77,25 @@ export async function PATCH(
       delete (data as Partial<typeof data>).aadhaarNumber;
     }
 
-    await db.update(patients).set({ ...data, updatedAt: Date.now() }).where(eq(patients.id, id));
+    // Encrypt government IDs before persisting
+    const updatePayload = {
+      ...data,
+      panNumber: data.panNumber !== undefined ? (await encryptField(data.panNumber) ?? null) : undefined,
+      aadhaarNumber: data.aadhaarNumber !== undefined ? (await encryptField(data.aadhaarNumber) ?? null) : undefined,
+      updatedAt: Date.now(),
+    };
+
+    await db.update(patients).set(updatePayload).where(eq(patients.id, id));
     const updated = (await db.select().from(patients).where(eq(patients.id, id)))[0];
-    // Mask IDs on the way out if non-ADMIN
-    const safeUpdated =
-      session.role === "ADMIN" ? updated : { ...updated, panNumber: null, aadhaarNumber: null };
-    return NextResponse.json({ patient: safeUpdated });
+    if (session.role === "ADMIN") {
+      const decrypted = {
+        ...updated,
+        panNumber: await decryptField(updated.panNumber) ?? null,
+        aadhaarNumber: await decryptField(updated.aadhaarNumber) ?? null,
+      };
+      return NextResponse.json({ patient: decrypted });
+    }
+    return NextResponse.json({ patient: { ...updated, panNumber: null, aadhaarNumber: null } });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     console.error("Update patient error:", error);
@@ -101,35 +118,39 @@ export async function DELETE(
     .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id))))[0];
   if (!orgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const cascadeDelete = async (tx: typeof db) => {
-    const patientVisits = await tx.select({ id: visits.id }).from(visits).where(eq(visits.patientId, id));
-    for (const v of patientVisits) {
-      await tx.delete(prescriptions).where(eq(prescriptions.visitId, v.id));
-      await tx.delete(attachments).where(eq(attachments.visitId, v.id));
-      await tx.delete(payments).where(eq(payments.visitId, v.id));
-      await tx.delete(visitItems).where(eq(visitItems.visitId, v.id));
-    }
-    await tx.delete(visits).where(eq(visits.patientId, id));
+  // Phase 1: collect IDs for child rows that need sub-cascades (reads outside transaction)
+  const patientVisits = await db.select({ id: visits.id }).from(visits).where(eq(visits.patientId, id));
+  const visitIds = patientVisits.map((v: { id: string }) => v.id);
+  const patientInvoices = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.patientId, id));
+  const invoiceIds = patientInvoices.map((inv: { id: string }) => inv.id);
+  const patientTreatments = await db.select({ id: treatments.id }).from(treatments).where(eq(treatments.patientId, id));
+  const treatmentIds = patientTreatments.map((t: { id: string }) => t.id);
 
-    const patientInvoices = await tx.select({ id: invoices.id }).from(invoices).where(eq(invoices.patientId, id));
-    for (const inv of patientInvoices) {
-      await tx.delete(invoiceTreatments).where(eq(invoiceTreatments.invoiceId, inv.id));
-    }
-    await tx.delete(invoices).where(eq(invoices.patientId, id));
-
-    await tx.delete(treatments).where(eq(treatments.patientId, id));
-    await tx.delete(appointments).where(eq(appointments.patientId, id));
-    await tx.delete(emergencyContacts).where(and(eq(emergencyContacts.entityId, id), eq(emergencyContacts.entityType, "PATIENT")));
-    await tx.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
-    await tx.delete(patients).where(eq(patients.id, id));
-  };
-
-  type DbWithTx = typeof db & { transaction: (fn: (tx: typeof db) => Promise<void>) => Promise<void> };
-  if (typeof (db as unknown as { transaction?: unknown }).transaction === "function") {
-    await (db as unknown as DbWithTx).transaction(cascadeDelete);
-  } else {
-    await cascadeDelete(db);
+  // Phase 2: cascade delete (sequential — avoids D1 transaction batch API limitations)
+  for (const vid of visitIds) {
+    await db.delete(visitTreatments).where(eq(visitTreatments.visitId, vid));
+    await db.delete(prescriptions).where(eq(prescriptions.visitId, vid));
+    await db.delete(attachments).where(eq(attachments.visitId, vid));
+    await db.delete(payments).where(eq(payments.visitId, vid));
+    await db.delete(visitItems).where(eq(visitItems.visitId, vid));
   }
+  await db.delete(visits).where(eq(visits.patientId, id));
+
+  for (const iid of invoiceIds) {
+    await db.delete(invoiceTreatments).where(eq(invoiceTreatments.invoiceId, iid));
+  }
+  await db.delete(invoices).where(eq(invoices.patientId, id));
+
+  // visitTreatments for treatments not already cleaned via visits
+  for (const tid of treatmentIds) {
+    await db.delete(visitTreatments).where(eq(visitTreatments.treatmentId, tid));
+    await db.delete(consentAuditLog).where(eq(consentAuditLog.treatmentId, tid));
+  }
+  await db.delete(treatments).where(eq(treatments.patientId, id));
+  await db.delete(appointments).where(eq(appointments.patientId, id));
+  await db.delete(emergencyContacts).where(and(eq(emergencyContacts.entityId, id), eq(emergencyContacts.entityType, "PATIENT")));
+  await db.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
+  await db.delete(patients).where(eq(patients.id, id));
 
   return NextResponse.json({ success: true });
 }
