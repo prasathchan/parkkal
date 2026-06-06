@@ -276,6 +276,40 @@ async function main() {
     // 0020: indexes for 0017–0019 columns
     `CREATE INDEX IF NOT EXISTS idx_payments_treatment ON payments(treatment_id)`,
     `CREATE INDEX IF NOT EXISTS idx_consent_audit_treatment ON consent_audit_log(treatment_id)`,
+    // 0021: atomic appointment slot uniqueness via triggers
+    `CREATE TRIGGER IF NOT EXISTS trg_appt_no_double_book_insert
+     BEFORE INSERT ON appointments
+     FOR EACH ROW
+     WHEN NEW.status NOT IN ('CANCELLED', 'NO_SHOW')
+     BEGIN
+       SELECT RAISE(ABORT, 'SLOT_TAKEN')
+       WHERE EXISTS (
+         SELECT 1 FROM appointments
+         WHERE organization_id  = NEW.organization_id
+           AND doctor_id        = NEW.doctor_id
+           AND appointment_date = NEW.appointment_date
+           AND appointment_time = NEW.appointment_time
+           AND status NOT IN ('CANCELLED', 'NO_SHOW')
+           AND id != NEW.id
+       );
+     END`,
+    `CREATE TRIGGER IF NOT EXISTS trg_appt_no_double_book_update
+     BEFORE UPDATE OF status ON appointments
+     FOR EACH ROW
+     WHEN OLD.status IN ('CANCELLED', 'NO_SHOW')
+       AND NEW.status NOT IN ('CANCELLED', 'NO_SHOW')
+     BEGIN
+       SELECT RAISE(ABORT, 'SLOT_TAKEN')
+       WHERE EXISTS (
+         SELECT 1 FROM appointments
+         WHERE organization_id  = NEW.organization_id
+           AND doctor_id        = NEW.doctor_id
+           AND appointment_date = NEW.appointment_date
+           AND appointment_time = NEW.appointment_time
+           AND status NOT IN ('CANCELLED', 'NO_SHOW')
+           AND id != OLD.id
+       );
+     END`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }

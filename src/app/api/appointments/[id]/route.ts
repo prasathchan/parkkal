@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, notInArray } from "drizzle-orm";
+
+// Detect the sentinel error raised by migration 0021 triggers.
+function isSlotTaken(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("SLOT_TAKEN");
+}
 import { getDb } from "@/lib/db";
 import { appointments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
@@ -81,6 +87,12 @@ export async function PATCH(
     return NextResponse.json({ appointment: updated });
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    if (isSlotTaken(error)) {
+      return NextResponse.json(
+        { error: "This doctor already has an appointment at that date and time" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

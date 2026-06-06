@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, desc, asc, and, notInArray, count } from "drizzle-orm";
+import { eq, desc, asc, and, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { appointments, patients, users, organizationPatients } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
 import { z } from "zod";
+
+// Detect the sentinel error raised by the BEFORE INSERT / BEFORE UPDATE triggers
+// in migration 0021 — trigger fires RAISE(ABORT, 'SLOT_TAKEN').
+function isSlotTaken(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("SLOT_TAKEN");
+}
 
 const createSchema = z.object({
   patientId: z.string().min(1),
@@ -107,27 +114,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Patient does not belong to this organization" }, { status: 400 });
     }
 
-    // Check for doctor time conflict
-    const [conflict] = await db
-      .select({ id: appointments.id })
-      .from(appointments)
-      .where(
-        and(
-          eq(appointments.organizationId, session.orgId),
-          eq(appointments.doctorId, data.doctorId),
-          eq(appointments.appointmentDate, data.appointmentDate),
-          eq(appointments.appointmentTime, data.appointmentTime),
-          notInArray(appointments.status, ["CANCELLED", "NO_SHOW"])
-        )
-      );
-
-    if (conflict) {
-      return NextResponse.json(
-        { error: "This doctor already has an appointment at that date and time" },
-        { status: 409 }
-      );
-    }
-
     const newAppt = {
       id: generateId(),
       organizationId: session.orgId,
@@ -146,6 +132,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
+    }
+    if (isSlotTaken(error)) {
+      return NextResponse.json(
+        { error: "This doctor already has an appointment at that date and time" },
+        { status: 409 }
+      );
     }
     console.error("Create appointment error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
