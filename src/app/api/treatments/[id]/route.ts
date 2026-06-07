@@ -4,7 +4,11 @@ import { getDb } from "@/lib/db";
 import { treatments, visitTreatments, invoiceTreatments, consentAuditLog, visitItems } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const patchSchema = z.object({
   status: z.enum(["PLANNED", "IN_PROGRESS", "COMPLETED"]).optional(),
@@ -32,6 +36,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/treatments/[id]", session);
 
   if (!TREATMENT_EDIT_ROLES.includes(session.role)) {
@@ -111,6 +117,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/treatments/[id]", session);
 
   // Treatment deletion is irreversible clinical record destruction — ADMIN and DOCTOR only

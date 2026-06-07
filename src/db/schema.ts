@@ -126,6 +126,7 @@ export const patients = sqliteTable("patients", {
   panNumber: text("pan_number"),
   aadhaarNumber: text("aadhaar_number"),
   emergencyContactAdded: integer("emergency_contact_added").notNull().default(0),
+  referralSource: text("referral_source"),   // how patient found the clinic
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -261,6 +262,8 @@ export const visits = sqliteTable("visits", {
   status: text("status", { enum: ["OPEN", "COMPLETED", "CANCELLED"] }).notNull().default("OPEN"),
   totalAmount: real("total_amount").notNull().default(0),
   paidAmount: real("paid_amount").notNull().default(0),
+  recallDate: text("recall_date"),    // YYYY-MM-DD — when the patient should return
+  recallNotes: text("recall_notes"),  // e.g. "6-month checkup", "review root canal"
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

@@ -19,7 +19,10 @@ import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { encryptField } from "@/lib/encryption";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createPatientSchema = z.object({
   name: z.string().min(1),
@@ -35,6 +38,7 @@ const createPatientSchema = z.object({
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
+  referralSource: z.string().max(100).optional(),
   emergencyContact: z
     .object({
       name: z.string().min(1),
@@ -126,6 +130,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/patients", session);
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_CREATE)) {
     log.security("Permission denied: patients.create", {});
@@ -153,6 +159,7 @@ export async function POST(request: NextRequest) {
       panNumber: await encryptField(data.panNumber || null) ?? null,
       aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
       emergencyContactAdded: data.emergencyContact ? 1 : 0,
+      referralSource: data.referralSource || null,
       createdAt: now,
       updatedAt: now,
     };

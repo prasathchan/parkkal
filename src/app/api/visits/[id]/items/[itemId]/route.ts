@@ -5,7 +5,11 @@ import { visitItems, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const patchItemSchema = z.object({
   itemName: z.string().min(1).optional(),
@@ -22,6 +26,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/visits/[id]/items/[itemId]", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
     log.security("Permission denied: BILLING_EDIT", {});
@@ -96,6 +102,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/visits/[id]/items/[itemId]", session);
   if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
     log.security("Permission denied: BILLING_EDIT", {});

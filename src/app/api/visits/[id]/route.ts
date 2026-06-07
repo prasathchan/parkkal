@@ -16,6 +16,10 @@ import {
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 export async function GET(
   request: NextRequest,
@@ -47,6 +51,8 @@ export async function GET(
       paidAmount: visits.paidAmount,
       appointmentId: visits.appointmentId,
       visitType: visits.visitType,
+      recallDate: visits.recallDate,
+      recallNotes: visits.recallNotes,
       createdAt: visits.createdAt,
       updatedAt: visits.updatedAt,
       organizationId: visits.organizationId,
@@ -101,6 +107,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/visits/[id]", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
     log.security("Permission denied: VISITS_EDIT", {});
@@ -144,14 +152,21 @@ export async function PATCH(
   }
 
   // Validate free-text lengths to prevent oversized payloads.
-  const TEXT_LIMITS: Record<string, number> = { chiefComplaint: 500, doctorNotes: 5000, diagnosis: 1000 };
+  const TEXT_LIMITS: Record<string, number> = { chiefComplaint: 500, doctorNotes: 5000, diagnosis: 1000, recallNotes: 500 };
   for (const [field, maxLen] of Object.entries(TEXT_LIMITS)) {
     if (field in body && typeof body[field] === "string" && (body[field] as string).length > maxLen) {
       return NextResponse.json({ error: `${field} exceeds maximum length of ${maxLen}` }, { status: 400 });
     }
   }
 
-  const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate"];
+  // Validate recall date format if provided
+  if ("recallDate" in body && body.recallDate !== null && body.recallDate !== "") {
+    if (typeof body.recallDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.recallDate)) {
+      return NextResponse.json({ error: "recallDate must be YYYY-MM-DD" }, { status: 400 });
+    }
+  }
+
+  const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate", "recallDate", "recallNotes"];
   const updates: Record<string, unknown> = { updatedAt: Date.now() };
   for (const key of allowed) {
     if (key in body) updates[key] = body[key];
@@ -187,6 +202,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/visits/[id]", session);
 
   // Only ADMIN can delete visit records — deletion destroys clinical history.

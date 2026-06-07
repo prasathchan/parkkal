@@ -6,7 +6,11 @@ import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
 import { encryptField, decryptField } from "@/lib/encryption";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const updatePatientSchema = z.object({
   name: z.string().min(1).max(200).optional(),
@@ -66,6 +70,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/patients/[id]", session);
   const { id } = await params;
   if (!await hasPermission(session, PERMISSIONS.PATIENTS_EDIT)) {
@@ -122,6 +128,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/patients/[id]", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can delete patients", { role: session.role });

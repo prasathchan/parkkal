@@ -5,7 +5,10 @@ import { salaryRecords } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const patchSchema = z.object({
   status: z.enum(["PENDING", "PARTIAL", "PAID"]).optional(),
@@ -17,6 +20,8 @@ const patchSchema = z.object({
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/org/salary/[id]", session);
   const { id } = await params;
   if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) {

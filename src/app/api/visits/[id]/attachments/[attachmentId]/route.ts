@@ -5,7 +5,10 @@ import { attachments, visits } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { deleteFile } from "@/lib/storage";
+
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 export async function DELETE(
   request: NextRequest,
@@ -13,6 +16,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/visits/[id]/attachments/[attachmentId]", session);
   if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
     log.security("Permission denied: VISITS_EDIT", {});

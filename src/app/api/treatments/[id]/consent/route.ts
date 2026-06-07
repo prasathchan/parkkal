@@ -4,7 +4,10 @@ import { getDb } from "@/lib/db";
 import { treatments, consentAuditLog } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const overrideSchema = z.object({
   reason: z.string().min(5, "Please provide a reason of at least 5 characters"),
@@ -51,6 +54,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/treatments/[id]/consent", session);
   if (!["ADMIN", "DOCTOR"].includes(session.role)) {
     log.security("Permission denied: only ADMIN/DOCTOR can apply consent override", { role: session.role });

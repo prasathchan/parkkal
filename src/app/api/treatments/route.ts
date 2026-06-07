@@ -5,7 +5,10 @@ import { treatments, patients, users, organizationPatients, organizationMembers 
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createTreatmentSchema = z.object({
   patientId: z.string().min(1),
@@ -88,6 +91,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/treatments", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_CREATE)) {
     log.security("Permission denied: TREATMENTS_CREATE", {});

@@ -18,7 +18,10 @@ import { payments, visits, visitTreatments, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createPaymentSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
@@ -80,6 +83,8 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   if (!await hasPermission(session, PERMISSIONS.BILLING_CREATE)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
