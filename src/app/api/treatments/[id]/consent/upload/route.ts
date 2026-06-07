@@ -5,6 +5,9 @@ import { treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { storeFile } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -98,6 +101,8 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`upload:${session.userId}`, UPLOAD_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/treatments/[id]/consent/upload", session);
 
   const { id } = await params;

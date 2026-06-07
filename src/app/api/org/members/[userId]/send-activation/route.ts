@@ -4,7 +4,10 @@ import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const schema = z.object({
   // mode controls which activation flow the link points to
@@ -17,6 +20,8 @@ export async function POST(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   if (session.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;

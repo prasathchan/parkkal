@@ -5,7 +5,10 @@ import { organizationMembers, users, organizations, verificationTokens } from "@
 import { getSession } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const patchSchema = z.object({
   grant: z.boolean(),
@@ -17,6 +20,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/org/members/[userId]/portal-access", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can toggle portal access", { role: session.role });

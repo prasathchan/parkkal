@@ -5,6 +5,10 @@ import { organizations } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { storeFile, deleteFile } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
+const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 // SVG excluded: can contain embedded JS served as HTML by some browsers
 const ALLOWED_TYPES: Record<string, string> = {
@@ -17,6 +21,8 @@ const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`upload:${session.userId}`, UPLOAD_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/org/logo", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can upload logo", { role: session.role });
@@ -64,6 +70,8 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/org/logo", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can delete logo", { role: session.role });

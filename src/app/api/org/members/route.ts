@@ -8,7 +8,10 @@ import { hashPassword } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+
+const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const addMemberSchema = z.object({
   email: z.string().email().max(254),
@@ -106,6 +109,8 @@ export async function POST(request: NextRequest) {
   const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/org/members", session);
   if (!["ADMIN"].includes(session.role)) {
     log.security("Permission denied: only ADMIN can add members", { role: session.role });
