@@ -26,6 +26,7 @@ import {
   TableCell,
   TableHeadCell,
 } from "@/components/ui/table";
+import { SkeletonTable } from "@/components/ui/skeleton";
 import { calculateAge, formatDate } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { patientsApi } from "@/api/patients";
@@ -88,7 +89,7 @@ export default function PatientsPage() {
       <main className="flex-1 p-6">
         {/* Error banner — shown if the API call fails */}
         {errorMsg && (
-          <div className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          <div role="alert" className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
             <span>{errorMsg}</span>
             <button
               onClick={() => setErrorMsg(null)}
@@ -121,6 +122,11 @@ export default function PatientsPage() {
           </div>
 
           {/* Patient table */}
+          {loading ? (
+            <div role="status" aria-label="Loading patients..." className="p-4">
+              <SkeletonTable rows={8} cols={5} />
+            </div>
+          ) : (
           <Table>
             <TableHead>
               <tr>
@@ -133,13 +139,7 @@ export default function PatientsPage() {
               </tr>
             </TableHead>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : patients.length === 0 ? (
+              {patients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-slate-400">
                     {searchInput ? "No patients found matching your search" : "No patients yet"}
@@ -173,6 +173,7 @@ export default function PatientsPage() {
               )}
             </TableBody>
           </Table>
+          )}
 
           {/* Pagination — only shown when there are more than PAGE_SIZE results */}
           {total > PAGE_SIZE && (

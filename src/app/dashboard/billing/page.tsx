@@ -140,7 +140,7 @@ export default function BillingPage() {
 
       <main className="flex-1 p-6">
         {errorMsg && (
-          <div className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          <div role="alert" className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
             <span>{errorMsg}</span>
             <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 font-medium">✕</button>
           </div>
@@ -162,6 +162,7 @@ export default function BillingPage() {
           <div className="px-6 py-3 border-b border-slate-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <input
               type="text"
+              aria-label="Search billing records"
               placeholder="Search by patient name or visit code…"
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}

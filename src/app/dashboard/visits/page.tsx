@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
+import { SkeletonTable } from "@/components/ui/skeleton";
 
 interface Visit {
   id: string;
@@ -101,12 +102,14 @@ export default function VisitsPage() {
           </select>
           <input
             type="date"
+            aria-label="Filter by date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="text"
+            aria-label="Search visits"
             placeholder="Search patient or visit code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -147,6 +150,11 @@ export default function VisitsPage() {
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          {loading ? (
+            <div role="status" aria-label="Loading visits..." className="p-4">
+              <SkeletonTable rows={8} cols={6} />
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -163,11 +171,7 @@ export default function VisitsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-10 text-slate-400">Loading...</td>
-                  </tr>
-                ) : visits.length === 0 ? (
+                {visits.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="text-center py-10">
                       <p className="text-slate-400">
@@ -227,6 +231,7 @@ export default function VisitsPage() {
               </tbody>
             </table>
           </div>
+          )}
 
           {/* Pagination footer */}
           {!loading && hasMore && (

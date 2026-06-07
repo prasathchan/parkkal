@@ -39,6 +39,7 @@ export default function NewPatientPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [apiFieldErrors, setApiFieldErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -83,6 +84,7 @@ export default function NewPatientPage() {
     e.preventDefault();
     if (!canSubmit) return;
     setError("");
+    setApiFieldErrors({});
     setLoading(true);
 
     const addressString = serializeAddress(addressData);
@@ -112,6 +114,14 @@ export default function NewPatientPage() {
 
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 400 && data.details) {
+          const errs: Record<string, string> = {};
+          for (const e of data.details as Array<{ path: string[]; message: string }>) {
+            if (e.path?.[0]) errs[String(e.path[0])] = e.message;
+          }
+          setApiFieldErrors(errs);
+          return;
+        }
         setError(data.error || "Failed to create patient");
         return;
       }
@@ -143,33 +153,42 @@ export default function NewPatientPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  id="name"
-                  label="Full Name *"
-                  value={form.name}
-                  onChange={update("name")}
-                  required
-                  placeholder="e.g. Rajan Kumar"
-                />
-                <Input
-                  id="phone"
-                  label="Phone Number *"
-                  value={form.phone}
-                  onChange={update("phone")}
-                  required
-                  placeholder="+91 98765 43210"
-                  error={touched.phone ? fieldErrors.phone : ""}
-                />
+                <div>
+                  <Input
+                    id="name"
+                    label="Full Name *"
+                    value={form.name}
+                    onChange={update("name")}
+                    required
+                    placeholder="e.g. Rajan Kumar"
+                  />
+                  {apiFieldErrors.name && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.name}</p>}
+                </div>
+                <div>
+                  <Input
+                    id="phone"
+                    label="Phone Number *"
+                    value={form.phone}
+                    onChange={update("phone")}
+                    required
+                    placeholder="+91 98765 43210"
+                    error={touched.phone ? fieldErrors.phone : ""}
+                  />
+                  {apiFieldErrors.phone && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.phone}</p>}
+                </div>
               </div>
 
-              <Input
-                id="email"
-                label="Email Address"
-                value={form.email}
-                onChange={update("email")}
-                placeholder="patient@example.com"
-                error={touched.email ? fieldErrors.email : ""}
-              />
+              <div>
+                <Input
+                  id="email"
+                  label="Email Address"
+                  value={form.email}
+                  onChange={update("email")}
+                  placeholder="patient@example.com"
+                  error={touched.email ? fieldErrors.email : ""}
+                />
+                {apiFieldErrors.email && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.email}</p>}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input

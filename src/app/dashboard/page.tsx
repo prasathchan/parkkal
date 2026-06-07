@@ -120,6 +120,33 @@ export default async function DashboardPage() {
 
 
       <main className="flex-1 p-6 space-y-6">
+        {/* Onboarding checklist — shown only when clinic has no data yet */}
+        {stats.totalPatients === 0 && stats.todayAppointments === 0 && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <h2 className="text-sm font-semibold text-blue-800 mb-3">
+              🎉 Welcome to Parkkal — let&apos;s get started
+            </h2>
+            <ol className="space-y-2 text-sm text-blue-700">
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">1</span>
+                <Link href="/dashboard/patients/new" className="underline hover:text-blue-900">Add your first patient</Link>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">2</span>
+                <Link href="/dashboard/appointments/new" className="underline hover:text-blue-900">Schedule an appointment</Link>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">3</span>
+                <Link href="/dashboard/staff" className="underline hover:text-blue-900">Invite your team</Link>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">4</span>
+                <Link href="/dashboard/settings" className="underline hover:text-blue-900">Configure clinic profile</Link>
+              </li>
+            </ol>
+          </div>
+        )}
+
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatCard

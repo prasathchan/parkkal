@@ -106,11 +106,13 @@ export default function AppointmentsPage() {
             <div className="flex gap-3 flex-wrap items-center">
               <input
                 type="date"
+                aria-label="Filter by date"
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <select
+                aria-label="Filter by appointment status"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
