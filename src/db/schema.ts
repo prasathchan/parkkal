@@ -335,6 +335,18 @@ export const verificationTokens = sqliteTable("verification_tokens", {
   createdAt: integer("created_at").notNull(),
 });
 
+export const adminAuditLog = sqliteTable("admin_audit_log", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull(),
+  actorId: text("actor_id").notNull(),
+  actorRole: text("actor_role").notNull(),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: text("target_id"),
+  metadata: text("metadata"), // JSON string
+  createdAt: integer("created_at").notNull(),
+});
+
 export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),
   treatmentId: text("treatment_id").notNull().references(() => treatments.id),

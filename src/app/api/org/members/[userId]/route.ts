@@ -5,6 +5,7 @@ import { organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { writeAuditLog } from "@/lib/audit";
 import { z } from "zod";
 
 const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
@@ -57,6 +58,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await db.update(organizationMembers).set(updates).where(
       and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
     );
+    const action = data.isActive === false ? "MEMBER_DEACTIVATED" : data.orgRoleId ? "MEMBER_ROLE_CHANGED" : "MEMBER_DEACTIVATED";
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action, targetType: "member", targetId: userId, metadata: { updatedFields: Object.keys(updates) } });
     log.info("Member updated", { targetUserId: userId, updates: Object.keys(updates) });
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -94,6 +97,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   await db.delete(organizationMembers).where(
     and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, userId))
   );
+  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "MEMBER_DELETED", targetType: "member", targetId: userId });
   log.info("Member removed from org", { targetUserId: userId });
   return NextResponse.json({ success: true });
 }

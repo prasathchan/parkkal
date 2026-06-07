@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -83,6 +84,7 @@ export async function PATCH(
   if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
 
   await db.update(orgRoles).set(updates).where(eq(orgRoles.id, roleId));
+  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_UPDATED", targetType: "role", targetId: roleId });
   log.info("Role updated", { roleId, affectedUsers: membersWithRole.length });
   return NextResponse.json({
     role: { ...role, ...updates, permissions: permissions ?? JSON.parse(role.permissions || "[]") },
@@ -125,6 +127,7 @@ export async function DELETE(
   }
 
   await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
+  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_DELETED", targetType: "role", targetId: roleId });
   log.info("Role deleted", { roleId });
   return NextResponse.json({ success: true });
 }

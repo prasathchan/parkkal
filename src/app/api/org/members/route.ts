@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { hashPassword } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -259,6 +260,7 @@ export async function POST(request: NextRequest) {
     // Exclude passwordHash from response
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "MEMBER_INVITED", targetType: "member", targetId: existingUser.id, metadata: { role: data.role, activationMode: data.activationMode } });
     log.info("Staff member added", { newUserId: existingUser.id, role: data.role, isNewUser, activationMode: data.activationMode });
     return NextResponse.json({ member, user: safeUser }, { status: 201 });
   } catch (error) {

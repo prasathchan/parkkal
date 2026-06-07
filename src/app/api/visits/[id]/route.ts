@@ -16,6 +16,7 @@ import {
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
@@ -239,6 +240,7 @@ export async function DELETE(
   await db.delete(visitItems).where(eq(visitItems.visitId, id));
   await db.delete(visits).where(eq(visits.id, id));
 
+  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "VISIT_DELETED", targetType: "visit", targetId: id });
   log.info("Visit deleted", { visitId: id });
   return NextResponse.json({ success: true });
 }

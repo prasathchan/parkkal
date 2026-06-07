@@ -5,6 +5,7 @@ import { patients, organizationPatients, appointments, treatments, visitTreatmen
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -177,6 +178,7 @@ export async function DELETE(
   await db.delete(organizationPatients).where(eq(organizationPatients.patientId, id));
   await db.delete(patients).where(eq(patients.id, id));
 
+  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "PATIENT_DELETED", targetType: "patient", targetId: id });
   log.info("Patient deleted", { patientId: id });
   return NextResponse.json({ success: true });
 }

@@ -48,6 +48,7 @@ export default function NewPatientPage() {
     gender: "",
     bloodGroup: "",
     medicalHistory: "",
+    referralSource: "",
     panNumber: "",
     aadhaarNumber: "",
     ecName: "",
@@ -98,6 +99,7 @@ export default function NewPatientPage() {
       bloodGroup: form.bloodGroup || undefined,
       address: addressString || undefined,
       medicalHistory: form.medicalHistory,
+      referralSource: form.referralSource || undefined,
       panNumber: form.panNumber,
       aadhaarNumber: form.aadhaarNumber,
       emergencyContact: form.ecName && form.ecRelationship && form.ecPhone
@@ -238,6 +240,20 @@ export default function NewPatientPage() {
                   rows={3}
                   placeholder="Known allergies, conditions, medications..."
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  How did the patient find us? <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.referralSource}
+                  onChange={update("referralSource")}
+                  maxLength={100}
+                  placeholder="e.g. Google, friend referral, Facebook, walk-in…"
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 />
               </div>
 

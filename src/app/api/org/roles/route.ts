@@ -5,6 +5,7 @@ import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
@@ -197,6 +198,7 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(orgRoles).values(newRole);
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_CREATED", targetType: "role", targetId: newRole.id, metadata: { roleName: newRole.name } });
     log.info("Role created", { roleId: newRole.id, roleName: newRole.name });
     return NextResponse.json(
       { role: { ...newRole, permissions: permissions || [] } },

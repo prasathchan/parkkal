@@ -5,6 +5,7 @@ import { organizationMembers, users, organizations, verificationTokens } from "@
 import { getSession } from "@/lib/auth";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
+import { writeAuditLog } from "@/lib/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
@@ -143,6 +144,7 @@ export async function PATCH(
       }
     }
 
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "MEMBER_PORTAL_ACCESS_CHANGED", targetType: "member", targetId: userId, metadata: { grant } });
     log.info("Portal access updated", { targetUserId: userId, grant });
     return NextResponse.json({ success: true, portalAccess: grant ? 1 : 0 });
   } catch (error) {
