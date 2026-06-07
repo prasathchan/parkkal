@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ function validateAadhaar(aadhaar: string) {
 
 export default function NewPatientPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -124,12 +126,15 @@ export default function NewPatientPage() {
           setApiFieldErrors(errs);
           return;
         }
+        toast.error(data.error || "Failed to create patient");
         setError(data.error || "Failed to create patient");
         return;
       }
 
+      toast.success("Patient created successfully");
       router.push(`/dashboard/patients/${data.patient.id}`);
     } catch {
+      toast.error("Something went wrong. Please try again.");
       setError("Something went wrong.");
     } finally {
       setLoading(false);

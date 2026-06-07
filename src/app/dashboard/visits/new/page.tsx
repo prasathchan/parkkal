@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { formatDoctorName } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
@@ -40,6 +41,7 @@ export default function NewVisitPage() {
 
 function NewVisitForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const prefillApplied = useRef(false);
 
@@ -203,11 +205,14 @@ function NewVisitForm() {
         router.push(`/dashboard/visits/${data.visitId}`);
         return;
       }
-      setError(data.error || "Failed to create visit");
+      const msg = data.error || "Failed to create visit";
+      toast.error(msg);
+      setError(msg);
       setSubmitting(false);
       return;
     }
 
+    toast.success("Visit created successfully");
     router.push(`/dashboard/visits/${data.visit.id}`);
   }
 

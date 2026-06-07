@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
@@ -29,6 +30,7 @@ interface AdminMember {
 type Tab = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
+  const { toast } = useToast();
   const [org, setOrg] = useState<OrgProfile | null>(null);
   const [tab, setTab] = useState<Tab>("profile");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
@@ -87,7 +89,14 @@ export default function SettingsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, address: serializeAddress(addressData) }),
     });
-    setMessage(res.ok ? "Profile saved successfully." : ((await res.json()).error || "Failed to save."));
+    if (res.ok) {
+      toast.success("Profile saved successfully");
+      setMessage("Profile saved successfully.");
+    } else {
+      const msg = (await res.json()).error || "Failed to save.";
+      toast.error(msg);
+      setMessage(msg);
+    }
     setSaving(false);
   }
 
@@ -100,6 +109,7 @@ export default function SettingsPage() {
       body: JSON.stringify({ themeConfig: theme }),
     });
     if (res.ok) {
+      toast.success("Appearance saved");
       setMessage("Appearance saved. Refresh to see all changes.");
       // Apply immediately
       document.documentElement.style.setProperty("--primary", theme.primaryColor);
@@ -108,7 +118,9 @@ export default function SettingsPage() {
       if (theme.darkMode === "dark") document.documentElement.classList.add("dark");
       else if (theme.darkMode === "light") document.documentElement.classList.remove("dark");
     } else {
-      setMessage((await res.json()).error || "Failed to save.");
+      const msg = (await res.json()).error || "Failed to save.";
+      toast.error(msg);
+      setMessage(msg);
     }
     setSaving(false);
   }
@@ -182,12 +194,16 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setPwMessage({ type: "error", text: data.error || "Failed to change password." });
+        const msg = data.error || "Failed to change password.";
+        toast.error(msg);
+        setPwMessage({ type: "error", text: msg });
       } else {
+        toast.success("Password changed successfully");
         setPwMessage({ type: "success", text: "Password changed successfully." });
         setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       }
     } catch {
+      toast.error("Something went wrong. Please try again.");
       setPwMessage({ type: "error", text: "Something went wrong." });
     } finally {
       setPwSaving(false);

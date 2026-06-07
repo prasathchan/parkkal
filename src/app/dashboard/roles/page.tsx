@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/header";
+import { useToast } from "@/context/toast-context";
 
 const ALL_PERMISSIONS = [
   { group: "Patients", perms: ["patients.view", "patients.create", "patients.edit", "patients.delete"] },
@@ -47,6 +48,7 @@ function permLabel(perm: string): string {
 }
 
 function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
+  const { toast } = useToast();
   const [name, setName] = useState(role?.name ?? "");
   const [description, setDescription] = useState(role?.description ?? "");
   const [color, setColor] = useState(role?.color ?? "#3B82F6");
@@ -73,9 +75,11 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
         body: JSON.stringify({ name, description, color, permissions }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to save role"); return; }
+      if (!res.ok) { toast.error(data.error || "Failed to save role"); setError(data.error || "Failed to save role"); return; }
+      toast.success(role ? "Role updated" : "Role created");
       onSave();
     } catch {
+      toast.error("Failed to save role");
       setError("Failed to save role");
     } finally {
       setSaving(false);
@@ -211,6 +215,7 @@ interface DeleteModalProps {
 }
 
 function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
+  const { toast } = useToast();
   const [targetRoleId, setTargetRoleId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -222,9 +227,11 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
     try {
       const res = await fetch(`/api/org/roles/${role.id}`, { method: "DELETE" });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to delete"); return; }
+      if (!res.ok) { toast.error(data.error || "Failed to delete"); setError(data.error || "Failed to delete"); return; }
+      toast.success(`Role "${role.name}" deleted`);
       onDeleted();
     } catch {
+      toast.error("Failed to delete role");
       setError("Failed to delete role");
     } finally {
       setLoading(false);
@@ -242,9 +249,11 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
         body: JSON.stringify({ targetRoleId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to migrate"); return; }
+      if (!res.ok) { toast.error(data.error || "Failed to migrate"); setError(data.error || "Failed to migrate"); return; }
+      toast.success(`Members migrated and role "${role.name}" deleted`);
       onDeleted();
     } catch {
+      toast.error("Failed to migrate role");
       setError("Failed to migrate role");
     } finally {
       setLoading(false);

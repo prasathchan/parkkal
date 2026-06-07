@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { formatDoctorName } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ export default function NewAppointmentPage() {
 
 function NewAppointmentForm() {
   const router = useRouter();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const prefillApplied = useRef(false);
   const [loading, setLoading] = useState(false);
@@ -130,9 +132,16 @@ function NewAppointmentForm() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Failed to create appointment"); return; }
+      if (!res.ok) {
+        const msg = data.error || "Failed to create appointment";
+        toast.error(msg);
+        setError(msg);
+        return;
+      }
+      toast.success("Appointment booked successfully");
       router.push("/dashboard/appointments");
     } catch {
+      toast.error("Something went wrong. Please try again.");
       setError("Something went wrong.");
     } finally {
       setLoading(false);

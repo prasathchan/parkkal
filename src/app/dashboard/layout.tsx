@@ -7,6 +7,7 @@ import { organizations } from "@/db/schema";
 import { parseThemeConfig } from "@/lib/theme";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/sidebar";
+import { DashboardProviders } from "@/components/providers/dashboard-providers";
 
 export default async function DashboardLayout({
   children,
@@ -35,7 +36,9 @@ export default async function DashboardLayout({
           user={{ name: session.name, role: session.role, orgName: session.orgName }}
           logoUrl={org?.logoUrl ?? null}
         />
-        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">{children}</div>
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+          <DashboardProviders>{children}</DashboardProviders>
+        </div>
       </div>
     </ThemeProvider>
   );

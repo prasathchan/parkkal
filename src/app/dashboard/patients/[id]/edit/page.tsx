@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const GENDERS: { value: string; label: string }[] = [
 export default function PatientEditPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -118,12 +120,15 @@ export default function PatientEditPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.error || "Failed to save changes");
         setError(data.error || "Failed to save changes");
         return;
       }
+      toast.success("Patient updated successfully");
       setSuccess(true);
-      setTimeout(() => router.push(`/dashboard/patients/${id}`), 1000);
+      setTimeout(() => router.push(`/dashboard/patients/${id}`), 800);
     } catch {
+      toast.error("Something went wrong. Please try again.");
       setError("Something went wrong.");
     } finally {
       setSaving(false);
