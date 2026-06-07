@@ -81,6 +81,23 @@ export default function TreatmentsPage() {
   const [submitError, setSubmitError] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
+  // Visit history detail modal
+  const [detailTreatment, setDetailTreatment] = useState<TreatmentRecord | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailData, setDetailData] = useState<{
+    visits: { visitId: string; visitCode: string; visitDate: string; visitStatus: string; visitTotalAmount: number; visitPaidAmount: number; doctorName: string | null }[];
+    summary: { treatmentCost: number; totalPaid: number; outstanding: number; visitCount: number };
+  } | null>(null);
+
+  async function openDetail(t: TreatmentRecord) {
+    setDetailTreatment(t);
+    setDetailData(null);
+    setDetailLoading(true);
+    const res = await fetch(`/api/treatments/${t.id}/visits`);
+    if (res.ok) setDetailData(await res.json());
+    setDetailLoading(false);
+  }
+
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -437,6 +454,14 @@ export default function TreatmentsPage() {
                       <td className="px-4 py-3 text-right font-medium text-slate-900">
                         {formatCurrency(t.cost ?? 0)}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => openDetail(t)}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                        >
+                          View History
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -463,6 +488,108 @@ export default function TreatmentsPage() {
           )}
         </div>
       </main>
+
+      {/* Visit History Detail Modal */}
+      {detailTreatment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between p-6 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">{detailTreatment.description}</h3>
+                {detailTreatment.procedure && <p className="text-xs text-slate-500 mt-0.5">{detailTreatment.procedure}</p>}
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${detailTreatment.status === "PLANNED" ? "bg-yellow-50 text-yellow-700" : detailTreatment.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>
+                    {detailTreatment.status}
+                  </span>
+                  <span className="text-xs text-slate-500">{detailTreatment.patientName} · {detailTreatment.patientCode}</span>
+                </div>
+              </div>
+              <button onClick={() => setDetailTreatment(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none ml-4">×</button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+              {detailLoading ? (
+                <p className="text-sm text-slate-400 text-center py-8">Loading visit history...</p>
+              ) : !detailData ? (
+                <p className="text-sm text-red-500 text-center py-8">Failed to load visit history.</p>
+              ) : (
+                <>
+                  {/* Financial Summary */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-50 rounded-xl p-4 text-center">
+                      <p className="text-xs text-slate-500 mb-1">Treatment Cost</p>
+                      <p className="text-lg font-bold text-slate-900">{formatCurrency(detailData.summary.treatmentCost)}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-xl p-4 text-center">
+                      <p className="text-xs text-green-600 mb-1">Total Paid</p>
+                      <p className="text-lg font-bold text-green-700">{formatCurrency(detailData.summary.totalPaid)}</p>
+                    </div>
+                    <div className={`rounded-xl p-4 text-center ${detailData.summary.outstanding > 0 ? "bg-red-50" : "bg-slate-50"}`}>
+                      <p className={`text-xs mb-1 ${detailData.summary.outstanding > 0 ? "text-red-500" : "text-slate-500"}`}>Outstanding</p>
+                      <p className={`text-lg font-bold ${detailData.summary.outstanding > 0 ? "text-red-700" : "text-slate-400"}`}>{formatCurrency(detailData.summary.outstanding)}</p>
+                    </div>
+                  </div>
+
+                  {/* Visit History */}
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700 mb-3">
+                      Visit History <span className="text-slate-400 font-normal">({detailData.summary.visitCount} {detailData.summary.visitCount === 1 ? "visit" : "visits"})</span>
+                    </p>
+                    {detailData.visits.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-4 border border-dashed border-slate-200 rounded-xl">
+                        This treatment plan has not been linked to any visit yet.
+                      </p>
+                    ) : (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                            <tr>
+                              <th className="px-4 py-2.5 text-left font-medium">Visit</th>
+                              <th className="px-4 py-2.5 text-left font-medium">Date</th>
+                              <th className="px-4 py-2.5 text-left font-medium">Doctor</th>
+                              <th className="px-4 py-2.5 text-left font-medium">Status</th>
+                              <th className="px-4 py-2.5 text-right font-medium">Billed</th>
+                              <th className="px-4 py-2.5 text-right font-medium">Paid</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {detailData.visits.map((v) => (
+                              <tr key={v.visitId} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-mono text-blue-700 text-xs">
+                                  <a href={`/dashboard/visits/${v.visitId}`} className="hover:underline">{v.visitCode}</a>
+                                </td>
+                                <td className="px-4 py-3 text-slate-700">{v.visitDate}</td>
+                                <td className="px-4 py-3 text-slate-600">{v.doctorName || "—"}</td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${v.visitStatus === "OPEN" ? "bg-blue-50 text-blue-700" : v.visitStatus === "COMPLETED" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                                    {v.visitStatus}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(v.visitTotalAmount)}</td>
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(v.visitPaidAmount)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100">
+              <button
+                onClick={() => setDetailTreatment(null)}
+                className="w-full py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Treatment Plan Modal */}
       {showSlideover && (

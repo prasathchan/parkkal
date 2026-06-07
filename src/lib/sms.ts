@@ -1,3 +1,13 @@
+// Normalize bare 10-digit Indian mobile numbers to E.164 (+91XXXXXXXXXX).
+// Twilio rejects numbers without a country code prefix.
+function toE164(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (phone.startsWith("+")) return phone;
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  return phone; // already has a prefix or unknown format — pass through
+}
+
 export async function sendSMSOTP(to: string, code: string): Promise<void> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
@@ -17,7 +27,7 @@ export async function sendSMSOTP(to: string, code: string): Promise<void> {
 
   const body = new URLSearchParams({
     From: from,
-    To: to,
+    To: toE164(to),
     Body: `Your Parkkal verification code: ${code}. Valid for 15 minutes. Do not share this with anyone.`,
   });
 

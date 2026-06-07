@@ -22,6 +22,7 @@ interface AdminMember {
   userId: string;
   name: string;
   email: string;
+  phone: string | null;
 }
 
 
@@ -67,10 +68,11 @@ export default function SettingsPage() {
       .then(r => r.json())
       .then(data => {
         const admins = (data.members || []).filter((m: { role: string }) => m.role === "ADMIN");
-        setAdminMembers(admins.map((m: { userId: string; name: string; email: string }) => ({
+        setAdminMembers(admins.map((m: { userId: string; name: string; email: string; phone: string | null }) => ({
           userId: m.userId,
           name: m.name,
           email: m.email,
+          phone: m.phone ?? null,
         })));
       })
       .catch(() => {});
@@ -229,7 +231,14 @@ export default function SettingsPage() {
               <Field label="Contact Person">
                 <select
                   value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  onChange={e => {
+                    const selected = adminMembers.find(m => m.email === e.target.value);
+                    setForm(f => ({
+                      ...f,
+                      email: e.target.value,
+                      phone: selected?.phone ?? f.phone,
+                    }));
+                  }}
                   className="field-input"
                 >
                   <option value="">— None —</option>
