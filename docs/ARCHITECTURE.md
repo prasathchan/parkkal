@@ -132,8 +132,11 @@ parkkal/
 ├── drizzle/
 │   └── migrations/             ← SQL files, one per schema change (never edit old ones)
 │
-├── ARCHITECTURE.md             ← This file
-├── CONTRIBUTING.md             ← How to make changes
+├── docs/
+│   ├── ARCHITECTURE.md         ← This file
+│   ├── CONTRIBUTING.md         ← How to make changes
+│   ├── ENGINEERING.md          ← Engineering standards and decisions
+│   └── PRD.md                  ← Product requirements document
 └── package.json
 ```
 

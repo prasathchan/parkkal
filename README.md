@@ -6,6 +6,17 @@ Every clinic is a fully isolated **organization**. A user account can belong to 
 
 ---
 
+## Documentation
+
+| Doc | Description |
+|---|---|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the system is built — layers, folder map, data flow, security model |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Golden rules, pre-commit checklist, commit message format |
+| [ENGINEERING.md](docs/ENGINEERING.md) | Engineering standards, ADRs, and technical decisions |
+| [PRD.md](docs/PRD.md) | Product requirements and feature specifications |
+
+---
+
 ## Table of Contents
 
 - [Tech Stack](#tech-stack)
@@ -130,28 +141,32 @@ Navigate to `http://localhost:3000/signup`. Enter your name, email, phone, passw
 ```
 parkkal/
 │
-├── middleware.ts              ← Edge auth gate: validates pkd_org_session for /api/* and /dashboard/*
 ├── wrangler.toml              ← Cloudflare Worker config: D1 binding, R2 binding, worker name, routes
 ├── next.config.ts             ← Next.js config (Cloudflare adapter)
 ├── drizzle.config.ts          ← Drizzle Kit config
 │
+├── docs/                      ← Project documentation (architecture, contributing, PRD)
 ├── drizzle/
-│   └── migrations/            ← SQL files: 0001_init.sql → 0014_consent_form.sql
-│                                 Applied in numeric order. Never modify existing files.
+│   └── migrations/            ← SQL files: 0001_init.sql → latest. Never modify existing files.
 │
 └── src/
+    ├── middleware.ts          ← Edge auth gate: JWT validation, CSP headers, route protection
+    │
     ├── db/
     │   └── schema.ts          ← Single source of truth for all DB tables and columns (Drizzle schema)
     │
     ├── lib/
     │   ├── auth-edge.ts       ← JWT: createToken, createOrgToken, verifyOrgToken, getSession()
     │   ├── auth.ts            ← Re-exports auth-edge + bcrypt: hashPassword, verifyPassword
+    │   ├── billing.ts         ← getBillingStatus(), getBalanceDue(), getTreatmentOutstanding()
     │   ├── db.ts              ← getDb() — D1 in prod, libsql in dev
+    │   ├── encryption.ts      ← AES-256-GCM field encryption for PAN/Aadhaar
+    │   ├── logger.ts          ← Structured JSON logger with context + automatic redaction
+    │   ├── permissions.ts     ← hasPermission(), PERMISSIONS constants
     │   ├── rate-limit.ts      ← checkRateLimit(), getClientIp() — D1-backed + in-memory fallback
     │   ├── storage.ts         ← storeFile(), getFile(), deleteFile() — R2 in prod, local in dev
     │   ├── email.ts           ← sendEmailOTP(), sendStaffInviteEmail()
     │   ├── sms.ts             ← sendSMSOTP()
-    │   ├── flags.ts           ← isFeatureEnabled(), getAllFlagsForOrg()
     │   ├── utils.ts           ← formatCurrency, formatDoctorName, generateId, cn()
     │   ├── theme.ts           ← parseThemeConfig, getSidebarColors
     │   └── default-roles.ts   ← DEFAULT_ROLES seeded when a new org is created at signup
