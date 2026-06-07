@@ -4,7 +4,12 @@ import { getDb } from "@/lib/db";
 import { organizations, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { writeAuditLog } from "@/lib/audit";
 import { z } from "zod";
+
+const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
+const WRITE_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const updateOrgSchema = z.object({
   name: z.string().min(1).optional(),
@@ -18,6 +23,8 @@ const updateOrgSchema = z.object({
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("GET /api/org/profile", session);
 
   try {
@@ -34,6 +41,8 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/org/profile", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can update org profile", { role: session.role });
@@ -74,6 +83,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ORG_PROFILE_UPDATED", targetType: "organization", targetId: session.orgId });
     log.info("Org profile updated");
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -5,8 +5,10 @@ import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-const OTP_RATE_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId
+const OTP_RATE_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId (DB-level)
+const IP_RATE_LIMIT = { limit: 10, windowMs: 60_000 }; // 10 per minute per IP (fast pre-check)
 
 function generateOTP(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(4));
@@ -16,6 +18,10 @@ function generateOTP(): string {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
+  const ipRl = await checkRateLimit(`otp-req:${ip}`, IP_RATE_LIMIT);
+  if (!ipRl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const log = logger.forRoute("POST /api/auth/phone/request-otp", session);

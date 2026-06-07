@@ -25,10 +25,16 @@ import {
 } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+// Org deletion is the most destructive operation in the system — 5 attempts per hour max.
+const ORG_DELETE_RATE_LIMIT = { limit: 5, windowMs: 60 * 60_000 };
 
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`org-delete:${session.userId}`, ORG_DELETE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/org/delete", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can delete org", { role: session.role });

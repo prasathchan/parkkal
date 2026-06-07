@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const PINCODE_RATE_LIMIT = { limit: 60, windowMs: 60_000 };
 
 interface PostOffice {
   Name: string;
@@ -13,6 +16,10 @@ interface PincodeApiResult {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
+  const rl = await checkRateLimit(`pincode:${ip}`, PINCODE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ found: false, error: "Too many requests." }, { status: 429 });
+
   const pincode = new URL(request.url).searchParams.get("pincode");
   if (!pincode || !/^\d{6}$/.test(pincode)) {
     return NextResponse.json({ found: false, error: "Invalid pincode" }, { status: 400 });

@@ -5,10 +5,17 @@ import { salaryRecords, organizationMembers, users, appointments } from "@/db/sc
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { writeAuditLog } from "@/lib/audit";
+
+const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
+const WRITE_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 export async function GET(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("GET /api/org/salary", session);
   if (!(await hasPermission(session, PERMISSIONS.SALARY_VIEW))) {
     log.security("Permission denied: salary.view", {});
@@ -49,6 +56,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/org/salary", session);
   if (!(await hasPermission(session, PERMISSIONS.SALARY_MANAGE))) {
     log.security("Permission denied: salary.manage", {});
@@ -151,6 +160,7 @@ export async function POST(request: NextRequest) {
       created.push(record);
     }
 
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "SALARY_GENERATED", targetType: "salary", metadata: { month, count: created.length } });
     log.info("Salary records generated", { month, created: created.length });
     return NextResponse.json({ created: created.length, month });
   } catch (error) {

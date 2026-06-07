@@ -5,6 +5,9 @@ import { treatments, visitTreatments, visits, users, payments } from "@/db/schem
 import { getSession } from "@/lib/auth";
 import { hasPermission, PERMISSIONS } from "@/lib/permissions";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,6 +20,8 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(request: NextRequest, { params }: Params) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("GET /api/treatments/[id]/visits", session);
   if (!await hasPermission(session, PERMISSIONS.TREATMENTS_VIEW)) {
     log.security("Permission denied: TREATMENTS_VIEW", {});

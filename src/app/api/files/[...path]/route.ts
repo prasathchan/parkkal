@@ -4,6 +4,9 @@ import { getDb } from "@/lib/db";
 import { attachments, visits, organizationPatients, organizations, treatments } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { getFile } from "@/lib/storage";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
 
 export async function GET(
   request: NextRequest,
@@ -11,6 +14,8 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
 
   const { path: segments } = await params;
   if (!segments || segments.length < 2) {

@@ -5,6 +5,10 @@ import { orgRoles, organizationMembers, users } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { writeAuditLog } from "@/lib/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
+const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -16,6 +20,8 @@ export async function GET(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("GET /api/org/roles/[roleId]", session);
 
   const { roleId } = await params;
@@ -49,6 +55,8 @@ export async function PATCH(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("PATCH /api/org/roles/[roleId]", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can update roles", { role: session.role });
@@ -98,6 +106,8 @@ export async function DELETE(
 ) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const destructiveRl = await checkRateLimit(`destructive:${session.userId}`, { limit: 10, windowMs: 60_000 });
+  if (!destructiveRl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("DELETE /api/org/roles/[roleId]", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can delete roles", { role: session.role });
