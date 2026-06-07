@@ -5,6 +5,9 @@ import { orgRoles, organizationMembers } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
 import { logger } from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 // Maps system role enum → default role slug
 const SYSTEM_ROLE_TO_SLUG: Record<string, string> = {
@@ -145,6 +148,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
+  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   const log = logger.forRoute("POST /api/org/roles", session);
   if (session.role !== "ADMIN") {
     log.security("Permission denied: only ADMIN can create roles", { role: session.role });
