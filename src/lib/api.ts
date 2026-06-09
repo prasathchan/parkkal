@@ -283,84 +283,84 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
     // Set up a logger that tags every message with this route + user
     const log = logger.forRoute(options.route, session);
 
-    // ── 1a. Token Revocation ───────────────────────────────────────────────
-    // Reject tokens that have been explicitly revoked (logout, staff deactivation).
-    // jti is present on all tokens minted after migration 0029.
-    if (session.jti && await isTokenRevoked(session.jti)) {
-      log.security("Revoked token used", { jti: session.jti });
-      writeAppLog({
-        level: "security", route: options.route,
-        message: "Revoked token used",
-        organizationId: session.orgId, userId: session.userId, userRole: session.role,
-        data: { jti: session.jti },
-      });
-      return apiError("Unauthorized", 401);
-    }
-
-    // ── 1b. Member Active Check ────────────────────────────────────────────
-    // Reject requests from staff whose account has been deactivated in the org.
-    // This catches the window between deactivation and token expiry (up to 24h).
-    // ADMIN role bypasses this check — at least one admin must always work.
-    if (session.role !== "ADMIN") {
-      const db = getDb();
-      const [member] = await db
-        .select({ isActive: organizationMembers.isActive })
-        .from(organizationMembers)
-        .where(
-          and(
-            eq(organizationMembers.organizationId, session.orgId),
-            eq(organizationMembers.userId, session.userId)
-          )
-        );
-      if (!member || member.isActive === 0) {
-        log.security("Deactivated member attempted access", {});
+    // ── 1a–5. Auth checks + Business Logic + Error Handling ───────────────
+    // The entire post-auth pipeline is wrapped in one try-catch so that any
+    // unexpected throw (DB binding missing, Drizzle error, etc.) always
+    // produces our structured JSON 500 — never a bare Next.js error page.
+    try {
+      // ── 1a. Token Revocation ─────────────────────────────────────────────
+      if (session.jti && await isTokenRevoked(session.jti)) {
+        log.security("Revoked token used", { jti: session.jti });
         writeAppLog({
           level: "security", route: options.route,
-          message: "Deactivated member attempted access",
+          message: "Revoked token used",
+          organizationId: session.orgId, userId: session.userId, userRole: session.role,
+          data: { jti: session.jti },
+        });
+        return apiError("Unauthorized", 401);
+      }
+
+      // ── 1b. Member Active Check ──────────────────────────────────────────
+      // Reject requests from staff whose account has been deactivated in the org.
+      // This catches the window between deactivation and token expiry (up to 24h).
+      // ADMIN role bypasses this check — at least one admin must always work.
+      if (session.role !== "ADMIN") {
+        const memberDb = getDb();
+        const [member] = await memberDb
+          .select({ isActive: organizationMembers.isActive })
+          .from(organizationMembers)
+          .where(
+            and(
+              eq(organizationMembers.organizationId, session.orgId),
+              eq(organizationMembers.userId, session.userId)
+            )
+          );
+        if (!member || member.isActive === 0) {
+          log.security("Deactivated member attempted access", {});
+          writeAppLog({
+            level: "security", route: options.route,
+            message: "Deactivated member attempted access",
+            organizationId: session.orgId, userId: session.userId, userRole: session.role,
+          });
+          return apiError("Your account has been deactivated. Please contact your administrator.", 403);
+        }
+      }
+
+      // ── 2. Rate Limiting ─────────────────────────────────────────────────
+      if (options.rateLimit) {
+        const key = options.rateLimitKey
+          ? options.rateLimitKey(session, request)
+          : `write:${session.userId}`;
+        const rl = await checkRateLimit(key, options.rateLimit);
+        if (!rl.allowed) return apiError("Too many requests. Please slow down.", 429);
+      }
+
+      // ── 3. Authorization ─────────────────────────────────────────────────
+      if (options.adminOnly && session.role !== "ADMIN") {
+        log.security("Permission denied: admin-only route", { role: session.role });
+        writeAppLog({
+          level: "security", route: options.route,
+          message: "Permission denied: admin-only route",
           organizationId: session.orgId, userId: session.userId, userRole: session.role,
         });
-        return apiError("Your account has been deactivated. Please contact your administrator.", 403);
+        return apiError("Forbidden", 403);
       }
-    }
+      if (options.permission && !await hasPermission(session, options.permission)) {
+        log.security(`Permission denied: ${options.permission}`, {});
+        writeAppLog({
+          level: "security", route: options.route,
+          message: `Permission denied: ${options.permission}`,
+          organizationId: session.orgId, userId: session.userId, userRole: session.role,
+          data: { requiredPermission: options.permission },
+        });
+        return apiError("Forbidden", 403);
+      }
 
-    // ── 2. Rate Limiting ───────────────────────────────────────────────────
-    // Prevents abuse (brute-force, spam, accidental bulk ops).
-    if (options.rateLimit) {
-      const key = options.rateLimitKey
-        ? options.rateLimitKey(session, request)
-        : `write:${session.userId}`;
-      const rl = await checkRateLimit(key, options.rateLimit);
-      if (!rl.allowed) return apiError("Too many requests. Please slow down.", 429);
-    }
-
-    // ── 3. Authorization ───────────────────────────────────────────────────
-    // Check the user has the right permission or is ADMIN.
-    if (options.adminOnly && session.role !== "ADMIN") {
-      log.security("Permission denied: admin-only route", { role: session.role });
-      writeAppLog({
-        level: "security", route: options.route,
-        message: "Permission denied: admin-only route",
-        organizationId: session.orgId, userId: session.userId, userRole: session.role,
-      });
-      return apiError("Forbidden", 403);
-    }
-    if (options.permission && !await hasPermission(session, options.permission)) {
-      log.security(`Permission denied: ${options.permission}`, {});
-      writeAppLog({
-        level: "security", route: options.route,
-        message: `Permission denied: ${options.permission}`,
-        organizationId: session.orgId, userId: session.userId, userRole: session.role,
-        data: { requiredPermission: options.permission },
-      });
-      return apiError("Forbidden", 403);
-    }
-
-    // ── 4 & 5. Business Logic + Error Handling ─────────────────────────────
-    const db = getDb();
-    const params = await context?.params ?? {} as P;
-
-    try {
+      // ── 4. Business Logic ────────────────────────────────────────────────
+      const db = getDb();
+      const params = await context?.params ?? {} as P;
       return await handler(request, { session, db, log }, params);
+
     } catch (error) {
       // Zod validation errors → 400 Bad Request with field-level details
       if (error instanceof ZodError) {
@@ -374,7 +374,10 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
         error,
         organizationId: session.orgId, userId: session.userId, userRole: session.role,
       });
-      return apiError("Internal server error", 500);
+      // DEBUG: surface error detail temporarily — remove after identifying root cause
+      const errMsg = error instanceof Error ? error.message : String(error);
+      const errStack = error instanceof Error ? error.stack : undefined;
+      return apiError("Internal server error", 500, { _debug: { message: errMsg, stack: errStack } });
     }
   };
 }
