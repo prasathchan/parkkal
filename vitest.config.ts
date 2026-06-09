@@ -6,6 +6,30 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
+      reportsDirectory: "./coverage",
+      // Exclude UI pages, components, and generated/config files
+      exclude: [
+        "src/app/dashboard/**",
+        "src/app/(auth)/**",
+        "src/components/**",
+        "src/app/layout.tsx",
+        "src/app/page.tsx",
+        "**/*.d.ts",
+        "**/*.config.*",
+        "src/db/schema.ts",
+        "src/lib/__tests__/**",
+      ],
+      thresholds: {
+        // Start at 40%; raise 5 pts per sprint as coverage grows
+        statements: 40,
+        branches:   35,
+        functions:  40,
+        lines:      40,
+      },
+    },
   },
   resolve: {
     alias: {

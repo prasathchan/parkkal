@@ -44,3 +44,14 @@ wrangler.log
 local.db
 *.db
 *.sqlite
+
+# Playwright
+playwright-report/
+e2e/.auth/session.json
+
+# Load test results
+load-tests/results.json
+load-tests/*.json
+
+# Coverage
+coverage/

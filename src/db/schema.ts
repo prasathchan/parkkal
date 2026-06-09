@@ -347,6 +347,36 @@ export const adminAuditLog = sqliteTable("admin_audit_log", {
   createdAt: integer("created_at").notNull(),
 });
 
+/**
+ * revoked_tokens — explicit JWT revocation list.
+ * A token whose jti matches a row here is rejected even if the signature is valid.
+ * Rows expire naturally (safe to delete once expires_at < now()).
+ */
+export const revokedTokens = sqliteTable("revoked_tokens", {
+  jti:       text("jti").primaryKey(),
+  expiresAt: integer("expires_at").notNull(),
+  revokedAt: integer("revoked_at").notNull(),
+});
+
+/**
+ * appLogs — self-hosted error & security event capture.
+ * Written by withRoute() for 'error', 'security', and 'warn' level events.
+ * Readable by ADMIN users via GET /api/admin/app-logs.
+ */
+export const appLogs = sqliteTable("app_logs", {
+  id:             text("id").primaryKey(),
+  level:          text("level").notNull(),          // 'error' | 'security' | 'warn'
+  route:          text("route").notNull(),
+  message:        text("message").notNull(),
+  organizationId: text("organization_id"),          // nullable — pre-auth errors have no session
+  userId:         text("user_id"),
+  userRole:       text("user_role"),
+  errorName:      text("error_name"),
+  errorStack:     text("error_stack"),
+  data:           text("data"),                     // JSON string
+  createdAt:      integer("created_at").notNull(),
+});
+
 export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),
   treatmentId: text("treatment_id").notNull().references(() => treatments.id),
