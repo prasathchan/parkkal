@@ -134,15 +134,16 @@ export const GET = withRoute(
     for (const r of apptStatusRows) apptByStatus[r.status] = Number(r.val);
 
     // ── 6. Top 10 procedures by count + revenue ───────────────────────────────
+    // Group by description (the label users type), falling back to procedure code.
     const procedureRows = await db
-      .select({ procedure: treatments.procedure, cnt: count(), rev: sum(treatments.cost) })
+      .select({ description: treatments.description, procedure: treatments.procedure, cnt: count(), rev: sum(treatments.cost) })
       .from(treatments)
       .where(and(eq(treatments.organizationId, orgId), gte(treatments.createdAt, start)))
-      .groupBy(treatments.procedure);
+      .groupBy(treatments.description);
 
     const topProcedures = procedureRows
       .map((r: typeof procedureRows[number]) => ({
-        procedure: r.procedure ?? "(unspecified)",
+        procedure: r.description || r.procedure || "(unspecified)",
         count:   Number(r.cnt),
         revenue: Number(r.rev) || 0,
       }))
