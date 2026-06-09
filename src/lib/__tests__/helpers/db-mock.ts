@@ -54,18 +54,18 @@ export function makeDbMock(results: unknown[] = []) {
       if (prop === "catch" || prop === "finally") return undefined;
       // Every other method call (from, where, limit, offset, values, set …)
       // returns a new Proxy on the same handler, keeping the chain going.
-      return (..._args: unknown[]) => new Proxy({} as object, chainHandler);
+      return (..._: unknown[]) => new Proxy({} as object, chainHandler);
     },
   };
 
   const makeChain = () => new Proxy({} as object, chainHandler);
 
   return {
-    select:  (..._args: unknown[]) => makeChain(),
-    insert:  (..._args: unknown[]) => makeChain(),
-    update:  (..._args: unknown[]) => makeChain(),
-    delete:  (..._args: unknown[]) => makeChain(),
+    select:  (..._: unknown[]) => makeChain(),
+    insert:  (..._: unknown[]) => makeChain(),
+    update:  (..._: unknown[]) => makeChain(),
+    delete:  (..._: unknown[]) => makeChain(),
     /** D1 batch — used by runCascade(); always resolves with [] in tests */
-    batch:   (..._args: unknown[]) => Promise.resolve([]),
+    batch:   (..._: unknown[]) => Promise.resolve([]),
   };
 }

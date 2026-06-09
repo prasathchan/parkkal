@@ -8,13 +8,12 @@
  *   GET  → any logged-in staff with patients.view permission
  *   POST → staff with patients.create permission
  */
-import { NextRequest } from "next/server";
 import { like, or, desc, count, eq, and } from "drizzle-orm";
 import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId, escapeLike } from "@/lib/utils";
 import { encryptField } from "@/lib/encryption";
-import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
 
 // ─── Validation schema ────────────────────────────────────────────────────────

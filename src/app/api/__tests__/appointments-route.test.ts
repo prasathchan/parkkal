@@ -227,7 +227,7 @@ describe("POST /api/appointments", () => {
 
   it("returns 400 for missing patientId", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([]) as never);
-    const { patientId: _, ...noPatient } = VALID_POST;
+    const { patientId: _pid, ...noPatient } = VALID_POST; // eslint-disable-line @typescript-eslint/no-unused-vars
     const res = await POST(makeReq("http://localhost/api/appointments", "POST", noPatient), CTX);
     expect(res.status).toBe(400);
   });

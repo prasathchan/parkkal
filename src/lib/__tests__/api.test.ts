@@ -7,7 +7,7 @@
  *     rate limiting, permission checking, ZodError handling, generic error handling
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiOk, apiError, withRoute, RATE_LIMITS } from "@/lib/api";
 

@@ -173,7 +173,7 @@ export default function ReportsPage() {
       <div className="min-h-screen bg-slate-50">
         <Header title="Reports" />
         <main className="max-w-5xl mx-auto px-4 py-16 text-center">
-          <p className="text-slate-500 text-sm">You don't have permission to view reports.</p>
+          <p className="text-slate-500 text-sm">You don&apos;t have permission to view reports.</p>
           <Link href="/dashboard" className="mt-4 inline-block text-blue-600 hover:underline text-sm">Back to Dashboard</Link>
         </main>
       </div>

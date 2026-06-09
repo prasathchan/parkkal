@@ -11,7 +11,6 @@
  * Query params for GET:
  *   patientId, doctorId, status, date, search, billingStatus, limit, offset
  */
-import { NextRequest } from "next/server";
 import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
