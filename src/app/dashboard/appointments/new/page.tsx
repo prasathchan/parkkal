@@ -32,6 +32,7 @@ function NewAppointmentForm() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
+  const [currentUserName, setCurrentUserName] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [form, setForm] = useState({
     patientId: "",
@@ -52,23 +53,32 @@ function NewAppointmentForm() {
   }, [patientSearch]);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/org/members").then((r) => r.json()),
-      fetch("/api/auth/me").then((r) => r.json()),
-    ]).then(([membersData, meData]) => {
-      const eligible = (membersData.members || []).filter(
-        (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
-      );
-      setDoctors(eligible.map((m: { userId: string; name: string; role: string }) => ({ id: m.userId, name: m.name, role: m.role })));
-      const me = meData.user;
-      if (me) {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((meData) => {
+        const me = meData.user;
+        if (!me) return;
         setCurrentUserRole(me.role);
         setCurrentUserId(me.userId);
-        if (me.role === "DOCTOR") {
+        setCurrentUserName(me.name ?? "");
+
+        if (me.role === "ADMIN" || me.role === "RECEPTIONIST") {
+          // Fetch full staff list so they can pick any doctor
+          fetch("/api/org/members")
+            .then((r) => r.json())
+            .then((membersData) => {
+              const eligible = (membersData.members || []).filter(
+                (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+              );
+              setDoctors(eligible.map((m: { userId: string; name: string; role: string }) => ({ id: m.userId, name: m.name, role: m.role })));
+            })
+            .catch(() => {});
+        } else {
+          // Non-admin/receptionist: auto-assign to themselves (doctor, nurse, etc.)
           setForm((f) => ({ ...f, doctorId: me.userId }));
         }
-      }
-    }).catch(() => {});
+      })
+      .catch(() => {});
   }, []);
 
   // Pre-fill patientId and doctorId from URL params (follow-up flow)
@@ -192,14 +202,7 @@ function NewAppointmentForm() {
                 </select>
               </div>
 
-              {currentUserRole === "DOCTOR" ? (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Doctor</label>
-                  <p className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
-                    {formatDoctorName(doctors.find((d) => d.id === currentUserId)?.name ?? "")}
-                  </p>
-                </div>
-              ) : (
+              {currentUserRole === "ADMIN" || currentUserRole === "RECEPTIONIST" ? (
                 <Select
                   id="doctor"
                   label="Doctor *"
@@ -213,6 +216,13 @@ function NewAppointmentForm() {
                     </option>
                   ))}
                 </Select>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Doctor</label>
+                  <p className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
+                    {currentUserName ? formatDoctorName(currentUserName) : <span className="text-slate-400">Loading…</span>}
+                  </p>
+                </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
