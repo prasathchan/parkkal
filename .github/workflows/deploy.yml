@@ -41,7 +41,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install -g npm@11 && npm ci
 
       - name: TypeScript
         run: npx tsc --noEmit
@@ -68,7 +68,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install -g npm@11 && npm ci
 
       # Build Next.js app for Cloudflare Workers via OpenNext
       - name: Build (OpenNext for Cloudflare)

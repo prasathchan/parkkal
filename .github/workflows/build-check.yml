@@ -16,7 +16,7 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - run: npm ci
+      - run: npm install -g npm@11 && npm ci
 
       - name: Build
         run: npx next build

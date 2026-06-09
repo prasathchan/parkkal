@@ -21,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install -g npm@11 && npm ci
 
       - name: TypeScript
         run: npx tsc --noEmit
@@ -70,7 +70,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install -g npm@11 && npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
