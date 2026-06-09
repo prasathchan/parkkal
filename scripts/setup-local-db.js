@@ -41,7 +41,7 @@ const SQL = [
     id TEXT PRIMARY KEY, patient_code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
     phone TEXT NOT NULL, email TEXT, date_of_birth TEXT, gender TEXT, address TEXT,
     medical_history TEXT, blood_group TEXT, pan_number TEXT, aadhaar_number TEXT,
-    emergency_contact_added INTEGER NOT NULL DEFAULT 0,
+    emergency_contact_added INTEGER NOT NULL DEFAULT 0, referral_source TEXT,
     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS organization_patients (
@@ -91,6 +91,8 @@ const SQL = [
     total_amount REAL NOT NULL DEFAULT 0, paid_amount REAL NOT NULL DEFAULT 0,
     appointment_id TEXT REFERENCES appointments(id),
     visit_type TEXT NOT NULL DEFAULT 'WALKIN',
+    recall_date TEXT,
+    recall_notes TEXT,
     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
   )`,
   `CREATE TABLE IF NOT EXISTS visit_items (
@@ -140,6 +142,45 @@ const SQL = [
     actor_role TEXT NOT NULL, action TEXT NOT NULL,
     reason TEXT, created_at INTEGER NOT NULL
   )`,
+  // migration 0029 — explicit JWT revocation list
+  `CREATE TABLE IF NOT EXISTS revoked_tokens (
+    jti TEXT PRIMARY KEY,
+    expires_at INTEGER NOT NULL,
+    revoked_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires_at ON revoked_tokens(expires_at)`,
+  // migration 0028 — admin audit log
+  `CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id TEXT PRIMARY KEY NOT NULL,
+    organization_id TEXT NOT NULL,
+    actor_id TEXT NOT NULL,
+    actor_role TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_id TEXT,
+    metadata TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_audit_org ON admin_audit_log(organization_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit_log(actor_id, created_at)`,
+  // migration 0030 — app logs (self-hosted error/security event log)
+  `CREATE TABLE IF NOT EXISTS app_logs (
+    id TEXT NOT NULL PRIMARY KEY,
+    level TEXT NOT NULL,
+    route TEXT NOT NULL,
+    message TEXT NOT NULL,
+    organization_id TEXT,
+    user_id TEXT,
+    user_role TEXT,
+    error_name TEXT,
+    error_stack TEXT,
+    data TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_app_logs_created ON app_logs(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_app_logs_level ON app_logs(level)`,
+  `CREATE INDEX IF NOT EXISTS idx_app_logs_org ON app_logs(organization_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_app_logs_route ON app_logs(route)`,
   `CREATE TABLE IF NOT EXISTS feature_flags (
     id TEXT PRIMARY KEY,
     feature_key TEXT NOT NULL,
@@ -319,6 +360,11 @@ async function main() {
     `CREATE TRIGGER IF NOT EXISTS trg_visits_org_id_not_null BEFORE INSERT ON visits FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on visits'); END`,
     `CREATE TRIGGER IF NOT EXISTS trg_invoices_org_id_not_null BEFORE INSERT ON invoices FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on invoices'); END`,
     `CREATE TRIGGER IF NOT EXISTS trg_prescriptions_org_id_not_null BEFORE INSERT ON prescriptions FOR EACH ROW WHEN NEW.organization_id IS NULL BEGIN SELECT RAISE(ABORT,'organization_id must not be NULL on prescriptions'); END`,
+    // 0027: clinical fields — recall date/notes on visits, referral source on patients
+    `ALTER TABLE visits ADD COLUMN recall_date TEXT`,
+    `ALTER TABLE visits ADD COLUMN recall_notes TEXT`,
+    `ALTER TABLE patients ADD COLUMN referral_source TEXT`,
+    `CREATE INDEX IF NOT EXISTS idx_visits_recall_date ON visits(organization_id, recall_date) WHERE recall_date IS NOT NULL`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }
