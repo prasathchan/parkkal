@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getSession } from "@/lib/auth";
 
 const PINCODE_RATE_LIMIT = { limit: 60, windowMs: 60_000 };
 
@@ -16,6 +17,9 @@ interface PincodeApiResult {
 }
 
 export async function GET(request: NextRequest) {
+  const session = await getSession(request);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for") ?? "unknown";
   const rl = await checkRateLimit(`pincode:${ip}`, PINCODE_RATE_LIMIT);
   if (!rl.allowed) return NextResponse.json({ found: false, error: "Too many requests." }, { status: 429 });
