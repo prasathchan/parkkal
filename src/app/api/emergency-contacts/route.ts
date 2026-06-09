@@ -1,13 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { emergencyContacts, patients, organizationPatients, organizationMembers } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createSchema = z.object({
   entityType: z.enum(["USER", "PATIENT"]),
@@ -19,76 +13,56 @@ const createSchema = z.object({
   address: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/emergency-contacts", session);
-
-  const { searchParams } = new URL(request.url);
-  const entityType = searchParams.get("entityType") as "USER" | "PATIENT" | null;
-  const entityId = searchParams.get("entityId");
-
-  if (!entityType || !entityId) return NextResponse.json({ contacts: [] });
-
-  const db = getDb();
-
-  // Verify entity belongs to this org before returning contacts
+/** Verify that entityId belongs to the requesting org. */
+async function assertEntityOwnership(
+  db: ReturnType<typeof import("@/lib/db").getDb>,
+  orgId: string,
+  entityType: "PATIENT" | "USER",
+  entityId: string,
+  log: ReturnType<typeof import("@/lib/logger").logger.forRoute>
+): Promise<boolean> {
   if (entityType === "PATIENT") {
-    const [membership] = await db
-      .select({ patientId: organizationPatients.patientId })
-      .from(organizationPatients)
-      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, entityId)));
-    if (!membership) {
-      log.security("Forbidden: patient not in org", { entityId });
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  } else if (entityType === "USER") {
-    const [membership] = await db
-      .select({ userId: organizationMembers.userId })
-      .from(organizationMembers)
-      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, entityId)));
-    if (!membership) {
-      log.security("Forbidden: user not in org", { entityId });
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const [m] = await db.select({ patientId: organizationPatients.patientId }).from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, orgId), eq(organizationPatients.patientId, entityId)));
+    if (!m) { log.security("Forbidden: patient not in org", { entityId }); return false; }
   } else {
-    return NextResponse.json({ error: "Invalid entityType" }, { status: 400 });
+    const [m] = await db.select({ userId: organizationMembers.userId }).from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, entityId)));
+    if (!m) { log.security("Forbidden: user not in org", { entityId }); return false; }
   }
-
-  const contacts = await db.select().from(emergencyContacts)
-    .where(and(eq(emergencyContacts.entityType, entityType), eq(emergencyContacts.entityId, entityId)));
-
-  return NextResponse.json({ contacts });
+  return true;
 }
 
-export async function POST(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/emergency-contacts", session);
+/** GET /api/emergency-contacts?entityType=X&entityId=Y */
+export const GET = withRoute(
+  { route: "GET /api/emergency-contacts" },
+  async (req, { session, db, log }) => {
+    const { searchParams } = new URL(req.url);
+    const entityType = searchParams.get("entityType") as "USER" | "PATIENT" | null;
+    const entityId = searchParams.get("entityId");
 
-  try {
-    const body = await request.json();
-    const data = createSchema.parse(body);
-    const db = getDb();
+    if (!entityType || !entityId) return apiOk({ contacts: [] });
 
-    // Verify entity belongs to the org
-    if (data.entityType === "PATIENT") {
-      const [membership] = await db
-        .select({ patientId: organizationPatients.patientId })
-        .from(organizationPatients)
-        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, data.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    } else if (data.entityType === "USER") {
-      const [membership] = await db
-        .select({ userId: organizationMembers.userId })
-        .from(organizationMembers)
-        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, data.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!["PATIENT", "USER"].includes(entityType)) return apiError("Invalid entityType", 400);
 
-    const now = Date.now();
+    const allowed = await assertEntityOwnership(db, session.orgId, entityType, entityId, log);
+    if (!allowed) return apiError("Forbidden", 403);
+
+    const contacts = await db.select().from(emergencyContacts)
+      .where(and(eq(emergencyContacts.entityType, entityType), eq(emergencyContacts.entityId, entityId)));
+
+    return apiOk({ contacts });
+  }
+);
+
+/** POST /api/emergency-contacts — create a new emergency contact */
+export const POST = withRoute(
+  { route: "POST /api/emergency-contacts", rateLimit: RATE_LIMITS.WRITE },
+  async (req, { session, db, log }) => {
+    const data = createSchema.parse(await req.json());
+
+    const allowed = await assertEntityOwnership(db, session.orgId, data.entityType, data.entityId, log);
+    if (!allowed) return apiError("Forbidden", 403);
 
     const contact = {
       id: crypto.randomUUID(),
@@ -99,23 +73,17 @@ export async function POST(request: NextRequest) {
       phone: data.phone,
       email: data.email || null,
       address: data.address || null,
-      createdAt: now,
+      createdAt: Date.now(),
     };
 
     await db.insert(emergencyContacts).values(contact);
 
-    // Update patient flag if needed
+    // Mark patient record as having an emergency contact
     if (data.entityType === "PATIENT") {
       await db.update(patients).set({ emergencyContactAdded: 1 }).where(eq(patients.id, data.entityId));
     }
 
-    log.info("Emergency contact created", { contactId: contact.id, entityType: data.entityType, entityId: data.entityId });
-    return NextResponse.json({ contact }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    }
-    log.error("Failed to create emergency contact", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    log.info("Emergency contact created", { contactId: contact.id, entityType: data.entityType });
+    return apiOk({ contact }, 201);
   }
-}
+);

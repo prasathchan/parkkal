@@ -1,3 +1,25 @@
+/**
+ * lib/theme.ts
+ *
+ * Organisation-level theming — primary colour, font, dark mode, sidebar style.
+ * Theme settings are stored as a JSON string in the organizations.themeConfig column.
+ *
+ * ─── HOW IT WORKS ────────────────────────────────────────────────────────────
+ *   1. Admin picks settings in the Org Settings page.
+ *   2. They're saved as JSON: `serializeTheme(config)` → DB.
+ *   3. At render time, `parseThemeConfig(raw)` reads and applies them.
+ *   4. CSS variables are injected via a <style> tag in the layout.
+ *
+ * ─── EXPORTS ─────────────────────────────────────────────────────────────────
+ *   OrgThemeConfig      — the shape of the config object
+ *   DEFAULT_THEME       — fallback when no theme is saved
+ *   COLOR_PRESETS       — preset brand colours shown in the settings UI
+ *   FONT_OPTIONS        — available font choices with CSS stack strings
+ *   parseThemeConfig()  — DB JSON string → OrgThemeConfig (with defaults)
+ *   darken(hex, amount) — darken a hex colour for hover states
+ *   getSidebarColors()  — returns a set of CSS colour values for the sidebar
+ *                         based on the current sidebarStyle setting
+ */
 export interface OrgThemeConfig {
   primaryColor: string;
   fontFamily: "system" | "inter" | "poppins" | "roboto" | "nunito";

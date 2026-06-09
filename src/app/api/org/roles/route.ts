@@ -1,211 +1,103 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sql, isNull } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers } from "@/db/schema";
-import { getSession } from "@/lib/auth";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
-import { logger } from "@/lib/logger";
 import { writeAuditLog } from "@/lib/audit";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 
-const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
-
-// Maps system role enum → default role slug
+// Maps system role enum → default role slug for auto-backfill
 const SYSTEM_ROLE_TO_SLUG: Record<string, string> = {
-  ADMIN: "administrator",
-  DOCTOR: "doctor",
-  NURSE: "nurse",
-  RECEPTIONIST: "receptionist",
-  ATTENDANT: "attendant",
-  HELPER: "attendant",
+  ADMIN: "administrator", DOCTOR: "doctor", NURSE: "nurse",
+  RECEPTIONIST: "receptionist", ATTENDANT: "attendant", HELPER: "attendant",
 };
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 }
 
-async function seedDefaultRoles(db: ReturnType<typeof getDb>, orgId: string): Promise<void> {
+async function seedDefaultRoles(db: ReturnType<typeof import("@/lib/db").getDb>, orgId: string) {
   const now = Date.now();
-  const rows = DEFAULT_ROLES.map((r) => ({
+  await db.insert(orgRoles).values(DEFAULT_ROLES.map((r) => ({
     id: `role_${orgId}_${r.slug}_${now}`,
     organizationId: orgId,
-    name: r.name,
-    slug: r.slug,
-    description: r.description,
-    color: r.color,
-    isSystem: r.isSystem,
+    name: r.name, slug: r.slug, description: r.description,
+    color: r.color, isSystem: r.isSystem,
     permissions: JSON.stringify(r.permissions),
-    createdAt: now,
-    updatedAt: now,
-  }));
-  await db.insert(orgRoles).values(rows);
+    createdAt: now, updatedAt: now,
+  })));
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/org/roles", session);
-  // Role definitions (including permission lists) are admin-only configuration data.
-  if (session.role !== "ADMIN") {
-    log.security("Permission denied: only ADMIN can view roles", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+/** GET /api/org/roles — list org role definitions (ADMIN only) */
+export const GET = withRoute(
+  { route: "GET /api/org/roles", adminOnly: true },
+  async (_req, { session, db, log }) => {
+    let roles = await db
+      .select({ id: orgRoles.id, name: orgRoles.name, slug: orgRoles.slug, description: orgRoles.description, color: orgRoles.color, isSystem: orgRoles.isSystem, permissions: orgRoles.permissions })
+      .from(orgRoles)
+      .where(eq(orgRoles.organizationId, session.orgId))
+      .orderBy(orgRoles.name);
 
-  const db = getDb();
-
-  let roles = await db
-    .select({
-      id: orgRoles.id,
-      name: orgRoles.name,
-      slug: orgRoles.slug,
-      description: orgRoles.description,
-      color: orgRoles.color,
-      isSystem: orgRoles.isSystem,
-      permissions: orgRoles.permissions,
-    })
-    .from(orgRoles)
-    .where(eq(orgRoles.organizationId, session.orgId))
-    .orderBy(orgRoles.name);
-
-  // Auto-seed defaults for orgs that pre-date the role system
-  if (roles.length === 0) {
-    try {
-      await seedDefaultRoles(db, session.orgId);
-      roles = await db
-        .select({
-          id: orgRoles.id,
-          name: orgRoles.name,
-          slug: orgRoles.slug,
-          description: orgRoles.description,
-          color: orgRoles.color,
-          isSystem: orgRoles.isSystem,
-          permissions: orgRoles.permissions,
-        })
-        .from(orgRoles)
-        .where(eq(orgRoles.organizationId, session.orgId))
-        .orderBy(orgRoles.name);
-    } catch (e) {
-      log.warn("Role seeding failed", { error: String(e) });
+    // Auto-seed defaults for orgs created before the role system
+    if (roles.length === 0) {
+      try {
+        await seedDefaultRoles(db, session.orgId);
+        roles = await db
+          .select({ id: orgRoles.id, name: orgRoles.name, slug: orgRoles.slug, description: orgRoles.description, color: orgRoles.color, isSystem: orgRoles.isSystem, permissions: orgRoles.permissions })
+          .from(orgRoles).where(eq(orgRoles.organizationId, session.orgId)).orderBy(orgRoles.name);
+      } catch (e) { log.warn("Role seeding failed", { error: String(e) }); }
     }
-  }
 
-  // One-time backfill: auto-assign orgRoleId to members that still have null.
-  // Guard with an early count to avoid N+1 writes on every GET after backfill is done.
-  try {
-    const slugToId: Record<string, string> = {};
-    for (const r of roles) slugToId[r.slug] = r.id;
-
-    const unassigned = await db
-      .select({ id: organizationMembers.id, role: organizationMembers.role })
-      .from(organizationMembers)
-      .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
-
-    // This backfill is self-disabling: once all members have orgRoleId assigned the
-    // unassigned list will always be empty and no DB writes occur on subsequent GETs.
-    if (unassigned.length > 0) {
+    // One-time backfill: assign orgRoleId to members that still have null (self-disabling)
+    try {
+      const slugToId: Record<string, string> = {};
+      for (const r of roles) slugToId[r.slug] = r.id;
+      const unassigned = await db.select({ id: organizationMembers.id, role: organizationMembers.role }).from(organizationMembers)
+        .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
       for (const m of unassigned) {
         const slug = SYSTEM_ROLE_TO_SLUG[m.role];
         const roleId = slug ? slugToId[slug] : null;
-        if (roleId) {
-          await db.update(organizationMembers)
-            .set({ orgRoleId: roleId })
-            .where(eq(organizationMembers.id, m.id));
-        }
+        if (roleId) await db.update(organizationMembers).set({ orgRoleId: roleId }).where(eq(organizationMembers.id, m.id));
       }
-    }
-  } catch (e) {
-    log.warn("Member role auto-assign failed", { error: String(e) });
+    } catch (e) { log.warn("Member role auto-assign failed", { error: String(e) }); }
+
+    // Attach active member counts per role
+    const memberCounts = await db
+      .select({ orgRoleId: organizationMembers.orgRoleId, count: sql<number>`count(*)` })
+      .from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)))
+      .groupBy(organizationMembers.orgRoleId);
+    const countMap: Record<string, number> = {};
+    for (const row of memberCounts) { if (row.orgRoleId) countMap[row.orgRoleId] = Number(row.count); }
+
+    const result = roles.map((r: typeof roles[number]) => ({ ...r, permissions: JSON.parse(r.permissions || "[]") as string[], userCount: countMap[r.id] || 0 }));
+    return apiOk({ roles: result });
   }
+);
 
-  // Get user counts per role
-  const memberCounts = await db
-    .select({
-      orgRoleId: organizationMembers.orgRoleId,
-      count: sql<number>`count(*)`,
-    })
-    .from(organizationMembers)
-    .where(
-      and(
-        eq(organizationMembers.organizationId, session.orgId),
-        eq(organizationMembers.isActive, 1)
-      )
-    )
-    .groupBy(organizationMembers.orgRoleId);
-
-  const countMap: Record<string, number> = {};
-  for (const row of memberCounts) {
-    if (row.orgRoleId) countMap[row.orgRoleId] = Number(row.count);
-  }
-
-  const result = roles.map((r: (typeof roles)[number]) => ({
-    ...r,
-    permissions: JSON.parse(r.permissions || "[]") as string[],
-    userCount: countMap[r.id] || 0,
-  }));
-
-  return NextResponse.json({ roles: result });
-}
-
-export async function POST(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/org/roles", session);
-  if (session.role !== "ADMIN") {
-    log.security("Permission denied: only ADMIN can create roles", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json();
-    const { name, description, color, permissions } = body as {
-      name: string;
-      description?: string;
-      color?: string;
-      permissions?: string[];
-    };
-
-    if (!name?.trim()) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
+/** POST /api/org/roles — create a custom role (ADMIN only) */
+export const POST = withRoute(
+  { route: "POST /api/org/roles", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
+  async (req, { session, db, log }) => {
+    const { name, description, color, permissions } = await req.json() as { name?: string; description?: string; color?: string; permissions?: string[] };
+    if (!name?.trim()) return apiError("Name is required", 400);
 
     const slug = nameToSlug(name.trim());
-    const db = getDb();
-
-    // Check duplicate slug
-    const [existing] = await db
-      .select({ id: orgRoles.id })
-      .from(orgRoles)
+    const [existing] = await db.select({ id: orgRoles.id }).from(orgRoles)
       .where(and(eq(orgRoles.organizationId, session.orgId), eq(orgRoles.slug, slug)));
-
-    if (existing) {
-      return NextResponse.json({ error: "A role with this name already exists" }, { status: 409 });
-    }
+    if (existing) return apiError("A role with this name already exists", 409);
 
     const now = Date.now();
     const newRole = {
       id: `role_${session.orgId}_${slug}_${now}`,
       organizationId: session.orgId,
-      name: name.trim(),
-      slug,
-      description: description || null,
-      color: color || "#3B82F6",
-      isSystem: 0,
+      name: name.trim(), slug, description: description || null,
+      color: color || "#3B82F6", isSystem: 0,
       permissions: JSON.stringify(permissions || []),
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     };
 
     await db.insert(orgRoles).values(newRole);
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_CREATED", targetType: "role", targetId: newRole.id, metadata: { roleName: newRole.name } });
     log.info("Role created", { roleId: newRole.id, roleName: newRole.name });
-    return NextResponse.json(
-      { role: { ...newRole, permissions: permissions || [] } },
-      { status: 201 }
-    );
-  } catch (error) {
-    log.error("Failed to create role", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ role: { ...newRole, permissions: permissions || [] } }, 201);
   }
-}
+);

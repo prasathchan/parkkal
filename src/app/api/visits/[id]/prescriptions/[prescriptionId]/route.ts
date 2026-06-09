@@ -1,42 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { prescriptions, visits } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { PERMISSIONS } from "@/lib/permissions";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 
-const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
+export const DELETE = withRoute<{ id: string; prescriptionId: string }>(
+  { route: "DELETE /api/visits/[id]/prescriptions/[prescriptionId]", rateLimit: RATE_LIMITS.DESTRUCTIVE, permission: PERMISSIONS.VISITS_EDIT },
+  async (_req, { session, db, log }, { id, prescriptionId }) => {
+    const [visit] = await db
+      .select({ organizationId: visits.organizationId })
+      .from(visits)
+      .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Forbidden", 403);
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; prescriptionId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("DELETE /api/visits/[id]/prescriptions/[prescriptionId]", session);
-  if (!await hasPermission(session, PERMISSIONS.VISITS_EDIT)) {
-    log.security("Permission denied: VISITS_EDIT", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    await db.delete(prescriptions).where(
+      and(eq(prescriptions.id, prescriptionId), eq(prescriptions.visitId, id))
+    );
+
+    log.info("Prescription deleted", { prescriptionId, visitId: id });
+    return apiOk({ success: true });
   }
-
-  const { id, prescriptionId } = await params;
-  const db = getDb();
-
-  const [visit] = await db
-    .select({ organizationId: visits.organizationId })
-    .from(visits)
-    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
-
-  if (!visit) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  await db.delete(prescriptions).where(
-    and(eq(prescriptions.id, prescriptionId), eq(prescriptions.visitId, id))
-  );
-
-  log.info("Prescription deleted", { prescriptionId, visitId: id });
-  return NextResponse.json({ success: true });
-}
+);

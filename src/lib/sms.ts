@@ -1,3 +1,21 @@
+/**
+ * lib/sms.ts
+ *
+ * SMS delivery via Twilio — currently used for OTP verification codes.
+ *
+ * ─── SETUP ───────────────────────────────────────────────────────────────────
+ *   Required environment variables:
+ *     TWILIO_ACCOUNT_SID    — from console.twilio.com
+ *     TWILIO_AUTH_TOKEN     — from console.twilio.com
+ *     TWILIO_PHONE_NUMBER   — the Twilio number to send from (e.g. "+15551234567")
+ *
+ *   Without these, SMS is silently skipped. In development the OTP is printed
+ *   to the console instead so you can still test the flow without a real number.
+ *
+ * ─── EXPORTS ─────────────────────────────────────────────────────────────────
+ *   sendSMSOTP(to, code)   → sends a 6-digit OTP to the given phone number
+ */
+
 // Normalize bare 10-digit Indian mobile numbers to E.164 (+91XXXXXXXXXX).
 // Twilio rejects numbers without a country code prefix.
 function toE164(phone: string): string {

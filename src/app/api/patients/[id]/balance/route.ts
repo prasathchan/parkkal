@@ -1,62 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sum, count, max } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { visits, organizationPatients } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 
-const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
+/** GET /api/patients/[id]/balance — financial summary for a patient */
+export const GET = withRoute<{ id: string }>(
+  { route: "GET /api/patients/[id]/balance", rateLimit: RATE_LIMITS.READ },
+  async (_req, { session, db, log }, { id }) => {
+    // Verify patient belongs to this org before exposing any financial data
+    const [orgLink] = await db
+      .select({ patientId: organizationPatients.patientId })
+      .from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
+    if (!orgLink) {
+      log.security("Forbidden: patient not in org", { patientId: id });
+      return apiError("Forbidden", 403);
+    }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("GET /api/patients/[id]/balance", session);
+    const orgId = session.orgId;
 
-  const { id } = await params;
-  const db = getDb();
+    const [[agg], [dueAgg], [{ pendingVisits }]] = await Promise.all([
+      db.select({
+        totalBilled: sum(visits.totalAmount),
+        totalPaid: sum(visits.paidAmount),
+        visitCount: count(),
+        lastVisit: max(visits.visitDate),
+      }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId))),
 
-  // Verify patient belongs to this org before exposing any financial data
-  const [orgLink] = await db
-    .select({ patientId: organizationPatients.patientId })
-    .from(organizationPatients)
-    .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
-  if (!orgLink) {
-    log.security("Forbidden: patient not in org", { patientId: id });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      db.select({
+        totalBilled: sum(visits.totalAmount),
+        totalPaid: sum(visits.paidAmount),
+      }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+
+      db.select({ pendingVisits: count() }).from(visits)
+        .where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
+    ]);
+
+    return apiOk({
+      totalBilled: Number(agg?.totalBilled) || 0,
+      totalPaid: Number(agg?.totalPaid) || 0,
+      totalDue: (Number(dueAgg?.totalBilled) || 0) - (Number(dueAgg?.totalPaid) || 0),
+      visitCount: Number(agg?.visitCount) || 0,
+      pendingVisits: Number(pendingVisits) || 0,
+      lastVisit: agg?.lastVisit || null,
+    });
   }
-
-  const orgId = session.orgId;
-
-  const [[agg], [dueAgg], [{ pendingVisits }]] = await Promise.all([
-    db.select({
-      totalBilled: sum(visits.totalAmount),
-      totalPaid: sum(visits.paidAmount),
-      visitCount: count(),
-      lastVisit: max(visits.visitDate),
-    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId))),
-
-    db.select({
-      totalBilled: sum(visits.totalAmount),
-      totalPaid: sum(visits.paidAmount),
-    }).from(visits).where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
-
-    db.select({ pendingVisits: count() })
-      .from(visits)
-      .where(and(eq(visits.patientId, id), eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
-  ]);
-
-  return NextResponse.json({
-    totalBilled: Number(agg?.totalBilled) || 0,
-    totalPaid: Number(agg?.totalPaid) || 0,
-    totalDue: (Number(dueAgg?.totalBilled) || 0) - (Number(dueAgg?.totalPaid) || 0),
-    visitCount: Number(agg?.visitCount) || 0,
-    pendingVisits: Number(pendingVisits) || 0,
-    lastVisit: agg?.lastVisit || null,
-  });
-}
+);

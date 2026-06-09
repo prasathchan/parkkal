@@ -26,6 +26,7 @@ export type AuditAction =
   | "MEMBER_INVITED"
   | "MEMBER_DEACTIVATED"
   | "MEMBER_ROLE_CHANGED"
+  | "MEMBER_UPDATED"
   | "MEMBER_DELETED"
   | "MEMBER_ACTIVATION_SENT"
   | "MEMBER_PORTAL_ACCESS_CHANGED"
@@ -38,7 +39,8 @@ export type AuditAction =
   | "SALARY_GENERATED"
   | "SALARY_DELETED"
   | "VISIT_DELETED"
-  | "TREATMENT_DELETED";
+  | "TREATMENT_DELETED"
+  | "ORG_DELETED";
 
 export interface AuditParams {
   organizationId: string;

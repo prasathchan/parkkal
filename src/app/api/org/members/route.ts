@@ -1,18 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { organizationMembers, users, organizations, orgRoles, verificationTokens, emergencyContacts } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import { hashPassword } from "@/lib/auth";
-import { logger } from "@/lib/logger";
 import { writeAuditLog } from "@/lib/audit";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { sendStaffInviteEmail } from "@/lib/email";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const addMemberSchema = z.object({
   email: z.string().email().max(254),
@@ -46,101 +40,83 @@ const addMemberSchema = z.object({
   }).optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/org/members", session);
-  if (!await hasPermission(session, PERMISSIONS.STAFF_VIEW)) {
-    log.security("Permission denied: staff.view", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+/** GET /api/org/members — list all staff members in the org */
+export const GET = withRoute(
+  { route: "GET /api/org/members", permission: PERMISSIONS.STAFF_VIEW },
+  async (_req, { session, db }) => {
+    const rows = await db
+      .select({
+        memberId: organizationMembers.id,
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        dateOfBirth: users.dateOfBirth,
+        gender: users.gender,
+        address: users.address,
+        panNumber: users.panNumber,
+        aadhaarNumber: users.aadhaarNumber,
+        role: organizationMembers.role,
+        orgRoleId: organizationMembers.orgRoleId,
+        orgRoleName: orgRoles.name,
+        orgRoleColor: orgRoles.color,
+        salaryType: organizationMembers.salaryType,
+        salaryAmount: organizationMembers.salaryAmount,
+        joinedAt: organizationMembers.joinedAt,
+        isActive: organizationMembers.isActive,
+        isVerified: users.isVerified,
+        portalAccess: organizationMembers.portalAccess,
+        createdAt: organizationMembers.createdAt,
+      })
+      .from(organizationMembers)
+      .innerJoin(users, eq(organizationMembers.userId, users.id))
+      .leftJoin(orgRoles, eq(organizationMembers.orgRoleId, orgRoles.id))
+      .where(eq(organizationMembers.organizationId, session.orgId));
 
-  const db = getDb();
-  const rows = await db
-    .select({
-      memberId: organizationMembers.id,
-      userId: users.id,
-      name: users.name,
-      email: users.email,
-      phone: users.phone,
-      dateOfBirth: users.dateOfBirth,
-      gender: users.gender,
-      address: users.address,
-      panNumber: users.panNumber,
-      aadhaarNumber: users.aadhaarNumber,
-      role: organizationMembers.role,
-      orgRoleId: organizationMembers.orgRoleId,
-      orgRoleName: orgRoles.name,
-      orgRoleColor: orgRoles.color,
-      salaryType: organizationMembers.salaryType,
-      salaryAmount: organizationMembers.salaryAmount,
-      joinedAt: organizationMembers.joinedAt,
-      isActive: organizationMembers.isActive,
-      isVerified: users.isVerified,
-      portalAccess: organizationMembers.portalAccess,
-      createdAt: organizationMembers.createdAt,
-    })
-    .from(organizationMembers)
-    .innerJoin(users, eq(organizationMembers.userId, users.id))
-    .leftJoin(orgRoles, eq(organizationMembers.orgRoleId, orgRoles.id))
-    .where(eq(organizationMembers.organizationId, session.orgId));
-
-  // Strip national IDs and salary info from non-ADMIN callers
-  type MemberRow = (typeof rows)[number];
-  let members: unknown[];
-  if (session.role === "ADMIN") {
-    members = await Promise.all(rows.map(async (r: MemberRow) => ({
-      ...r,
-      panNumber: await decryptField(r.panNumber) ?? null,
-      aadhaarNumber: await decryptField(r.aadhaarNumber) ?? null,
-    })));
-  } else {
-    members = rows.map((r: MemberRow) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { panNumber, aadhaarNumber, salaryType, salaryAmount, ...rest } = r;
-      return rest;
-    });
-  }
-
-  return NextResponse.json({ members });
-}
-
-export async function POST(request: NextRequest) {
-  // Derive base URL from the incoming request so invite links work in any environment
-  const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/org/members", session);
-  if (!["ADMIN"].includes(session.role)) {
-    log.security("Permission denied: only ADMIN can add members", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json();
-    const data = addMemberSchema.parse(body);
-
-    // Emergency contact is mandatory for staff
-    if (!data.emergencyContact?.name || !data.emergencyContact?.relationship || !data.emergencyContact?.phone) {
-      return NextResponse.json({ error: "Emergency contact (name, relationship, phone) is required for staff" }, { status: 400 });
+    // Strip national IDs and salary info from non-ADMIN callers
+    type MemberRow = (typeof rows)[number];
+    let members: unknown[];
+    if (session.role === "ADMIN") {
+      members = await Promise.all(rows.map(async (r: MemberRow) => ({
+        ...r,
+        panNumber: await decryptField(r.panNumber) ?? null,
+        aadhaarNumber: await decryptField(r.aadhaarNumber) ?? null,
+      })));
+    } else {
+      members = rows.map((r: MemberRow) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { panNumber, aadhaarNumber, salaryType, salaryAmount, ...rest } = r;
+        return rest;
+      });
     }
 
-    const db = getDb();
+    return apiOk({ members });
+  }
+);
+
+/** POST /api/org/members — add a staff member to the org (ADMIN only) */
+export const POST = withRoute(
+  { route: "POST /api/org/members", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
+  async (req, { session, db, log }) => {
+    // Derive base URL so invite links work in any environment
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const data = addMemberSchema.parse(await req.json());
+
+    // Emergency contact is mandatory for staff records
+    if (!data.emergencyContact?.name || !data.emergencyContact?.relationship || !data.emergencyContact?.phone) {
+      return apiError("Emergency contact (name, relationship, phone) is required for staff", 400);
+    }
+
     const now = Date.now();
 
-    // Check if user exists
+    // Check if user already exists in the system
     let existingUser = (await db.select().from(users).where(eq(users.email, data.email)))[0];
-
     let isNewUser = false;
 
     if (!existingUser) {
-      if (!data.name) {
-        return NextResponse.json({ error: "New user requires a name" }, { status: 400 });
-      }
+      if (!data.name) return apiError("New user requires a name", 400);
       if (data.activationMode === "set_password" && !data.password) {
-        return NextResponse.json({ error: "Password is required for immediate activation" }, { status: 400 });
+        return apiError("Password is required for immediate activation", 400);
       }
 
       isNewUser = true;
@@ -172,32 +148,18 @@ export async function POST(request: NextRequest) {
       existingUser = newUser as typeof existingUser;
     }
 
-    // Check not already member
-    const existing = (await db
-      .select()
-      .from(organizationMembers)
-      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, existingUser.id)))
-      )[0];
+    // Block duplicate membership
+    const [existing] = await db.select().from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, existingUser.id)));
+    if (existing) return apiError("User is already a member of this organization", 409);
 
-    if (existing) {
-      return NextResponse.json({ error: "User is already a member of this organization" }, { status: 409 });
-    }
-
-    // portal_access:
-    //   invite_link     → 1 (will be able to login after activation)
-    //   set_password    → 1 (login enabled immediately)
-    //   no_login_verify → 0 (login disabled; stays disabled after verify)
-    //   existing user   → 1 (they already have an account)
-    const portalAccess = !isNewUser ? 1
-      : data.activationMode === "no_login_verify" ? 0 : 1;
-
-    // member is_active:
-    //   invite_link  → 0 until user activates
-    //   set_password → 1 immediately
-    //   no_login_verify → 1 (HR record is active)
-    //   existing user → 1
-    const memberIsActive = !isNewUser ? 1
-      : data.activationMode === "invite_link" ? 0 : 1;
+    // portal_access / member is_active logic:
+    //   invite_link     → portalAccess=1, isActive=0 (activates on link click)
+    //   set_password    → portalAccess=1, isActive=1 (active immediately)
+    //   no_login_verify → portalAccess=0, isActive=1 (HR active, login disabled)
+    //   existing user   → portalAccess=1, isActive=1
+    const portalAccess = !isNewUser ? 1 : data.activationMode === "no_login_verify" ? 0 : 1;
+    const memberIsActive = !isNewUser ? 1 : data.activationMode === "invite_link" ? 0 : 1;
 
     const member = {
       id: crypto.randomUUID(),
@@ -219,32 +181,27 @@ export async function POST(request: NextRequest) {
     if (isNewUser && data.activationMode !== "set_password") {
       const tokenCode = crypto.randomUUID();
       const tokenId = `vt_${Array.from(crypto.getRandomValues(new Uint8Array(12)), (b: number) => b.toString(16).padStart(2, "0")).join("")}`;
-      const expiresAt = now + 7 * 24 * 60 * 60 * 1000; // 7 days
-
       await db.insert(verificationTokens).values({
         id: tokenId,
         userId: existingUser.id,
         type: "STAFF_INVITE",
         code: tokenCode,
-        expiresAt,
+        expiresAt: now + 7 * 24 * 60 * 60 * 1000,
         used: 0,
         createdAt: now,
       });
 
-      const org = (await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, session.orgId)))[0];
-      const orgName = org?.name ?? "your clinic";
-
+      const [org] = await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, session.orgId));
       const modeParam = data.activationMode === "no_login_verify" ? "&mode=verify" : "";
       const activationUrl = `${appBaseUrl}/activate?token=${tokenCode}${modeParam}`;
 
       try {
-        await sendStaffInviteEmail(data.email, data.name ?? data.email, orgName, activationUrl);
+        await sendStaffInviteEmail(data.email, data.name ?? data.email, org?.name ?? "your clinic", activationUrl);
       } catch (emailErr) {
         log.warn("Failed to send staff invite email", { email: data.email, error: String(emailErr) });
       }
     }
 
-    // Insert emergency contact
     await db.insert(emergencyContacts).values({
       id: crypto.randomUUID(),
       entityType: "USER",
@@ -262,12 +219,6 @@ export async function POST(request: NextRequest) {
     const { passwordHash: _omit, ...safeUser } = existingUser as typeof existingUser & { passwordHash: string };
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "MEMBER_INVITED", targetType: "member", targetId: existingUser.id, metadata: { role: data.role, activationMode: data.activationMode } });
     log.info("Staff member added", { newUserId: existingUser.id, role: data.role, isNewUser, activationMode: data.activationMode });
-    return NextResponse.json({ member, user: safeUser }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    }
-    log.error("Failed to add member", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ member, user: safeUser }, 201);
   }
-}
+);

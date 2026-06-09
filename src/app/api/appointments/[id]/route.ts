@@ -1,20 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, notInArray } from "drizzle-orm";
+import { appointments, visits } from "@/db/schema";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { z } from "zod";
 
 // Detect the sentinel error raised by migration 0021 triggers.
 function isSlotTaken(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return msg.includes("SLOT_TAKEN");
 }
-import { getDb } from "@/lib/db";
-import { appointments, visits } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
-const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 }; // used by DELETE handler
 
 const updateSchema = z.object({
   status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"]).optional(),
@@ -24,130 +17,84 @@ const updateSchema = z.object({
   notes: z.string().optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/appointments/[id]", session);
-
-  const { id } = await params;
-  try {
-    const db = getDb();
-    const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
-    if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ appointment: appt });
-  } catch (err) {
-    log.error("Failed to fetch appointment", err, { appointmentId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+/** GET /api/appointments/[id] — fetch a single appointment */
+export const GET = withRoute<{ id: string }>(
+  { route: "GET /api/appointments/[id]" },
+  async (_req, { session, db }, { id }) => {
+    const [appt] = await db.select().from(appointments)
+      .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    if (!appt) return apiError("Not found", 404);
+    return apiOk({ appointment: appt });
   }
-}
+);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/appointments/[id]", session);
-  const { id } = await params;
+/** PATCH /api/appointments/[id] — update status, type, notes, or reschedule */
+export const PATCH = withRoute<{ id: string }>(
+  { route: "PATCH /api/appointments/[id]", rateLimit: RATE_LIMITS.WRITE },
+  async (req, { session, db, log }, { id }) => {
+    const [appt] = await db.select().from(appointments)
+      .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    if (!appt) return apiError("Not found", 404);
 
-  try {
-    const db = getDb();
-
-    const appt = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
-    if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    const body = await request.json();
-    const data = updateSchema.parse(body);
+    const data = updateSchema.parse(await req.json());
 
     const RESCHEDULE_ROLES = ["ADMIN", "RECEPTIONIST", "DOCTOR"];
     const dateOrTimeChanged = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
 
     if (dateOrTimeChanged && !RESCHEDULE_ROLES.includes(session.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return apiError("Forbidden", 403);
     }
 
-    // If date or time is being changed, check for doctor conflicts
-    const newDate = data.appointmentDate ?? appt.appointmentDate;
-    const newTime = data.appointmentTime ?? appt.appointmentTime;
-
     if (dateOrTimeChanged) {
-      const [conflict] = await db
-        .select({ id: appointments.id })
-        .from(appointments)
-        .where(
-          and(
-            eq(appointments.organizationId, session.orgId),
-            eq(appointments.doctorId, appt.doctorId),
-            eq(appointments.appointmentDate, newDate),
-            eq(appointments.appointmentTime, newTime),
-            notInArray(appointments.status, ["CANCELLED", "NO_SHOW"])
-          )
-        );
+      const newDate = data.appointmentDate ?? appt.appointmentDate;
+      const newTime = data.appointmentTime ?? appt.appointmentTime;
+      const [conflict] = await db.select({ id: appointments.id }).from(appointments)
+        .where(and(
+          eq(appointments.organizationId, session.orgId),
+          eq(appointments.doctorId, appt.doctorId),
+          eq(appointments.appointmentDate, newDate),
+          eq(appointments.appointmentTime, newTime),
+          notInArray(appointments.status, ["CANCELLED", "NO_SHOW"])
+        ));
       if (conflict && conflict.id !== id) {
-        return NextResponse.json(
-          { error: "This doctor already has an appointment at that date and time" },
-          { status: 409 }
-        );
+        return apiError("This doctor already has an appointment at that date and time", 409);
       }
     }
 
-    await db.update(appointments).set(data).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
-    const updated = (await db.select().from(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId))))[0];
-    log.info("Appointment updated", { appointmentId: id });
-    return NextResponse.json({ appointment: updated });
-  } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    if (isSlotTaken(error)) {
-      return NextResponse.json(
-        { error: "This doctor already has an appointment at that date and time" },
-        { status: 409 }
-      );
+    try {
+      await db.update(appointments).set(data).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    } catch (err) {
+      if (isSlotTaken(err)) return apiError("This doctor already has an appointment at that date and time", 409);
+      throw err;
     }
-    log.error("Failed to update appointment", error, { appointmentId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+
+    const [updated] = await db.select().from(appointments)
+      .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    log.info("Appointment updated", { appointmentId: id });
+    return apiOk({ appointment: updated });
   }
-}
+);
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("DELETE /api/appointments/[id]", session);
-  if (!["ADMIN", "RECEPTIONIST"].includes(session.role)) {
-    log.security("Permission denied: insufficient role to delete appointment", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+/** DELETE /api/appointments/[id] — hard-delete (ADMIN or RECEPTIONIST only) */
+export const DELETE = withRoute<{ id: string }>(
+  { route: "DELETE /api/appointments/[id]", rateLimit: RATE_LIMITS.DESTRUCTIVE },
+  async (_req, { session, db, log }, { id }) => {
+    if (!["ADMIN", "RECEPTIONIST"].includes(session.role)) {
+      log.security("Permission denied: insufficient role to delete appointment", { role: session.role });
+      return apiError("Forbidden", 403);
+    }
+
+    const [appt] = await db.select({ id: appointments.id }).from(appointments)
+      .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    if (!appt) return apiError("Not found", 404);
+
+    // Block delete if a visit is already linked to this appointment
+    const [linked] = await db.select({ id: visits.id }).from(visits)
+      .where(and(eq(visits.appointmentId, id), eq(visits.organizationId, session.orgId)));
+    if (linked) return apiError("Cannot delete appointment: a visit is linked to it", 409);
+
+    await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    log.info("Appointment deleted", { appointmentId: id });
+    return apiOk({ success: true });
   }
-
-  const { id } = await params;
-  const db = getDb();
-
-  const [appt] = await db
-    .select({ id: appointments.id, organizationId: appointments.organizationId })
-    .from(appointments)
-    .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
-
-  if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  // Prevent deleting if a visit already exists for this appointment
-  const [linked] = await db
-    .select({ id: visits.id })
-    .from(visits)
-    .where(and(eq(visits.appointmentId, id), eq(visits.organizationId, session.orgId)));
-
-  if (linked) {
-    return NextResponse.json({ error: "Cannot delete appointment: a visit is linked to it" }, { status: 409 });
-  }
-
-  await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
-  log.info("Appointment deleted", { appointmentId: id });
-  return NextResponse.json({ success: true });
-}
+);

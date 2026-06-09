@@ -1,143 +1,81 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { orgRoles, organizationMembers, users } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
 import { writeAuditLog } from "@/lib/audit";
-import { checkRateLimit } from "@/lib/rate-limit";
-
-const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
-const ADMIN_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ roleId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("GET /api/org/roles/[roleId]", session);
-
-  const { roleId } = await params;
-  try {
-    const db = getDb();
-    const [role] = await db.select().from(orgRoles).where(
-      and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId))
-    );
-    if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
+/** GET /api/org/roles/[roleId] — fetch role details + assigned members */
+export const GET = withRoute<{ roleId: string }>(
+  { route: "GET /api/org/roles/[roleId]", rateLimit: RATE_LIMITS.READ },
+  async (_req, { session, db }, { roleId }) => {
+    const [role] = await db.select().from(orgRoles)
+      .where(and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId)));
+    if (!role) return apiError("Role not found", 404);
 
     const members = await db
       .select({ id: users.id, name: users.name, email: users.email })
       .from(organizationMembers)
       .leftJoin(users, eq(organizationMembers.userId, users.id))
-      .where(and(
-        eq(organizationMembers.orgRoleId, roleId),
-        eq(organizationMembers.organizationId, session.orgId),
-        eq(organizationMembers.isActive, 1)
-      ));
+      .where(and(eq(organizationMembers.orgRoleId, roleId), eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)));
 
-    return NextResponse.json({ role: { ...role, permissions: JSON.parse(role.permissions || "[]") }, members });
-  } catch (err) {
-    log.error("Failed to fetch role", err, { roleId });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ role: { ...role, permissions: JSON.parse(role.permissions || "[]") }, members });
   }
-}
+);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ roleId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`admin:${session.userId}`, ADMIN_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/org/roles/[roleId]", session);
-  if (session.role !== "ADMIN") {
-    log.security("Permission denied: only ADMIN can update roles", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+/** PATCH /api/org/roles/[roleId] — update role name, color, permissions (ADMIN only) */
+export const PATCH = withRoute<{ roleId: string }>(
+  { route: "PATCH /api/org/roles/[roleId]", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
+  async (req, { session, db, log }, { roleId }) => {
+    const [role] = await db.select().from(orgRoles)
+      .where(and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId)));
+    if (!role) return apiError("Role not found", 404);
+
+    const { name, description, color, permissions } = await req.json() as { name?: string; description?: string; color?: string; permissions?: string[] };
+
+    const membersWithRole = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(organizationMembers)
+      .leftJoin(users, eq(organizationMembers.userId, users.id))
+      .where(and(eq(organizationMembers.orgRoleId, roleId), eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)));
+
+    const updates: Partial<typeof role> = { updatedAt: Date.now() };
+    if (name !== undefined) { updates.name = name.trim(); if (!role.isSystem) updates.slug = nameToSlug(name.trim()); }
+    if (description !== undefined) updates.description = description || null;
+    if (color !== undefined) updates.color = color;
+    if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
+
+    await db.update(orgRoles).set(updates).where(eq(orgRoles.id, roleId));
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_UPDATED", targetType: "role", targetId: roleId });
+    log.info("Role updated", { roleId, affectedUsers: membersWithRole.length });
+    return apiOk({ role: { ...role, ...updates, permissions: permissions ?? JSON.parse(role.permissions || "[]") }, affectedUsers: membersWithRole.length });
   }
+);
 
-  const { roleId } = await params;
-  const db = getDb();
-  const [role] = await db.select().from(orgRoles).where(
-    and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId))
-  );
-  if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
+/** DELETE /api/org/roles/[roleId] — delete a custom role (ADMIN only, no active members) */
+export const DELETE = withRoute<{ roleId: string }>(
+  { route: "DELETE /api/org/roles/[roleId]", rateLimit: RATE_LIMITS.DESTRUCTIVE, adminOnly: true },
+  async (_req, { session, db, log }, { roleId }) => {
+    const [role] = await db.select().from(orgRoles)
+      .where(and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId)));
+    if (!role) return apiError("Role not found", 404);
+    if (role.isSystem) return apiError("System roles cannot be deleted", 403);
 
-  const body = await request.json();
-  const { name, description, color, permissions } = body as {
-    name?: string; description?: string; color?: string; permissions?: string[];
-  };
+    const membersWithRole = await db
+      .select({ id: users.id, name: users.name, email: users.email })
+      .from(organizationMembers)
+      .leftJoin(users, eq(organizationMembers.userId, users.id))
+      .where(and(eq(organizationMembers.orgRoleId, roleId), eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)));
 
-  const membersWithRole = await db
-    .select({ id: users.id, name: users.name, email: users.email })
-    .from(organizationMembers)
-    .leftJoin(users, eq(organizationMembers.userId, users.id))
-    .where(and(
-      eq(organizationMembers.orgRoleId, roleId),
-      eq(organizationMembers.organizationId, session.orgId),
-      eq(organizationMembers.isActive, 1)
-    ));
+    if (membersWithRole.length > 0) {
+      return apiError("ROLE_HAS_USERS", 409);
+    }
 
-  const updates: Partial<typeof role> = { updatedAt: Date.now() };
-  if (name !== undefined) { updates.name = name.trim(); if (!role.isSystem) updates.slug = nameToSlug(name.trim()); }
-  if (description !== undefined) updates.description = description || null;
-  if (color !== undefined) updates.color = color;
-  if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
-
-  await db.update(orgRoles).set(updates).where(eq(orgRoles.id, roleId));
-  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_UPDATED", targetType: "role", targetId: roleId });
-  log.info("Role updated", { roleId, affectedUsers: membersWithRole.length });
-  return NextResponse.json({
-    role: { ...role, ...updates, permissions: permissions ?? JSON.parse(role.permissions || "[]") },
-    affectedUsers: membersWithRole.length,
-  });
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ roleId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const destructiveRl = await checkRateLimit(`destructive:${session.userId}`, { limit: 10, windowMs: 60_000 });
-  if (!destructiveRl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("DELETE /api/org/roles/[roleId]", session);
-  if (session.role !== "ADMIN") {
-    log.security("Permission denied: only ADMIN can delete roles", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_DELETED", targetType: "role", targetId: roleId });
+    log.info("Role deleted", { roleId });
+    return apiOk({ success: true });
   }
-
-  const { roleId } = await params;
-  const db = getDb();
-  const [role] = await db.select().from(orgRoles).where(
-    and(eq(orgRoles.id, roleId), eq(orgRoles.organizationId, session.orgId))
-  );
-  if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
-  if (role.isSystem) return NextResponse.json({ error: "System roles cannot be deleted" }, { status: 403 });
-
-  const membersWithRole = await db
-    .select({ id: users.id, name: users.name, email: users.email })
-    .from(organizationMembers)
-    .leftJoin(users, eq(organizationMembers.userId, users.id))
-    .where(and(
-      eq(organizationMembers.orgRoleId, roleId),
-      eq(organizationMembers.organizationId, session.orgId),
-      eq(organizationMembers.isActive, 1)
-    ));
-
-  if (membersWithRole.length > 0) {
-    return NextResponse.json({ error: "ROLE_HAS_USERS", userCount: membersWithRole.length, users: membersWithRole }, { status: 409 });
-  }
-
-  await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
-  writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_DELETED", targetType: "role", targetId: roleId });
-  log.info("Role deleted", { roleId });
-  return NextResponse.json({ success: true });
-}
+);

@@ -1,3 +1,23 @@
+/**
+ * lib/email.ts
+ *
+ * Transactional email delivery via Resend (resend.com).
+ *
+ * ─── SETUP ───────────────────────────────────────────────────────────────────
+ *   Set RESEND_API_KEY in your environment (Cloudflare secret or .env.local).
+ *   Without it, emails are silently skipped with a console warning. In
+ *   development the activation URL or OTP code is logged to the console.
+ *
+ * ─── EXPORTS ─────────────────────────────────────────────────────────────────
+ *   sendStaffInviteEmail(to, name, orgName, activationUrl)
+ *     → Sends a branded welcome email to a newly invited staff member.
+ *       Includes a button linking to their account activation page.
+ *
+ *   sendEmailOTP(to, name, code)
+ *     → Sends a 6-digit OTP code for email-based login/verification.
+ *        Code expires in 15 minutes (enforced by the calling route, not here).
+ */
+
 export async function sendStaffInviteEmail(
   to: string,
   name: string,

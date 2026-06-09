@@ -7,22 +7,17 @@
  * Who can call this:
  *   GET  → any logged-in staff with patients.view permission
  *   POST → staff with patients.create permission
- *
- * Request / response shapes live in: src/api/patients.ts
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { like, or, desc, count, eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { generateId } from "@/lib/utils";
-import { logger } from "@/lib/logger";
+import { PERMISSIONS } from "@/lib/permissions";
+import { generateId, escapeLike } from "@/lib/utils";
 import { encryptField } from "@/lib/encryption";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
 
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+// ─── Validation schema ────────────────────────────────────────────────────────
 
 const createPatientSchema = z.object({
   name: z.string().min(1),
@@ -49,100 +44,96 @@ const createPatientSchema = z.object({
     .optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/patients", session);
-  if (!await hasPermission(session, PERMISSIONS.PATIENTS_VIEW)) {
-    log.security("Permission denied: patients.view", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+// ─── GET /api/patients ────────────────────────────────────────────────────────
+// Returns a paginated + searchable list of patients belonging to the org.
+// Sensitive fields (PAN, Aadhaar, medical history) are intentionally excluded.
 
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
-  const limit = Math.min(Number(searchParams.get("limit") || "25"), 100);
-  const offset = Math.max(Number(searchParams.get("offset") || "0"), 0);
+export const GET = withRoute(
+  { route: "GET /api/patients", permission: PERMISSIONS.PATIENTS_VIEW },
+  async (req, { session, db }) => {
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get("search");
+    const limit = Math.min(Number(searchParams.get("limit") || "25"), 100);
+    const offset = Math.max(Number(searchParams.get("offset") || "0"), 0);
 
-  const db = getDb();
+    // Base filter: only patients linked to the current org and not soft-deleted
+    const baseConditions = and(
+      eq(organizationPatients.organizationId, session.orgId),
+      eq(organizationPatients.isActive, 1)
+    );
 
-  const baseConditions = and(
-    eq(organizationPatients.organizationId, session.orgId),
-    eq(organizationPatients.isActive, 1)
-  );
-
-  // Escape LIKE special characters so user input is treated as a literal substring.
-  const escapedSearch = search?.replace(/[%_\\]/g, "\\$&");
-  const whereCondition = escapedSearch
-    ? and(
-        baseConditions,
-        or(
-          like(patients.name, `%${escapedSearch}%`),
-          like(patients.phone, `%${escapedSearch}%`),
-          like(patients.patientCode, `%${escapedSearch}%`)
+    // Escape LIKE special characters so user input is treated as a literal substring
+    const escaped = escapeLike(search);
+    const whereCondition = escaped
+      ? and(
+          baseConditions,
+          or(
+            like(patients.name, `%${escaped}%`),
+            like(patients.phone, `%${escaped}%`),
+            like(patients.patientCode, `%${escaped}%`)
+          )
         )
-      )
-    : baseConditions;
+      : baseConditions;
 
-  const [totalRow, results] = await Promise.all([
-    db
-      .select({ total: count() })
-      .from(patients)
-      .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
-      .where(whereCondition),
-    db
-      .select({
-        id: patients.id,
-        patientCode: patients.patientCode,
-        name: patients.name,
-        phone: patients.phone,
-        email: patients.email,
-        dateOfBirth: patients.dateOfBirth,
-        gender: patients.gender,
-        bloodGroup: patients.bloodGroup,
-        emergencyContactAdded: patients.emergencyContactAdded,
-        createdAt: patients.createdAt,
-        updatedAt: patients.updatedAt,
-        // medicalHistory intentionally excluded from list view — it contains sensitive PHI.
-        // Fetch it only from the individual patient detail endpoint.
-      })
-      .from(patients)
-      .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
-      .where(whereCondition)
-      .orderBy(desc(patients.createdAt))
-      .limit(limit)
-      .offset(offset),
-  ]);
+    const [totalRow, results] = await Promise.all([
+      db
+        .select({ total: count() })
+        .from(patients)
+        .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
+        .where(whereCondition),
+      db
+        .select({
+          id: patients.id,
+          patientCode: patients.patientCode,
+          name: patients.name,
+          phone: patients.phone,
+          email: patients.email,
+          dateOfBirth: patients.dateOfBirth,
+          gender: patients.gender,
+          bloodGroup: patients.bloodGroup,
+          emergencyContactAdded: patients.emergencyContactAdded,
+          createdAt: patients.createdAt,
+          updatedAt: patients.updatedAt,
+          // medicalHistory intentionally excluded — it contains sensitive PHI.
+          // Fetch it only from the individual patient detail endpoint.
+        })
+        .from(patients)
+        .innerJoin(organizationPatients, eq(organizationPatients.patientId, patients.id))
+        .where(whereCondition)
+        .orderBy(desc(patients.createdAt))
+        .limit(limit)
+        .offset(offset),
+    ]);
 
-  const total = totalRow[0]?.total ?? 0;
+    const total = totalRow[0]?.total ?? 0;
 
-  type PatientRow = (typeof results)[number];
+    type PatientRow = (typeof results)[number];
 
-  // PAN and Aadhaar are sensitive Indian government IDs; mask all but last 4 digits in lists.
-  const masked = results.map((p: PatientRow) => ({
-    ...p,
-    panNumber: null,   // never expose even masked in list — only show in detail view
-    aadhaarNumber: null,
-  }));
+    // PAN and Aadhaar are sensitive Indian government IDs; never expose in list view.
+    const masked = results.map((p: PatientRow) => ({
+      ...p,
+      panNumber: null,
+      aadhaarNumber: null,
+    }));
 
-  return NextResponse.json({ patients: masked, total, limit, offset });
-}
-
-export async function POST(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/patients", session);
-  if (!await hasPermission(session, PERMISSIONS.PATIENTS_CREATE)) {
-    log.security("Permission denied: patients.create", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return apiOk({ patients: masked, total, limit, offset });
   }
+);
 
-  try {
-    const body = await request.json();
-    const data = createPatientSchema.parse(body);
+// ─── POST /api/patients ───────────────────────────────────────────────────────
+// Creates a new patient record.
+// Includes a retry loop to handle race conditions on patient code generation.
 
-    const db = getDb();
+export const POST = withRoute(
+  {
+    route: "POST /api/patients",
+    permission: PERMISSIONS.PATIENTS_CREATE,
+    rateLimit: RATE_LIMITS.WRITE,
+  },
+  async (req, { session, db, log }) => {
+    const body = await req.json();
+    const data = createPatientSchema.parse(body); // throws ZodError → caught by withRoute → 400
+
     const now = Date.now();
     const patientId = generateId();
 
@@ -164,7 +155,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    // Retry loop handles race condition: two concurrent requests may compute the same count.
+    // Retry loop handles race condition: two concurrent requests may compute the same code.
     // On UNIQUE constraint collision, re-count and retry.
     let newPatient: typeof basePatient & { patientCode: string } = {
       ...basePatient,
@@ -180,7 +171,6 @@ export async function POST(request: NextRequest) {
 
       const seq = (totalCount as number) + 1 + attempt;
       const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
-      // orgCount is re-queried on each attempt, so no +attempt offset needed here.
       orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
         (orgCount as number) + 1
       ).padStart(4, "0")}`;
@@ -219,12 +209,6 @@ export async function POST(request: NextRequest) {
     }
 
     log.info("Patient created", { patientId, patientCode: newPatient.patientCode, orgCode });
-    return NextResponse.json({ patient: newPatient }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    }
-    log.error("Failed to create patient", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ patient: newPatient }, 201);
   }
-}
+);

@@ -10,17 +10,11 @@
  *
  * Who can call this: billing.view (GET) / billing.create (POST)
  */
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { visitItems, visits, treatments } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { PERMISSIONS } from "@/lib/permissions";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createItemSchema = z.object({
   itemName: z.string().min(1),
@@ -32,112 +26,66 @@ const createItemSchema = z.object({
   linkedTreatmentId: z.string().optional(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/visits/[id]/items", session);
-  if (!await hasPermission(session, PERMISSIONS.BILLING_VIEW)) {
-    log.security("Permission denied: BILLING_VIEW", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const GET = withRoute<{ id: string }>(
+  { route: "GET /api/visits/[id]/items", permission: PERMISSIONS.BILLING_VIEW },
+  async (_req, { session, db }, { id }) => {
+    const [visit] = await db
+      .select({ organizationId: visits.organizationId })
+      .from(visits)
+      .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Not found", 404);
+
+    const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
+    return apiOk({ items });
   }
+);
 
-  const { id } = await params;
-  const db = getDb();
-  const [visit] = await db
-    .select({ organizationId: visits.organizationId })
-    .from(visits)
-    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
-  if (!visit) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const items = await db.select().from(visitItems).where(eq(visitItems.visitId, id));
-  return NextResponse.json({ items });
-}
+export const POST = withRoute<{ id: string }>(
+  { route: "POST /api/visits/[id]/items", rateLimit: RATE_LIMITS.WRITE, permission: PERMISSIONS.BILLING_CREATE },
+  async (req, { session, db, log }, { id }) => {
+    const parsed = createItemSchema.parse(await req.json());
+    const { itemName, category, toothNumber, quantity, unitPrice, notes, linkedTreatmentId } = parsed;
+    const amount = quantity * unitPrice;
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/visits/[id]/items", session);
-  if (!await hasPermission(session, PERMISSIONS.BILLING_CREATE)) {
-    log.security("Permission denied: BILLING_CREATE", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const [visit] = await db
+      .select({ status: visits.status, patientId: visits.patientId })
+      .from(visits)
+      .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Not found", 404);
+    if (visit.status === "CANCELLED") return apiError("Cannot add items to a cancelled visit", 400);
 
-  const { id } = await params;
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  let parsed: z.infer<typeof createItemSchema>;
-  try {
-    parsed = createItemSchema.parse(body);
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: err.errors }, { status: 400 });
+    // Validate linked treatment if provided
+    let resolvedTreatmentId: string | null = null;
+    if (category === "TREATMENT" && linkedTreatmentId) {
+      const [tx] = await db
+        .select({ id: treatments.id })
+        .from(treatments)
+        .where(and(eq(treatments.id, linkedTreatmentId), eq(treatments.organizationId, session.orgId)));
+      if (!tx) return apiError("Treatment plan not found", 404);
+      resolvedTreatmentId = tx.id;
     }
-    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-  }
 
-  const { itemName, category, toothNumber, quantity, unitPrice, notes, linkedTreatmentId } = parsed;
-  const qty = quantity;
-  const price = unitPrice;
-  const amount = qty * price;
+    const newItem = {
+      id: crypto.randomUUID(),
+      visitId: id,
+      itemName,
+      category: category as "MEDICINE" | "PROCEDURE" | "XRAY" | "CONSULTATION" | "TREATMENT" | "OTHER",
+      toothNumber: toothNumber || null,
+      quantity,
+      unitPrice,
+      amount,
+      notes: notes || null,
+      linkedTreatmentId: resolvedTreatmentId,
+      createdAt: Date.now(),
+    };
 
-  const db = getDb();
-
-  const [visit] = await db
-    .select({ status: visits.status, patientId: visits.patientId })
-    .from(visits)
-    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
-  if (!visit) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (visit.status === "CANCELLED") return NextResponse.json({ error: "Cannot add items to a cancelled visit" }, { status: 400 });
-
-  // Validate linked treatment if provided
-  let resolvedTreatmentId: string | null = null;
-  if (category === "TREATMENT" && linkedTreatmentId) {
-    const [tx] = await db
-      .select({ id: treatments.id })
-      .from(treatments)
-      .where(and(eq(treatments.id, linkedTreatmentId), eq(treatments.organizationId, session.orgId)));
-    if (!tx) return NextResponse.json({ error: "Treatment plan not found" }, { status: 404 });
-    resolvedTreatmentId = tx.id;
-  }
-
-  const newItem = {
-    id: crypto.randomUUID(),
-    visitId: id,
-    itemName,
-    category: category as "MEDICINE" | "PROCEDURE" | "XRAY" | "CONSULTATION" | "TREATMENT" | "OTHER",
-    toothNumber: toothNumber || null,
-    quantity: qty,
-    unitPrice: price,
-    amount,
-    notes: notes || null,
-    linkedTreatmentId: resolvedTreatmentId,
-    createdAt: Date.now(),
-  };
-
-  try {
     await db.insert(visitItems).values(newItem);
     await db
       .update(visits)
       .set({ totalAmount: sql`total_amount + ${amount}`, updatedAt: Date.now() })
       .where(eq(visits.id, id));
-  } catch (err) {
-    log.error("Add visit item error", err);
-    return NextResponse.json({ error: "Failed to add item. Please try again." }, { status: 500 });
-  }
 
-  log.info("Visit item added", { itemId: newItem.id, visitId: id, category, amount });
-  return NextResponse.json({ item: newItem }, { status: 201 });
-}
+    log.info("Visit item added", { itemId: newItem.id, visitId: id, category, amount });
+    return apiOk({ item: newItem }, 201);
+  }
+);

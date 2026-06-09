@@ -1,3 +1,26 @@
+/**
+ * lib/default-roles.ts
+ *
+ * The five default staff roles and their permission sets.
+ * Used when a new organisation is created — these roles are seeded automatically.
+ *
+ * ─── THE ROLES ────────────────────────────────────────────────────────────────
+ *
+ *   Administrator  Full access to everything.
+ *   Doctor         Clinical access — patients, visits, treatments, billing, reports.
+ *   Receptionist   Front-desk — patients, appointments, billing. No clinical write access.
+ *   Nurse          Clinical support — can view patients and create/view visits.
+ *   Attendant      Read-only — can only view patients and appointments.
+ *
+ * ─── CUSTOMISATION ───────────────────────────────────────────────────────────
+ * Organisations can create custom roles via the Roles settings page.
+ * These defaults are only used at org creation time or as a fallback.
+ *
+ * ─── EXPORTS ─────────────────────────────────────────────────────────────────
+ *   ALL_PERMISSIONS   — flat array of every permission string in the system
+ *   DefaultRole       — TypeScript shape for a role definition
+ *   DEFAULT_ROLES     — the five pre-built roles with their permission sets
+ */
 export const ALL_PERMISSIONS = [
   "patients.view", "patients.create", "patients.edit", "patients.delete",
   "appointments.view", "appointments.create", "appointments.edit", "appointments.delete",

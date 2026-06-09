@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
+import Link from "next/link";
 import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 
@@ -558,6 +559,42 @@ export default function SettingsPage() {
                 <SaveButton saving={pwSaving} label="Change Password" />
               </div>
             </Section>
+
+            {/* Audit Log link */}
+            <div className="rounded-xl border p-6 flex items-start justify-between gap-4"
+              style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>Audit Log</h3>
+                <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  Review all administrative actions — staff changes, deletions, and role assignments. Visible to admins only.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/settings/audit-log"
+                className="shrink-0 text-sm font-medium px-4 py-2 rounded-lg border transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+              >
+                View Log →
+              </Link>
+            </div>
+
+            {/* App Logs — errors & security events captured by the API layer */}
+            <div className="rounded-xl border p-6 flex items-start justify-between gap-4"
+              style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>App Logs</h3>
+                <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>
+                  Errors, security events, and warnings captured by the API layer. Filter by level, route, user, and date range.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/settings/app-logs"
+                className="shrink-0 text-sm font-medium px-4 py-2 rounded-lg border transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+              >
+                View Logs →
+              </Link>
+            </div>
           </form>
         )}
       </main>

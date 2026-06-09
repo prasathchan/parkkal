@@ -11,17 +11,15 @@
  * Query params for GET:
  *   patientId, doctorId, status, date, search, billingStatus, limit, offset
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { PERMISSIONS } from "@/lib/permissions";
+import { escapeLike } from "@/lib/utils";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
 
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+// ─── Validation schema ────────────────────────────────────────────────────────
 
 const createVisitSchema = z.object({
   patientId: z.string().min(1),
@@ -33,123 +31,118 @@ const createVisitSchema = z.object({
   visitType: z.enum(["APPOINTMENT", "WALKIN"]).default("WALKIN"),
 });
 
+/** Build a sequential visit code like VIS-20250601-0003 */
 function generateVisitCode(date: string, seq: number): string {
   const d = date.replace(/-/g, "");
   return `VIS-${d}-${String(seq).padStart(4, "0")}`;
 }
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/visits", session);
-  if (!await hasPermission(session, PERMISSIONS.VISITS_VIEW)) {
-    log.security("Permission denied: VISITS_VIEW", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+// ─── GET /api/visits ──────────────────────────────────────────────────────────
+// Returns paginated list of visits for the org.
+// RBAC: DOCTOR role sees only their own visits.
+
+export const GET = withRoute(
+  { route: "GET /api/visits", permission: PERMISSIONS.VISITS_VIEW },
+  async (req, { session, db }) => {
+    const { searchParams } = new URL(req.url);
+    const patientId = searchParams.get("patientId");
+    // RBAC: DOCTOR role may only see their own visits
+    const doctorId = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
+    const status = searchParams.get("status");
+    const billingStatus = searchParams.get("billingStatus"); // "UNPAID" → paidAmount < totalAmount
+    const date = searchParams.get("date");
+    const search = searchParams.get("search");
+
+    const conditions = [eq(visits.organizationId, session.orgId)];
+    if (patientId) conditions.push(eq(visits.patientId, patientId));
+    if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
+    if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
+    if (billingStatus === "UNPAID") conditions.push(sql`${visits.paidAmount} < ${visits.totalAmount}`);
+    if (date) conditions.push(eq(visits.visitDate, date));
+    if (search) {
+      const escaped = escapeLike(search);
+      const likeSearch = `%${escaped}%`;
+      const searchCondition = or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch));
+      if (searchCondition) conditions.push(searchCondition);
+    }
+
+    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+    const offset = Number(searchParams.get("offset") ?? 0);
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(visits)
+      .leftJoin(patients, eq(visits.patientId, patients.id))
+      .where(and(...conditions));
+
+    const rows = await db
+      .select({
+        id: visits.id,
+        visitCode: visits.visitCode,
+        patientId: visits.patientId,
+        doctorId: visits.doctorId,
+        visitDate: visits.visitDate,
+        status: visits.status,
+        totalAmount: visits.totalAmount,
+        paidAmount: visits.paidAmount,
+        createdAt: visits.createdAt,
+        updatedAt: visits.updatedAt,
+        patientName: patients.name,
+        patientCode: patients.patientCode,
+        doctorName: users.name,
+      })
+      .from(visits)
+      .leftJoin(patients, eq(visits.patientId, patients.id))
+      .leftJoin(users, eq(visits.doctorId, users.id))
+      .where(and(...conditions))
+      .orderBy(desc(visits.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return apiOk({ visits: rows, total, hasMore: offset + rows.length < total });
   }
+);
 
-  const { searchParams } = new URL(request.url);
-  const patientId = searchParams.get("patientId");
-  // RBAC: DOCTOR role may only see their own visits.
-  const doctorId = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
-  const status = searchParams.get("status");
-  const billingStatus = searchParams.get("billingStatus"); // "UNPAID" → paidAmount < totalAmount
-  const date = searchParams.get("date");
-  const search = searchParams.get("search");
+// ─── POST /api/visits ─────────────────────────────────────────────────────────
+// Creates a new visit record.
+// Guards: checks patient and doctor belong to the org, and prevents duplicate visits per appointment.
 
-  const db = getDb();
-
-  const conditions = [eq(visits.organizationId, session.orgId)];
-  if (patientId) conditions.push(eq(visits.patientId, patientId));
-  if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
-  if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
-  if (billingStatus === "UNPAID") conditions.push(sql`${visits.paidAmount} < ${visits.totalAmount}`);
-  if (date) conditions.push(eq(visits.visitDate, date));
-  if (search) {
-    // Escape LIKE special characters so user input is treated as a literal substring.
-    const escapedSearch = search.replace(/[%_\\]/g, "\\$&");
-    const likeSearch = `%${escapedSearch}%`;
-    const searchCondition = or(like(patients.name, likeSearch), like(visits.visitCode, likeSearch));
-    if (searchCondition) conditions.push(searchCondition);
-  }
-
-  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
-  const offset = Number(searchParams.get("offset") ?? 0);
-
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(visits)
-    .leftJoin(patients, eq(visits.patientId, patients.id))
-    .where(and(...conditions));
-
-  const rows = await db
-    .select({
-      id: visits.id,
-      visitCode: visits.visitCode,
-      patientId: visits.patientId,
-      doctorId: visits.doctorId,
-      visitDate: visits.visitDate,
-      status: visits.status,
-      totalAmount: visits.totalAmount,
-      paidAmount: visits.paidAmount,
-      createdAt: visits.createdAt,
-      updatedAt: visits.updatedAt,
-      patientName: patients.name,
-      patientCode: patients.patientCode,
-      doctorName: users.name,
-    })
-    .from(visits)
-    .leftJoin(patients, eq(visits.patientId, patients.id))
-    .leftJoin(users, eq(visits.doctorId, users.id))
-    .where(and(...conditions))
-    .orderBy(desc(visits.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  return NextResponse.json({ visits: rows, total, hasMore: offset + rows.length < total });
-}
-
-export async function POST(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/visits", session);
-  if (!await hasPermission(session, PERMISSIONS.VISITS_CREATE)) {
-    log.security("Permission denied: VISITS_CREATE", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json();
+export const POST = withRoute(
+  {
+    route: "POST /api/visits",
+    permission: PERMISSIONS.VISITS_CREATE,
+    rateLimit: RATE_LIMITS.WRITE,
+  },
+  async (req, { session, db, log }) => {
+    const body = await req.json();
     const parsed = createVisitSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
+      return apiError("Invalid input", 400);
     }
     const { patientId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
-    // RBAC: DOCTOR role can only create visits for themselves
+    // RBAC: DOCTOR role can only create visits assigned to themselves
     const doctorId = session.role === "DOCTOR" ? session.userId : parsed.data.doctorId;
 
-    const db = getDb();
-
     const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
-    if (!orgExists) return NextResponse.json({ error: "Organization not found" }, { status: 400 });
+    if (!orgExists) return apiError("Organization not found", 400);
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)));
-    if (!patientOrgLink) return NextResponse.json({ error: "Patient does not belong to this organization" }, { status: 400 });
+    if (!patientOrgLink) return apiError("Patient does not belong to this organization", 400);
 
     // Verify doctor is a member of this org
     const [doctorMembership] = await db.select({ userId: organizationMembers.userId }).from(organizationMembers)
       .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, doctorId)));
-    if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
+    if (!doctorMembership) return apiError("Doctor does not belong to this organization", 400);
 
     // Prevent duplicate visits for the same appointment
     if (appointmentId) {
       const [existing] = await db.select({ id: visits.id }).from(visits)
         .where(and(eq(visits.appointmentId, appointmentId), eq(visits.organizationId, session.orgId)));
-      if (existing) return NextResponse.json({ error: "A visit already exists for this appointment", visitId: existing.id }, { status: 409 });
+      if (existing) return apiError("A visit already exists for this appointment", 409, { visitId: existing.id });
     }
-    // Count org-scoped visits today for sequential visit code
+
+    // Count org-scoped visits today to generate a sequential visit code
     const [{ todayCount }] = await db
       .select({ todayCount: count() })
       .from(visits)
@@ -176,7 +169,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    // Retry loop for UNIQUE constraint on visitCode
+    // Retry loop for UNIQUE constraint on visitCode (two concurrent requests same day)
     let visitCode = "";
     for (let attempt = 0; attempt < 5; attempt++) {
       visitCode = generateVisitCode(visitDate, baseSeq + attempt);
@@ -202,10 +195,6 @@ export async function POST(request: NextRequest) {
     }
 
     log.info("Visit created", { visitId: newVisit.id, visitCode, patientId, doctorId, visitDate });
-    return NextResponse.json({ visit: { ...newVisit, visitCode } }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    log.error("Create visit error", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ visit: { ...newVisit, visitCode } }, 201);
   }
-}
+);

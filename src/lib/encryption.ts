@@ -1,7 +1,29 @@
-// AES-256-GCM field-level encryption for sensitive Indian government IDs (PAN, Aadhaar).
-// Encrypted values are prefixed with "enc:" so plaintext legacy rows can be read safely.
-// Set ENCRYPTION_KEY to a 64-char hex string (32 bytes). Without it, fields pass through
-// unmodified — useful in local dev without secrets configured.
+/**
+ * lib/encryption.ts
+ *
+ * AES-256-GCM field-level encryption for sensitive Indian government IDs.
+ * Used to protect PAN numbers and Aadhaar numbers at rest in the database.
+ *
+ * ─── HOW IT WORKS ────────────────────────────────────────────────────────────
+ *   1. A random 12-byte IV is generated for every encryption.
+ *   2. The plaintext is encrypted with AES-256-GCM using ENCRYPTION_KEY.
+ *   3. IV + ciphertext are base64-encoded and prefixed with "enc:".
+ *   4. The database stores the "enc:..." string instead of the raw value.
+ *
+ *   On read: if the value starts with "enc:", it's decrypted.
+ *            If it doesn't (legacy row), it's returned as-is (passthrough).
+ *
+ * ─── SETUP ───────────────────────────────────────────────────────────────────
+ *   Set ENCRYPTION_KEY to a 64-character hex string (= 32 bytes / 256 bits).
+ *   Generate one with: openssl rand -hex 32
+ *
+ *   Without the key, fields are stored in plaintext with a warning.
+ *   This is intentional for local dev — never skip the key in production.
+ *
+ * ─── EXPORTS ─────────────────────────────────────────────────────────────────
+ *   encryptField(value)  → "enc:..." ciphertext, or the original value if no key
+ *   decryptField(value)  → plaintext, or null on decryption failure
+ */
 
 const PREFIX = "enc:";
 

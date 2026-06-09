@@ -1,15 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { organizations, organizationMembers, users } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
 import { writeAuditLog } from "@/lib/audit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
-const WRITE_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
 const updateOrgSchema = z.object({
   name: z.string().min(1).optional(),
@@ -20,45 +13,24 @@ const updateOrgSchema = z.object({
   themeConfig: z.union([z.string(), z.record(z.unknown())]).optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("GET /api/org/profile", session);
-
-  try {
-    const db = getDb();
-    const org = (await db.select().from(organizations).where(eq(organizations.id, session.orgId)))[0];
-    if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
-    return NextResponse.json({ organization: org });
-  } catch (err) {
-    log.error("Failed to fetch org profile", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+/** GET /api/org/profile — fetch the current org's settings */
+export const GET = withRoute(
+  { route: "GET /api/org/profile", rateLimit: RATE_LIMITS.READ },
+  async (_req, { session, db }) => {
+    const [org] = await db.select().from(organizations).where(eq(organizations.id, session.orgId));
+    if (!org) return apiError("Organization not found", 404);
+    return apiOk({ organization: org });
   }
-}
+);
 
-export async function PATCH(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/org/profile", session);
-  if (session.role !== "ADMIN") {
-    log.security("Permission denied: only ADMIN can update org profile", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json();
-    const parsed = updateOrgSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
-    }
+/** PATCH /api/org/profile — update org settings (ADMIN only) */
+export const PATCH = withRoute(
+  { route: "PATCH /api/org/profile", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
+  async (req, { session, db, log }) => {
+    const parsed = updateOrgSchema.safeParse(await req.json());
+    if (!parsed.success) return apiError("Invalid input", 400);
 
     const { name, address, phone, email, logoUrl, themeConfig } = parsed.data;
-
-    const db = getDb();
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
     if (address !== undefined) updates.address = address;
@@ -69,7 +41,7 @@ export async function PATCH(request: NextRequest) {
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
 
-    // Keep the default admin's phone in sync with the org phone
+    // Keep the org admin's phone in sync when the org phone changes
     if (phone !== undefined && phone !== null) {
       const [adminMember] = await db
         .select({ userId: organizationMembers.userId })
@@ -77,17 +49,12 @@ export async function PATCH(request: NextRequest) {
         .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.role, "ADMIN")))
         .limit(1);
       if (adminMember) {
-        await db.update(users)
-          .set({ phone, updatedAt: Date.now() })
-          .where(eq(users.id, adminMember.userId));
+        await db.update(users).set({ phone, updatedAt: Date.now() }).where(eq(users.id, adminMember.userId));
       }
     }
 
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ORG_PROFILE_UPDATED", targetType: "organization", targetId: session.orgId });
     log.info("Org profile updated");
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    log.error("Failed to update org profile", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ success: true });
   }
-}
+);

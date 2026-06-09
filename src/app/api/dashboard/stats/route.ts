@@ -1,24 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, ne, count, sum, gte } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { organizationPatients, appointments, payments, visits } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 
-const READ_RATE_LIMIT = { limit: 300, windowMs: 60_000 };
-
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`read:${session.userId}`, READ_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("GET /api/dashboard/stats", session);
-
-  const db = getDb();
-  const orgId = session.orgId;
-
-  try {
+/** GET /api/dashboard/stats — summary counts + revenue for the org dashboard */
+export const GET = withRoute(
+  { route: "GET /api/dashboard/stats", rateLimit: RATE_LIMITS.READ },
+  async (_req, { session, db }) => {
+    const orgId = session.orgId;
     const now = new Date();
     const today = now.toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -33,47 +21,31 @@ export async function GET(request: NextRequest) {
       openPaidRows,
     ] = await Promise.all([
       db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
-      db
-        .select({ val: count() })
-        .from(appointments)
+      db.select({ val: count() }).from(appointments)
         .where(and(eq(appointments.organizationId, orgId), eq(appointments.appointmentDate, today))),
-      db
-        .select({ val: count() })
-        .from(visits)
+      db.select({ val: count() }).from(visits)
         .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
       // Monthly revenue: sum of payments for this org's visits this month
-      db
-        .select({ val: sum(payments.amount) })
-        .from(payments)
+      db.select({ val: sum(payments.amount) }).from(payments)
         .innerJoin(visits, eq(payments.visitId, visits.id))
         .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, monthStart))),
-      db
-        .select({ val: sum(visits.totalAmount) })
-        .from(visits)
+      db.select({ val: sum(visits.totalAmount) }).from(visits)
         .where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
-      db
-        .select({ val: sum(visits.paidAmount) })
-        .from(visits)
+      db.select({ val: sum(visits.paidAmount) }).from(visits)
         .where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
     ]);
 
     const [todayRevenueRows, todayApptVisitsRows, todayWalkInVisitsRows] = await Promise.all([
-      db
-        .select({ val: sum(payments.amount) })
-        .from(payments)
+      db.select({ val: sum(payments.amount) }).from(payments)
         .innerJoin(visits, eq(payments.visitId, visits.id))
         .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, todayStart))),
-      db
-        .select({ val: count() })
-        .from(visits)
+      db.select({ val: count() }).from(visits)
         .where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "APPOINTMENT"))),
-      db
-        .select({ val: count() })
-        .from(visits)
+      db.select({ val: count() }).from(visits)
         .where(and(eq(visits.organizationId, orgId), eq(visits.visitDate, today), eq(visits.visitType, "WALKIN"))),
     ]);
 
-    return NextResponse.json({
+    return apiOk({
       totalPatients: totalPatientsRows[0]?.val ?? 0,
       todayAppointments: todayAppointmentsRows[0]?.val ?? 0,
       pendingVisits: pendingVisitsRows[0]?.val ?? 0,
@@ -83,8 +55,5 @@ export async function GET(request: NextRequest) {
       todayAppointmentVisits: todayApptVisitsRows[0]?.val ?? 0,
       todayWalkInVisits: todayWalkInVisitsRows[0]?.val ?? 0,
     });
-  } catch (err) {
-    log.error("Failed to fetch dashboard stats", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-}
+);

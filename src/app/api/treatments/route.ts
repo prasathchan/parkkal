@@ -1,14 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, gte, lte, count } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { treatments, patients, users, organizationPatients, organizationMembers } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { PERMISSIONS } from "@/lib/permissions";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const createTreatmentSchema = z.object({
   patientId: z.string().min(1),
@@ -21,94 +15,75 @@ const createTreatmentSchema = z.object({
   appointmentId: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/treatments", session);
-  if (!await hasPermission(session, PERMISSIONS.TREATMENTS_VIEW)) {
-    log.security("Permission denied: TREATMENTS_VIEW", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+export const GET = withRoute(
+  { route: "GET /api/treatments", rateLimit: RATE_LIMITS.READ, permission: PERMISSIONS.TREATMENTS_VIEW },
+  async (req, { session, db }) => {
+    const { searchParams } = new URL(req.url);
+    const patientIdFilter = searchParams.get("patientId");
+    const dateFilter = searchParams.get("date");
+    const doctorIdFilter =
+      session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
+
+    const conditions = [eq(treatments.organizationId, session.orgId)];
+    if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
+    if (doctorIdFilter) conditions.push(eq(treatments.doctorId, doctorIdFilter));
+    if (dateFilter) {
+      const dayStart = new Date(dateFilter + "T00:00:00").getTime();
+      const dayEnd = new Date(dateFilter + "T23:59:59.999").getTime();
+      conditions.push(gte(treatments.createdAt, dayStart));
+      conditions.push(lte(treatments.createdAt, dayEnd));
+    }
+
+    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+    const offset = Number(searchParams.get("offset") ?? 0);
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(treatments)
+      .where(and(...conditions));
+
+    const rows = await db
+      .select({
+        id: treatments.id,
+        patientId: treatments.patientId,
+        doctorId: treatments.doctorId,
+        appointmentId: treatments.appointmentId,
+        description: treatments.description,
+        toothNumbers: treatments.toothNumbers,
+        procedure: treatments.procedure,
+        cost: treatments.cost,
+        status: treatments.status,
+        createdAt: treatments.createdAt,
+        consentStatus: treatments.consentStatus,
+        consentDocumentUrl: treatments.consentDocumentUrl,
+        consentDocumentName: treatments.consentDocumentName,
+        consentUploadedAt: treatments.consentUploadedAt,
+        consentNotes: treatments.consentNotes,
+        patientName: patients.name,
+        patientCode: patients.patientCode,
+        doctorName: users.name,
+      })
+      .from(treatments)
+      .leftJoin(patients, eq(treatments.patientId, patients.id))
+      .leftJoin(users, eq(treatments.doctorId, users.id))
+      .where(and(...conditions))
+      .orderBy(desc(treatments.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return apiOk({ treatments: rows, total, hasMore: offset + rows.length < total });
   }
+);
 
-  const { searchParams } = new URL(request.url);
-  const patientIdFilter = searchParams.get("patientId");
-  const dateFilter = searchParams.get("date");
-  const doctorIdFilter =
-    session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
-
-  const db = getDb();
-
-  const conditions = [eq(treatments.organizationId, session.orgId)];
-  if (patientIdFilter) conditions.push(eq(treatments.patientId, patientIdFilter));
-  if (doctorIdFilter) conditions.push(eq(treatments.doctorId, doctorIdFilter));
-  if (dateFilter) {
-    const dayStart = new Date(dateFilter + "T00:00:00").getTime();
-    const dayEnd = new Date(dateFilter + "T23:59:59.999").getTime();
-    conditions.push(gte(treatments.createdAt, dayStart));
-    conditions.push(lte(treatments.createdAt, dayEnd));
-  }
-
-  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
-  const offset = Number(searchParams.get("offset") ?? 0);
-
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(treatments)
-    .where(and(...conditions));
-
-  const rows = await db
-    .select({
-      id: treatments.id,
-      patientId: treatments.patientId,
-      doctorId: treatments.doctorId,
-      appointmentId: treatments.appointmentId,
-      description: treatments.description,
-      toothNumbers: treatments.toothNumbers,
-      procedure: treatments.procedure,
-      cost: treatments.cost,
-      status: treatments.status,
-      createdAt: treatments.createdAt,
-      consentStatus: treatments.consentStatus,
-      consentDocumentUrl: treatments.consentDocumentUrl,
-      consentDocumentName: treatments.consentDocumentName,
-      consentUploadedAt: treatments.consentUploadedAt,
-      consentNotes: treatments.consentNotes,
-      patientName: patients.name,
-      patientCode: patients.patientCode,
-      doctorName: users.name,
-    })
-    .from(treatments)
-    .leftJoin(patients, eq(treatments.patientId, patients.id))
-    .leftJoin(users, eq(treatments.doctorId, users.id))
-    .where(and(...conditions))
-    .orderBy(desc(treatments.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  return NextResponse.json({ treatments: rows, total, hasMore: offset + rows.length < total });
-}
-
-export async function POST(request: NextRequest) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("POST /api/treatments", session);
-  if (!await hasPermission(session, PERMISSIONS.TREATMENTS_CREATE)) {
-    log.security("Permission denied: TREATMENTS_CREATE", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    const body = await request.json();
-    const data = createTreatmentSchema.parse(body);
+export const POST = withRoute(
+  { route: "POST /api/treatments", rateLimit: RATE_LIMITS.WRITE, permission: PERMISSIONS.TREATMENTS_CREATE },
+  async (req, { session, db, log }) => {
+    const data = createTreatmentSchema.parse(await req.json());
 
     // DOCTOR role can only create treatments assigned to themselves
     if (session.role === "DOCTOR") {
       data.doctorId = session.userId;
     }
-
-    const db = getDb();
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
       .where(and(
@@ -116,9 +91,8 @@ export async function POST(request: NextRequest) {
         eq(organizationPatients.patientId, data.patientId),
         eq(organizationPatients.isActive, 1),
       ));
-    if (!patientOrgLink) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!patientOrgLink) return apiError("Forbidden", 403);
 
-    // Verify doctor belongs to this org and is active
     const [doctorMembership] = await db
       .select({ userId: organizationMembers.userId })
       .from(organizationMembers)
@@ -127,7 +101,7 @@ export async function POST(request: NextRequest) {
         eq(organizationMembers.userId, data.doctorId),
         eq(organizationMembers.isActive, 1),
       ));
-    if (!doctorMembership) return NextResponse.json({ error: "Doctor does not belong to this organization" }, { status: 400 });
+    if (!doctorMembership) return apiError("Doctor does not belong to this organization", 400);
 
     const treatment = {
       id: crypto.randomUUID(),
@@ -144,14 +118,7 @@ export async function POST(request: NextRequest) {
     };
 
     await db.insert(treatments).values(treatment);
-
     log.info("Treatment created", { treatmentId: treatment.id, patientId: treatment.patientId, doctorId: treatment.doctorId });
-    return NextResponse.json({ treatment }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input", details: error.errors }, { status: 400 });
-    }
-    log.error("Create treatment error", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ treatment }, 201);
   }
-}
+);

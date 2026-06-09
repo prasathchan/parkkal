@@ -1,44 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { emergencyContacts, organizationPatients, organizationMembers } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
+/** Verify that the contact's entity belongs to the requesting org. */
+async function assertContactOwnership(
+  db: ReturnType<typeof import("@/lib/db").getDb>,
+  orgId: string,
+  contact: { entityType: string; entityId: string }
+): Promise<boolean> {
+  if (contact.entityType === "PATIENT") {
+    const [m] = await db.select({ patientId: organizationPatients.patientId }).from(organizationPatients)
+      .where(and(eq(organizationPatients.organizationId, orgId), eq(organizationPatients.patientId, contact.entityId)));
+    return !!m;
+  } else if (contact.entityType === "USER") {
+    const [m] = await db.select({ userId: organizationMembers.userId }).from(organizationMembers)
+      .where(and(eq(organizationMembers.organizationId, orgId), eq(organizationMembers.userId, contact.entityId)));
+    return !!m;
+  }
+  return false;
+}
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/emergency-contacts/[id]", session);
-  const { id } = await params;
-
-  try {
-    const db = getDb();
-
+/** PATCH /api/emergency-contacts/[id] — update name, relationship, phone, etc. */
+export const PATCH = withRoute<{ id: string }>(
+  { route: "PATCH /api/emergency-contacts/[id]", rateLimit: RATE_LIMITS.WRITE },
+  async (req, { session, db, log }, { id }) => {
     const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
-    if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!contact) return apiError("Not found", 404);
 
-    // Verify entity belongs to the org
-    if (contact.entityType === "PATIENT") {
-      const [membership] = await db
-        .select({ patientId: organizationPatients.patientId })
-        .from(organizationPatients)
-        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, contact.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    } else if (contact.entityType === "USER") {
-      const [membership] = await db
-        .select({ userId: organizationMembers.userId })
-        .from(organizationMembers)
-        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, contact.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!await assertContactOwnership(db, session.orgId, contact)) return apiError("Forbidden", 403);
 
-    const body = await request.json() as { name?: string; relationship?: string; phone?: string; email?: string; address?: string };
-    const { name, relationship, phone, email, address } = body;
+    const { name, relationship, phone, email, address } = await req.json() as Record<string, string | undefined>;
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;
     if (relationship !== undefined) updates.relationship = relationship;
@@ -48,45 +39,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     await db.update(emergencyContacts).set(updates).where(eq(emergencyContacts.id, id));
     log.info("Emergency contact updated", { contactId: id });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    log.error("Failed to update emergency contact", error, { contactId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ success: true });
   }
-}
+);
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("DELETE /api/emergency-contacts/[id]", session);
-  const { id } = await params;
-
-  try {
-    const db = getDb();
-
+/** DELETE /api/emergency-contacts/[id] — remove an emergency contact */
+export const DELETE = withRoute<{ id: string }>(
+  { route: "DELETE /api/emergency-contacts/[id]" },
+  async (_req, { session, db, log }, { id }) => {
     const [contact] = await db.select().from(emergencyContacts).where(eq(emergencyContacts.id, id));
-    if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!contact) return apiError("Not found", 404);
 
-    // Verify entity belongs to the org
-    if (contact.entityType === "PATIENT") {
-      const [membership] = await db
-        .select({ patientId: organizationPatients.patientId })
-        .from(organizationPatients)
-        .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, contact.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    } else if (contact.entityType === "USER") {
-      const [membership] = await db
-        .select({ userId: organizationMembers.userId })
-        .from(organizationMembers)
-        .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.userId, contact.entityId)));
-      if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (!await assertContactOwnership(db, session.orgId, contact)) return apiError("Forbidden", 403);
 
     await db.delete(emergencyContacts).where(eq(emergencyContacts.id, id));
     log.info("Emergency contact deleted", { contactId: id });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    log.error("Failed to delete emergency contact", error, { contactId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ success: true });
   }
-}
+);

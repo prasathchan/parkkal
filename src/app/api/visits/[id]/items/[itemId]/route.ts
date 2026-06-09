@@ -1,15 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and, sum } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { visitItems, visits } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { hasPermission, PERMISSIONS } from "@/lib/permissions";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { PERMISSIONS } from "@/lib/permissions";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
-const DESTRUCTIVE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const patchItemSchema = z.object({
   itemName: z.string().min(1).optional(),
@@ -20,117 +13,76 @@ const patchItemSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; itemId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/visits/[id]/items/[itemId]", session);
-  if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
-    log.security("Permission denied: BILLING_EDIT", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+export const PATCH = withRoute<{ id: string; itemId: string }>(
+  { route: "PATCH /api/visits/[id]/items/[itemId]", rateLimit: RATE_LIMITS.WRITE, permission: PERMISSIONS.BILLING_EDIT },
+  async (req, { session, db, log }, { id, itemId }) => {
+    const [visit] = await db
+      .select({ status: visits.status })
+      .from(visits)
+      .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Visit not found", 404);
+    if (visit.status === "CANCELLED") return apiError("Cannot modify items on a cancelled visit", 400);
 
-  const { id, itemId } = await params;
-  const db = getDb();
+    const data = patchItemSchema.parse(await req.json());
 
-  const [visit] = await db
-    .select({ status: visits.status })
-    .from(visits)
-    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
-  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.status === "CANCELLED") {
-    return NextResponse.json({ error: "Cannot modify items on a cancelled visit" }, { status: 400 });
-  }
+    const updates: Record<string, unknown> = {};
+    if (data.itemName !== undefined) updates.itemName = data.itemName;
+    if (data.category !== undefined) updates.category = data.category;
+    if (data.toothNumber !== undefined) updates.toothNumber = data.toothNumber;
+    if (data.notes !== undefined) updates.notes = data.notes;
+    if (data.quantity !== undefined) updates.quantity = data.quantity;
+    if (data.unitPrice !== undefined) updates.unitPrice = data.unitPrice;
 
-  const body = await request.json();
-  const parsed = patchItemSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid input", details: parsed.error.errors }, { status: 400 });
-  }
-
-  const data = parsed.data;
-  const updates: Record<string, unknown> = {};
-  if (data.itemName !== undefined) updates.itemName = data.itemName;
-  if (data.category !== undefined) updates.category = data.category;
-  if (data.toothNumber !== undefined) updates.toothNumber = data.toothNumber;
-  if (data.notes !== undefined) updates.notes = data.notes;
-
-  const qty = data.quantity;
-  const price = data.unitPrice;
-
-  if (qty !== undefined) updates.quantity = qty;
-  if (price !== undefined) updates.unitPrice = price;
-
-  // Recalc amount if qty or price changed
-  if (qty !== undefined || price !== undefined) {
-    const [existing] = await db
-      .select()
-      .from(visitItems)
-      .where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
-    if (existing) {
-      const newQty = qty ?? existing.quantity;
-      const newPrice = price ?? existing.unitPrice;
-      updates.amount = newQty * newPrice;
+    // Recalc amount if qty or price changed
+    if (data.quantity !== undefined || data.unitPrice !== undefined) {
+      const [existing] = await db
+        .select()
+        .from(visitItems)
+        .where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+      if (existing) {
+        const newQty = data.quantity ?? existing.quantity;
+        const newPrice = data.unitPrice ?? existing.unitPrice;
+        updates.amount = newQty * newPrice;
+      }
     }
+
+    if (Object.keys(updates).length === 0) return apiError("No fields to update", 400);
+
+    await db.update(visitItems).set(updates).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+
+    // Recompute total from all items — source of truth, prevents drift
+    const [{ total }] = await db
+      .select({ total: sum(visitItems.amount) })
+      .from(visitItems)
+      .where(eq(visitItems.visitId, id));
+    await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+
+    const [updated] = await db.select().from(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+    log.info("Visit item updated", { itemId, visitId: id });
+    return apiOk({ item: updated });
   }
+);
 
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+export const DELETE = withRoute<{ id: string; itemId: string }>(
+  { route: "DELETE /api/visits/[id]/items/[itemId]", rateLimit: RATE_LIMITS.DESTRUCTIVE, permission: PERMISSIONS.BILLING_EDIT },
+  async (_req, { session, db, log }, { id, itemId }) => {
+    const [visit] = await db
+      .select({ status: visits.status })
+      .from(visits)
+      .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Visit not found", 404);
+    if (visit.status === "CANCELLED") return apiError("Cannot remove items from a cancelled visit", 400);
+
+    await db.delete(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
+
+    // Full recompute from remaining items — prevents drift if prior increment crashed
+    const [{ total }] = await db
+      .select({ total: sum(visitItems.amount) })
+      .from(visitItems)
+      .where(eq(visitItems.visitId, id));
+    await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
+
+    log.info("Visit item deleted", { itemId, visitId: id });
+    return apiOk({ success: true });
   }
-
-  await db.update(visitItems).set(updates).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
-
-  // Recompute total from all items — source of truth, prevents drift
-  const [{ total }] = await db
-    .select({ total: sum(visitItems.amount) })
-    .from(visitItems)
-    .where(eq(visitItems.visitId, id));
-  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
-
-  const [updated] = await db.select().from(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
-  log.info("Visit item updated", { itemId, visitId: id });
-  return NextResponse.json({ item: updated });
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; itemId: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`destructive:${session.userId}`, DESTRUCTIVE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("DELETE /api/visits/[id]/items/[itemId]", session);
-  if (!await hasPermission(session, PERMISSIONS.BILLING_EDIT)) {
-    log.security("Permission denied: BILLING_EDIT", {});
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { id, itemId } = await params;
-  const db = getDb();
-
-  const [visit] = await db
-    .select({ status: visits.status })
-    .from(visits)
-    .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
-  if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.status === "CANCELLED") {
-    return NextResponse.json({ error: "Cannot remove items from a cancelled visit" }, { status: 400 });
-  }
-
-  await db.delete(visitItems).where(and(eq(visitItems.id, itemId), eq(visitItems.visitId, id)));
-
-  // Full recompute from remaining items — prevents drift if prior increment crashed
-  const [{ total }] = await db
-    .select({ total: sum(visitItems.amount) })
-    .from(visitItems)
-    .where(eq(visitItems.visitId, id));
-  await db.update(visits).set({ totalAmount: Number(total) || 0, updatedAt: Date.now() }).where(eq(visits.id, id));
-
-  log.info("Visit item deleted", { itemId, visitId: id });
-  return NextResponse.json({ success: true });
-}
+);

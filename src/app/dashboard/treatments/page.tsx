@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
+import { NewTreatmentModal } from "@/components/treatments/NewTreatmentModal";
 
 type TreatmentStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED";
 
@@ -26,21 +28,6 @@ interface Patient {
   patientCode: string;
 }
 
-interface Member {
-  userId: string;
-  name: string;
-  role: string;
-}
-
-interface NewTreatmentForm {
-  patientId: string;
-  doctorId: string;
-  description: string;
-  procedure: string;
-  toothNumbers: string[];
-  cost: string;
-}
-
 const LIMIT = 50;
 
 export default function TreatmentsPage() {
@@ -51,8 +38,9 @@ export default function TreatmentsPage() {
   const [offset, setOffset] = useState(0);
   const [patientSearch, setPatientSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [showSlideover, setShowSlideover] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
   // Patient search for filter bar
   const [filterPatients, setFilterPatients] = useState<Patient[]>([]);
@@ -60,48 +48,14 @@ export default function TreatmentsPage() {
   const [filterPatientName, setFilterPatientName] = useState("");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  // Slideover form state
-  const [form, setForm] = useState<NewTreatmentForm>({
-    patientId: "",
-    doctorId: "",
-    description: "",
-    procedure: "",
-    toothNumbers: [],
-    cost: "0",
-  });
-  const [formPatientSearch, setFormPatientSearch] = useState("");
-  const [formPatients, setFormPatients] = useState<Patient[]>([]);
-  const [showFormPatientDropdown, setShowFormPatientDropdown] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
-  // Role fetched independently — does NOT block the list from loading
+  // Current user — needed only to pass down to the modal
   const [currentUserRole, setCurrentUserRole] = useState("");
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
-
-  // Visit history detail modal
-  const [detailTreatment, setDetailTreatment] = useState<TreatmentRecord | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailData, setDetailData] = useState<{
-    visits: { visitId: string; visitCode: string; visitDate: string; visitStatus: string; visitTotalAmount: number; visitPaidAmount: number; doctorName: string | null }[];
-    summary: { treatmentCost: number; totalPaid: number; outstanding: number; visitCount: number };
-  } | null>(null);
-
-  async function openDetail(t: TreatmentRecord) {
-    setDetailTreatment(t);
-    setDetailData(null);
-    setDetailLoading(true);
-    const res = await fetch(`/api/treatments/${t.id}/visits`);
-    if (res.ok) setDetailData(await res.json());
-    setDetailLoading(false);
-  }
 
   const filterDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch role for the new-treatment form UI only — does not gate the list
+  // Fetch current user for modal role-gating
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -116,7 +70,6 @@ export default function TreatmentsPage() {
   }, []);
 
   // Server enforces RBAC: DOCTOR role automatically sees only their own treatments.
-  // No need to pass doctorId from the client — it would be ignored/overridden anyway.
   const fetchTreatments = useCallback(async (pageOffset: number, append = false) => {
     if (append) setLoadingMore(true);
     else setLoading(true);
@@ -163,87 +116,6 @@ export default function TreatmentsPage() {
     }, 300);
   }, [patientSearch]);
 
-  // Debounced form patient search
-  useEffect(() => {
-    if (formDebounceRef.current) clearTimeout(formDebounceRef.current);
-    if (!formPatientSearch.trim()) {
-      setFormPatients([]);
-      setShowFormPatientDropdown(false);
-      return;
-    }
-    formDebounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/patients?search=${encodeURIComponent(formPatientSearch)}`);
-      const data = await res.json();
-      setFormPatients(data.patients || []);
-      setShowFormPatientDropdown(true);
-    }, 300);
-  }, [formPatientSearch]);
-
-  // Fetch members when slideover opens (only needed for non-doctor roles)
-  useEffect(() => {
-    if (showSlideover && members.length === 0 && currentUserRole !== "DOCTOR") {
-      fetch("/api/org/members")
-        .then((r) => r.json())
-        .then((d) => {
-          const all: Member[] = d.members || [];
-          setMembers(all.filter((m) => m.role === "DOCTOR" || m.role === "ADMIN"));
-        })
-        .catch(() => {});
-    }
-  }, [showSlideover, members.length, currentUserRole]);
-
-  function openSlideover() {
-    setForm({
-      patientId: "",
-      doctorId: currentUserRole === "DOCTOR" ? currentUserId : "",
-      description: "",
-      procedure: "",
-      toothNumbers: [],
-      cost: "0",
-    });
-    setFormPatientSearch("");
-    setFormPatients([]);
-    setSubmitError("");
-    setShowSlideover(true);
-  }
-
-  function closeSlideover() {
-    setShowSlideover(false);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.patientId || !form.doctorId || !form.description.trim()) return;
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      const res = await fetch("/api/treatments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: form.patientId,
-          doctorId: form.doctorId,
-          description: form.description,
-          procedure: form.procedure || undefined,
-          toothNumbers: form.toothNumbers.length > 0 ? form.toothNumbers.join(",") : undefined,
-          cost: parseFloat(form.cost) || 0,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setSubmitError(data.error || "Failed to create treatment plan");
-        return;
-      }
-      closeSlideover();
-      setOffset(0);
-      fetchTreatments(0, false);
-    } catch {
-      setSubmitError("Something went wrong.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   function clearFilters() {
     setPatientSearch("");
     setFilterPatientId("");
@@ -256,9 +128,7 @@ export default function TreatmentsPage() {
   async function handleStatusChange(treatmentId: string, newStatus: TreatmentStatus) {
     setUpdatingStatus(treatmentId);
     setStatusError("");
-    // Capture old status for rollback
     const prev = treatments.find((t) => t.id === treatmentId)?.status ?? "PLANNED";
-    // Optimistic update
     setTreatments((list) =>
       list.map((t) => (t.id === treatmentId ? { ...t, status: newStatus } : t))
     );
@@ -269,7 +139,6 @@ export default function TreatmentsPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) {
-        // Rollback on API error
         setTreatments((list) =>
           list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
         );
@@ -277,7 +146,6 @@ export default function TreatmentsPage() {
         setStatusError((d as { error?: string }).error || "Failed to update status. Please try again.");
       }
     } catch {
-      // Rollback on network error
       setTreatments((list) =>
         list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
       );
@@ -376,7 +244,7 @@ export default function TreatmentsPage() {
               </span>
             )}
             <button
-              onClick={openSlideover}
+              onClick={() => setShowModal(true)}
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -455,12 +323,12 @@ export default function TreatmentsPage() {
                         {formatCurrency(t.cost ?? 0)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => openDetail(t)}
+                        <Link
+                          href={`/dashboard/treatments/${t.id}`}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
                         >
                           View History
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   ))
@@ -489,272 +357,19 @@ export default function TreatmentsPage() {
         </div>
       </main>
 
-      {/* Visit History Detail Modal */}
-      {detailTreatment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="flex items-start justify-between p-6 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">{detailTreatment.description}</h3>
-                {detailTreatment.procedure && <p className="text-xs text-slate-500 mt-0.5">{detailTreatment.procedure}</p>}
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${detailTreatment.status === "PLANNED" ? "bg-yellow-50 text-yellow-700" : detailTreatment.status === "IN_PROGRESS" ? "bg-blue-50 text-blue-700" : "bg-green-50 text-green-700"}`}>
-                    {detailTreatment.status}
-                  </span>
-                  <span className="text-xs text-slate-500">{detailTreatment.patientName} · {detailTreatment.patientCode}</span>
-                </div>
-              </div>
-              <button onClick={() => setDetailTreatment(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none ml-4">×</button>
-            </div>
-
-            <div className="overflow-y-auto flex-1 p-6 space-y-5">
-              {detailLoading ? (
-                <p className="text-sm text-slate-400 text-center py-8">Loading visit history...</p>
-              ) : !detailData ? (
-                <p className="text-sm text-red-500 text-center py-8">Failed to load visit history.</p>
-              ) : (
-                <>
-                  {/* Financial Summary */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-slate-50 rounded-xl p-4 text-center">
-                      <p className="text-xs text-slate-500 mb-1">Treatment Cost</p>
-                      <p className="text-lg font-bold text-slate-900">{formatCurrency(detailData.summary.treatmentCost)}</p>
-                    </div>
-                    <div className="bg-green-50 rounded-xl p-4 text-center">
-                      <p className="text-xs text-green-600 mb-1">Total Paid</p>
-                      <p className="text-lg font-bold text-green-700">{formatCurrency(detailData.summary.totalPaid)}</p>
-                    </div>
-                    <div className={`rounded-xl p-4 text-center ${detailData.summary.outstanding > 0 ? "bg-red-50" : "bg-slate-50"}`}>
-                      <p className={`text-xs mb-1 ${detailData.summary.outstanding > 0 ? "text-red-500" : "text-slate-500"}`}>Outstanding</p>
-                      <p className={`text-lg font-bold ${detailData.summary.outstanding > 0 ? "text-red-700" : "text-slate-400"}`}>{formatCurrency(detailData.summary.outstanding)}</p>
-                    </div>
-                  </div>
-
-                  {/* Visit History */}
-                  <div>
-                    <p className="text-sm font-semibold text-slate-700 mb-3">
-                      Visit History <span className="text-slate-400 font-normal">({detailData.summary.visitCount} {detailData.summary.visitCount === 1 ? "visit" : "visits"})</span>
-                    </p>
-                    {detailData.visits.length === 0 ? (
-                      <p className="text-sm text-slate-400 text-center py-4 border border-dashed border-slate-200 rounded-xl">
-                        This treatment plan has not been linked to any visit yet.
-                      </p>
-                    ) : (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                            <tr>
-                              <th className="px-4 py-2.5 text-left font-medium">Visit</th>
-                              <th className="px-4 py-2.5 text-left font-medium">Date</th>
-                              <th className="px-4 py-2.5 text-left font-medium">Doctor</th>
-                              <th className="px-4 py-2.5 text-left font-medium">Status</th>
-                              <th className="px-4 py-2.5 text-right font-medium">Billed</th>
-                              <th className="px-4 py-2.5 text-right font-medium">Paid</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {detailData.visits.map((v) => (
-                              <tr key={v.visitId} className="hover:bg-slate-50">
-                                <td className="px-4 py-3 font-mono text-blue-700 text-xs">
-                                  <a href={`/dashboard/visits/${v.visitId}`} className="hover:underline">{v.visitCode}</a>
-                                </td>
-                                <td className="px-4 py-3 text-slate-700">{v.visitDate}</td>
-                                <td className="px-4 py-3 text-slate-600">{v.doctorName || "—"}</td>
-                                <td className="px-4 py-3">
-                                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${v.visitStatus === "OPEN" ? "bg-blue-50 text-blue-700" : v.visitStatus === "COMPLETED" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-                                    {v.visitStatus}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(v.visitTotalAmount)}</td>
-                                <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(v.visitPaidAmount)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-slate-100">
-              <button
-                onClick={() => setDetailTreatment(null)}
-                className="w-full py-2 border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 transition"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* New Treatment Plan Modal */}
-      {showSlideover && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" onClick={closeSlideover} />
-
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
-              <h2 className="text-base font-semibold text-slate-900">New Treatment Plan</h2>
-              <button
-                onClick={closeSlideover}
-                className="text-slate-400 hover:text-slate-600 transition"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5">
-              {/* Patient */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Patient <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formPatientSearch}
-                    onChange={(e) => {
-                      setFormPatientSearch(e.target.value);
-                      if (!e.target.value) setForm((f) => ({ ...f, patientId: "" }));
-                    }}
-                    placeholder="Search patient..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {showFormPatientDropdown && formPatients.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
-                      {formPatients.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            setForm((f) => ({ ...f, patientId: p.id }));
-                            setFormPatientSearch(p.name);
-                            setShowFormPatientDropdown(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <span className="font-medium">{p.name}</span>
-                          <span className="text-xs text-slate-400">{p.patientCode}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {form.patientId && (
-                  <p className="text-xs text-green-600 mt-1">Patient selected</p>
-                )}
-              </div>
-
-              {/* Doctor */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Doctor {currentUserRole !== "DOCTOR" && <span className="text-red-500">*</span>}
-                </label>
-                {currentUserRole === "DOCTOR" ? (
-                  <p className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
-                    {currentUserName}
-                  </p>
-                ) : (
-                  <select
-                    value={form.doctorId}
-                    onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
-                    required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select doctor...</option>
-                    {members.map((m) => (
-                      <option key={m.userId} value={m.userId}>
-                        {m.name} ({m.role})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  required
-                  rows={3}
-                  placeholder="Describe the treatment plan..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                />
-              </div>
-
-              {/* Procedure */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Procedure</label>
-                <input
-                  type="text"
-                  value={form.procedure}
-                  onChange={(e) => setForm((f) => ({ ...f, procedure: e.target.value }))}
-                  placeholder="e.g. Root Canal Treatment, Crown Placement"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Tooth Numbers */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Tooth Selection (FDI)
-                </label>
-                <div className="flex justify-center">
-                  <ToothChart
-                    value={form.toothNumbers}
-                    onChange={(teeth) => setForm((f) => ({ ...f, toothNumbers: teeth }))}
-                  />
-                </div>
-              </div>
-
-              {/* Cost */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Cost (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.cost}
-                  onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {submitError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                  {submitError}
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2 pb-2">
-                <button
-                  type="submit"
-                  disabled={submitting || !form.patientId || !form.doctorId || !form.description.trim()}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? "Saving..." : "Save Treatment Plan"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeSlideover}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* New Treatment Plan Modal — extracted component */}
+      {showModal && (
+        <NewTreatmentModal
+          currentUserRole={currentUserRole}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          onClose={() => setShowModal(false)}
+          onCreated={() => {
+            setShowModal(false);
+            setOffset(0);
+            fetchTreatments(0, false);
+          }}
+        />
       )}
     </div>
   );

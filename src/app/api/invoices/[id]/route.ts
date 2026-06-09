@@ -1,31 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
-import { getDb } from "@/lib/db";
 import { invoices, patients } from "@/db/schema";
-import { getSession } from "@/lib/auth";
-import { logger } from "@/lib/logger";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
-
-const WRITE_RATE_LIMIT = { limit: 120, windowMs: 60_000 };
 
 const patchSchema = z.object({
   paidAmount: z.number().min(0).optional(),
   notes: z.string().optional().nullable(),
 });
 
+const BILLING_ROLES = ["ADMIN", "RECEPTIONIST"];
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const log = logger.forRoute("GET /api/invoices/[id]", session);
-
-  const { id } = await params;
-  try {
-    const db = getDb();
+/** GET /api/invoices/[id] — fetch a single invoice */
+export const GET = withRoute<{ id: string }>(
+  { route: "GET /api/invoices/[id]" },
+  async (_req, { session, db }, { id }) => {
     const rows = await db
       .select({
         id: invoices.id,
@@ -43,102 +31,53 @@ export async function GET(
       .leftJoin(patients, eq(invoices.patientId, patients.id))
       .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
-    if (rows.length === 0) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (rows.length === 0) return apiError("Not found", 404);
+    return apiOk({ invoice: rows[0] });
+  }
+);
+
+/** PATCH /api/invoices/[id] — update paidAmount or notes (ADMIN/RECEPTIONIST only) */
+export const PATCH = withRoute<{ id: string }>(
+  { route: "PATCH /api/invoices/[id]", rateLimit: RATE_LIMITS.WRITE },
+  async (req, { session, db, log }, { id }) => {
+    if (!BILLING_ROLES.includes(session.role)) {
+      log.security("Permission denied: billing role required to update invoice", { role: session.role });
+      return apiError("Forbidden", 403);
     }
 
-    return NextResponse.json({ invoice: rows[0] });
-  } catch (err) {
-    log.error("Failed to fetch invoice", err, { invoiceId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
-}
+    const data = patchSchema.parse(await req.json());
 
-const BILLING_ROLES = ["ADMIN", "RECEPTIONIST"];
-
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rl = await checkRateLimit(`write:${session.userId}`, WRITE_RATE_LIMIT);
-  if (!rl.allowed) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-  const log = logger.forRoute("PATCH /api/invoices/[id]", session);
-  if (!BILLING_ROLES.includes(session.role)) {
-    log.security("Permission denied: billing role required to update invoice", { role: session.role });
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { id } = await params;
-
-  try {
-    const body = await request.json();
-    const data = patchSchema.parse(body);
-
-    const db = getDb();
-
-    // Fetch existing invoice for org isolation check
-    const existing = await db
-      .select()
-      .from(invoices)
+    const [current] = await db.select().from(invoices)
       .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
+    if (!current) return apiError("Not found", 404);
 
-    if (existing.length === 0) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    const current = existing[0];
     const newPaidAmount = data.paidAmount !== undefined ? data.paidAmount : current.paidAmount;
-    const totalAmount = current.totalAmount;
 
-    if (newPaidAmount > totalAmount + 0.001) {
-      return NextResponse.json({ error: `Paid amount ₹${newPaidAmount.toFixed(2)} exceeds invoice total ₹${totalAmount.toFixed(2)}` }, { status: 400 });
+    if (newPaidAmount > current.totalAmount + 0.001) {
+      return apiError(`Paid amount ₹${newPaidAmount.toFixed(2)} exceeds invoice total ₹${current.totalAmount.toFixed(2)}`, 400);
     }
 
     const status: "PAID" | "PARTIAL" | "PENDING" =
-      newPaidAmount >= totalAmount
-        ? "PAID"
-        : newPaidAmount > 0
-        ? "PARTIAL"
-        : "PENDING";
+      newPaidAmount >= current.totalAmount ? "PAID" :
+      newPaidAmount > 0 ? "PARTIAL" : "PENDING";
 
-    const updates: Record<string, unknown> = {
-      paidAmount: newPaidAmount,
-      status,
-      updatedAt: Date.now(),
-    };
+    const updates: Record<string, unknown> = { paidAmount: newPaidAmount, status, updatedAt: Date.now() };
+    if (data.notes !== undefined) updates.notes = data.notes;
 
-    if (data.notes !== undefined) {
-      updates.notes = data.notes;
-    }
+    await db.update(invoices).set(updates).where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
-    await db
-      .update(invoices)
-      .set(updates)
-      .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
-
-    const updated = await db
-      .select({
-        id: invoices.id,
-        patientId: invoices.patientId,
-        totalAmount: invoices.totalAmount,
-        paidAmount: invoices.paidAmount,
-        status: invoices.status,
-        notes: invoices.notes,
-        createdAt: invoices.createdAt,
-        updatedAt: invoices.updatedAt,
-      })
-      .from(invoices)
-      .where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
+    const [updated] = await db.select({
+      id: invoices.id,
+      patientId: invoices.patientId,
+      totalAmount: invoices.totalAmount,
+      paidAmount: invoices.paidAmount,
+      status: invoices.status,
+      notes: invoices.notes,
+      createdAt: invoices.createdAt,
+      updatedAt: invoices.updatedAt,
+    }).from(invoices).where(and(eq(invoices.id, id), eq(invoices.organizationId, session.orgId)));
 
     log.info("Invoice updated", { invoiceId: id, status, newPaidAmount });
-    return NextResponse.json({ invoice: updated[0] });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    }
-    log.error("Failed to update invoice", error, { invoiceId: id });
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return apiOk({ invoice: updated });
   }
-}
+);

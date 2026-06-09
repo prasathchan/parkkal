@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyOrgToken, verifyToken } from "@/lib/auth-edge";
 
-// Content-Security-Policy for the app.
+// ── Content-Security-Policy ───────────────────────────────────────────────────
 // Next.js 15 App Router injects inline scripts for hydration and RSC payloads,
-// so script-src requires 'unsafe-inline'. img-src covers R2 CDN and data URIs
-// used by the logo preview. connect-src covers Resend for email sending.
+// so script-src requires 'unsafe-inline'. 'unsafe-eval' is only needed in the
+// Next.js dev server (hot reload, React refresh) — production builds never use
+// eval, so we exclude it there to close that XSS vector.
+const isDev = process.env.NODE_ENV !== "production";
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data: https:",
   "connect-src 'self' https://api.resend.com",
@@ -61,15 +63,46 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
+
+  // ── Security headers ────────────────────────────────────────────────────────
   response.headers.set("Content-Security-Policy", CSP);
+
+  // Prevent MIME-type sniffing (e.g. treating a JSON response as a script)
   response.headers.set("X-Content-Type-Options", "nosniff");
+
+  // Belt-and-suspenders framing protection (CSP frame-ancestors already handles this)
   response.headers.set("X-Frame-Options", "DENY");
+
+  // Legacy XSS filter for old IE/Edge — harmless on modern browsers
   response.headers.set("X-XSS-Protection", "1; mode=block");
+
+  // Don't send full Referrer to cross-origin destinations (hides patient paths)
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+
+  // Disable hardware APIs that a dental clinic app has no use for
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+
+  // Prevent this page from being embedded in a cross-origin context (Spectre, clickjacking).
+  // COOP isolates this browsing context so cross-origin windows can't get a JS reference to it.
+  response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+
+  // Prevent other origins from loading resources served by this app (e.g. hotlinking our assets).
+  response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+
+  // COEP is intentionally NOT set to "require-corp" here.
+  // That mode blocks any cross-origin sub-resource that lacks a CORP header — which would
+  // silently break R2-hosted org logos and patient attachments served from a CDN domain,
+  // since Cloudflare R2 public buckets do not add CORP: cross-origin by default.
+  // If R2 is later configured to emit that header, flip this to "require-corp" to gain
+  // Spectre memory-isolation benefits.
+  response.headers.set("Cross-Origin-Embedder-Policy", "unsafe-none");
+
+  // HSTS: tell browsers to always use HTTPS for this origin (1 year, include subdomains)
+  // Only in production — in dev this would break http://localhost
+  if (!isDev) {
+    response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
   }
+
   return response;
 }
 
