@@ -55,3 +55,4 @@ load-tests/*.json
 
 # Coverage
 coverage/
+.claude/worktrees/
