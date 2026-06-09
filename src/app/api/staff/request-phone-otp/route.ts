@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
+import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
     const otp = String(100000 + (buf[0] % 900000));
+    const otpHash = await hashOTP(otp);
     const expiresAt = now + 15 * 60 * 1000;
     const tokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
       id: tokenId,
       userId,
       type: "PHONE_OTP",
-      code: otp,
+      code: otpHash,
       expiresAt,
       used: 0,
       createdAt: now,

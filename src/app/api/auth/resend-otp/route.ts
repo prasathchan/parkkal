@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { hashOTP } from "@/lib/otp";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     const now = Date.now();
     const code = generateOTP();
+    const codeHash = await hashOTP(code);
     const expiresAt = now + 15 * 60 * 1000;
     const tokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
       id: tokenId,
       userId,
       type,
-      code,
+      code: codeHash,
       expiresAt,
       used: 0,
       createdAt: now,

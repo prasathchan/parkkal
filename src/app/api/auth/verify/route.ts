@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens } from "@/db/schema";
 import { createOrgToken } from "@/lib/auth-edge";
+import { verifyOTP } from "@/lib/otp";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Find valid EMAIL token — expiry check pushed to SQL to avoid loading expired rows
+    // Find valid EMAIL token — fetch by userId+type only; bcrypt.compare checks the code
     const emailTokens = await db
       .select()
       .from(verificationTokens)
@@ -62,19 +63,18 @@ export async function POST(request: NextRequest) {
         and(
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "EMAIL"),
-          eq(verificationTokens.code, emailCode),
           eq(verificationTokens.used, 0),
           gt(verificationTokens.expiresAt, now)
         )
       );
 
     const emailToken = emailTokens[0];
-    if (!emailToken) {
+    if (!emailToken || !(await verifyOTP(emailCode, emailToken.code))) {
       log.security("Signup verification failed: invalid email code", { userId });
       return NextResponse.json({ error: "Invalid email code" }, { status: 400 });
     }
 
-    // Find valid PHONE token — expiry check pushed to SQL
+    // Find valid PHONE token — fetch by userId+type only; bcrypt.compare checks the code
     const phoneTokens = await db
       .select()
       .from(verificationTokens)
@@ -82,14 +82,13 @@ export async function POST(request: NextRequest) {
         and(
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "PHONE"),
-          eq(verificationTokens.code, phoneCode),
           eq(verificationTokens.used, 0),
           gt(verificationTokens.expiresAt, now)
         )
       );
 
     const phoneToken = phoneTokens[0];
-    if (!phoneToken) {
+    if (!phoneToken || !(await verifyOTP(phoneCode, phoneToken.code))) {
       log.security("Signup verification failed: invalid phone code", { userId });
       return NextResponse.json({ error: "Invalid phone code" }, { status: 400 });
     }

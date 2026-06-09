@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
+import { hashOTP } from "@/lib/otp";
 import { sendEmailOTP } from "@/lib/email";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
@@ -66,19 +67,20 @@ export async function POST(request: NextRequest) {
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
     const sixDigit = String(100000 + (buf[0] % 900000));
+    const sixDigitHash = await hashOTP(sixDigit);
 
     await db.insert(verificationTokens).values({
       id: `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
       userId,
       type: "EMAIL",
-      code: sixDigit,
+      code: sixDigitHash,
       expiresAt: now + 15 * 60 * 1000,
       used: 0,
       createdAt: now,
     });
 
     try {
-      await sendEmailOTP(user.email, user.name, sixDigit);
+      await sendEmailOTP(user.email, user.name, sixDigit); // plaintext sent to user, hash stored in DB
     } catch (err) {
       log.warn("Failed to send staff email OTP", { userId, error: String(err) });
     }

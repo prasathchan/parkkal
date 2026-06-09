@@ -3,6 +3,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { verifyOTP } from "@/lib/otp";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
@@ -29,21 +30,20 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Find a valid, unused, unexpired PHONE_OTP token for this user with the given code
+    // Fetch the latest valid PHONE_OTP token; bcrypt.compare checks the code
     const [token] = await db
-      .select({ id: verificationTokens.id })
+      .select()
       .from(verificationTokens)
       .where(
         and(
           eq(verificationTokens.userId, session.userId),
           eq(verificationTokens.type, "PHONE_OTP"),
-          eq(verificationTokens.code, code),
           eq(verificationTokens.used, 0),
           gt(verificationTokens.expiresAt, now)
         )
       );
 
-    if (!token) {
+    if (!token || !(await verifyOTP(code, token.code))) {
       log.security("Phone OTP verification failed: invalid or expired", { userId: session.userId });
       return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
     }

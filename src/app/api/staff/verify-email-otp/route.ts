@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { verifyOTP } from "@/lib/otp";
 import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
@@ -45,12 +46,11 @@ export async function POST(request: NextRequest) {
         and(
           eq(verificationTokens.userId, userId),
           eq(verificationTokens.type, "EMAIL"),
-          eq(verificationTokens.code, code),
           eq(verificationTokens.used, 0)
         )
       );
 
-    if (!tokenRecord || tokenRecord.expiresAt < now) {
+    if (!tokenRecord || tokenRecord.expiresAt < now || !(await verifyOTP(code, tokenRecord.code))) {
       return NextResponse.json({ error: "Invalid or expired verification code" }, { status: 400 });
     }
 

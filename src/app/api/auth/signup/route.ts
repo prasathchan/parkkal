@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { users, organizations, organizationMembers, verificationTokens, orgRoles } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
+import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
@@ -191,9 +192,11 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    // Generate OTP codes
+    // Generate OTP codes and hash them before storage.
+    // Plaintext codes are only sent via email/SMS — never persisted.
     const emailCode = generateOTP();
     const phoneCode = generateOTP();
+    const [emailHash, phoneHash] = await Promise.all([hashOTP(emailCode), hashOTP(phoneCode)]);
     const expiresAt = now + 15 * 60 * 1000; // 15 minutes
 
     const emailTokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -204,7 +207,7 @@ export async function POST(request: NextRequest) {
         id: emailTokenId,
         userId,
         type: "EMAIL",
-        code: emailCode,
+        code: emailHash,
         expiresAt,
         used: 0,
         createdAt: now,
@@ -213,7 +216,7 @@ export async function POST(request: NextRequest) {
         id: phoneTokenId,
         userId,
         type: "PHONE",
-        code: phoneCode,
+        code: phoneHash,
         expiresAt,
         used: 0,
         createdAt: now,
