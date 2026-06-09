@@ -25,6 +25,8 @@ export interface Visit {
   paidAmount: number;
   appointmentId?: string | null;
   visitType?: string | null;
+  recallDate?: string | null;
+  recallNotes?: string | null;
   patientName: string;
   patientCode: string;
   patientId: string;

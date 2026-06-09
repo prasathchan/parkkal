@@ -52,6 +52,11 @@ export default function VisitDetailPage() {
   const [notesForm, setNotesForm] = useState({ chiefComplaint: "", doctorNotes: "", diagnosis: "" });
   const [savingNotes, setSavingNotes] = useState(false);
 
+  // Recall inline edit
+  const [editingRecall, setEditingRecall] = useState(false);
+  const [recallForm, setRecallForm] = useState({ recallDate: "", recallNotes: "" });
+  const [savingRecall, setSavingRecall] = useState(false);
+
   // General payment modal
   const [showPayModal, setShowPayModal] = useState(false);
   const [payForm, setPayForm] = useState({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
@@ -124,6 +129,29 @@ export default function VisitDetailPage() {
     await fetchVisit();
     setEditingNotes(false);
     setSavingNotes(false);
+  }
+
+  async function handleSaveRecall(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingRecall(true);
+    setPageError("");
+    const res = await fetch(`/api/visits/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recallDate: recallForm.recallDate || null,
+        recallNotes: recallForm.recallNotes || null,
+      }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setPageError((d as { error?: string }).error || "Failed to save recall");
+      setSavingRecall(false);
+      return;
+    }
+    await fetchVisit();
+    setEditingRecall(false);
+    setSavingRecall(false);
   }
 
   async function handleAddPayment(e: React.FormEvent) {
@@ -305,6 +333,70 @@ export default function VisitDetailPage() {
                   </div>
                 </form>
               )}
+
+              {/* Recall */}
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Recall</span>
+                  {visit.status !== "CANCELLED" && !editingRecall && (
+                    <button
+                      onClick={() => { setRecallForm({ recallDate: visit.recallDate || "", recallNotes: visit.recallNotes || "" }); setEditingRecall(true); }}
+                      className="text-xs text-slate-400 hover:text-blue-600 flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      {visit.recallDate ? "Edit" : "Set recall"}
+                    </button>
+                  )}
+                </div>
+                {!editingRecall ? (
+                  visit.recallDate ? (
+                    <div className="text-sm text-slate-700">
+                      <span className="font-medium">{visit.recallDate}</span>
+                      {visit.recallNotes && <span className="text-slate-500 ml-2">— {visit.recallNotes}</span>}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400 italic">No recall scheduled</p>
+                  )
+                ) : (
+                  <form onSubmit={handleSaveRecall} className="space-y-2 bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div className="flex gap-3 flex-wrap">
+                      <div className="flex-1 min-w-36">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Recall Date</label>
+                        <input
+                          type="date"
+                          value={recallForm.recallDate}
+                          onChange={e => setRecallForm(f => ({ ...f, recallDate: e.target.value }))}
+                          className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div className="flex-[2] min-w-48">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Notes (optional)</label>
+                        <input
+                          type="text"
+                          value={recallForm.recallNotes}
+                          onChange={e => setRecallForm(f => ({ ...f, recallNotes: e.target.value }))}
+                          placeholder="e.g. 6-month checkup"
+                          className="w-full px-2.5 py-1.5 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" disabled={savingRecall} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50">{savingRecall ? "Saving..." : "Save"}</button>
+                      <button type="button" onClick={() => setEditingRecall(false)} className="text-xs border border-slate-300 text-slate-600 px-3 py-1.5 rounded-md hover:bg-slate-100">Cancel</button>
+                      {visit.recallDate && (
+                        <button
+                          type="button"
+                          onClick={async () => { setSavingRecall(true); await fetch(`/api/visits/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recallDate: null, recallNotes: null }) }); await fetchVisit(); setEditingRecall(false); setSavingRecall(false); }}
+                          disabled={savingRecall}
+                          className="text-xs text-red-500 hover:text-red-700 px-2 py-1.5 disabled:opacity-50"
+                        >
+                          Clear recall
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="text-right">
