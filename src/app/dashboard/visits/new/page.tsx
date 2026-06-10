@@ -74,7 +74,7 @@ function NewVisitForm() {
       fetch("/api/auth/me").then((r) => r.json()),
     ]).then(([membersData, meData]) => {
       const eligible = (membersData.members || []).filter(
-        (m: { role: string }) => m.role === "DOCTOR" || m.role === "ADMIN"
+        (m: { role: string; isDoctor?: number }) => m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)
       );
       setDoctors(
         eligible.map((m: { userId: string; name: string; role: string }) => ({

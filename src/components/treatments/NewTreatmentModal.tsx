@@ -16,6 +16,7 @@ interface Member {
   userId: string;
   name: string;
   role: string;
+  isDoctor?: number;
 }
 
 interface NewTreatmentForm {
@@ -81,7 +82,7 @@ export function NewTreatmentModal({
     orgApi.members.list()
       .then((d) => {
         const all: Member[] = d.members || [];
-        setMembers(all.filter((m) => m.role === "DOCTOR" || m.role === "ADMIN"));
+        setMembers(all.filter((m) => m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)));
       })
       .catch(() => {});
   }, [currentUserRole]);
