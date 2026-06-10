@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["bcryptjs"],
+  // ESLint already runs in CI — skip during next build to avoid ESLint 8 / Next.js 15 incompatibility warnings
+  eslint: { ignoreDuringBuilds: true },
   async headers() {
     return [
       {
