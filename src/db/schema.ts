@@ -47,7 +47,7 @@
  *  - No multi-statement transactions in the batch API — use sequential awaits
  *  - CHECK constraints ARE enforced — adding an enum value needs table recreation
  */
-import { sqliteTable, text, real, integer, primaryKey, unique } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, real, integer, primaryKey, unique, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
 
 export const organizations = sqliteTable("organizations", {
@@ -112,6 +112,7 @@ export const organizationMembers = sqliteTable("organization_members", {
   joinedAt: text("joined_at"),
   isActive: integer("is_active").notNull().default(1),
   portalAccess: integer("portal_access").notNull().default(0),
+  isDoctor: integer("is_doctor").notNull().default(0),
   createdAt: integer("created_at").notNull(),
 }, (t) => ({
   uniqOrgUser: unique().on(t.organizationId, t.userId),
@@ -131,7 +132,8 @@ export const patients = sqliteTable("patients", {
   panNumber: text("pan_number"),
   aadhaarNumber: text("aadhaar_number"),
   emergencyContactAdded: integer("emergency_contact_added").notNull().default(0),
-  referralSource: text("referral_source"),   // how patient found the clinic
+  referralSource: text("referral_source"),
+  referredByPatientId: text("referred_by_patient_id").references((): AnySQLiteColumn => patients.id),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

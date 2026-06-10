@@ -29,6 +29,7 @@ export const GET = withRoute(
         name: users.name,
         email: users.email,
         role: organizationMembers.role,
+        isDoctor: organizationMembers.isDoctor,
       })
       .from(organizationMembers)
       .innerJoin(users, eq(organizationMembers.userId, users.id))

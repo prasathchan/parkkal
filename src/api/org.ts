@@ -85,6 +85,7 @@ export interface AddMemberPayload {
   salaryType?: "FIXED" | "PER_APPOINTMENT";
   salaryAmount?: number;
   isActive?: boolean;
+  isDoctor?: boolean;
   joinedAt?: string;
   emergencyContact?: {
     name: string;

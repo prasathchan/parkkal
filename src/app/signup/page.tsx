@@ -163,7 +163,7 @@ export default function SignupPage() {
               value={form.clinicName}
               onChange={handleChange}
               required
-              placeholder="City"
+              placeholder="e.g. Smile Dental Clinic"
               className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
             />
           </div>

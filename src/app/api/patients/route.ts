@@ -33,6 +33,7 @@ const createPatientSchema = z.object({
   panNumber: z.string().optional(),
   aadhaarNumber: z.string().optional(),
   referralSource: z.string().max(100).optional(),
+  referredByPatientId: z.string().optional().nullable(),
   emergencyContact: z
     .object({
       name: z.string().min(1),
@@ -150,6 +151,7 @@ export const POST = withRoute(
       aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
       emergencyContactAdded: data.emergencyContact ? 1 : 0,
       referralSource: data.referralSource || null,
+      referredByPatientId: data.referredByPatientId || null,
       createdAt: now,
       updatedAt: now,
     };

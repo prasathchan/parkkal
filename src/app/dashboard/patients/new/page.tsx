@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
@@ -12,6 +12,8 @@ import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { patientsApi, ApiError } from "@/api";
+
+interface PatientOption { id: string; patientCode: string; name: string; phone: string; }
 
 function validatePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -61,6 +63,36 @@ export default function NewPatientPage() {
   });
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
 
+  // Referral
+  const [referralType, setReferralType] = useState<"external" | "patient">("external");
+  const [referralSearch, setReferralSearch] = useState("");
+  const [referralPatients, setReferralPatients] = useState<PatientOption[]>([]);
+  const [referredByPatientId, setReferredByPatientId] = useState<string | null>(null);
+  const [referralDropdownOpen, setReferralDropdownOpen] = useState(false);
+  const [selectedReferralName, setSelectedReferralName] = useState("");
+  const referralRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (referralType !== "patient") return;
+    const timer = setTimeout(() => {
+      fetch(`/api/patients${referralSearch ? `?search=${encodeURIComponent(referralSearch)}` : ""}`)
+        .then((r) => r.json())
+        .then((d) => setReferralPatients((d.patients || []).slice(0, 20)))
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [referralSearch, referralType]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (referralRef.current && !referralRef.current.contains(e.target as Node)) {
+        setReferralDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   function update(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setTouched(t => ({ ...t, [field]: true }));
@@ -102,7 +134,8 @@ export default function NewPatientPage() {
       bloodGroup: form.bloodGroup || undefined,
       address: addressString || undefined,
       medicalHistory: form.medicalHistory,
-      referralSource: form.referralSource || undefined,
+      referralSource: referralType === "external" ? (form.referralSource || undefined) : undefined,
+      referredByPatientId: referralType === "patient" ? referredByPatientId : null,
       panNumber: form.panNumber,
       aadhaarNumber: form.aadhaarNumber,
       emergencyContact: form.ecName && form.ecRelationship && form.ecPhone
@@ -242,14 +275,79 @@ export default function NewPatientPage() {
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   How did the patient find us? <span className="text-slate-400 font-normal">(optional)</span>
                 </label>
-                <input
-                  type="text"
-                  value={form.referralSource}
-                  onChange={update("referralSource")}
-                  maxLength={100}
-                  placeholder="e.g. Google, friend referral, Facebook, walk-in…"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                />
+                <div className="flex gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); }}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"}`}
+                  >
+                    External Source
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setReferralType("patient"); setForm(f => ({ ...f, referralSource: "" })); }}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"}`}
+                  >
+                    Existing Patient
+                  </button>
+                </div>
+                {referralType === "external" ? (
+                  <input
+                    type="text"
+                    value={form.referralSource}
+                    onChange={update("referralSource")}
+                    maxLength={100}
+                    placeholder="e.g. Google, Facebook, walk-in…"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                ) : (
+                  <div className="relative" ref={referralRef}>
+                    <input
+                      type="text"
+                      value={selectedReferralName || referralSearch}
+                      onChange={(e) => {
+                        setReferralSearch(e.target.value);
+                        setSelectedReferralName("");
+                        setReferredByPatientId(null);
+                        setReferralDropdownOpen(true);
+                      }}
+                      onFocus={() => setReferralDropdownOpen(true)}
+                      placeholder="Search referring patient by name or code…"
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                    />
+                    {referredByPatientId && (
+                      <button
+                        type="button"
+                        onClick={() => { setReferredByPatientId(null); setSelectedReferralName(""); setReferralSearch(""); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg leading-none"
+                      >
+                        ×
+                      </button>
+                    )}
+                    {referralDropdownOpen && referralPatients.length > 0 && (
+                      <ul className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {referralPatients.map((p) => (
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition"
+                              onClick={() => {
+                                setReferredByPatientId(p.id);
+                                setSelectedReferralName(`${p.patientCode} · ${p.name}`);
+                                setReferralSearch("");
+                                setReferralDropdownOpen(false);
+                              }}
+                            >
+                              <span className="font-medium">{p.patientCode}</span>
+                              <span className="text-slate-500"> · {p.name}</span>
+                              <span className="text-slate-400 text-xs ml-1">({p.phone})</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Emergency Contact */}

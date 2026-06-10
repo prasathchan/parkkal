@@ -64,6 +64,7 @@ export const GET = withRoute(
         salaryAmount: organizationMembers.salaryAmount,
         joinedAt: organizationMembers.joinedAt,
         isActive: organizationMembers.isActive,
+        isDoctor: organizationMembers.isDoctor,
         isVerified: users.isVerified,
         portalAccess: organizationMembers.portalAccess,
         createdAt: organizationMembers.createdAt,

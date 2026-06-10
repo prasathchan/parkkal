@@ -71,6 +71,7 @@ export default function StaffDetailPage() {
     salaryType: "FIXED",
     salaryAmount: "0",
     isActive: true,
+    isDoctor: false,
   });
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [phoneError, setPhoneError] = useState("");
@@ -97,6 +98,7 @@ export default function StaffDetailPage() {
           salaryType: found.salaryType ?? "FIXED",
           salaryAmount: String(found.salaryAmount ?? 0),
           isActive: found.isActive === 1,
+          isDoctor: found.isDoctor === 1,
         });
         // default link mode based on current portal access
         setLinkMode((found as Member & { portalAccess?: number }).portalAccess === 1 ? "invite_link" : "no_login_verify");
@@ -155,6 +157,7 @@ export default function StaffDetailPage() {
         salaryType: editForm.salaryType as "FIXED" | "PER_APPOINTMENT",
         salaryAmount: parseFloat(editForm.salaryAmount) || 0,
         isActive: editForm.isActive,
+        isDoctor: editForm.isDoctor,
       });
       setSaveSuccess(true);
       setEditing(false);
@@ -368,6 +371,22 @@ export default function StaffDetailPage() {
                       <option value="inactive">Inactive</option>
                     </select>
                   </div>
+
+                  {editForm.role === "ADMIN" && (
+                    <div className="flex items-center justify-between py-2 px-3 border border-slate-200 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-slate-700">Can act as Doctor</p>
+                        <p className="text-xs text-slate-500">Appears in the doctor dropdown for appointments</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditForm((f) => ({ ...f, isDoctor: !f.isDoctor }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isDoctor ? "bg-blue-600" : "bg-slate-200"}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${editForm.isDoctor ? "translate-x-6" : "translate-x-1"}`} />
+                      </button>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">Salary Type</label>

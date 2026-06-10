@@ -41,6 +41,7 @@ export interface StaffMember {
   salaryAmount?: number;
   joinedAt?: string | null;
   isActive: 0 | 1;
+  isDoctor: 0 | 1;
   isVerified: 0 | 1;
   portalAccess: 0 | 1;
   createdAt: number;

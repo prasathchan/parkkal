@@ -9,6 +9,7 @@ const patchSchema = z.object({
   salaryType: z.enum(["FIXED", "PER_APPOINTMENT"]).optional(),
   salaryAmount: z.number().min(0).optional(),
   isActive: z.boolean().optional(),
+  isDoctor: z.boolean().optional(),
   orgRoleId: z.string().optional().nullable(),
 });
 
@@ -29,6 +30,7 @@ export const PATCH = withRoute<{ userId: string }>(
     if (data.salaryType !== undefined) updates.salaryType = data.salaryType;
     if (data.salaryAmount !== undefined) updates.salaryAmount = data.salaryAmount;
     if (data.isActive !== undefined) updates.isActive = data.isActive ? 1 : 0;
+    if (data.isDoctor !== undefined) updates.isDoctor = data.isDoctor ? 1 : 0;
     if (data.orgRoleId !== undefined) updates.orgRoleId = data.orgRoleId;
 
     await db.update(organizationMembers).set(updates)
