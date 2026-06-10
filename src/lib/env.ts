@@ -47,6 +47,25 @@ const envSchema = z.object({
   // ── Database (local dev only — D1 binding used in Workers) ───────────────
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL").optional(),
 
+  // ── Cron ──────────────────────────────────────────────────────────────────
+  CRON_SECRET: z.string().min(16).optional(),
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  RESEND_FROM_EMAIL: z.string().email().optional(),
+  TWILIO_WHATSAPP_NUMBER: z.string().startsWith("whatsapp:+").optional(),
+
+  // ── App URL ───────────────────────────────────────────────────────────────
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+
+  // ── OAuth providers (optional) ────────────────────────────────────────────
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+
+  // ── AI ────────────────────────────────────────────────────────────────────
+  ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
+
   // ── Runtime ───────────────────────────────────────────────────────────────
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });

@@ -77,5 +77,7 @@ export { recallsApi } from "./recalls";
 export { reportsApi } from "./reports";
 export { usersApi } from "./users";
 
+export { calendarApi } from "./calendar";
+
 // The error class — always import this alongside the API you use
 export { ApiError } from "./_client";

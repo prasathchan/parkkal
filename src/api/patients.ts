@@ -100,6 +100,22 @@ export function listEmergencyContacts(
   );
 }
 
+// ─── Tooth chart ──────────────────────────────────────────────────────────────
+
+export function getToothChart(patientId: string): Promise<{ toothData: Record<string, unknown> }> {
+  return apiFetch<{ toothData: Record<string, unknown> }>(`/api/patients/${patientId}/tooth-chart`);
+}
+
+export function saveToothChart(
+  patientId: string,
+  toothData: Record<string, unknown>,
+): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/patients/${patientId}/tooth-chart`, {
+    method: "PUT",
+    body: JSON.stringify({ toothData }),
+  });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 /** Use this object for a clean import: `import { patientsApi } from "@/api/patients"` */
@@ -111,4 +127,6 @@ export const patientsApi = {
   delete: deletePatient,
   balance: getPatientBalance,
   emergencyContacts: listEmergencyContacts,
+  getToothChart,
+  saveToothChart,
 };

@@ -15,7 +15,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
-import { ApiError } from "@/api";
+import { calendarApi, ApiError } from "@/api";
 
 interface CalendarStatus {
   google:  boolean;
@@ -39,9 +39,8 @@ function CalendarSettingsInner() {
     searchParams.get("error") === "outlook_failed" ? "Failed to connect Outlook Calendar. Please try again." : null;
 
   useEffect(() => {
-    fetch("/api/calendar/status")
-      .then((r) => r.json())
-      .then((d) => setStatus(d as CalendarStatus))
+    calendarApi.getStatus()
+      .then((d) => setStatus(d))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -50,12 +49,7 @@ function CalendarSettingsInner() {
     if (!confirm(`Disconnect ${provider === "GOOGLE" ? "Google" : "Outlook"} Calendar? Your appointments will no longer sync.`)) return;
     setDisconnecting(provider);
     try {
-      const res = await fetch("/api/calendar/disconnect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider }),
-      });
-      if (!res.ok) throw new ApiError(res.status, "Failed to disconnect");
+      await calendarApi.disconnect(provider);
       setStatus((s) => s ? { ...s, [provider.toLowerCase()]: false } : s);
     } catch (e) {
       alert(e instanceof ApiError ? e.message : "Failed to disconnect");

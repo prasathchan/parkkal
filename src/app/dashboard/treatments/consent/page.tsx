@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { orgApi } from "@/api";
 
 interface OrgInfo {
   name: string;
@@ -15,8 +16,7 @@ export default function ConsentFormPage() {
   const today = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
 
   useEffect(() => {
-    fetch("/api/org/profile")
-      .then((r) => r.json())
+    orgApi.getProfile()
       .then((d) => setOrg(d.organization))
       .catch(() => {});
   }, []);

@@ -118,7 +118,18 @@ export async function runCascade(
     return;
   }
 
-  // libsql dev fallback: sequential execution
+  // libsql dev fallback: wrap in a transaction for dev/test parity with D1 batch
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (typeof (db as any).transaction === "function") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (db as any).transaction(async (tx: any) => {
+      for (const builder of builders) {
+        await tx.run(builder);
+      }
+    });
+    return;
+  }
+  // Final fallback: sequential execution (no transaction guarantee)
   for (const builder of builders) {
     await builder;
   }

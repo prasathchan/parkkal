@@ -40,6 +40,7 @@ import { appointmentReminders, patients } from "@/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sendNotification } from "@/lib/notifications";
+import env from "@/lib/env";
 import type { NotificationChannel } from "@/lib/notifications";
 
 type ReminderRow = InferSelectModel<typeof appointmentReminders>;
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // ── Auth: Cloudflare cron OR explicit Bearer token ─────────────────────────
   const isCronDelivery = req.headers.get("x-cloudflare-cron") !== null;
   const authHeader     = req.headers.get("authorization") ?? "";
-  const cronSecret     = process.env.CRON_SECRET;
+  const cronSecret     = env.CRON_SECRET;
 
   if (!isCronDelivery) {
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {

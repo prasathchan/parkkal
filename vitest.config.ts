@@ -5,6 +5,11 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    env: {
+      JWT_SECRET: "test-jwt-secret-at-least-32-chars-long",
+      ENCRYPTION_KEY: "0".repeat(64),
+      RESEND_API_KEY: "re_test_key",
+    },
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     coverage: {
       provider: "v8",

@@ -261,14 +261,21 @@ export function deleteAttachment(
   );
 }
 
+// ─── Print ────────────────────────────────────────────────────────────────────
+
+export function getPrintData(visitId: string): Promise<unknown> {
+  return apiFetch<unknown>(`/api/visits/${visitId}/print`);
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const visitsApi = {
-  list:   listVisits,
-  get:    getVisit,
-  create: createVisit,
-  update: updateVisit,
-  delete: deleteVisit,
+  list:      listVisits,
+  get:       getVisit,
+  create:    createVisit,
+  update:    updateVisit,
+  delete:    deleteVisit,
+  print:     getPrintData,
   items: {
     list: listItems,
     add: addItem,

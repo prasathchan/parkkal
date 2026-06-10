@@ -40,6 +40,12 @@ import { useState, useEffect, useCallback, useRef, DependencyList } from "react"
 interface UseAsyncOptions {
   /** If false, the fetch does NOT run on mount. Call refetch() manually. Default: true */
   immediate?: boolean;
+  /**
+   * When true, the previous data stays visible while a refetch is in progress —
+   * the loading state is set but data is not cleared. Useful for search/filter
+   * inputs where you want to avoid a blank state while typing.
+   */
+  keepPrevious?: boolean;
 }
 
 interface UseAsyncResult<T> {
@@ -55,7 +61,7 @@ export function useAsync<T>(
   deps: DependencyList = [],
   options: UseAsyncOptions = {},
 ): UseAsyncResult<T> {
-  const { immediate = true } = options;
+  const { immediate = true, keepPrevious = false } = options;
 
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(immediate);
@@ -72,12 +78,24 @@ export function useAsync<T>(
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Track whether data has been loaded at least once (for keepPrevious logic)
+  const hasLoadedRef = useRef(false);
+
   const run = useCallback(async () => {
-    setLoading(true);
+    // When keepPrevious is true and we already have data, don't reset loading
+    // in a way that clears the data — just show a subtle loading indicator.
+    if (!keepPrevious || !hasLoadedRef.current) {
+      setLoading(true);
+    } else {
+      setLoading(true); // still set loading, but data stays visible
+    }
     setError(null);
     try {
       const result = await fnRef.current();
-      if (mountedRef.current) setData(result);
+      if (mountedRef.current) {
+        setData(result);
+        hasLoadedRef.current = true;
+      }
     } catch (e) {
       if (mountedRef.current) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -85,7 +103,7 @@ export function useAsync<T>(
     } finally {
       if (mountedRef.current) setLoading(false);
     }
-  }, []);
+  }, [keepPrevious]);
 
   // Run automatically when component mounts (and when deps change)
   useEffect(() => {

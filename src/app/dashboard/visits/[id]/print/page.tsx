@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatDoctorName } from "@/lib/utils";
 import { parseAddress, formatAddressDisplay } from "@/lib/address";
+import { visitsApi } from "@/api";
 
 interface PrintData {
   visit: {
@@ -64,9 +65,8 @@ export default function PrintPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/visits/${id}/print`)
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+    visitsApi.print(id)
+      .then((d) => { setData(d as PrintData); setLoading(false); });
   }, [id]);
 
   if (loading) return <div className="p-10 text-center text-slate-400">Loading...</div>;

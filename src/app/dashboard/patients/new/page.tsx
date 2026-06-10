@@ -75,8 +75,7 @@ export default function NewPatientPage() {
   useEffect(() => {
     if (referralType !== "patient") return;
     const timer = setTimeout(() => {
-      fetch(`/api/patients${referralSearch ? `?search=${encodeURIComponent(referralSearch)}` : ""}`)
-        .then((r) => r.json())
+      patientsApi.list({ search: referralSearch || undefined })
         .then((d) => setReferralPatients((d.patients || []).slice(0, 20)))
         .catch(() => {});
     }, 300);

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { appointmentsApi, ApiError } from "@/api";
+import { appointmentsApi, patientsApi, orgApi, authApi, ApiError } from "@/api";
 
 
 interface Patient { id: string; patientCode: string; name: string; }
@@ -48,16 +48,14 @@ function NewAppointmentForm() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetch(`/api/patients${patientSearch ? `?search=${encodeURIComponent(patientSearch)}` : ""}`)
-        .then((r) => r.json())
+      patientsApi.list({ search: patientSearch || undefined })
         .then((d) => setPatients((d.patients || []).slice(0, 20)));
     }, 300);
     return () => clearTimeout(timer);
   }, [patientSearch]);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
+    authApi.me()
       .then((meData) => {
         const me = meData.user;
         if (!me) return;
@@ -67,8 +65,7 @@ function NewAppointmentForm() {
 
         if (me.role === "ADMIN" || me.role === "RECEPTIONIST") {
           // Fetch full staff list so they can pick any doctor
-          fetch("/api/org/members")
-            .then((r) => r.json())
+          orgApi.members.list()
             .then((membersData) => {
               const eligible = (membersData.members || []).filter(
                 (m: { role: string; isDoctor?: number }) =>
@@ -108,8 +105,7 @@ function NewAppointmentForm() {
 
     // Fetch patient details so the select shows the correct option
     if (paramPatientId) {
-      fetch(`/api/patients/${paramPatientId}`)
-        .then((r) => r.json())
+      patientsApi.get(paramPatientId)
         .then((d) => {
           if (d.patient) {
             setPatients((prev) => {
@@ -120,8 +116,7 @@ function NewAppointmentForm() {
         })
         .catch(() => {
           // Fallback: search empty to get list
-          fetch("/api/patients")
-            .then((r) => r.json())
+          patientsApi.list()
             .then((d) => setPatients((d.patients || []).slice(0, 20)));
         });
     }

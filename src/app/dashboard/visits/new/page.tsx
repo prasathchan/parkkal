@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { appointmentsApi, visitsApi, ApiError } from "@/api";
+import { appointmentsApi, visitsApi, patientsApi, orgApi, authApi, ApiError } from "@/api";
 
 interface Patient {
   id: string;
@@ -66,12 +66,11 @@ function NewVisitForm() {
   const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
-    fetch("/api/patients?limit=200")
-      .then((r) => r.json())
+    patientsApi.list({ limit: 200 })
       .then((d) => setPatients(d.patients || []));
     Promise.all([
-      fetch("/api/org/members").then((r) => r.json()),
-      fetch("/api/auth/me").then((r) => r.json()),
+      orgApi.members.list(),
+      authApi.me(),
     ]).then(([membersData, meData]) => {
       const eligible = (membersData.members || []).filter(
         (m: { role: string; isDoctor?: number }) => m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)
@@ -114,8 +113,7 @@ function NewVisitForm() {
     }
 
     if (paramAppointmentId) {
-      fetch(`/api/appointments/${paramAppointmentId}`)
-        .then((r) => r.json())
+      appointmentsApi.get(paramAppointmentId)
         .then((d) => {
           if (d.appointment) {
             const appt = d.appointment as Appointment;

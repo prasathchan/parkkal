@@ -5,11 +5,10 @@
  * withRoute() DOCTOR: results[0] = [{ isActive: 1 }] (member check), then handler.
  *
  * POST /api/visits — ADMIN DB query order:
- *   results[0]: orgExists        → [{ id: "org1" }]
- *   results[1]: patientOrgLink   → [{ patientId: "p1" }]
- *   results[2]: doctorMembership → [{ userId: "u_doc" }]
- *   results[3]: todayCount       → [{ todayCount: 0 }]
- *   results[4]: INSERT visits    → undefined
+ *   results[0]: patientOrgLink   → [{ patientId: "p1" }]
+ *   results[1]: doctorMembership → [{ userId: "u_doc" }]
+ *   results[2]: todayCount       → [{ todayCount: 0 }]
+ *   results[3]: INSERT visits    → undefined
  *
  * GET /api/visits — ADMIN DB query order:
  *   results[0]: count query → [{ total: 1 }]
@@ -45,7 +44,6 @@ vi.mock("@/db/schema",      () => ({
                           visitCode: "visitCode", appointmentId: "appointmentId", visitType: "visitType" },
   patients:             { id: "id", name: "name", patientCode: "patientCode" },
   users:                { id: "id", name: "name" },
-  organizations:        { id: "id" },
   organizationPatients: { organizationId: "orgId", patientId: "patientId" },
   organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
   appointments:         { id: "id", organizationId: "orgId", status: "status" },
@@ -165,7 +163,6 @@ describe("POST /api/visits", () => {
 
   it("creates a visit and returns 201", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ id: "org1" }],              // orgExists
       [{ patientId: "p1" }],         // patientOrgLink
       [{ userId: "u_doc" }],         // doctorMembership
       [{ todayCount: 0 }],           // today count
@@ -194,7 +191,6 @@ describe("POST /api/visits", () => {
 
   it("returns 400 when patient not in org", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ id: "org1" }],   // orgExists
       [],                  // patientOrgLink → empty
     ]) as never);
     const { POST } = await import("@/app/api/visits/route");
@@ -205,7 +201,6 @@ describe("POST /api/visits", () => {
 
   it("returns 400 when doctor not in org", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ id: "org1" }],           // orgExists
       [{ patientId: "p1" }],      // patientOrgLink
       [],                          // doctorMembership → empty
     ]) as never);
@@ -217,7 +212,6 @@ describe("POST /api/visits", () => {
 
   it("returns 409 when visit already exists for appointment", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ id: "org1" }],
       [{ patientId: "p1" }],
       [{ userId: "u_doc" }],
       [{ id: "v_existing" }],    // existing visit for appointment
@@ -232,7 +226,6 @@ describe("POST /api/visits", () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION as never);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
       [{ isActive: 1 }],           // member check (non-ADMIN)
-      [{ id: "org1" }],
       [{ patientId: "p1" }],
       [{ userId: "u_doc" }],
       [{ todayCount: 2 }],
@@ -247,7 +240,6 @@ describe("POST /api/visits", () => {
 
   it("visit code uses todayCount + 1 as sequence", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ id: "org1" }],
       [{ patientId: "p1" }],
       [{ userId: "u_doc" }],
       [{ todayCount: 4 }],       // 4 existing → new seq = 5

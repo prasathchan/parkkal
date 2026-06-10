@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { patientsApi, visitsApi, appointmentsApi, treatmentsApi, invoicesApi } from "@/api";
 import Link from "next/link";
 import { parseAddress, formatAddressDisplay } from "@/lib/address";
 import { Header } from "@/components/header";
@@ -15,12 +16,12 @@ interface Patient {
   patientCode: string;
   name: string;
   phone: string;
-  email?: string;
-  dateOfBirth?: string;
-  gender?: string;
+  email?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
   bloodGroup?: string | null;
-  address?: string;
-  medicalHistory?: string;
+  address?: string | null;
+  medicalHistory?: string | null;
   createdAt: number;
 }
 
@@ -40,8 +41,8 @@ interface EmergencyContact {
   name: string;
   relationship: string;
   phone: string;
-  email: string | null;
-  address: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 export default function PatientDetailPage() {
@@ -56,12 +57,10 @@ export default function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/patients/${id}`)
-      .then((r) => r.json())
+    patientsApi.get(id)
       .then((d) => setPatient(d.patient))
       .finally(() => setLoading(false));
-    fetch(`/api/patients/${id}/balance`)
-      .then((r) => r.json())
+    patientsApi.balance(id)
       .then((d) => setBalance(d))
       .catch(() => {});
   }, [id]);
@@ -69,28 +68,28 @@ export default function PatientDetailPage() {
   useEffect(() => {
     if (!id) return;
     if (tab === "emergency") {
-      fetch(`/api/patients/${id}/emergency-contacts`)
-        .then((r) => r.json())
+      patientsApi.emergencyContacts(id)
         .then((d) => setEmergencyContacts(d.contacts || []))
         .catch(() => setEmergencyContacts([]));
       return;
     }
     if (tab === "chart") {
-      fetch(`/api/patients/${id}/tooth-chart`)
-        .then((r) => r.json())
-        .then((d) => setChartData(d.toothData ?? {}))
+      patientsApi.getToothChart(id)
+        .then((d) => setChartData((d.toothData as ChartData) ?? {}))
         .catch(() => {});
       return;
     }
-    const urls: Record<Exclude<TabType, "emergency" | "chart">, string> = {
-      visits: `/api/visits?patientId=${id}`,
-      appointments: `/api/appointments?patientId=${id}`,
-      treatments: `/api/treatments?patientId=${id}`,
-      invoices: `/api/invoices?patientId=${id}`,
+    const fetchers: Record<Exclude<TabType, "emergency" | "chart">, () => Promise<unknown>> = {
+      visits:       () => visitsApi.list({ patientId: id }),
+      appointments: () => appointmentsApi.list({ patientId: id }),
+      treatments:   () => treatmentsApi.list({ patientId: id }),
+      invoices:     () => invoicesApi.list({ patientId: id }),
     };
-    fetch(urls[tab as Exclude<TabType, "emergency" | "chart">])
-      .then((r) => r.json())
-      .then((d) => setTabData(d.visits || d.appointments || d.treatments || d.invoices || []));
+    fetchers[tab as Exclude<TabType, "emergency" | "chart">]()
+      .then((d) => {
+        const r = d as Record<string, unknown[]>;
+        setTabData(r.visits || r.appointments || r.treatments || r.invoices || []);
+      });
   }, [id, tab]);
 
   if (loading) {
@@ -116,11 +115,7 @@ export default function PatientDetailPage() {
     setChartData(data);
     setChartSaving(true);
     try {
-      await fetch(`/api/patients/${id}/tooth-chart`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ toothData: data }),
-      });
+      await patientsApi.saveToothChart(id, data as Record<string, unknown>);
     } finally {
       setChartSaving(false);
     }

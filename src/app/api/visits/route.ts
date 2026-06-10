@@ -12,7 +12,7 @@
  *   patientId, doctorId, status, date, search, billingStatus, limit, offset
  */
 import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
-import { visits, patients, users, organizations, organizationPatients, organizationMembers, appointments } from "@/db/schema";
+import { visits, patients, users, organizationPatients, organizationMembers, appointments } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { escapeLike } from "@/lib/utils";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
@@ -121,9 +121,6 @@ export const POST = withRoute(
     const { patientId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
     // RBAC: DOCTOR role can only create visits assigned to themselves
     const doctorId = session.role === "DOCTOR" ? session.userId : parsed.data.doctorId;
-
-    const [orgExists] = await db.select({ id: organizations.id }).from(organizations).where(eq(organizations.id, session.orgId));
-    if (!orgExists) return apiError("Organization not found", 400);
 
     const [patientOrgLink] = await db.select().from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)));

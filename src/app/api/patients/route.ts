@@ -14,35 +14,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { generateId, escapeLike } from "@/lib/utils";
 import { encryptField } from "@/lib/encryption";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
-import { z } from "zod";
-
-// ─── Validation schema ────────────────────────────────────────────────────────
-
-const createPatientSchema = z.object({
-  name: z.string().min(1),
-  phone: z.string().refine(
-    (v) => { const d = v.replace(/\D/g, ""); return d.length >= 10 && d.length <= 15; },
-    "Phone must have 10–15 digits"
-  ),
-  email: z.string().email().optional().or(z.literal("")),
-  dateOfBirth: z.string().optional(),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  address: z.string().max(500).optional(),
-  medicalHistory: z.string().max(5000).optional(),
-  bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]).optional(),
-  panNumber: z.string().optional(),
-  aadhaarNumber: z.string().optional(),
-  referralSource: z.string().max(100).optional(),
-  referredByPatientId: z.string().optional().nullable(),
-  emergencyContact: z
-    .object({
-      name: z.string().min(1),
-      relationship: z.string().min(1),
-      phone: z.string().min(1),
-      email: z.string().email().optional().or(z.literal("")),
-    })
-    .optional(),
-});
+import { createPatientSchema } from "@/lib/schemas/patient";
 
 // ─── GET /api/patients ────────────────────────────────────────────────────────
 // Returns a paginated + searchable list of patients belonging to the org.
@@ -162,19 +134,19 @@ export const POST = withRoute(
       ...basePatient,
       patientCode: "",
     };
-    let orgCode = "";
+    const [{ orgCount }] = await db
+      .select({ orgCount: count() })
+      .from(organizationPatients)
+      .where(eq(organizationPatients.organizationId, session.orgId));
+    const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
+      (orgCount as number) + 1
+    ).padStart(4, "0")}`;
+
     for (let attempt = 0; attempt < 5; attempt++) {
-      const [{ orgCount }] = await db
-        .select({ orgCount: count() })
-        .from(organizationPatients)
-        .where(eq(organizationPatients.organizationId, session.orgId));
       const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
 
       const seq = (totalCount as number) + 1 + attempt;
       const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
-      orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
-        (orgCount as number) + 1
-      ).padStart(4, "0")}`;
       newPatient = { ...basePatient, patientCode: globalCode };
 
       try {

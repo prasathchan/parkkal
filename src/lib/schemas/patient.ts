@@ -16,7 +16,7 @@ import { indianPhoneSchema, isoDateSchema, idSchema, textFields } from "./common
 
 // ─── Blood group ──────────────────────────────────────────────────────────────
 
-export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN"] as const;
+export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN", "A1", "A2", "A1B", "A2B", "Bombay Oh"] as const;
 export type BloodGroup = (typeof BLOOD_GROUPS)[number];
 
 // ─── Gender ───────────────────────────────────────────────────────────────────
@@ -40,11 +40,15 @@ export const createPatientSchema = z.object({
   medicalHistory: z.string().max(2000, "Medical history is too long").optional(),
   referralSource: z.string().max(255).optional(),
   address:       z.string().max(1000).optional(),
+  panNumber:     z.string().max(10).optional(),
+  aadhaarNumber: z.string().length(12).optional(),
+  referredByPatientId: z.string().optional().nullable(),
   // Emergency contact (optional at creation)
   emergencyContact: z.object({
     name:         textFields.name,
     phone:        indianPhoneSchema,
     relationship: z.string().max(100),
+    email:        z.string().email().optional().or(z.literal("")),
   }).optional(),
 });
 

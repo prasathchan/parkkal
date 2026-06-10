@@ -49,17 +49,9 @@ let warned = false;
 function getSecret(): Uint8Array {
   if (cachedSecret) return cachedSecret;
   if (!process.env.JWT_SECRET) {
-    if (!warned) {
-      warned = true;
-      console.error("[SECURITY] JWT_SECRET env var is not set. Using insecure default — DO NOT use in production.");
-    }
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("JWT_SECRET must be set in production");
-    }
+    throw new Error("JWT_SECRET environment variable is not set");
   }
-  cachedSecret = new TextEncoder().encode(
-    process.env.JWT_SECRET || "parkkal-dental-secret-key-change-in-production"
-  );
+  cachedSecret = new TextEncoder().encode(process.env.JWT_SECRET);
   return cachedSecret;
 }
 
