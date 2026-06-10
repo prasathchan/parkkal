@@ -41,6 +41,9 @@
     "twilio": "^6.0.2",
     "zod": "^3.23.8"
   },
+  "overrides": {
+    "esbuild": "0.28.0"
+  },
   "devDependencies": {
     "@libsql/client": "^0.14.0",
     "@playwright/test": "^1.60.0",
