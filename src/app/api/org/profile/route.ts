@@ -2,7 +2,15 @@ import { eq, and } from "drizzle-orm";
 import { organizations, organizationMembers, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { createOrgToken } from "@/lib/auth";
 import { z } from "zod";
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  path: "/",
+};
 
 const updateOrgSchema = z.object({
   name: z.string().min(1).optional(),
@@ -63,6 +71,25 @@ export const PATCH = withRoute(
 
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ORG_PROFILE_UPDATED", targetType: "organization", targetId: session.orgId });
     log.info("Org profile updated");
-    return apiOk({ success: true });
+
+    const res = apiOk({ success: true });
+
+    // Re-issue session cookie so the sidebar reflects the new org name immediately
+    if (name !== undefined) {
+      const newToken = await createOrgToken({
+        userId: session.userId,
+        email: session.email,
+        name: session.name,
+        orgId: session.orgId,
+        orgName: name,
+        orgSlug: session.orgSlug,
+        role: session.role,
+        orgRoleId: session.orgRoleId ?? null,
+        permissions: session.permissions,
+      });
+      res.cookies.set("pkd_org_session", newToken, { ...COOKIE_OPTS, maxAge: 60 * 60 * 24 });
+    }
+
+    return res;
   }
 );
