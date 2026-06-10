@@ -63,16 +63,6 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
           )}
           <p className="text-sm font-semibold text-slate-700 mb-3">Add Item</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="lg:col-span-2">
-              <label className="block text-xs text-slate-500 mb-1">Item Name *</label>
-              <input
-                required
-                value={newItem.itemName}
-                onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Medicine / Procedure..."
-              />
-            </div>
             <div>
               <label className="block text-xs text-slate-500 mb-1">Category</label>
               <select
@@ -87,6 +77,16 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
                   <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
                 ))}
               </select>
+            </div>
+            <div className="lg:col-span-2">
+              <label className="block text-xs text-slate-500 mb-1">Item Name *</label>
+              <input
+                required
+                value={newItem.itemName}
+                onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Medicine / Procedure..."
+              />
             </div>
             {/* Treatment picker */}
             {newItem.category === "TREATMENT" && (
