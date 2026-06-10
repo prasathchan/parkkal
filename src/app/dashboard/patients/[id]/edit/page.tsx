@@ -11,7 +11,6 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { patientsApi, ApiError } from "@/api";
-import type { Patient } from "@/types";
 
 
 const GENDERS: { value: string; label: string }[] = [

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { appointmentsApi, ApiError } from "@/api";
-import { AddToCalendar } from "@/components/ui/add-to-calendar";
+
 
 interface Patient { id: string; patientCode: string; name: string; }
 interface Doctor { id: string; name: string; role: string; }
@@ -33,7 +33,7 @@ function NewAppointmentForm() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState("");
-  const [currentUserId, setCurrentUserId] = useState("");
+  const [_currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
   const [recallVisitId, setRecallVisitId] = useState<string | null>(null);

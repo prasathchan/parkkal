@@ -15,7 +15,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
-import { appointmentsApi, ApiError } from "@/api";
+import { appointmentsApi } from "@/api";
 import { AddToCalendar } from "@/components/ui/add-to-calendar";
 import type { Appointment } from "@/types";
 
@@ -423,7 +423,7 @@ function TodaysQueue({
 
       {/* Full list */}
       <div className="flex-1 overflow-y-auto mt-2 px-3 pb-3 space-y-1.5">
-        {sorted.map((apt, idx) => {
+        {sorted.map((apt, _idx) => {
           const isNext = apt.id === nextUp?.id;
           const isNow  = apt.id === inProgress?.id;
           return (

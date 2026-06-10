@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { useAsync } from "@/hooks/use-async";
-import { reportsApi, ApiError } from "@/api";
+import { reportsApi } from "@/api";
 import type { ReportData } from "@/types";
 import type { ReportPeriod } from "@/api/reports";
 
