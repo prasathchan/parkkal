@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "./types";
+import { treatmentsApi, visitsApi, ApiError } from "@/api";
 
 interface Props {
   visitId: string;
@@ -52,25 +53,16 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     setTxSubmitting(true);
     setTxError("");
     try {
-      const res = await fetch(`/api/visits/${visitId}/treatments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: txForm.description,
-          toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
-          procedure: txForm.procedure || undefined,
-          cost: Number(txForm.cost),
-        }),
+      await treatmentsApi.forVisit.link(visitId, {
+        description: txForm.description,
+        toothNumbers: txForm.toothNumbers.length > 0 ? txForm.toothNumbers.join(",") : undefined,
+        procedure: txForm.procedure || undefined,
+        cost: Number(txForm.cost),
       });
-      if (res.ok) {
-        setTxForm({ description: "", toothNumbers: [], procedure: "", cost: "0" });
-        await onRefresh();
-      } else {
-        const d = await res.json().catch(() => ({}));
-        setTxError((d as { error?: string }).error || "Failed to add treatment");
-      }
-    } catch {
-      setTxError("Network error. Please try again.");
+      setTxForm({ description: "", toothNumbers: [], procedure: "", cost: "0" });
+      await onRefresh();
+    } catch (err) {
+      setTxError(err instanceof ApiError ? err.message : "Network error. Please try again.");
     } finally {
       setTxSubmitting(false);
     }
@@ -78,18 +70,14 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
 
   async function handleUpdateTreatmentStatus(txId: string, status: string) {
     setTxUpdating(txId);
-    const res = await fetch(`/api/treatments/${txId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      onPageError((d as { error?: string }).error || "Failed to update treatment status");
-    } else {
+    try {
+      await treatmentsApi.update(txId, { status });
       await onRefresh();
+    } catch (err) {
+      onPageError(err instanceof ApiError ? err.message : "Failed to update treatment status");
+    } finally {
+      setTxUpdating(null);
     }
-    setTxUpdating(null);
   }
 
   function handleTreatmentStatusChange(tx: Treatment, newStatus: string) {
@@ -103,33 +91,31 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
 
   async function handleUnlinkTreatment(txId: string) {
     if (!confirm("Unlink this treatment plan from this visit? The plan itself will not be deleted.")) return;
-    const res = await fetch(`/api/visits/${visitId}/treatments?treatmentId=${txId}`, { method: "DELETE" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      onPageError((d as { error?: string }).error || "Failed to unlink treatment");
-      return;
+    try {
+      await treatmentsApi.forVisit.unlink(visitId, txId);
+      await onRefresh();
+    } catch (err) {
+      onPageError(err instanceof ApiError ? err.message : "Failed to unlink treatment");
     }
-    await onRefresh();
   }
 
   async function handleOpenLinkModal() {
     setLinkLoading(true);
     setShowLinkModal(true);
-    const res = await fetch(`/api/treatments?patientId=${visit.patientId}`);
-    if (res.ok) {
-      const d = await res.json();
+    try {
+      const d = await treatmentsApi.list({ patientId: visit.patientId });
       const linkedIds = new Set(treatments.map(t => t.id));
       setLinkablePlans((d.treatments || []).filter((t: Treatment) => !linkedIds.has(t.id)));
-    }
+    } catch { /* silently ignore — user sees empty state */ }
     setLinkLoading(false);
   }
 
   async function handleLinkPlan(txId: string) {
-    await fetch(`/api/visits/${visitId}/treatments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ treatmentId: txId }),
-    });
+    try {
+      await treatmentsApi.forVisit.link(visitId, { treatmentId: txId });
+    } catch (err) {
+      onPageError(err instanceof ApiError ? err.message : "Failed to link treatment");
+    }
     setShowLinkModal(false);
     await onRefresh();
   }
@@ -139,64 +125,52 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     if (!txPayModal) return;
     setTxPayError("");
     setTxPaySubmitting(true);
-    const res = await fetch(`/api/visits/${visitId}/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await visitsApi.payments.add(visitId, {
         amount: Number(txPayForm.amount),
         paymentMethod: txPayForm.paymentMethod,
         referenceNumber: txPayForm.referenceNumber || null,
         notes: txPayForm.notes || null,
         treatmentId: txPayModal.treatmentId,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setTxPayError((data as { error?: string }).error || "Payment failed");
+      });
+      setTxPayModal(null);
+      setTxPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
+      await onRefresh();
+    } catch (err) {
+      setTxPayError(err instanceof ApiError ? err.message : "Payment failed");
+    } finally {
       setTxPaySubmitting(false);
-      return;
     }
-    setTxPayModal(null);
-    setTxPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
-    await onRefresh();
-    setTxPaySubmitting(false);
   }
 
   async function handleConsentUpload(txId: string, file: File) {
     setConsentUploading(txId);
     setConsentUploadError(prev => ({ ...prev, [txId]: "" }));
-    const fd = new FormData();
-    fd.append("document", file);
-    const res = await fetch(`/api/treatments/${txId}/consent/upload`, { method: "POST", body: fd });
-    const data = await res.json();
-    if (!res.ok) {
-      setConsentUploadError(prev => ({ ...prev, [txId]: (data as { error?: string }).error || "Upload failed" }));
-    } else {
+    try {
+      await treatmentsApi.consent.upload(txId, file);
       await onRefresh();
+    } catch (err) {
+      setConsentUploadError(prev => ({ ...prev, [txId]: err instanceof ApiError ? err.message : "Upload failed" }));
+    } finally {
+      setConsentUploading(null);
     }
-    setConsentUploading(null);
   }
 
   async function handleEmergencyOverride() {
     if (!overrideTxId) return;
     setOverrideSubmitting(true);
     setOverrideError("");
-    const res = await fetch(`/api/treatments/${overrideTxId}/consent`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: overrideReason }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setOverrideError((data as { error?: string }).error || "Override failed");
+    try {
+      await treatmentsApi.consent.override(overrideTxId, overrideReason);
+      setShowOverrideModal(false);
+      setOverrideTxId(null);
+      setOverrideReason("");
+      await onRefresh();
+    } catch (err) {
+      setOverrideError(err instanceof ApiError ? err.message : "Override failed");
+    } finally {
       setOverrideSubmitting(false);
-      return;
     }
-    setShowOverrideModal(false);
-    setOverrideTxId(null);
-    setOverrideReason("");
-    setOverrideSubmitting(false);
-    await onRefresh();
   }
 
   const consentBadge: Record<string, string> = {

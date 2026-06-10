@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
+import { useAsync } from "@/hooks/use-async";
+import { useDebounce } from "@/hooks/use-debounce";
+import { invoicesApi, patientsApi, ApiError } from "@/api";
+import type { Invoice, Patient } from "@/types";
 import {
   Table,
   TableHead,
@@ -12,89 +16,63 @@ import {
   TableHeadCell,
 } from "@/components/ui/table";
 
-interface Invoice {
-  id: string;
-  patientId: string;
-  patientName: string | null;
-  totalAmount: number;
-  paidAmount: number;
-  status: "PENDING" | "PARTIAL" | "PAID";
-  notes: string | null;
-  createdAt: number;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  patientCode: string;
-}
-
 const STATUS_COLORS: Record<string, string> = {
-  PAID: "bg-green-100 text-green-700",
-  PARTIAL: "bg-blue-100 text-blue-700",
-  PENDING: "bg-yellow-100 text-yellow-700",
+  PAID:             "bg-green-100 text-green-700",
+  PARTIALLY_PAID:   "bg-blue-100 text-blue-700",
+  PENDING:          "bg-yellow-100 text-yellow-700",
+  DRAFT:            "bg-slate-100 text-slate-600",
 };
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Filters
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [patientSearch, setPatientSearch] = useState("");
+  // Filters (client-side — small dataset)
+  const [statusFilter,   setStatusFilter]   = useState("ALL");
+  const [patientSearch,  setPatientSearch]  = useState("");
 
   // New Invoice slideover
-  const [showSlideover, setShowSlideover] = useState(false);
-  const [form, setForm] = useState({ patientId: "", totalAmount: "", paidAmount: "0", notes: "" });
-  const [formPatientSearch, setFormPatientSearch] = useState("");
-  const [formPatients, setFormPatients] = useState<Patient[]>([]);
+  const [showSlideover,           setShowSlideover]           = useState(false);
+  const [form,                    setForm]                    = useState({ patientId: "", totalAmount: "", paidAmount: "0", notes: "" });
+  const [formPatientSearch,       setFormPatientSearch]       = useState("");
   const [showFormPatientDropdown, setShowFormPatientDropdown] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
+  const [submitting,              setSubmitting]              = useState(false);
+  const [submitError,             setSubmitError]             = useState("");
 
   // Record Payment modal
-  const [payModal, setPayModal] = useState<{ invoice: Invoice } | null>(null);
-  const [payAmount, setPayAmount] = useState("");
+  const [payModal,      setPayModal]      = useState<{ invoice: Invoice } | null>(null);
+  const [payAmount,     setPayAmount]     = useState("");
   const [paySubmitting, setPaySubmitting] = useState(false);
-  const [payError, setPayError] = useState("");
+  const [payError,      setPayError]      = useState("");
 
-  const formDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Debounced patient search inside the new-invoice form
+  const debouncedFormSearch = useDebounce(formPatientSearch, 300);
+  const { data: formPatientData } = useAsync<{ patients: Patient[] }>(
+    () => debouncedFormSearch.trim()
+      ? patientsApi.list({ search: debouncedFormSearch.trim(), limit: 10 })
+      : Promise.resolve({ patients: [], total: 0, limit: 10, offset: 0 }),
+    [debouncedFormSearch],
+  );
+  const formPatients: Patient[] = formPatientData?.patients ?? [];
 
-  const fetchInvoices = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/invoices");
-      const data = await res.json();
-      setInvoices(data.invoices || []);
-    } finally {
-      setLoading(false);
+  // Main invoice list
+  const { data, loading, refetch } = useAsync(() => invoicesApi.list());
+  const invoices: Invoice[] = data?.invoices ?? [];
+
+  // Client-side filter
+  const filtered = invoices.filter((inv) => {
+    if (statusFilter !== "ALL" && inv.status !== statusFilter) return false;
+    if (patientSearch) {
+      const name = (inv.patientName ?? "").toLowerCase();
+      if (!name.includes(patientSearch.toLowerCase())) return false;
     }
-  }, []);
+    return true;
+  });
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
-
-  // Debounced form patient search
-  useEffect(() => {
-    if (formDebounceRef.current) clearTimeout(formDebounceRef.current);
-    if (!formPatientSearch.trim()) {
-      setFormPatients([]);
-      setShowFormPatientDropdown(false);
-      return;
-    }
-    formDebounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/patients?search=${encodeURIComponent(formPatientSearch)}`);
-      const data = await res.json();
-      setFormPatients(data.patients || []);
-      setShowFormPatientDropdown(true);
-    }, 300);
-  }, [formPatientSearch]);
+  const pending = invoices.filter((i) => i.status === "DRAFT" || i.status === "ISSUED").length;
+  const partial = invoices.filter((i) => i.status === "PARTIALLY_PAID").length;
+  const paid    = invoices.filter((i) => i.status === "PAID").length;
 
   function openSlideover() {
     setForm({ patientId: "", totalAmount: "", paidAmount: "0", notes: "" });
     setFormPatientSearch("");
-    setFormPatients([]);
     setSubmitError("");
     setShowSlideover(true);
   }
@@ -105,22 +83,14 @@ export default function InvoicesPage() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const res = await fetch("/api/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: form.patientId,
-          totalAmount: parseFloat(form.totalAmount) || 0,
-          paidAmount: parseFloat(form.paidAmount) || 0,
-          notes: form.notes || undefined,
-        }),
+      await invoicesApi.create({
+        patientId:   form.patientId,
+        notes:       form.notes || undefined,
       });
-      const data = await res.json();
-      if (!res.ok) { setSubmitError(data.error || "Failed to create invoice"); return; }
       setShowSlideover(false);
-      fetchInvoices();
-    } catch {
-      setSubmitError("Something went wrong.");
+      refetch();
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }
@@ -139,37 +109,18 @@ export default function InvoicesPage() {
     setPaySubmitting(true);
     setPayError("");
     try {
-      const addAmount = parseFloat(payAmount) || 0;
-      const newPaidAmount = payModal.invoice.paidAmount + addAmount;
-      const res = await fetch(`/api/invoices/${payModal.invoice.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paidAmount: newPaidAmount }),
+      await invoicesApi.recordPayment(payModal.invoice.id, {
+        amount: parseFloat(payAmount) || 0,
+        paymentMethod: "CASH",
       });
-      const data = await res.json();
-      if (!res.ok) { setPayError(data.error || "Failed to record payment"); return; }
       setPayModal(null);
-      fetchInvoices();
-    } catch {
-      setPayError("Something went wrong.");
+      refetch();
+    } catch (err) {
+      setPayError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
       setPaySubmitting(false);
     }
   }
-
-  // Filtered invoices
-  const filtered = invoices.filter((inv) => {
-    if (statusFilter !== "ALL" && inv.status !== statusFilter) return false;
-    if (patientSearch) {
-      const name = (inv.patientName || "").toLowerCase();
-      if (!name.includes(patientSearch.toLowerCase())) return false;
-    }
-    return true;
-  });
-
-  const pending = invoices.filter((i) => i.status === "PENDING").length;
-  const partial = invoices.filter((i) => i.status === "PARTIAL").length;
-  const paid = invoices.filter((i) => i.status === "PAID").length;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -194,8 +145,9 @@ export default function InvoicesPage() {
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="ALL">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="PARTIAL">Partial</option>
+            <option value="DRAFT">Draft</option>
+            <option value="ISSUED">Issued</option>
+            <option value="PARTIALLY_PAID">Partial</option>
             <option value="PAID">Paid</option>
           </select>
           <div className="ml-auto">
@@ -256,7 +208,7 @@ export default function InvoicesPage() {
                         <span className="font-mono text-xs text-blue-700">{inv.id.slice(0, 8)}</span>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {inv.patientName || inv.patientId}
+                        {inv.patientName ?? inv.patientId}
                       </TableCell>
                       <TableCell className="font-semibold">{formatCurrency(inv.totalAmount)}</TableCell>
                       <TableCell className="text-green-700">{formatCurrency(inv.paidAmount)}</TableCell>
@@ -264,7 +216,7 @@ export default function InvoicesPage() {
                         {formatCurrency(balance)}
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status]}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status] ?? "bg-slate-100 text-slate-700"}`}>
                           {inv.status}
                         </span>
                       </TableCell>
@@ -307,7 +259,6 @@ export default function InvoicesPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 px-6 py-5 space-y-5">
-              {/* Patient */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Patient <span className="text-red-500">*</span>
@@ -319,6 +270,7 @@ export default function InvoicesPage() {
                     onChange={(e) => {
                       setFormPatientSearch(e.target.value);
                       if (!e.target.value) setForm((f) => ({ ...f, patientId: "" }));
+                      setShowFormPatientDropdown(true);
                     }}
                     placeholder="Search patient..."
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -343,45 +295,9 @@ export default function InvoicesPage() {
                     </div>
                   )}
                 </div>
-                {form.patientId && (
-                  <p className="text-xs text-green-600 mt-1">Patient selected</p>
-                )}
+                {form.patientId && <p className="text-xs text-green-600 mt-1">Patient selected</p>}
               </div>
 
-              {/* Total Amount */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Total Amount (₹) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  required
-                  value={form.totalAmount}
-                  onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* Amount Paid */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Amount Paid (₹)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.paidAmount}
-                  onChange={(e) => setForm((f) => ({ ...f, paidAmount: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="0.00"
-                />
-              </div>
-
-              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
                 <textarea
@@ -402,7 +318,7 @@ export default function InvoicesPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  disabled={submitting || !form.patientId || !form.totalAmount}
+                  disabled={submitting || !form.patientId}
                   className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Saving..." : "Create Invoice"}

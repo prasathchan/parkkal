@@ -1,25 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
+import { visitsApi } from "@/api";
 import { SkeletonTable } from "@/components/ui/skeleton";
-
-interface Visit {
-  id: string;
-  visitCode: string;
-  visitDate: string;
-  status: "OPEN" | "COMPLETED" | "CANCELLED";
-  totalAmount: number;
-  paidAmount: number;
-  patientName: string;
-  patientCode: string;
-  doctorName: string;
-}
+import type { Visit } from "@/types";
 
 const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800",
+  OPEN:      "bg-blue-100 text-blue-800",
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-red-100 text-red-800",
 };
@@ -27,52 +18,39 @@ const STATUS_COLORS: Record<string, string> = {
 const LIMIT = 50;
 
 export default function VisitsPage() {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
+  const [visits,       setVisits]       = useState<Visit[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [loadingMore,  setLoadingMore]  = useState(false);
+  const [total,        setTotal]        = useState(0);
+  const [offset,       setOffset]       = useState(0);
   const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [search, setSearch] = useState("");
-  // Debounced copy — fetchVisits depends on this, not the raw input state.
-  // This ensures we only fire a request 300 ms after the user stops typing.
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dateFilter,   setDateFilter]   = useState("");
+  const [search,       setSearch]       = useState("");
 
-  useEffect(() => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => { if (searchTimer.current) clearTimeout(searchTimer.current); };
-  }, [search]);
+  const debouncedSearch = useDebounce(search, 300);
 
   const fetchVisits = useCallback(async (pageOffset: number, append = false) => {
     if (append) setLoadingMore(true);
-    else setLoading(true);
-
-    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pageOffset) });
-    if (statusFilter) params.set("status", statusFilter);
-    if (dateFilter) params.set("date", dateFilter);
-    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    else        setLoading(true);
 
     try {
-      const res = await fetch(`/api/visits?${params}`);
-      const data = await res.json();
-      const rows: Visit[] = data.visits || [];
-      if (append) {
-        setVisits((prev) => [...prev, ...rows]);
-      } else {
-        setVisits(rows);
-      }
+      const data = await visitsApi.list({
+        status: statusFilter || undefined,
+        date:   dateFilter   || undefined,
+        search: debouncedSearch.trim() || undefined,
+        limit:  LIMIT,
+        offset: pageOffset,
+      });
+      const rows = data.visits;
+      setVisits((prev) => append ? [...prev, ...rows] : rows);
       setTotal(data.total ?? 0);
       setOffset(pageOffset + rows.length);
     } finally {
       if (append) setLoadingMore(false);
-      else setLoading(false);
+      else        setLoading(false);
     }
   }, [statusFilter, dateFilter, debouncedSearch]);
 
-  // When the fetchVisits callback changes (filter/search updated), reset to page 0
   useEffect(() => {
     setOffset(0);
     fetchVisits(0, false);
@@ -80,6 +58,12 @@ export default function VisitsPage() {
 
   const hasMore = offset < total;
   const filtersActive = !!(statusFilter || dateFilter || debouncedSearch);
+
+  function clearFilters() {
+    setStatusFilter("");
+    setDateFilter("");
+    setSearch("");
+  }
 
   return (
     <div className="flex-1 flex flex-col">
@@ -116,24 +100,14 @@ export default function VisitsPage() {
             className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]"
           />
           {filtersActive && (
-            <button
-              onClick={() => {
-                setStatusFilter("");
-                setDateFilter("");
-                setSearch("");
-                setDebouncedSearch("");
-              }}
-              className="text-sm text-slate-500 hover:text-slate-700 underline"
-            >
+            <button onClick={clearFilters} className="text-sm text-slate-500 hover:text-slate-700 underline">
               Clear filters
             </button>
           )}
           <div className="ml-auto flex items-center gap-3">
             {!loading && total > 0 && (
               <span className="text-xs text-slate-400">
-                {filtersActive
-                  ? `${visits.length} of ${total} match`
-                  : `${total} total`}
+                {filtersActive ? `${visits.length} of ${total} match` : `${total} total`}
               </span>
             )}
             <Link
@@ -155,98 +129,80 @@ export default function VisitsPage() {
               <SkeletonTable rows={8} cols={6} />
             </div>
           ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Visit Code</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Patient</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Doctor</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Total</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Due</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Status</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visits.length === 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <td colSpan={9} className="text-center py-10">
-                      <p className="text-slate-400">
-                        {filtersActive
-                          ? "No visits match your filters."
-                          : "No visits yet."}
-                      </p>
-                      {filtersActive && (
-                        <button
-                          onClick={() => {
-                            setStatusFilter("");
-                            setDateFilter("");
-                            setSearch("");
-                            setDebouncedSearch("");
-                          }}
-                          className="text-blue-600 hover:underline text-sm mt-1"
-                        >
-                          Clear filters
-                        </button>
-                      )}
-                    </td>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Visit Code</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Patient</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Doctor</th>
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
+                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Total</th>
+                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid</th>
+                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Due</th>
+                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Status</th>
+                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Actions</th>
                   </tr>
-                ) : (
-                  visits.map((v) => {
-                    const due = v.totalAmount - v.paidAmount;
-                    return (
-                      <tr key={v.id} className="hover:bg-slate-50 transition">
-                        <td className="px-4 py-3 font-mono text-xs text-blue-700">{v.visitCode}</td>
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-slate-900">{v.patientName}</div>
-                          <div className="text-xs text-slate-400">{v.patientCode}</div>
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">{v.doctorName}</td>
-                        <td className="px-4 py-3 text-slate-700">{v.visitDate}</td>
-                        <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(v.totalAmount)}</td>
-                        <td className="px-4 py-3 text-right text-green-700">{formatCurrency(v.paidAmount)}</td>
-                        <td className={`px-4 py-3 text-right font-medium ${due > 0 ? "text-red-600" : "text-slate-400"}`}>
-                          {formatCurrency(due)}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[v.status] || "bg-slate-100 text-slate-700"}`}>
-                            {v.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <Link
-                            href={`/dashboard/visits/${v.id}`}
-                            className="text-blue-600 hover:underline text-xs"
-                          >
-                            View
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {visits.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="text-center py-10">
+                        <p className="text-slate-400">
+                          {filtersActive ? "No visits match your filters." : "No visits yet."}
+                        </p>
+                        {filtersActive && (
+                          <button onClick={clearFilters} className="text-blue-600 hover:underline text-sm mt-1">
+                            Clear filters
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ) : (
+                    visits.map((v) => {
+                      const due = v.totalAmount - v.paidAmount;
+                      return (
+                        <tr key={v.id} className="hover:bg-slate-50 transition">
+                          <td className="px-4 py-3 font-mono text-xs text-blue-700">{v.visitCode}</td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-900">{v.patientName}</div>
+                            <div className="text-xs text-slate-400">{v.patientCode}</div>
+                          </td>
+                          <td className="px-4 py-3 text-slate-700">{v.doctorName}</td>
+                          <td className="px-4 py-3 text-slate-700">{v.visitDate}</td>
+                          <td className="px-4 py-3 text-right text-slate-900">{formatCurrency(v.totalAmount)}</td>
+                          <td className="px-4 py-3 text-right text-green-700">{formatCurrency(v.paidAmount)}</td>
+                          <td className={`px-4 py-3 text-right font-medium ${due > 0 ? "text-red-600" : "text-slate-400"}`}>
+                            {formatCurrency(due)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[v.status] ?? "bg-slate-100 text-slate-700"}`}>
+                              {v.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Link href={`/dashboard/visits/${v.id}`} className="text-blue-600 hover:underline text-xs">
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          {/* Pagination footer */}
           {!loading && hasMore && (
             <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Showing {visits.length} of {total}
-              </span>
+              <span className="text-xs text-slate-400">Showing {visits.length} of {total}</span>
               <button
                 onClick={() => fetchVisits(offset, true)}
                 disabled={loadingMore}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
               >
-                {loadingMore
-                  ? "Loading..."
-                  : `Load more (${total - visits.length} remaining)`}
+                {loadingMore ? "Loading..." : `Load more (${total - visits.length} remaining)`}
               </button>
             </div>
           )}

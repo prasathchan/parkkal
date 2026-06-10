@@ -13,19 +13,11 @@ import {
   TableCell,
   TableHeadCell,
 } from "@/components/ui/table";
+import { visitsApi, ApiError } from "@/api";
+import type { Visit } from "@/types";
 
-interface VisitBilling {
-  id: string;
-  visitCode: string;
-  visitDate: string;
-  patientId: string;
-  patientName: string | null;
-  patientCode: string | null;
-  doctorName: string | null;
-  totalAmount: number;
-  paidAmount: number;
-  status: string;
-}
+// Alias for readability within this page
+type VisitBilling = Visit;
 
 type PaymentMethod = "CASH" | "CARD" | "UPI" | "BANK_TRANSFER";
 type BillingFilter = "UNPAID" | "ALL";
@@ -50,18 +42,15 @@ export default function BillingPage() {
   const fetchData = useCallback(async (pageIdx: number, searchStr: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        limit: String(PAGE_SIZE),
-        offset: String(pageIdx * PAGE_SIZE),
+      const data = await visitsApi.list({
+        limit:  PAGE_SIZE,
+        offset: pageIdx * PAGE_SIZE,
+        search: searchStr || undefined,
+        // Pass billingStatus=UNPAID to the server so only unpaid visits are fetched —
+        // avoids loading hundreds of paid visits just to filter them client-side.
+        billingStatus: filterRef.current === "UNPAID" ? "UNPAID" : undefined,
       });
-      if (searchStr) params.set("search", searchStr);
-      // Pass billingStatus=UNPAID to the server so only unpaid visits are fetched —
-      // avoids loading hundreds of paid visits just to filter them client-side.
-      if (filterRef.current === "UNPAID") params.set("billingStatus", "UNPAID");
-      const res = await fetch(`/api/visits?${params}`);
-      if (!res.ok) throw new Error("Failed to load visits");
-      const data = await res.json();
-      setVisits(data.visits || []);
+      setVisits(data.visits ?? []);
       setTotal(data.total ?? 0);
     } catch {
       setErrorMsg("Failed to load billing data. Please try again.");
@@ -103,18 +92,11 @@ export default function BillingPage() {
     setPayModal(null);
     setErrorMsg(null);
     try {
-      const res = await fetch(`/api/visits/${visit.id}/payments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: due, paymentMethod: payMethod }),
-      });
-      if (res.ok) {
-        setErrorMsg(null);
-        await fetchData(page, search);
-      } else {
-        const d = await res.json();
-        setErrorMsg(d.error || "Failed to record payment");
-      }
+      await visitsApi.payments.add(visit.id, { amount: due, paymentMethod: payMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" });
+      setErrorMsg(null);
+      await fetchData(page, search);
+    } catch (e) {
+      setErrorMsg(e instanceof ApiError ? e.message : "Failed to record payment");
     } finally {
       setMarkingPaid(null);
     }

@@ -1,40 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface DayRevenue { date: string; billed: number; collected: number; }
-interface DayCount   { date: string; count: number; }
-
-interface ReportData {
-  period: { days: number; startMs: number; label: string };
-  summary: {
-    totalPatients:  number;
-    periodVisits:   number;
-    totalBilled:    number;
-    totalCollected: number;
-    collectionRate: number;
-    outstanding:    number;
-  };
-  revenueByDay:       DayRevenue[];
-  newPatients:        DayCount[];
-  visitsByStatus:     Record<string, number>;
-  apptByStatus:       Record<string, number>;
-  topProcedures:      { procedure: string; count: number; revenue: number }[];
-  treatmentByStatus:  Record<string, number>;
-}
-
-type Period = "30d" | "90d" | "365d";
-
-const PERIOD_LABELS: Record<Period, string> = {
-  "30d":  "Last 30 days",
-  "90d":  "Last 90 days",
-  "365d": "Last 365 days",
-};
+import { useAsync } from "@/hooks/use-async";
+import { reportsApi, ApiError } from "@/api";
+import type { ReportData, ReportPeriod } from "@/types";
 
 // ─── Bar chart (pure CSS) ──────────────────────────────────────────────────────
 
@@ -112,19 +84,18 @@ function Stat({ label, value, sub, color = "text-slate-900" }: {
 // ─── Status breakdown bar ──────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED:  "bg-green-500",
-  OPEN:       "bg-blue-500",
-  PLANNED:    "bg-yellow-400",
-  IN_PROGRESS:"bg-indigo-400",
-  CANCELLED:  "bg-slate-300",
-  NO_SHOW:    "bg-red-400",
-  SCHEDULED:  "bg-blue-400",
+  COMPLETED:   "bg-green-500",
+  OPEN:        "bg-blue-500",
+  PLANNED:     "bg-yellow-400",
+  IN_PROGRESS: "bg-indigo-400",
+  CANCELLED:   "bg-slate-300",
+  NO_SHOW:     "bg-red-400",
+  SCHEDULED:   "bg-blue-400",
 };
 
 function StatusBreakdown({ data }: { data: Record<string, number> }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
   if (total === 0) return <p className="text-xs text-slate-400">No data for this period.</p>;
-
   return (
     <div className="space-y-1.5">
       {Object.entries(data).sort((a, b) => b[1] - a[1]).map(([status, n]) => (
@@ -143,31 +114,26 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
   );
 }
 
+// ─── Period config ─────────────────────────────────────────────────────────────
+
+const PERIOD_LABELS: Record<ReportPeriod, string> = {
+  "7d":  "Last 7 days",
+  "30d": "Last 30 days",
+  "90d": "Last 90 days",
+};
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const [period,   setPeriod]  = useState<Period>("30d");
-  const [data,     setData]    = useState<ReportData | null>(null);
-  const [loading,  setLoading] = useState(true);
-  const [error,    setError]   = useState("");
-  const [forbidden,setForbidden] = useState(false);
+  const [period, setPeriod] = useState<ReportPeriod>("30d");
 
-  const fetchReport = useCallback(async (p: Period) => {
-    setLoading(true); setError("");
-    const res = await fetch(`/api/reports?period=${p}`);
-    if (res.status === 403) { setForbidden(true); setLoading(false); return; }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError((body as { error?: string }).error ?? `Failed to load report (HTTP ${res.status})`);
-      setLoading(false); return;
-    }
-    setData(await res.json());
-    setLoading(false);
-  }, []);
+  const { data, loading, error } = useAsync<ReportData>(
+    () => reportsApi.get(period),
+    [period],
+  );
 
-  useEffect(() => { fetchReport(period); }, [period, fetchReport]);
+  const forbidden = error !== null && error.includes("403") || (error ?? "").toLowerCase().includes("forbidden") || (error ?? "").toLowerCase().includes("permission");
 
-  // ── Forbidden ──────────────────────────────────────────────────────────────
   if (forbidden) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -195,7 +161,7 @@ export default function ReportsPage() {
             <p className="text-xs text-slate-500 mt-0.5">Revenue, patient activity, and clinical statistics.</p>
           </div>
           <div className="flex gap-1.5">
-            {(["30d", "90d", "365d"] as Period[]).map((p) => (
+            {(["30d", "90d"] as ReportPeriod[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
@@ -211,7 +177,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {error && (
+        {error && !forbidden && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
             {error}
           </div>
@@ -229,21 +195,9 @@ export default function ReportsPage() {
           <>
             {/* ── Summary stat cards ────────────────────────────────────────── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <Stat
-                label="Total Patients"
-                value={String(data.summary.totalPatients)}
-                sub="registered in org"
-              />
-              <Stat
-                label={`Visits (${PERIOD_LABELS[period]})`}
-                value={String(data.summary.periodVisits)}
-                sub="excluding cancelled"
-              />
-              <Stat
-                label="Billed"
-                value={formatCurrency(data.summary.totalBilled)}
-                sub="total amount raised"
-              />
+              <Stat label="Total Patients" value={String(data.summary.totalPatients)} sub="registered in org" />
+              <Stat label={`Visits (${PERIOD_LABELS[period]})`} value={String(data.summary.periodVisits)} sub="excluding cancelled" />
+              <Stat label="Billed" value={formatCurrency(data.summary.totalBilled)} sub="total amount raised" />
               <Stat
                 label="Collected"
                 value={formatCurrency(data.summary.totalCollected)}
@@ -284,7 +238,6 @@ export default function ReportsPage() {
 
             {/* ── Two-column: New Patients + Status distributions ────────────── */}
             <div className="grid md:grid-cols-2 gap-4">
-              {/* New patient registrations */}
               <div className="bg-white rounded-xl border border-slate-200 p-5">
                 <h2 className="text-sm font-semibold text-slate-900 mb-1">New Patient Registrations</h2>
                 <p className="text-xs text-slate-400 mb-4">Patients registered per day in this period.</p>
@@ -295,20 +248,14 @@ export default function ReportsPage() {
                   label="New patients"
                 />
               </div>
-
-              {/* Visit status breakdown */}
               <div className="bg-white rounded-xl border border-slate-200 p-5">
                 <h2 className="text-sm font-semibold text-slate-900 mb-4">Visit Status Breakdown</h2>
                 <StatusBreakdown data={data.visitsByStatus} />
               </div>
-
-              {/* Appointment status */}
               <div className="bg-white rounded-xl border border-slate-200 p-5">
                 <h2 className="text-sm font-semibold text-slate-900 mb-4">Appointment Status Breakdown</h2>
                 <StatusBreakdown data={data.apptByStatus} />
               </div>
-
-              {/* Treatment status */}
               <div className="bg-white rounded-xl border border-slate-200 p-5">
                 <h2 className="text-sm font-semibold text-slate-900 mb-4">Treatment Plan Status</h2>
                 <StatusBreakdown data={data.treatmentByStatus} />

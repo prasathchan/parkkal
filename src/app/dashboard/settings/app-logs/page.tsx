@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
+import { adminApi } from "@/api";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,17 +76,24 @@ export default function AppLogsPage() {
     if (append) setLoadingMore(true);
     else setLoading(true);
 
-    const p = new URLSearchParams({ offset: String(pageOffset), sort });
-    if (level)  p.set("level",  level);
-    if (route)  p.set("route",  route);
-    if (search) p.set("search", search);
-    if (since)  p.set("since",  String(new Date(since).getTime()));
-    if (until)  p.set("until",  String(new Date(until).getTime()));
-
-    const res = await fetch(`/api/admin/app-logs?${p}`);
-    if (res.status === 403) { setForbidden(true); setLoading(false); return; }
-
-    const data  = await res.json();
+    let data;
+    try {
+      data = await adminApi.appLogs.list({
+        level:  level  || undefined,
+        route:  route  || undefined,
+        search: search || undefined,
+        since:  since  ? new Date(since).getTime()  : undefined,
+        until:  until  ? new Date(until).getTime()  : undefined,
+        sort,
+        offset: pageOffset,
+      });
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      if (status === 403) { setForbidden(true); setLoading(false); return; }
+      if (append) setLoadingMore(false);
+      else        setLoading(false);
+      return;
+    }
     const rows: AppLogEntry[] = data.logs ?? [];
 
     if (append) setLogs((prev) => [...prev, ...rows]);

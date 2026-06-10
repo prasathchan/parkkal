@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatBytes, type Attachment } from "./types";
+import { visitsApi, ApiError } from "@/api";
 
 interface Props {
   visitId: string;
@@ -24,25 +25,23 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
     fd.append("file", file);
     fd.append("fileType", fileType);
     fd.append("patientId", patientId);
-    const res = await fetch(`/api/visits/${visitId}/attachments`, { method: "POST", body: fd });
-    if (!res.ok) {
-      const d = await res.json();
-      setUploadError((d as { error?: string }).error || "Upload failed");
-      return;
+    try {
+      await visitsApi.attachments.add(visitId, fd);
+      await onRefresh();
+      e.target.value = "";
+    } catch (err) {
+      setUploadError(err instanceof ApiError ? err.message : "Upload failed");
     }
-    await onRefresh();
-    e.target.value = "";
   }
 
   async function handleDeleteAttachment(attId: string) {
     if (!confirm("Delete this attachment?")) return;
-    const res = await fetch(`/api/visits/${visitId}/attachments/${attId}`, { method: "DELETE" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      onPageError((d as { error?: string }).error || "Failed to delete attachment");
-      return;
+    try {
+      await visitsApi.attachments.delete(visitId, attId);
+      await onRefresh();
+    } catch (err) {
+      onPageError(err instanceof ApiError ? err.message : "Failed to delete attachment");
     }
-    await onRefresh();
   }
 
   return (

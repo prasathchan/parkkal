@@ -1,8 +1,10 @@
-import { eq, asc, and, count } from "drizzle-orm";
-import { appointments, patients, users, organizationPatients } from "@/db/schema";
+import { eq, asc, and, count, gte, lte } from "drizzle-orm";
+import { appointments, patients, users, organizationPatients, visits } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { scheduleReminders } from "@/lib/reminder-scheduler";
+import { syncAppointmentToCalendar } from "@/lib/calendar-sync";
 import { z } from "zod";
 
 // Detect the sentinel error raised by BEFORE INSERT / BEFORE UPDATE triggers
@@ -19,6 +21,8 @@ const createSchema = z.object({
   appointmentTime: z.string().regex(/^\d{2}:\d{2}$/, "appointmentTime must be HH:MM"),
   type: z.enum(["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"]).default("CONSULTATION"),
   notes: z.string().optional(),
+  /** When booking from the Recalls page: links this appointment back to the recall visit */
+  recallVisitId: z.string().optional(),
 });
 
 /** GET /api/appointments — list appointments for the org (doctors see only their own) */
@@ -26,19 +30,23 @@ export const GET = withRoute(
   { route: "GET /api/appointments", permission: PERMISSIONS.APPOINTMENTS_VIEW },
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
-    const dateFilter = searchParams.get("date");
-    const statusFilter = searchParams.get("status");
+    const dateFilter    = searchParams.get("date");
+    const startDate     = searchParams.get("startDate");  // for week/range view
+    const endDate       = searchParams.get("endDate");
+    const statusFilter  = searchParams.get("status");
     const patientIdFilter = searchParams.get("patientId");
 
     // RBAC: DOCTOR role may only see their own appointments
     const doctorIdFilter = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
 
     const conditions = [eq(appointments.organizationId, session.orgId)];
-    if (dateFilter) conditions.push(eq(appointments.appointmentDate, dateFilter));
+    if (dateFilter)  conditions.push(eq(appointments.appointmentDate, dateFilter));
+    if (startDate)   conditions.push(gte(appointments.appointmentDate, startDate));
+    if (endDate)     conditions.push(lte(appointments.appointmentDate, endDate));
     if (statusFilter)
       conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
     if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
-    if (doctorIdFilter) conditions.push(eq(appointments.doctorId, doctorIdFilter));
+    if (doctorIdFilter)  conditions.push(eq(appointments.doctorId, doctorIdFilter));
 
     const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
     const offset = Number(searchParams.get("offset") ?? 0);
@@ -101,6 +109,17 @@ export const POST = withRoute(
       createdAt: Date.now(),
     };
 
+    // If booking from Recalls page: verify the recall visit belongs to this org + same patient
+    if (data.recallVisitId) {
+      const [recallVisit] = await db
+        .select({ id: visits.id, patientId: visits.patientId })
+        .from(visits)
+        .where(and(eq(visits.id, data.recallVisitId), eq(visits.organizationId, session.orgId)));
+      if (!recallVisit) return apiError("Recall visit not found", 404);
+      if (recallVisit.patientId !== data.patientId)
+        return apiError("Recall visit does not belong to this patient", 400);
+    }
+
     try {
       await db.insert(appointments).values(newAppt);
     } catch (err) {
@@ -108,7 +127,47 @@ export const POST = withRoute(
       throw err; // re-throw for withRoute's generic 500 handler
     }
 
+    // Link the appointment back to the recall visit so the Recalls page knows it's booked
+    if (data.recallVisitId) {
+      await db
+        .update(visits)
+        .set({ recallAppointmentId: newAppt.id })
+        .where(and(eq(visits.id, data.recallVisitId), eq(visits.organizationId, session.orgId)));
+      log.info("Recall linked to appointment", { recallVisitId: data.recallVisitId, appointmentId: newAppt.id });
+    }
+
     log.info("Appointment created", { appointmentId: newAppt.id, patientId: newAppt.patientId });
+
+    // Schedule SMS/WhatsApp reminders (24H, 2H, 1H before the appointment).
+    // Fire-and-forget: reminder failure must never block the appointment creation response.
+    if (newAppt.appointmentTime) {
+      scheduleReminders(db, {
+        id:              newAppt.id,
+        organizationId:  newAppt.organizationId,
+        patientId:       newAppt.patientId,
+        doctorId:        newAppt.doctorId,
+        appointmentDate: newAppt.appointmentDate,
+        appointmentTime: newAppt.appointmentTime,
+      }).catch((err: unknown) => {
+        log.error("Failed to schedule reminders", {
+          appointmentId: newAppt.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
+
+    // Push to doctor's personal Google/Outlook calendar (fire-and-forget)
+    syncAppointmentToCalendar(db, newAppt.doctorId, {
+      appointmentId: newAppt.id,
+      title:         `Dental Appointment`,
+      date:          newAppt.appointmentDate,
+      time:          newAppt.appointmentTime,
+      durationMins:  30,
+      notes:         newAppt.notes ?? undefined,
+    }).catch((err: unknown) => {
+      log.error("Calendar sync failed", { appointmentId: newAppt.id, error: String(err) });
+    });
+
     return apiOk({ appointment: newAppt }, 201);
   }
 );

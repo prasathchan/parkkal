@@ -52,8 +52,7 @@ export interface AppLogParams {
 const STACK_MAX = 2_000; // characters — keeps D1 rows small
 
 export function writeAppLog(params: AppLogParams): void {
-  // Fire-and-forget: never throws, never blocks the primary operation
-  (async () => {
+  const writePromise = (async () => {
     try {
       const err = params.error instanceof Error ? params.error : null;
 
@@ -76,4 +75,18 @@ export function writeAppLog(params: AppLogParams): void {
       console.error("[app-logger] failed to write log entry", params.level, params.route);
     }
   })();
+
+  // In Cloudflare Workers the runtime kills unawaited promises once a Response is
+  // returned.  waitUntil() keeps the log write alive past the response boundary so
+  // app_logs entries are reliably persisted in production.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getCloudflareContext } = require("@opennextjs/cloudflare");
+    const ctx = getCloudflareContext();
+    if (ctx?.ctx?.waitUntil) {
+      ctx.ctx.waitUntil(writePromise);
+    }
+  } catch {
+    // Not in a Workers context (local dev, test env) — the promise runs normally.
+  }
 }

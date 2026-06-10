@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/header";
 import { useToast } from "@/context/toast-context";
+import { orgApi, ApiError } from "@/api";
+import type { OrgRole } from "@/types";
 
 const ALL_PERMISSIONS = [
   { group: "Patients", perms: ["patients.view", "patients.create", "patients.edit", "patients.delete"] },
@@ -25,16 +27,8 @@ const PRESET_COLORS = [
   { label: "Gray", value: "#6B7280" },
 ];
 
-interface Role {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  color: string;
-  isSystem: number;
-  permissions: string[];
-  userCount: number;
-}
+// Use the shared type from @/types
+type Role = OrgRole;
 
 interface SlideoverFormProps {
   role?: Role | null;
@@ -67,20 +61,17 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
     setSaving(true);
     setError("");
     try {
-      const url = role ? `/api/org/roles/${role.id}` : "/api/org/roles";
-      const method = role ? "PATCH" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, color, permissions }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Failed to save role"); setError(data.error || "Failed to save role"); return; }
+      if (role) {
+        await orgApi.roles.update(role.id, { name, description, color, permissions });
+      } else {
+        await orgApi.roles.create({ name, description, color, permissions });
+      }
       toast.success(role ? "Role updated" : "Role created");
       onSave();
-    } catch {
-      toast.error("Failed to save role");
-      setError("Failed to save role");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Failed to save role";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving(false);
     }
@@ -225,14 +216,13 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/org/roles/${role.id}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Failed to delete"); setError(data.error || "Failed to delete"); return; }
+      await orgApi.roles.delete(role.id);
       toast.success(`Role "${role.name}" deleted`);
       onDeleted();
-    } catch {
-      toast.error("Failed to delete role");
-      setError("Failed to delete role");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Failed to delete role";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -243,18 +233,13 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/org/roles/${role.id}/migrate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetRoleId }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast.error(data.error || "Failed to migrate"); setError(data.error || "Failed to migrate"); return; }
+      await orgApi.roles.migrate(role.id, targetRoleId);
       toast.success(`Members migrated and role "${role.name}" deleted`);
       onDeleted();
-    } catch {
-      toast.error("Failed to migrate role");
-      setError("Failed to migrate role");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Failed to migrate role";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -341,9 +326,8 @@ export default function RolesPage() {
   const fetchRoles = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/org/roles");
-      const data = await res.json();
-      setRoles(data.roles || []);
+      const data = await orgApi.roles.list();
+      setRoles(data.roles ?? []);
     } finally {
       setLoading(false);
     }

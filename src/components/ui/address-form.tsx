@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { apiFetch } from "@/api/_client";
 
 export interface AddressValue {
   country: string;
@@ -342,8 +343,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
     setPincodeError("");
     setPincodeSuccess(false);
     try {
-      const res = await fetch(`/api/address/pincode?pincode=${pincode}`);
-      const data = await res.json();
+      const data = await apiFetch<{ found: boolean; state?: string; district?: string }>(`/api/address/pincode?pincode=${pincode}`);
       if (data.found) {
         const cur = valueRef.current;
         onChange({ ...cur, pincode, state: data.state || cur.state, district: data.district || cur.district });

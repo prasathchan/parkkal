@@ -11,7 +11,8 @@
  *  orgRoles            → Custom roles with permission lists (e.g. "Head Nurse")
  *  patients            → Patient records (name, phone, DOB, medical history)
  *  organizationPatients → Links patients to their clinic (many-to-many)
- *  appointments        → Scheduled appointments
+ *  appointments             → Scheduled appointments
+ *  appointmentReminders     → Scheduled SMS/WhatsApp/Email reminders for appointments
  *  visits              → Actual clinic visits (walk-in or from appointment)
  *  visitItems          → Bill line items on a visit (medicines, procedures, etc.)
  *  payments            → Cash/UPI/Card payments recorded on a visit
@@ -47,6 +48,7 @@
  *  - CHECK constraints ARE enforced — adding an enum value needs table recreation
  */
 import { sqliteTable, text, real, integer, primaryKey, unique } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
 
 export const organizations = sqliteTable("organizations", {
   id: text("id").primaryKey(),
@@ -172,6 +174,28 @@ export const appointments = sqliteTable("appointments", {
   createdAt: integer("created_at").notNull(),
 });
 
+// ─── Appointment reminders ────────────────────────────────────────────────────
+// One row per scheduled notification. The cron job reads PENDING rows whose
+// scheduled_at has passed and delivers them via SMS, WhatsApp, or Email.
+export const appointmentReminders = sqliteTable("appointment_reminders", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  appointmentId:  text("appointment_id").notNull().references(() => appointments.id),
+  patientId:      text("patient_id").notNull().references(() => patients.id),
+  /** Delivery channel */
+  channel:        text("channel", { enum: ["SMS", "WHATSAPP", "EMAIL"] }).notNull(),
+  /** Unix ms — when the cron job should deliver this reminder */
+  scheduledAt:    integer("scheduled_at").notNull(),
+  sentAt:         integer("sent_at"),
+  status:         text("status", { enum: ["PENDING", "SENT", "FAILED", "CANCELLED"] }).notNull().default("PENDING"),
+  errorMessage:   text("error_message"),
+  /** Pre-rendered message text — snapshotted at schedule time */
+  message:        text("message").notNull(),
+  /** Which timing slot: 24H before, 2H before, or 1H before */
+  reminderType:   text("reminder_type", { enum: ["24H", "2H", "1H"] }).notNull(),
+  createdAt:      integer("created_at").notNull(),
+});
+
 export const treatments = sqliteTable("treatments", {
   id: text("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => organizations.id),
@@ -262,8 +286,9 @@ export const visits = sqliteTable("visits", {
   status: text("status", { enum: ["OPEN", "COMPLETED", "CANCELLED"] }).notNull().default("OPEN"),
   totalAmount: real("total_amount").notNull().default(0),
   paidAmount: real("paid_amount").notNull().default(0),
-  recallDate: text("recall_date"),    // YYYY-MM-DD — when the patient should return
-  recallNotes: text("recall_notes"),  // e.g. "6-month checkup", "review root canal"
+  recallDate: text("recall_date"),              // YYYY-MM-DD — when the patient should return
+  recallNotes: text("recall_notes"),            // e.g. "6-month checkup", "review root canal"
+  recallAppointmentId: text("recall_appointment_id").references(() => appointments.id), // set when recall is booked
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -377,6 +402,24 @@ export const appLogs = sqliteTable("app_logs", {
   createdAt:      integer("created_at").notNull(),
 });
 
+// ─── Calendar integrations ────────────────────────────────────────────────────
+// OAuth tokens for staff who have connected their Google or Outlook calendar.
+// Tokens are stored encrypted. See lib/calendar-sync.ts for push logic.
+export const calendarIntegrations = sqliteTable("calendar_integrations", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  userId:         text("user_id").notNull().references(() => users.id),
+  provider:       text("provider", { enum: ["GOOGLE", "OUTLOOK"] }).notNull(),
+  accessToken:    text("access_token").notNull(),   // encrypted
+  refreshToken:   text("refresh_token").notNull(),  // encrypted
+  expiresAt:      integer("expires_at").notNull(),  // Unix ms
+  calendarId:     text("calendar_id"),              // null = primary calendar
+  eventIdMap:     text("event_id_map").notNull().default("{}"), // JSON: { appointmentId → externalEventId }
+  isActive:       integer("is_active").notNull().default(1),
+  createdAt:      integer("created_at").notNull(),
+  updatedAt:      integer("updated_at").notNull(),
+});
+
 export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),
   treatmentId: text("treatment_id").notNull().references(() => treatments.id),
@@ -387,4 +430,145 @@ export const consentAuditLog = sqliteTable("consent_audit_log", {
   reason: text("reason"),
   createdAt: integer("created_at").notNull(),
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DRIZZLE RELATIONS
+//
+// Declaring relations unlocks Drizzle's relational query API:
+//   db.query.visits.findMany({ with: { items: true, payments: true } })
+//
+// These don't create foreign keys — they're metadata for the query builder only.
+// The actual FK constraints are defined inline on each column above.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  members:      many(organizationMembers),
+  roles:        many(orgRoles),
+  patients:     many(organizationPatients),
+  appointments: many(appointments),
+  visits:       many(visits),
+  treatments:   many(treatments),
+  invoices:     many(invoices),
+  salaryRecords: many(salaryRecords),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  memberships:   many(organizationMembers),
+  verifications: many(verificationTokens),
+}));
+
+export const orgRolesRelations = relations(orgRoles, ({ one, many }) => ({
+  organization: one(organizations, { fields: [orgRoles.organizationId], references: [organizations.id] }),
+  members:      many(organizationMembers),
+}));
+
+export const organizationMembersRelations = relations(organizationMembers, ({ one }) => ({
+  organization: one(organizations, { fields: [organizationMembers.organizationId], references: [organizations.id] }),
+  user:         one(users,         { fields: [organizationMembers.userId],         references: [users.id] }),
+  orgRole:      one(orgRoles,      { fields: [organizationMembers.orgRoleId],      references: [orgRoles.id] }),
+}));
+
+export const patientsRelations = relations(patients, ({ many }) => ({
+  organizations: many(organizationPatients),
+  appointments:  many(appointments),
+  visits:        many(visits),
+  treatments:    many(treatments),
+  invoices:      many(invoices),
+  emergencyContacts: many(emergencyContacts),
+}));
+
+export const organizationPatientsRelations = relations(organizationPatients, ({ one }) => ({
+  organization: one(organizations, { fields: [organizationPatients.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [organizationPatients.patientId],      references: [patients.id] }),
+}));
+
+export const emergencyContactsRelations = relations(emergencyContacts, ({ one }) => ({
+  patient: one(patients, { fields: [emergencyContacts.entityId], references: [patients.id] }),
+}));
+
+export const appointmentRemindersRelations = relations(appointmentReminders, ({ one }) => ({
+  organization: one(organizations, { fields: [appointmentReminders.organizationId], references: [organizations.id] }),
+  appointment:  one(appointments,  { fields: [appointmentReminders.appointmentId],  references: [appointments.id] }),
+  patient:      one(patients,      { fields: [appointmentReminders.patientId],       references: [patients.id] }),
+}));
+
+export const appointmentsRelations = relations(appointments, ({ one, many }) => ({
+  organization: one(organizations, { fields: [appointments.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [appointments.patientId],      references: [patients.id] }),
+  doctor:       one(users,         { fields: [appointments.doctorId],        references: [users.id] }),
+  reminders:    many(appointmentReminders),
+  visits:       many(visits),
+}));
+
+export const visitsRelations = relations(visits, ({ one, many }) => ({
+  organization: one(organizations, { fields: [visits.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [visits.patientId],      references: [patients.id] }),
+  doctor:       one(users,         { fields: [visits.doctorId],        references: [users.id] }),
+  appointment:  one(appointments,  { fields: [visits.appointmentId],   references: [appointments.id] }),
+  items:        many(visitItems),
+  payments:     many(payments),
+  prescriptions: many(prescriptions),
+  attachments:  many(attachments),
+  treatments:   many(visitTreatments),
+}));
+
+export const visitTreatmentsRelations = relations(visitTreatments, ({ one }) => ({
+  visit:     one(visits,     { fields: [visitTreatments.visitId],     references: [visits.id] }),
+  treatment: one(treatments, { fields: [visitTreatments.treatmentId], references: [treatments.id] }),
+}));
+
+export const visitItemsRelations = relations(visitItems, ({ one }) => ({
+  visit:     one(visits,     { fields: [visitItems.visitId],            references: [visits.id] }),
+  treatment: one(treatments, { fields: [visitItems.linkedTreatmentId],  references: [treatments.id] }),
+}));
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  visit:   one(visits,   { fields: [payments.visitId],   references: [visits.id] }),
+  patient: one(patients, { fields: [payments.patientId], references: [patients.id] }),
+}));
+
+export const prescriptionsRelations = relations(prescriptions, ({ one }) => ({
+  visit: one(visits, { fields: [prescriptions.visitId], references: [visits.id] }),
+}));
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  visit:   one(visits,   { fields: [attachments.visitId],   references: [visits.id] }),
+  patient: one(patients, { fields: [attachments.patientId], references: [patients.id] }),
+}));
+
+export const treatmentsRelations = relations(treatments, ({ one, many }) => ({
+  organization: one(organizations, { fields: [treatments.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [treatments.patientId],      references: [patients.id] }),
+  doctor:       one(users,         { fields: [treatments.doctorId],        references: [users.id] }),
+  visits:       many(visitTreatments),
+  items:        many(visitItems),
+  invoiceLines: many(invoiceTreatments),
+  consentLog:   many(consentAuditLog),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  organization: one(organizations, { fields: [invoices.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [invoices.patientId],      references: [patients.id] }),
+  treatments:   many(invoiceTreatments),
+}));
+
+export const invoiceTreatmentsRelations = relations(invoiceTreatments, ({ one }) => ({
+  invoice:   one(invoices,   { fields: [invoiceTreatments.invoiceId],   references: [invoices.id] }),
+  treatment: one(treatments, { fields: [invoiceTreatments.treatmentId], references: [treatments.id] }),
+}));
+
+export const salaryRecordsRelations = relations(salaryRecords, ({ one }) => ({
+  organization: one(organizations, { fields: [salaryRecords.organizationId], references: [organizations.id] }),
+  user:         one(users,         { fields: [salaryRecords.userId],          references: [users.id] }),
+}));
+
+export const verificationTokensRelations = relations(verificationTokens, ({ one }) => ({
+  user: one(users, { fields: [verificationTokens.userId], references: [users.id] }),
+}));
+
+export const consentAuditLogRelations = relations(consentAuditLog, ({ one }) => ({
+  treatment:    one(treatments,    { fields: [consentAuditLog.treatmentId],    references: [treatments.id] }),
+  organization: one(organizations, { fields: [consentAuditLog.organizationId], references: [organizations.id] }),
+  actor:        one(users,         { fields: [consentAuditLog.actorId],         references: [users.id] }),
+}));
 

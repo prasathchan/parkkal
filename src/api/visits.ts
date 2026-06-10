@@ -16,7 +16,7 @@
  *   await visitsApi.addItem(visitId, { itemName: "Scaling", category: "PROCEDURE", ... });
  */
 
-import { apiFetch } from "./_client";
+import { apiFetch, ApiError } from "./_client";
 import type {
   Visit,
   VisitItem,
@@ -64,11 +64,32 @@ export function getVisit(id: string): Promise<{ visit: Visit }> {
   return apiFetch<{ visit: Visit }>(`/api/visits/${id}`);
 }
 
-export interface UpdateVisitPayload {
-  status?: VisitStatus;
+export interface CreateVisitPayload {
+  patientId: string;
+  doctorId: string;
+  visitDate: string;
   chiefComplaint?: string;
   doctorNotes?: string;
-  diagnosis?: string;
+  appointmentId?: string | null;
+  visitType?: "APPOINTMENT" | "WALKIN";
+}
+
+export function createVisit(
+  data: CreateVisitPayload,
+): Promise<{ visit: Visit }> {
+  return apiFetch<{ visit: Visit }>("/api/visits", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export interface UpdateVisitPayload {
+  status?: VisitStatus;
+  chiefComplaint?: string | null;
+  doctorNotes?: string | null;
+  diagnosis?: string | null;
+  recallDate?: string | null;
+  recallNotes?: string | null;
 }
 
 export function updateVisit(
@@ -146,8 +167,9 @@ export function listPayments(visitId: string): Promise<{ payments: Payment[] }> 
 export interface AddPaymentPayload {
   amount: number;
   paymentMethod: PaymentMethod;
-  referenceNumber?: string;
-  notes?: string;
+  referenceNumber?: string | null;
+  notes?: string | null;
+  treatmentId?: string | null;
 }
 
 export function addPayment(
@@ -208,6 +230,19 @@ export function listAttachments(
   );
 }
 
+export async function addAttachment(
+  visitId: string,
+  formData: FormData,
+): Promise<{ attachment: Attachment }> {
+  // FormData upload — do NOT set Content-Type (browser sets multipart boundary)
+  const res = await fetch(`/api/visits/${visitId}/attachments`, { method: "POST", body: formData });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ attachment: Attachment }>;
+}
+
 export function deleteAttachment(
   visitId: string,
   attachmentId: string,
@@ -221,8 +256,9 @@ export function deleteAttachment(
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const visitsApi = {
-  list: listVisits,
-  get: getVisit,
+  list:   listVisits,
+  get:    getVisit,
+  create: createVisit,
   update: updateVisit,
   delete: deleteVisit,
   items: {
@@ -242,6 +278,7 @@ export const visitsApi = {
   },
   attachments: {
     list: listAttachments,
+    add: addAttachment,
     delete: deleteAttachment,
   },
 };

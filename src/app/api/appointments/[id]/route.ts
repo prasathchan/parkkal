@@ -1,6 +1,8 @@
 import { eq, and, notInArray } from "drizzle-orm";
 import { appointments, visits } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { rescheduleReminders, cancelReminders } from "@/lib/reminder-scheduler";
+import { syncAppointmentToCalendar, removeAppointmentFromCalendar } from "@/lib/calendar-sync";
 import { z } from "zod";
 
 // Detect the sentinel error raised by migration 0021 triggers.
@@ -39,7 +41,8 @@ export const PATCH = withRoute<{ id: string }>(
     const data = updateSchema.parse(await req.json());
 
     const RESCHEDULE_ROLES = ["ADMIN", "RECEPTIONIST", "DOCTOR"];
-    const dateOrTimeChanged = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
+    const dateOrTimeChanged  = data.appointmentDate !== undefined || data.appointmentTime !== undefined;
+    const isCancelling       = data.status === "CANCELLED" || data.status === "NO_SHOW";
 
     if (dateOrTimeChanged && !RESCHEDULE_ROLES.includes(session.role)) {
       return apiError("Forbidden", 403);
@@ -71,6 +74,45 @@ export const PATCH = withRoute<{ id: string }>(
     const [updated] = await db.select().from(appointments)
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     log.info("Appointment updated", { appointmentId: id });
+
+    // Reminder side-effects (fire-and-forget — never block the response)
+    if (isCancelling) {
+      cancelReminders(db, id).catch((err: unknown) => {
+        log.error("Failed to cancel reminders", {
+          appointmentId: id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    } else if (dateOrTimeChanged && updated?.appointmentTime) {
+      rescheduleReminders(db, {
+        id,
+        organizationId:  session.orgId,
+        patientId:       updated.patientId,
+        doctorId:        updated.doctorId,
+        appointmentDate: updated.appointmentDate,
+        appointmentTime: updated.appointmentTime,
+      }).catch((err: unknown) => {
+        log.error("Failed to reschedule reminders", {
+          appointmentId: id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
+
+    // Calendar sync side-effects (fire-and-forget)
+    if (isCancelling) {
+      removeAppointmentFromCalendar(db, appt.doctorId, id).catch(() => {});
+    } else if (updated) {
+      syncAppointmentToCalendar(db, updated.doctorId, {
+        appointmentId: id,
+        title: "Dental Appointment",
+        date:  updated.appointmentDate,
+        time:  updated.appointmentTime,
+        durationMins: 30,
+        notes: updated.notes ?? undefined,
+      }).catch(() => {});
+    }
+
     return apiOk({ appointment: updated });
   }
 );
@@ -94,6 +136,8 @@ export const DELETE = withRoute<{ id: string }>(
     if (linked) return apiError("Cannot delete appointment: a visit is linked to it", 409);
 
     await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
+    // Cancel any pending reminders so the cron job doesn't attempt delivery
+    await cancelReminders(db, id);
     log.info("Appointment deleted", { appointmentId: id });
     return apiOk({ success: true });
   }

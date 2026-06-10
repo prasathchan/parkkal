@@ -13,24 +13,64 @@
  *   await treatmentsApi.linkToVisit(visitId, { treatmentId });
  */
 
-import { apiFetch } from "./_client";
+import { apiFetch, ApiError } from "./_client";
 import type { Treatment } from "@/types";
 import type { TreatmentStatus } from "@/constants/treatment";
+
+// ─── Response shapes ─────────────────────────────────────────────────────────
+
+/** One visit row returned by GET /api/treatments/[id]/visits */
+export interface TreatmentVisitRow {
+  visitId: string;
+  linkNotes: string | null;
+  visitCode: string;
+  visitDate: string;
+  visitStatus: string;
+  visitTotalAmount: number;
+  visitPaidAmount: number;
+  doctorName: string | null;
+  /** Amount charged specifically to THIS treatment in this visit */
+  treatmentBilledAmount: number;
+}
+
+/** Financial summary returned alongside visits */
+export interface TreatmentFinancialSummary {
+  treatmentCost: number;
+  totalPaid: number;
+  outstanding: number;
+  /** 0–100 integer for progress-bar rendering */
+  paidPercent: number;
+  visitCount: number;
+}
+
+/** Full response of GET /api/treatments/[id]/visits */
+export interface TreatmentVisitsResponse {
+  /** The treatment plan itself, including joined patient and doctor names. */
+  treatment: Treatment;
+  visits: TreatmentVisitRow[];
+  summary: TreatmentFinancialSummary;
+}
 
 // ─── Treatment plans ──────────────────────────────────────────────────────────
 
 export interface ListTreatmentsParams {
   patientId?: string;
   status?: TreatmentStatus;
+  date?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export function listTreatments(
   params: ListTreatmentsParams = {},
-): Promise<{ treatments: Treatment[] }> {
+): Promise<{ treatments: Treatment[]; total: number; hasMore: boolean }> {
   const q = new URLSearchParams();
   if (params.patientId) q.set("patientId", params.patientId);
   if (params.status) q.set("status", params.status);
-  return apiFetch<{ treatments: Treatment[] }>(`/api/treatments?${q}`);
+  if (params.date) q.set("date", params.date);
+  if (params.limit != null) q.set("limit", String(params.limit));
+  if (params.offset != null) q.set("offset", String(params.offset));
+  return apiFetch<{ treatments: Treatment[]; total: number; hasMore: boolean }>(`/api/treatments?${q}`);
 }
 
 export function getTreatment(id: string): Promise<{ treatment: Treatment }> {
@@ -61,6 +101,24 @@ export function deleteTreatment(id: string): Promise<{ success: true }> {
   });
 }
 
+export interface CreateTreatmentPayload {
+  patientId: string;
+  doctorId: string;
+  description: string;
+  procedure?: string;
+  toothNumbers?: string;
+  cost: number;
+}
+
+export function createTreatment(
+  data: CreateTreatmentPayload,
+): Promise<{ treatment: Treatment }> {
+  return apiFetch<{ treatment: Treatment }>("/api/treatments", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 // ─── Treatments on a visit ────────────────────────────────────────────────────
 
 export function listTreatmentsForVisit(
@@ -77,7 +135,7 @@ export function listTreatmentsForVisit(
  */
 export function linkTreatmentToVisit(
   visitId: string,
-  data: { treatmentId: string } | { description: string; cost: number; notes?: string },
+  data: { treatmentId: string } | { description: string; cost: number; notes?: string; toothNumbers?: string; procedure?: string },
 ): Promise<{ success: true; treatmentId: string }> {
   return apiFetch<{ success: true; treatmentId: string }>(
     `/api/visits/${visitId}/treatments`,
@@ -95,16 +153,57 @@ export function unlinkTreatmentFromVisit(
   );
 }
 
+/**
+ * GET /api/treatments/[id]/visits
+ * Returns the treatment detail, its full visit history, and financial summary.
+ */
+export function getTreatmentVisits(id: string): Promise<TreatmentVisitsResponse> {
+  return apiFetch<TreatmentVisitsResponse>(`/api/treatments/${id}/visits`);
+}
+
+// ─── Consent ─────────────────────────────────────────────────────────────────
+
+export async function uploadConsent(
+  treatmentId: string,
+  file: File,
+): Promise<{ success: true }> {
+  // FormData upload — do NOT set Content-Type (browser sets multipart boundary)
+  const fd = new FormData();
+  fd.append("document", file);
+  const res = await fetch(`/api/treatments/${treatmentId}/consent/upload`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Consent upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ success: true }>;
+}
+
+export function overrideConsent(
+  treatmentId: string,
+  reason: string,
+): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/treatments/${treatmentId}/consent`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const treatmentsApi = {
   list: listTreatments,
   get: getTreatment,
+  create: createTreatment,
   update: updateTreatment,
   delete: deleteTreatment,
+  getVisits: getTreatmentVisits,
   forVisit: {
     list: listTreatmentsForVisit,
     link: linkTreatmentToVisit,
     unlink: unlinkTreatmentFromVisit,
+  },
+  consent: {
+    upload: uploadConsent,
+    override: overrideConsent,
   },
 };

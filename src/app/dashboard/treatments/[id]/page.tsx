@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
+import { treatmentsApi, ApiError } from "@/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -117,18 +118,13 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`/api/treatments/${id}/visits`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          setError((data as { error?: string }).error ?? (res.status === 404 ? "Treatment plan not found." : "Failed to load treatment details."));
-          return;
-        }
-        const data = await res.json();
+        const data = await treatmentsApi.getVisits(id);
         setTreatment(data.treatment);
         setVisits(data.visits);
         setSummary(data.summary);
-      } catch {
-        setError("Network error. Please try again.");
+      } catch (e) {
+        const status = e instanceof ApiError ? e.status : 0;
+        setError(e instanceof ApiError ? e.message : (status === 404 ? "Treatment plan not found." : "Network error. Please try again."));
       } finally {
         setLoading(false);
       }

@@ -30,9 +30,12 @@ export interface Treatment {
   consentNotes?: string | null;
   emergencyOverride: 0 | 1;
   createdAt: number;
-  // Joined fields
+  // Joined fields — may be present depending on which endpoint returned this treatment
   patientName?: string | null;
+  patientCode?: string | null;
   doctorName?: string | null;
+  /** Reason recorded when an emergency consent override was applied. */
+  emergencyReason?: string | null;
   /**
    * How much has already been billed across ALL visits for this treatment.
    * Computed as SUM(visit_items.amount WHERE linked_treatment_id = this.id).

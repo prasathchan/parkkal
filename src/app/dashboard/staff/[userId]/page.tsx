@@ -7,24 +7,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { parseAddress, serializeAddress, formatAddressDisplay, EMPTY_ADDRESS } from "@/lib/address";
+import { orgApi, usersApi, emergencyContactsApi, ApiError } from "@/api";
+import type { StaffMember } from "@/types";
 
-interface Member {
-  memberId: string;
-  userId: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  dateOfBirth: string | null;
-  gender: string | null;
-  address: string | null;
-  role: string;
-  salaryType: string;
-  salaryAmount: number;
-  joinedAt: string | null;
-  isActive: number;
-  isVerified: number;
-  portalAccess: number;
-}
+type Member = StaffMember;
 
 interface EmergencyContact {
   id: string;
@@ -97,40 +83,46 @@ export default function StaffDetailPage() {
   }, [userId]);
 
   async function fetchMember() {
-    const res = await fetch("/api/org/members");
-    const data = await res.json();
-    const found: Member | undefined = (data.members || []).find((m: Member) => m.userId === userId);
-    setMember(found || null);
-    if (found) {
-      setEditForm({
-        name: found.name || "",
-        phone: found.phone || "",
-        dateOfBirth: found.dateOfBirth || "",
-        gender: found.gender || "",
-        role: found.role,
-        salaryType: found.salaryType,
-        salaryAmount: String(found.salaryAmount),
-        isActive: found.isActive === 1,
-      });
-      // default link mode based on current portal access
-      setLinkMode(found.portalAccess === 1 ? "invite_link" : "no_login_verify");
-      setAddressData(parseAddress(found.address));
+    try {
+      const data = await orgApi.members.list();
+      const found: Member | undefined = (data.members ?? []).find((m: Member) => m.userId === userId);
+      setMember(found ?? null);
+      if (found) {
+        setEditForm({
+          name: found.name || "",
+          phone: found.phone || "",
+          dateOfBirth: found.dateOfBirth || "",
+          gender: found.gender || "",
+          role: found.role,
+          salaryType: found.salaryType ?? "FIXED",
+          salaryAmount: String(found.salaryAmount ?? 0),
+          isActive: found.isActive === 1,
+        });
+        // default link mode based on current portal access
+        setLinkMode((found as Member & { portalAccess?: number }).portalAccess === 1 ? "invite_link" : "no_login_verify");
+        setAddressData(parseAddress(found.address ?? null));
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function fetchEmergencyContacts() {
-    const res = await fetch(`/api/emergency-contacts?entityType=USER&entityId=${userId}`);
-    if (res.ok) {
-      const data = await res.json();
-      setEmergencyContacts(data.contacts || []);
+    try {
+      const data = await emergencyContactsApi.list("USER", userId);
+      setEmergencyContacts(data.contacts ?? []);
+    } catch {
+      // non-fatal
     }
   }
 
   async function fetchSalary() {
-    const res = await fetch("/api/org/salary");
-    const data = await res.json();
-    setSalaryRecords((data.records || []).filter((r: SalaryRecord & { userId: string }) => r.userId === userId));
+    try {
+      const data = await orgApi.salary.list();
+      setSalaryRecords((data.records ?? []).filter((r: SalaryRecord & { userId: string }) => r.userId === userId));
+    } catch {
+      // non-fatal
+    }
   }
 
   function validatePhone(phone: string) {
@@ -150,43 +142,25 @@ export default function StaffDetailPage() {
     setSaveSuccess(false);
     try {
       // Update personal info
-      const userRes = await fetch(`/api/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editForm.name,
-          phone: editForm.phone || null,
-          dateOfBirth: editForm.dateOfBirth || null,
-          gender: editForm.gender || null,
-          address: serializeAddress(addressData) || null,
-        }),
+      await usersApi.update(userId, {
+        name: editForm.name,
+        phone: editForm.phone || null,
+        dateOfBirth: editForm.dateOfBirth || null,
+        gender: editForm.gender || null,
+        address: serializeAddress(addressData) || null,
       });
-      if (!userRes.ok) {
-        const d = await userRes.json();
-        setSaveError(d.error || "Failed to save personal info");
-        return;
-      }
       // Update role & salary
-      const res = await fetch(`/api/org/members/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role: editForm.role,
-          salaryType: editForm.salaryType,
-          salaryAmount: parseFloat(editForm.salaryAmount) || 0,
-          isActive: editForm.isActive,
-        }),
+      await orgApi.members.update(userId, {
+        role: editForm.role,
+        salaryType: editForm.salaryType as "FIXED" | "PER_APPOINTMENT",
+        salaryAmount: parseFloat(editForm.salaryAmount) || 0,
+        isActive: editForm.isActive,
       });
-      if (!res.ok) {
-        const d = await res.json();
-        setSaveError(d.error || "Failed to save");
-        return;
-      }
       setSaveSuccess(true);
       setEditing(false);
       await fetchMember();
-    } catch {
-      setSaveError("Something went wrong.");
+    } catch (e) {
+      setSaveError(e instanceof ApiError ? e.message : "Something went wrong.");
     } finally {
       setSaving(false);
     }
@@ -195,38 +169,30 @@ export default function StaffDetailPage() {
   async function handleAddEC() {
     setEcSaving(true);
     setEcError("");
-    const res = await fetch("/api/emergency-contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entityType: "USER", entityId: userId, ...ecForm }),
-    });
-    if (!res.ok) {
-      const d = await res.json();
-      setEcError(d.error || "Failed to save");
-    } else {
+    try {
+      await emergencyContactsApi.add({ entityType: "USER", entityId: userId, ...ecForm });
       setAddingEC(false);
       setEcForm({ name: "", relationship: "", phone: "", email: "" });
       await fetchEmergencyContacts();
+    } catch (e) {
+      setEcError(e instanceof ApiError ? e.message : "Failed to save");
+    } finally {
+      setEcSaving(false);
     }
-    setEcSaving(false);
   }
 
   async function handleSendLink() {
     setSendingLink(true);
     setLinkError("");
     setLinkSent(false);
-    const res = await fetch(`/api/org/members/${userId}/send-activation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: linkMode }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      setLinkError(d.error || "Failed to send link");
-    } else {
+    try {
+      await orgApi.members.sendActivation(userId, linkMode);
       setLinkSent(true);
+    } catch (e) {
+      setLinkError(e instanceof ApiError ? e.message : "Failed to send link");
+    } finally {
+      setSendingLink(false);
     }
-    setSendingLink(false);
   }
 
   if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;

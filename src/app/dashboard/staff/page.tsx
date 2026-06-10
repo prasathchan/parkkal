@@ -6,32 +6,11 @@ import Link from "next/link";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
+import { orgApi, ApiError } from "@/api";
+import type { StaffMember, OrgRole } from "@/types";
 
-interface Member {
-  memberId: string;
-  userId: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  dateOfBirth: string | null;
-  gender: string | null;
-  role: string;
-  orgRoleId: string | null;
-  orgRoleName: string | null;
-  orgRoleColor: string | null;
-  salaryType: string;
-  salaryAmount: number;
-  joinedAt: string | null;
-  isActive: number;
-  isVerified: number;
-}
-
-interface OrgRole {
-  id: string;
-  name: string;
-  slug: string;
-  color: string;
-}
+// Use shared types from @/types
+type Member = StaffMember;
 
 // Maps org role slug → system role enum (used when saving member)
 const SLUG_TO_SYSTEM_ROLE: Record<string, string> = {
@@ -93,18 +72,19 @@ export default function StaffPage() {
 
   useEffect(() => {
     fetchMembers();
-    fetch("/api/org/roles")
-      .then(r => r.json())
-      .then(d => setOrgRoles(d.roles || []))
+    orgApi.roles.list()
+      .then(d => setOrgRoles(d.roles ?? []))
       .catch(() => {});
   }, []);
 
   async function fetchMembers() {
     setLoading(true);
-    const res = await fetch("/api/org/members");
-    const data = await res.json();
-    setMembers(data.members || []);
-    setLoading(false);
+    try {
+      const data = await orgApi.members.list();
+      setMembers(data.members ?? []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function updateForm(field: keyof typeof form) {
@@ -144,45 +124,36 @@ export default function StaffPage() {
     try {
       const addressString = serializeAddress(staffAddress);
 
-      const res = await fetch("/api/org/members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email,
-          name: form.name || undefined,
-          phone: form.phone || undefined,
-          dateOfBirth: form.dateOfBirth || undefined,
-          gender: form.gender || undefined,
-          bloodGroup: form.bloodGroup || undefined,
-          address: addressString || undefined,
-          panNumber: form.panNumber || undefined,
-          aadhaarNumber: form.aadhaarNumber || undefined,
-          role: (() => {
-            const selectedRole = orgRoles.find(r => r.id === form.orgRoleId);
-            return SLUG_TO_SYSTEM_ROLE[selectedRole?.slug || ""] || "ATTENDANT";
-          })(),
-          orgRoleId: form.orgRoleId || undefined,
-          salaryType: form.salaryType,
-          salaryAmount: parseFloat(form.salaryAmount) || 0,
-          joinedAt: form.joinedAt,
-          activationMode: form.activationMode,
-          password: form.activationMode === "set_password" ? form.password : undefined,
-          emergencyContact: {
-            name: form.ecName,
-            relationship: form.ecRelationship,
-            phone: form.ecPhone,
-          },
-        }),
+      await orgApi.members.add({
+        email: form.email,
+        name: form.name || undefined,
+        phone: form.phone || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        gender: form.gender || undefined,
+        bloodGroup: form.bloodGroup || undefined,
+        address: addressString || undefined,
+        panNumber: form.panNumber || undefined,
+        aadhaarNumber: form.aadhaarNumber || undefined,
+        role: (() => {
+          const selectedRole = orgRoles.find(r => r.id === form.orgRoleId);
+          return SLUG_TO_SYSTEM_ROLE[selectedRole?.slug || ""] || "ATTENDANT";
+        })(),
+        orgRoleId: form.orgRoleId || undefined,
+        salaryType: form.salaryType as "FIXED" | "PER_APPOINTMENT",
+        salaryAmount: parseFloat(form.salaryAmount) || 0,
+        joinedAt: form.joinedAt,
+        activationMode: form.activationMode,
+        password: form.activationMode === "set_password" ? form.password : undefined,
+        emergencyContact: {
+          name: form.ecName,
+          relationship: form.ecRelationship,
+          phone: form.ecPhone,
+        },
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setFormError(data.error || "Failed to add staff");
-        return;
-      }
       setShowModal(false);
       fetchMembers();
-    } catch {
-      setFormError("Something went wrong.");
+    } catch (e) {
+      setFormError(e instanceof ApiError ? e.message : "Something went wrong.");
     } finally {
       setSaving(false);
     }

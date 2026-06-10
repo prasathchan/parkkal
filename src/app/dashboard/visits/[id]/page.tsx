@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { visitsApi, appointmentsApi, treatmentsApi, ApiError } from "@/api";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
@@ -68,42 +69,36 @@ export default function VisitDetailPage() {
 
   const fetchVisit = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/visits/${id}`);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setPageError((body as { error?: string }).error ?? `Failed to load visit (HTTP ${res.status})`);
-      setLoading(false);
-      return;
-    }
-    const data = await res.json();
-    setVisit(data.visit);
-    setItems(data.items || []);
-    setPayments(data.payments || []);
-    setAttachments(data.attachments || []);
-    if (data.visit?.appointmentId) {
-      const apptRes = await fetch(`/api/appointments/${data.visit.appointmentId}`);
-      if (apptRes.ok) {
-        const apptData = await apptRes.json();
-        setAppointmentStatus(apptData.appointment?.status || null);
+    try {
+      const data = await visitsApi.get(id);
+      setVisit(data.visit);
+      setItems(data.items || []);
+      setPayments(data.payments || []);
+      setAttachments(data.attachments || []);
+      if (data.visit?.appointmentId) {
+        appointmentsApi.get(data.visit.appointmentId)
+          .then((d) => setAppointmentStatus(d.appointment?.status ?? null))
+          .catch(() => setAppointmentStatus(null));
+      } else {
+        setAppointmentStatus(null);
       }
-    } else {
-      setAppointmentStatus(null);
+      treatmentsApi.forVisit.list(id)
+        .then((d) => setTreatments(d.treatments ?? []))
+        .catch(() => {});
+    } catch (e) {
+      setPageError(e instanceof ApiError ? e.message : `Failed to load visit`);
+    } finally {
+      setLoading(false);
     }
-    const txRes = await fetch(`/api/visits/${id}/treatments`);
-    if (txRes.ok) {
-      const txData = await txRes.json();
-      setTreatments(txData.treatments || []);
-    }
-    setLoading(false);
   }, [id]);
 
   useEffect(() => { fetchVisit(); }, [fetchVisit]);
 
   useEffect(() => {
     if (visit?.patientId) {
-      fetch(`/api/visits?patientId=${visit.patientId}`)
-        .then((r) => r.json())
-        .then((d) => setHistory((d.visits || []).filter((v: HistoryVisit) => v.id !== id)));
+      visitsApi.list({ patientId: visit.patientId })
+        .then((d) => setHistory((d.visits ?? []).filter((v: HistoryVisit) => v.id !== id)))
+        .catch(() => {});
     }
   }, [visit?.patientId, id]);
 
@@ -111,47 +106,37 @@ export default function VisitDetailPage() {
     e.preventDefault();
     setSavingNotes(true);
     setPageError("");
-    const res = await fetch(`/api/visits/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await visitsApi.update(id, {
         chiefComplaint: notesForm.chiefComplaint || null,
         doctorNotes: notesForm.doctorNotes || null,
         diagnosis: notesForm.diagnosis || null,
-      }),
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setPageError((d as { error?: string }).error || "Failed to save notes");
+      });
+      await fetchVisit();
+      setEditingNotes(false);
+    } catch (e) {
+      setPageError(e instanceof ApiError ? e.message : "Failed to save notes");
+    } finally {
       setSavingNotes(false);
-      return;
     }
-    await fetchVisit();
-    setEditingNotes(false);
-    setSavingNotes(false);
   }
 
   async function handleSaveRecall(e: React.FormEvent) {
     e.preventDefault();
     setSavingRecall(true);
     setPageError("");
-    const res = await fetch(`/api/visits/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await visitsApi.update(id, {
         recallDate: recallForm.recallDate || null,
         recallNotes: recallForm.recallNotes || null,
-      }),
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setPageError((d as { error?: string }).error || "Failed to save recall");
+      });
+      await fetchVisit();
+      setEditingRecall(false);
+    } catch (e) {
+      setPageError(e instanceof ApiError ? e.message : "Failed to save recall");
+    } finally {
       setSavingRecall(false);
-      return;
     }
-    await fetchVisit();
-    setEditingRecall(false);
-    setSavingRecall(false);
   }
 
   async function handleAddPayment(e: React.FormEvent) {
@@ -159,26 +144,21 @@ export default function VisitDetailPage() {
     if (!visit) return;
     setPayError("");
     setPaySubmitting(true);
-    const res = await fetch(`/api/visits/${id}/payments`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await visitsApi.payments.add(id, {
         amount: Number(payForm.amount),
-        paymentMethod: payForm.paymentMethod,
-        referenceNumber: payForm.referenceNumber || null,
-        notes: payForm.notes || null,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setPayError((data as { error?: string }).error || "Payment failed");
+        paymentMethod: payForm.paymentMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER",
+        referenceNumber: payForm.referenceNumber || undefined,
+        notes: payForm.notes || undefined,
+      });
+      setShowPayModal(false);
+      setPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
+      await fetchVisit();
+    } catch (e) {
+      setPayError(e instanceof ApiError ? e.message : "Payment failed");
+    } finally {
       setPaySubmitting(false);
-      return;
     }
-    setShowPayModal(false);
-    setPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
-    await fetchVisit();
-    setPaySubmitting(false);
   }
 
   async function handleCompleteVisit() {
@@ -192,32 +172,26 @@ export default function VisitDetailPage() {
     }
     setCompletingVisit(true);
     setPageError("");
-    const res = await fetch(`/api/visits/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "COMPLETED" }),
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setPageError((d as { error?: string }).error || "Failed to complete visit");
+    try {
+      await visitsApi.update(id, { status: "COMPLETED" });
+      await fetchVisit();
+    } catch (e) {
+      setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
+    } finally {
       setCompletingVisit(false);
-      return;
     }
-    await fetchVisit();
-    setCompletingVisit(false);
   }
 
   async function handleMarkAppointmentDone() {
     if (!visit?.appointmentId) return;
     setMarkingApptDone(true);
-    await fetch(`/api/appointments/${visit.appointmentId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "COMPLETED" }),
-    });
-    setAppointmentStatus("COMPLETED");
-    await fetchVisit();
-    setMarkingApptDone(false);
+    try {
+      await appointmentsApi.updateStatus(visit.appointmentId, "COMPLETED");
+      setAppointmentStatus("COMPLETED");
+      await fetchVisit();
+    } finally {
+      setMarkingApptDone(false);
+    }
   }
 
   function handleAddToBill(item: NewItemState) {
@@ -386,7 +360,7 @@ export default function VisitDetailPage() {
                       {visit.recallDate && (
                         <button
                           type="button"
-                          onClick={async () => { setSavingRecall(true); await fetch(`/api/visits/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recallDate: null, recallNotes: null }) }); await fetchVisit(); setEditingRecall(false); setSavingRecall(false); }}
+                          onClick={async () => { setSavingRecall(true); await visitsApi.update(id, { recallDate: null, recallNotes: null }).catch(() => {}); await fetchVisit(); setEditingRecall(false); setSavingRecall(false); }}
                           disabled={savingRecall}
                           className="text-xs text-red-500 hover:text-red-700 px-2 py-1.5 disabled:opacity-50"
                         >

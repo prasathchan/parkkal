@@ -29,7 +29,7 @@ import {
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { calculateAge, formatDate } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
-import { patientsApi } from "@/api/patients";
+import { patientsApi } from "@/api";
 import type { Patient } from "@/types";
 
 // How many patients to show per page

@@ -6,27 +6,12 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { NewTreatmentModal } from "@/components/treatments/NewTreatmentModal";
+import { treatmentsApi, patientsApi, authApi, ApiError } from "@/api";
+import type { Treatment, Patient } from "@/types";
+import type { TreatmentStatus } from "@/constants/treatment";
 
-type TreatmentStatus = "PLANNED" | "IN_PROGRESS" | "COMPLETED";
-
-interface TreatmentRecord {
-  id: string;
-  patientName: string | null;
-  patientCode: string | null;
-  doctorName: string | null;
-  description: string;
-  procedure: string | null;
-  toothNumbers: string | null;
-  cost: number;
-  status: TreatmentStatus;
-  createdAt: number;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  patientCode: string;
-}
+// Alias for readability within this page
+type TreatmentRecord = Treatment;
 
 const LIMIT = 50;
 
@@ -57,8 +42,7 @@ export default function TreatmentsPage() {
 
   // Fetch current user for modal role-gating
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
+    authApi.me()
       .then((d) => {
         if (d.user) {
           setCurrentUserRole(d.user.role);
@@ -74,14 +58,14 @@ export default function TreatmentsPage() {
     if (append) setLoadingMore(true);
     else setLoading(true);
 
-    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pageOffset) });
-    if (filterPatientId) params.set("patientId", filterPatientId);
-    if (dateFilter) params.set("date", dateFilter);
-
     try {
-      const res = await fetch(`/api/treatments?${params}`);
-      const data = await res.json();
-      const rows: TreatmentRecord[] = data.treatments || [];
+      const data = await treatmentsApi.list({
+        patientId: filterPatientId || undefined,
+        date:      dateFilter      || undefined,
+        limit:     LIMIT,
+        offset:    pageOffset,
+      });
+      const rows: TreatmentRecord[] = data.treatments ?? [];
       if (append) {
         setTreatments((prev) => [...prev, ...rows]);
       } else {
@@ -109,9 +93,8 @@ export default function TreatmentsPage() {
       return;
     }
     filterDebounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/patients?search=${encodeURIComponent(patientSearch)}`);
-      const data = await res.json();
-      setFilterPatients(data.patients || []);
+      const data = await patientsApi.list({ search: patientSearch }).catch(() => ({ patients: [], total: 0 }));
+      setFilterPatients(data.patients ?? []);
       setShowFilterDropdown(true);
     }, 300);
   }, [patientSearch]);
@@ -133,23 +116,12 @@ export default function TreatmentsPage() {
       list.map((t) => (t.id === treatmentId ? { ...t, status: newStatus } : t))
     );
     try {
-      const res = await fetch(`/api/treatments/${treatmentId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!res.ok) {
-        setTreatments((list) =>
-          list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
-        );
-        const d = await res.json().catch(() => ({}));
-        setStatusError((d as { error?: string }).error || "Failed to update status. Please try again.");
-      }
-    } catch {
+      await treatmentsApi.update(treatmentId, { status: newStatus });
+    } catch (e) {
       setTreatments((list) =>
         list.map((t) => (t.id === treatmentId ? { ...t, status: prev } : t))
       );
-      setStatusError("Network error. Please try again.");
+      setStatusError(e instanceof ApiError ? e.message : "Failed to update status. Please try again.");
     } finally {
       setUpdatingStatus(null);
     }

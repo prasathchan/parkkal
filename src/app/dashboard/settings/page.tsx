@@ -8,17 +8,8 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import Link from "next/link";
 import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
-
-interface OrgProfile {
-  id: string;
-  name: string;
-  slug: string;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  logoUrl: string | null;
-  themeConfig: string | null;
-}
+import { orgApi, authApi, ApiError } from "@/api";
+import type { OrgProfile, StaffMember } from "@/types";
 
 interface AdminMember {
   userId: string;
@@ -54,24 +45,22 @@ export default function SettingsPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch("/api/org/profile")
-      .then(r => r.json())
+    orgApi.getProfile()
       .then(data => {
-        const o = data.organization as OrgProfile;
+        const o = data.organization;
         setOrg(o);
-        setForm({ name: o.name || "", phone: o.phone || "", email: o.email || "" });
-        setAddressData(parseAddress(o.address));
-        const t = parseThemeConfig(o.themeConfig);
+        setForm({ name: o.name || "", phone: o.phone ?? "", email: o.email ?? "" });
+        setAddressData(parseAddress(o.address ?? null));
+        const t = parseThemeConfig(o.themeConfig ?? null);
         setTheme(t);
         setCustomColor(t.primaryColor);
-        setLogoPreview(o.logoUrl);
+        setLogoPreview(o.logoUrl ?? null);
         setLoading(false);
       });
-    fetch("/api/org/members")
-      .then(r => r.json())
+    orgApi.members.list()
       .then(data => {
-        const admins = (data.members || []).filter((m: { role: string }) => m.role === "ADMIN");
-        setAdminMembers(admins.map((m: { userId: string; name: string; email: string; phone: string | null }) => ({
+        const admins = (data.members ?? []).filter((m: StaffMember) => m.role === "ADMIN");
+        setAdminMembers(admins.map((m: StaffMember) => ({
           userId: m.userId,
           name: m.name,
           email: m.email,
@@ -85,16 +74,12 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     setMessage("");
-    const res = await fetch("/api/org/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, address: serializeAddress(addressData) }),
-    });
-    if (res.ok) {
+    try {
+      await orgApi.updateProfile({ ...form, address: serializeAddress(addressData) });
       toast.success("Profile saved successfully");
       setMessage("Profile saved successfully.");
-    } else {
-      const msg = (await res.json()).error || "Failed to save.";
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Failed to save.";
       toast.error(msg);
       setMessage(msg);
     }
@@ -104,12 +89,8 @@ export default function SettingsPage() {
   async function handleSaveAppearance() {
     setSaving(true);
     setMessage("");
-    const res = await fetch("/api/org/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ themeConfig: theme }),
-    });
-    if (res.ok) {
+    try {
+      await orgApi.updateProfile({ themeConfig: theme });
       toast.success("Appearance saved");
       setMessage("Appearance saved. Refresh to see all changes.");
       // Apply immediately
@@ -118,8 +99,8 @@ export default function SettingsPage() {
       if (fontOpt) document.documentElement.style.setProperty("--font-body", fontOpt.stack);
       if (theme.darkMode === "dark") document.documentElement.classList.add("dark");
       else if (theme.darkMode === "light") document.documentElement.classList.remove("dark");
-    } else {
-      const msg = (await res.json()).error || "Failed to save.";
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Failed to save.";
       toast.error(msg);
       setMessage(msg);
     }
@@ -128,22 +109,20 @@ export default function SettingsPage() {
 
   async function handleLogoUpload(file: File) {
     setLogoUploading(true);
-    const fd = new FormData();
-    fd.append("logo", file);
-    const res = await fetch("/api/org/logo", { method: "POST", body: fd });
-    if (res.ok) {
-      const { logoUrl } = await res.json();
+    try {
+      const fd = new FormData();
+      fd.append("logo", file);
+      const { logoUrl } = await orgApi.uploadLogo(fd);
       setLogoPreview(logoUrl);
       setOrg(o => o ? { ...o, logoUrl } : o);
-    } else {
-      const data = await res.json();
-      setMessage(data.error || "Logo upload failed.");
+    } catch (e) {
+      setMessage(e instanceof ApiError ? e.message : "Logo upload failed.");
     }
     setLogoUploading(false);
   }
 
   async function handleRemoveLogo() {
-    await fetch("/api/org/logo", { method: "DELETE" });
+    await orgApi.deleteLogo();
     setLogoPreview(null);
     setOrg(o => o ? { ...o, logoUrl: null } : o);
   }
@@ -154,21 +133,11 @@ export default function SettingsPage() {
     setDeleteError("");
     setDeleteSubmitting(true);
     try {
-      const res = await fetch("/api/org/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmName: deleteConfirmName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setDeleteError(data.error || "Failed to schedule deletion.");
-        setDeleteSubmitting(false);
-        return;
-      }
-      await fetch("/api/auth/logout", { method: "POST" });
+      await orgApi.delete(deleteConfirmName);
+      await authApi.logout();
       window.location.href = "/login";
-    } catch {
-      setDeleteError("Something went wrong.");
+    } catch (e) {
+      setDeleteError(e instanceof ApiError ? e.message : "Something went wrong.");
       setDeleteSubmitting(false);
     }
   }
@@ -188,24 +157,14 @@ export default function SettingsPage() {
     setPwSaving(true);
     setPwMessage(null);
     try {
-      const res = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data.error || "Failed to change password.";
-        toast.error(msg);
-        setPwMessage({ type: "error", text: msg });
-      } else {
-        toast.success("Password changed successfully");
-        setPwMessage({ type: "success", text: "Password changed successfully." });
-        setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-      setPwMessage({ type: "error", text: "Something went wrong." });
+      await authApi.changePassword(pwForm.currentPassword, pwForm.newPassword);
+      toast.success("Password changed successfully");
+      setPwMessage({ type: "success", text: "Password changed successfully." });
+      setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Something went wrong. Please try again.";
+      toast.error(msg);
+      setPwMessage({ type: "error", text: msg });
     } finally {
       setPwSaving(false);
     }

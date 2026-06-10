@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
+import { patientsApi, ApiError } from "@/api";
 
 function validatePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
@@ -110,32 +111,21 @@ export default function NewPatientPage() {
     };
 
     try {
-      const res = await fetch("/api/patients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 400 && data.details) {
-          const errs: Record<string, string> = {};
-          for (const e of data.details as Array<{ path: string[]; message: string }>) {
-            if (e.path?.[0]) errs[String(e.path[0])] = e.message;
-          }
-          setApiFieldErrors(errs);
-          return;
-        }
-        toast.error(data.error || "Failed to create patient");
-        setError(data.error || "Failed to create patient");
-        return;
-      }
-
+      const data = await patientsApi.create(payload);
       toast.success("Patient created successfully");
       router.push(`/dashboard/patients/${data.patient.id}`);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-      setError("Something went wrong.");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 400 && e.details?.length) {
+        const errs: Record<string, string> = {};
+        for (const d of e.details) {
+          if (d.path?.[0]) errs[String(d.path[0])] = d.message;
+        }
+        setApiFieldErrors(errs);
+        return;
+      }
+      const msg = e instanceof ApiError ? e.message : "Something went wrong.";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }

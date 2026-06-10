@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
+import { adminApi } from "@/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,13 +99,16 @@ export default function AuditLogPage() {
     if (append) setLoadingMore(true);
     else setLoading(true);
 
-    const params = new URLSearchParams({ offset: String(pageOffset) });
-    if (filter) params.set("action", filter);
-
-    const res = await fetch(`/api/admin/audit-log?${params}`);
-    if (res.status === 403) { setForbidden(true); setLoading(false); return; }
-
-    const data = await res.json();
+    let data;
+    try {
+      data = await adminApi.auditLog.list({ action: filter || undefined, offset: pageOffset });
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      if (status === 403) { setForbidden(true); setLoading(false); return; }
+      if (append) setLoadingMore(false);
+      else setLoading(false);
+      return;
+    }
     const rows: AuditEntry[] = data.entries ?? [];
 
     if (append) {

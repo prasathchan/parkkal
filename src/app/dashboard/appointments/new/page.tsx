@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { appointmentsApi, ApiError } from "@/api";
+import { AddToCalendar } from "@/components/ui/add-to-calendar";
 
 interface Patient { id: string; patientCode: string; name: string; }
 interface Doctor { id: string; name: string; role: string; }
@@ -34,6 +36,7 @@ function NewAppointmentForm() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [patientSearch, setPatientSearch] = useState("");
+  const [recallVisitId, setRecallVisitId] = useState<string | null>(null);
   const [form, setForm] = useState({
     patientId: "",
     doctorId: "",
@@ -81,19 +84,25 @@ function NewAppointmentForm() {
       .catch(() => {});
   }, []);
 
-  // Pre-fill patientId and doctorId from URL params (follow-up flow)
+  // Pre-fill from URL params — supports recall flow and general follow-up flow
   useEffect(() => {
     if (prefillApplied.current) return;
-    const paramPatientId = searchParams.get("patientId");
-    const paramDoctorId = searchParams.get("doctorId");
-    if (!paramPatientId && !paramDoctorId) return;
+    const paramPatientId   = searchParams.get("patientId");
+    const paramDoctorId    = searchParams.get("doctorId");
+    const paramRecallVisit = searchParams.get("recallVisitId");
+    const paramType        = searchParams.get("type");
+    if (!paramPatientId && !paramDoctorId && !paramRecallVisit) return;
     prefillApplied.current = true;
 
+    if (paramRecallVisit) setRecallVisitId(paramRecallVisit);
+
     const updates: Partial<typeof form> = {};
-    if (paramDoctorId) updates.doctorId = paramDoctorId;
+    if (paramDoctorId)  updates.doctorId  = paramDoctorId;
     if (paramPatientId) updates.patientId = paramPatientId;
-    if (paramPatientId || paramDoctorId) {
-      setForm((f) => ({ ...f, ...updates, type: "FOLLOWUP" }));
+    // Honour explicit type param (e.g. FOLLOWUP from recalls), default to FOLLOWUP
+    updates.type = paramType ?? "FOLLOWUP";
+    if (paramPatientId || paramDoctorId || paramRecallVisit) {
+      setForm((f) => ({ ...f, ...updates }));
     }
 
     // Fetch patient details so the select shows the correct option
@@ -136,23 +145,17 @@ function NewAppointmentForm() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+      await appointmentsApi.create({
+        ...form,
+        type: form.type as import("@/types").AppointmentType,
+        ...(recallVisitId ? { recallVisitId } : {}),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        const msg = data.error || "Failed to create appointment";
-        toast.error(msg);
-        setError(msg);
-        return;
-      }
       toast.success("Appointment booked successfully");
       router.push("/dashboard/appointments");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-      setError("Something went wrong.");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Something went wrong.";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }

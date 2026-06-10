@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ToothChart } from "@/components/ui/tooth-chart";
+import { patientsApi, orgApi, treatmentsApi, ApiError } from "@/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,18 +67,18 @@ export function NewTreatmentModal({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!patientSearch.trim()) { setPatients([]); setShowPatientDropdown(false); return; }
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/patients?search=${encodeURIComponent(patientSearch)}`);
-      const data = await res.json();
-      setPatients(data.patients || []);
-      setShowPatientDropdown(true);
+      try {
+        const data = await patientsApi.list({ search: patientSearch });
+        setPatients(data.patients || []);
+        setShowPatientDropdown(true);
+      } catch { /* silently ignore search errors */ }
     }, 300);
   }, [patientSearch]);
 
   // Load doctor list (non-doctor roles only)
   useEffect(() => {
     if (currentUserRole === "DOCTOR") return;
-    fetch("/api/org/members")
-      .then((r) => r.json())
+    orgApi.members.list()
       .then((d) => {
         const all: Member[] = d.members || [];
         setMembers(all.filter((m) => m.role === "DOCTOR" || m.role === "ADMIN"));
@@ -91,23 +92,17 @@ export function NewTreatmentModal({
     setSubmitting(true);
     setSubmitError("");
     try {
-      const res = await fetch("/api/treatments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: form.patientId,
-          doctorId: form.doctorId,
-          description: form.description,
-          procedure: form.procedure || undefined,
-          toothNumbers: form.toothNumbers.length > 0 ? form.toothNumbers.join(",") : undefined,
-          cost: parseFloat(form.cost) || 0,
-        }),
+      await treatmentsApi.create({
+        patientId: form.patientId,
+        doctorId: form.doctorId,
+        description: form.description,
+        procedure: form.procedure || undefined,
+        toothNumbers: form.toothNumbers.length > 0 ? form.toothNumbers.join(",") : undefined,
+        cost: parseFloat(form.cost) || 0,
       });
-      const data = await res.json();
-      if (!res.ok) { setSubmitError(data.error || "Failed to create treatment plan"); return; }
       onCreated();
-    } catch {
-      setSubmitError("Something went wrong.");
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : "Something went wrong.");
     } finally {
       setSubmitting(false);
     }

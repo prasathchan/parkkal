@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { CATEGORIES, DEFAULT_NEW_ITEM, type NewItemState, type Treatment, type VisitItem } from "./types";
+import { visitsApi, ApiError } from "@/api";
 
 interface Props {
   visitId: string;
@@ -28,24 +29,15 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
     setAddingItem(true);
     setAddItemError("");
     try {
-      const res = await fetch(`/api/visits/${visitId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newItem,
-          quantity: Number(newItem.quantity),
-          unitPrice: Number(newItem.unitPrice),
-        }),
+      await visitsApi.items.add(visitId, {
+        ...newItem,
+        quantity: Number(newItem.quantity),
+        unitPrice: Number(newItem.unitPrice),
       });
-      if (res.ok) {
-        setNewItem(DEFAULT_NEW_ITEM);
-        await onRefresh();
-      } else {
-        const d = await res.json().catch(() => ({}));
-        setAddItemError((d as { error?: string }).error || "Failed to add item");
-      }
-    } catch {
-      setAddItemError("Network error. Please try again.");
+      setNewItem(DEFAULT_NEW_ITEM);
+      await onRefresh();
+    } catch (e) {
+      setAddItemError(e instanceof ApiError ? e.message : "Failed to add item");
     } finally {
       setAddingItem(false);
     }
@@ -53,13 +45,12 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
 
   async function handleDeleteItem(itemId: string) {
     if (!confirm("Delete this item?")) return;
-    const res = await fetch(`/api/visits/${visitId}/items/${itemId}`, { method: "DELETE" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      onPageError((d as { error?: string }).error || "Failed to delete item");
-      return;
+    try {
+      await visitsApi.items.delete(visitId, itemId);
+      await onRefresh();
+    } catch (e) {
+      onPageError(e instanceof ApiError ? e.message : "Failed to delete item");
     }
-    await onRefresh();
   }
 
   return (

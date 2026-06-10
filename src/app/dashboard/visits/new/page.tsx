@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { appointmentsApi, visitsApi, ApiError } from "@/api";
 
 interface Patient {
   id: string;
@@ -144,9 +145,8 @@ function NewVisitForm() {
     setLoadingAppointments(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const res = await fetch(`/api/appointments?patientId=${patientId}&status=SCHEDULED&date=${today}`);
-      const data = await res.json();
-      const appts: Appointment[] = data.appointments || [];
+      const data = await appointmentsApi.list({ patientId, status: "SCHEDULED", date: today });
+      const appts: Appointment[] = data.appointments ?? [];
       setAppointments(appts);
 
       if (appts.length === 1) {
@@ -185,10 +185,8 @@ function NewVisitForm() {
     setSubmitting(true);
     setError("");
 
-    const res = await fetch("/api/visits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const data = await visitsApi.create({
         patientId: selectedPatient!.id,
         doctorId: form.doctorId,
         visitDate: form.visitDate,
@@ -196,24 +194,20 @@ function NewVisitForm() {
         doctorNotes: form.doctorNotes,
         appointmentId: selectedAppointment?.id || null,
         visitType: visitSource === "appointment" ? "APPOINTMENT" : "WALKIN",
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
+      });
+      toast.success("Visit created successfully");
+      router.push(`/dashboard/visits/${data.visit.id}`);
+    } catch (e) {
       // If a visit already exists for this appointment, redirect to it
-      if (res.status === 409 && data.visitId) {
-        router.push(`/dashboard/visits/${data.visitId}`);
+      if (e instanceof ApiError && e.status === 409 && e.data?.visitId) {
+        router.push(`/dashboard/visits/${e.data.visitId}`);
         return;
       }
-      const msg = data.error || "Failed to create visit";
+      const msg = e instanceof ApiError ? e.message : "Failed to create visit";
       toast.error(msg);
       setError(msg);
       setSubmitting(false);
-      return;
     }
-
-    toast.success("Visit created successfully");
-    router.push(`/dashboard/visits/${data.visit.id}`);
   }
 
   return (

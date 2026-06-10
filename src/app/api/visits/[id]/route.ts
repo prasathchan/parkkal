@@ -15,6 +15,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { runCascade } from "@/lib/db";
+import { updateVisitSchema } from "@/lib/schemas";
 
 export const GET = withRoute<{ id: string }>(
   { route: "GET /api/visits/[id]", permission: PERMISSIONS.VISITS_VIEW },
@@ -92,44 +93,25 @@ export const PATCH = withRoute<{ id: string }>(
       .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
     if (!existingVisit) return apiError("Visit not found", 404);
 
-    const body = await req.json() as Record<string, unknown>;
+    // updateVisitSchema uses .strict() — unknown keys are rejected automatically (400).
+    // withRoute() catches ZodError and returns 400 with field-level details.
+    const body = updateVisitSchema.parse(await req.json());
 
     // Clinical fields (diagnosis, doctorNotes, status) are restricted to DOCTOR and ADMIN.
+    // This is a business rule on top of the permission check — even staff with VISITS_EDIT
+    // cannot change clinical records unless they are a doctor or admin.
     const CLINICAL_FIELDS = ["diagnosis", "doctorNotes", "status"] as const;
-    const hasClinicalChange = CLINICAL_FIELDS.some((f) => f in body);
+    const hasClinicalChange = CLINICAL_FIELDS.some((f) => f in body && body[f] !== undefined);
     if (hasClinicalChange && session.role !== "DOCTOR" && session.role !== "ADMIN") {
       log.security("Permission denied: clinical changes require DOCTOR/ADMIN role", { role: session.role });
       return apiError("Only doctors and admins can update clinical records", 403);
     }
 
-    const VALID_STATUSES = ["OPEN", "COMPLETED", "CANCELLED"];
-    if ("status" in body && !VALID_STATUSES.includes(body.status as string)) {
-      return apiError("Invalid status", 400);
-    }
-    if (
-      "visitDate" in body &&
-      (typeof body.visitDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.visitDate))
-    ) {
-      return apiError("visitDate must be YYYY-MM-DD", 400);
-    }
-
-    const TEXT_LIMITS: Record<string, number> = { chiefComplaint: 500, doctorNotes: 5000, diagnosis: 1000, recallNotes: 500 };
-    for (const [field, maxLen] of Object.entries(TEXT_LIMITS)) {
-      if (field in body && typeof body[field] === "string" && (body[field] as string).length > maxLen) {
-        return apiError(`${field} exceeds maximum length of ${maxLen}`, 400);
-      }
-    }
-
-    if ("recallDate" in body && body.recallDate !== null && body.recallDate !== "") {
-      if (typeof body.recallDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(body.recallDate)) {
-        return apiError("recallDate must be YYYY-MM-DD", 400);
-      }
-    }
-
-    const allowed = ["chiefComplaint", "doctorNotes", "diagnosis", "status", "visitDate", "recallDate", "recallNotes"];
+    // Build the update payload — only include keys that were actually sent.
+    // Zod .strict() already stripped unknown keys, so `body` is safe to spread.
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
-    for (const key of allowed) {
-      if (key in body) updates[key] = body[key];
+    for (const [key, value] of Object.entries(body)) {
+      if (value !== undefined) updates[key] = value;
     }
 
     await db.update(visits).set(updates).where(

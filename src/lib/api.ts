@@ -374,10 +374,7 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
         error,
         organizationId: session.orgId, userId: session.userId, userRole: session.role,
       });
-      // DEBUG: surface error detail temporarily — remove after identifying root cause
-      const errMsg = error instanceof Error ? error.message : String(error);
-      const errStack = error instanceof Error ? error.stack : undefined;
-      return apiError("Internal server error", 500, { _debug: { message: errMsg, stack: errStack } });
+      return apiError("Internal server error", 500);
     }
   };
 }

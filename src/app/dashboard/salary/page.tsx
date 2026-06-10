@@ -1,73 +1,54 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Header } from "@/components/header";
-
-interface SalaryRecord {
-  id: string;
-  userId: string;
-  month: string;
-  salaryAmount: number;
-  salaryType: string;
-  appointmentCount: number;
-  paidAmount: number;
-  paidAt: number | null;
-  status: string;
-  notes: string | null;
-  userName: string;
-  userEmail: string;
-}
+import { useAsync } from "@/hooks/use-async";
+import { orgApi, ApiError } from "@/api";
+import type { SalaryRecord } from "@/types";
 
 export default function SalaryPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [month, setMonth] = useState(currentMonth);
-  const [records, setRecords] = useState<SalaryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
 
-  const fetchRecords = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch(`/api/org/salary?month=${month}`);
-    const data = await res.json();
-    setRecords(data.records || []);
-    setLoading(false);
-  }, [month]);
+  const { data, loading, refetch } = useAsync(
+    () => orgApi.salary.list(month),
+    [month],
+  );
 
-  useEffect(() => {
-    fetchRecords();
-  }, [fetchRecords]);
+  const records: SalaryRecord[] = data?.records ?? [];
+  const totalPayroll  = records.reduce((s, r) => s + r.salaryAmount, 0);
+  const totalPaid     = records.reduce((s, r) => s + r.paidAmount,   0);
+  const outstanding   = totalPayroll - totalPaid;
 
   async function generateRecords() {
     setGenerating(true);
     setMessage("");
-    const res = await fetch("/api/org/salary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ month }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setMessage(`Generated ${data.created} new salary records.`);
-      fetchRecords();
-    } else {
-      setMessage(data.error || "Failed to generate records");
+    try {
+      const result = await orgApi.salary.generate(month) as { created?: number; records?: SalaryRecord[] };
+      const created = (result as { created?: number }).created ?? result.records?.length ?? 0;
+      setMessage(`Generated ${created} new salary records.`);
+      refetch();
+    } catch (e) {
+      setMessage(e instanceof ApiError ? e.message : "Failed to generate records");
+    } finally {
+      setGenerating(false);
     }
-    setGenerating(false);
   }
 
-  async function markPaid(id: string) {
-    await fetch(`/api/org/salary/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "PAID", paidAmount: records.find(r => r.id === id)?.salaryAmount, paidAt: Date.now() }),
-    });
-    fetchRecords();
+  async function markPaid(record: SalaryRecord) {
+    try {
+      await orgApi.salary.update(record.id, {
+        status: "PAID",
+        paidAmount: record.salaryAmount,
+      });
+      refetch();
+    } catch {
+      // silently refetch — the optimistic state will correct itself
+      refetch();
+    }
   }
-
-  const totalPayroll = records.reduce((s, r) => s + r.salaryAmount, 0);
-  const totalPaid = records.reduce((s, r) => s + r.paidAmount, 0);
-  const outstanding = totalPayroll - totalPaid;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -148,14 +129,14 @@ export default function SalaryPage() {
                     <td className="px-4 py-3 font-medium text-slate-900">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3 text-slate-700">₹{r.paidAmount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-green-100 text-green-700" : r.status === "PARTIAL" ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-600"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-green-100 text-green-700" : r.status === "PARTIALLY_PAID" ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-600"}`}>
                         {r.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       {r.status !== "PAID" && (
                         <button
-                          onClick={() => markPaid(r.id)}
+                          onClick={() => markPaid(r)}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                         >
                           Mark Paid

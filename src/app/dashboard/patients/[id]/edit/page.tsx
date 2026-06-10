@@ -10,21 +10,9 @@ import { Input } from "@/components/ui/input";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
+import { patientsApi, ApiError } from "@/api";
+import type { Patient } from "@/types";
 
-interface Patient {
-  id: string;
-  patientCode: string;
-  name: string;
-  phone: string;
-  email: string | null;
-  dateOfBirth: string | null;
-  gender: string | null;
-  bloodGroup: string | null;
-  address: string | null;
-  medicalHistory: string | null;
-  panNumber: string | null;
-  aadhaarNumber: string | null;
-}
 
 const GENDERS: { value: string; label: string }[] = [
   { value: "MALE", label: "Male" },
@@ -55,10 +43,9 @@ export default function PatientEditPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    fetch(`/api/patients/${id}`)
-      .then((r) => r.json())
+    patientsApi.get(id)
       .then((d) => {
-        const p: Patient = d.patient;
+        const p = d.patient;
         if (!p) return;
         setForm({
           name: p.name || "",
@@ -71,7 +58,7 @@ export default function PatientEditPage() {
           panNumber: p.panNumber || "",
           aadhaarNumber: p.aadhaarNumber || "",
         });
-        setAddressData(parseAddress(p.address));
+        setAddressData(parseAddress(p.address ?? null));
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -102,34 +89,25 @@ export default function PatientEditPage() {
     setSaving(true);
     setError("");
     try {
-      const res = await fetch(`/api/patients/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          phone: form.phone.trim() || undefined,
-          email: form.email.trim() || undefined,
-          dateOfBirth: form.dateOfBirth || undefined,
-          gender: form.gender || undefined,
-          address: serializeAddress(addressData) || undefined,
-          medicalHistory: form.medicalHistory || undefined,
-          bloodGroup: form.bloodGroup || undefined,
-          panNumber: form.panNumber || null,
-          aadhaarNumber: form.aadhaarNumber || null,
-        }),
+      await patientsApi.update(id, {
+        name: form.name.trim(),
+        phone: form.phone.trim() || undefined,
+        email: form.email.trim() || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        gender: form.gender || undefined,
+        address: serializeAddress(addressData) || undefined,
+        medicalHistory: form.medicalHistory || undefined,
+        bloodGroup: form.bloodGroup || undefined,
+        panNumber: form.panNumber || null,
+        aadhaarNumber: form.aadhaarNumber || null,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || "Failed to save changes");
-        setError(data.error || "Failed to save changes");
-        return;
-      }
       toast.success("Patient updated successfully");
       setSuccess(true);
       setTimeout(() => router.push(`/dashboard/patients/${id}`), 800);
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-      setError("Something went wrong.");
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : "Something went wrong.";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setSaving(false);
     }
