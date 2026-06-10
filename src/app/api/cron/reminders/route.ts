@@ -48,7 +48,7 @@ type PatientContact = Pick<InferSelectModel<typeof patients>, "id" | "name" | "p
 // Maximum reminders to process per cron invocation.
 const BATCH_LIMIT = 50;
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // ── Auth: Cloudflare cron OR explicit Bearer token ─────────────────────────
