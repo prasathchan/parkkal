@@ -270,7 +270,7 @@ function LogoutButton({
 }
 
 interface SidebarProps {
-  user: { name: string; role: string; orgName?: string };
+  user: { name: string; role: string; orgName?: string; orgTagline?: string | null };
   logoUrl?: string | null;
 }
 
@@ -339,7 +339,9 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
             <p className="font-bold text-sm leading-tight" style={{ color: colors.textActive }}>
               {user.orgName || "Parkkal"}
             </p>
-            <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>One Platform. Every Clinic.</p>
+            {user.orgTagline && (
+              <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>{user.orgTagline}</p>
+            )}
           </div>
         </div>
       </div>

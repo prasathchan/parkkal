@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   const db = getDb();
-  const [org] = await db.select({ logoUrl: organizations.logoUrl, themeConfig: organizations.themeConfig })
+  const [org] = await db.select({ logoUrl: organizations.logoUrl, themeConfig: organizations.themeConfig, tagline: organizations.tagline })
     .from(organizations)
     .where(eq(organizations.id, session.orgId));
 
@@ -33,7 +33,7 @@ export default async function DashboardLayout({
     <ThemeProvider config={themeConfig}>
       <div className="flex min-h-screen" style={{ background: "var(--background)" }}>
         <Sidebar
-          user={{ name: session.name, role: session.role, orgName: session.orgName }}
+          user={{ name: session.name, role: session.role, orgName: session.orgName, orgTagline: org?.tagline ?? null }}
           logoUrl={org?.logoUrl ?? null}
         />
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
