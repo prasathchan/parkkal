@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useAsync } from "@/hooks/use-async";
 import { useDebounce } from "@/hooks/use-debounce";
 import { invoicesApi, patientsApi, ApiError } from "@/api";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Invoice, Patient } from "@/types";
 import {
   Table,
@@ -197,7 +198,13 @@ export default function InvoicesPage() {
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-400">No invoices found</TableCell>
+                  <TableCell colSpan={8}>
+                    <EmptyState
+                      title="No invoices found"
+                      description="No invoices match your current filters."
+                      action={{ label: "New Invoice", onClick: openSlideover }}
+                    />
+                  </TableCell>
                 </TableRow>
               ) : (
                 filtered.map((inv) => {

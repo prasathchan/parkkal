@@ -9,6 +9,7 @@ import Link from "next/link";
 import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { orgApi, authApi, ApiError } from "@/api";
+import { exportPatients, exportBilling } from "@/api/export";
 import type { OrgProfile, StaffMember } from "@/types";
 
 interface AdminMember {
@@ -293,6 +294,34 @@ export default function SettingsPage() {
                 <SaveButton saving={saving} label="Save Profile" />
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Data Export — shown in profile tab */}
+        {tab === "profile" && (
+          <div className="rounded-xl border p-6" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
+            <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>Data Export</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--muted-foreground)" }}>
+              Download your clinic data as CSV files. Exports include all records for your organization.
+            </p>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={exportPatients}
+                className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+              >
+                Export Patients (CSV)
+              </button>
+              <button
+                type="button"
+                onClick={exportBilling}
+                className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+                style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+              >
+                Export Billing (CSV)
+              </button>
+            </div>
           </div>
         )}
 

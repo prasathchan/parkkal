@@ -33,8 +33,7 @@ export interface UpdateOrgProfilePayload {
   address?: string;
   website?: string;
   registrationNumber?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  themeConfig?: Record<string, any> | string;
+  themeConfig?: unknown;
 }
 
 export function updateOrgProfile(

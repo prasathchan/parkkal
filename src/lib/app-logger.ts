@@ -37,6 +37,15 @@ import { appLogs } from "@/db/schema";
 
 export type AppLogLevel = "error" | "security" | "warn";
 
+/**
+ * trackError — convenience wrapper for catch blocks.
+ * Logs an error event without requiring a full route/userId context.
+ */
+export function trackError(context: string, error: unknown, meta?: Record<string, unknown>): void {
+  const message = error instanceof Error ? error.message : String(error);
+  writeAppLog({ level: "error", route: context, message: `[${context}] ${message}`, error, data: meta });
+}
+
 export interface AppLogParams {
   level:           AppLogLevel;
   route:           string;

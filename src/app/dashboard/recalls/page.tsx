@@ -23,6 +23,8 @@ import Link from "next/link";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useAsync } from "@/hooks/use-async";
 import { recallsApi } from "@/api";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { RecallVisit, RecallStatus } from "@/types";
 
 type TabFilter = "all" | "unscheduled" | "scheduled" | "fulfilled" | "lapsed";
@@ -74,7 +76,7 @@ export default function RecallsPage() {
   const [tab, setTab] = useState<TabFilter>("unscheduled");
   const [offset, setOffset] = useState(0);
 
-  const { data, loading, error } = useAsync(
+  const { data, loading, error, refetch } = useAsync(
     () => recallsApi.list({ status: tab === "all" ? "all" : tab, limit: LIMIT, offset }),
     [tab, offset],
   );
@@ -136,9 +138,7 @@ export default function RecallsPage() {
 
       {/* Error */}
       {error && (
-        <div role="alert" className="rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-700">
-          {error}
-        </div>
+        <ErrorState message={error} onRetry={refetch} />
       )}
 
       {/* Table */}
@@ -148,20 +148,16 @@ export default function RecallsPage() {
             <SkeletonTable rows={8} cols={7} />
           </div>
         ) : recalls.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <svg className="h-10 w-10 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-sm font-medium text-gray-500">No recalls found</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {tab === "unscheduled" && "All recalls have been booked — great!"}
-              {tab === "lapsed"      && "No lapsed recalls"}
-              {tab === "scheduled"   && "No upcoming booked recalls"}
-              {tab === "fulfilled"   && "No attended recalls yet"}
-              {tab === "all"         && "Set a recall date on a visit to see it here"}
-            </p>
-          </div>
+          <EmptyState
+            title="No recalls found"
+            description={
+              tab === "unscheduled" ? "All recalls have been booked — great!" :
+              tab === "lapsed"      ? "No lapsed recalls" :
+              tab === "scheduled"   ? "No upcoming booked recalls" :
+              tab === "fulfilled"   ? "No attended recalls yet" :
+              "Set a recall date on a visit to see it here"
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

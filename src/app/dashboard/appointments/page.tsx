@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { appointmentsApi } from "@/api";
 import { AddToCalendar } from "@/components/ui/add-to-calendar";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Appointment } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -198,16 +199,11 @@ function DayView({
 
   if (doctorGroups.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-gray-400">
-        <svg className="h-12 w-12 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <p className="font-medium">No appointments today</p>
-        <Link href="/dashboard/appointments/new" className="mt-2 text-sm text-blue-600 hover:underline">
-          Book one →
-        </Link>
-      </div>
+      <EmptyState
+        title="No appointments today"
+        description="There are no appointments scheduled for this day."
+        action={{ label: "Book Appointment", href: "/dashboard/appointments/new" }}
+      />
     );
   }
 

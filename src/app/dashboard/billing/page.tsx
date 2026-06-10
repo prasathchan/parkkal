@@ -14,6 +14,8 @@ import {
   TableHeadCell,
 } from "@/components/ui/table";
 import { visitsApi, ApiError } from "@/api";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Visit } from "@/types";
 
 // Alias for readability within this page
@@ -122,10 +124,7 @@ export default function BillingPage() {
 
       <main className="flex-1 p-6">
         {errorMsg && (
-          <div role="alert" className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-            <span>{errorMsg}</span>
-            <button onClick={() => setErrorMsg(null)} className="text-red-400 hover:text-red-600 font-medium">✕</button>
-          </div>
+          <ErrorState message={errorMsg} onRetry={() => fetchData(page, search)} />
         )}
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -189,8 +188,11 @@ export default function BillingPage() {
                 </TableRow>
               ) : displayedVisits.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-slate-400">
-                    {filter === "UNPAID" && visits.length > 0 ? "No unpaid visits — all clear!" : "No visits found"}
+                  <TableCell colSpan={9}>
+                    <EmptyState
+                      title={filter === "UNPAID" && visits.length > 0 ? "All clear!" : "No visits found"}
+                      description={filter === "UNPAID" && visits.length > 0 ? "No unpaid visits — all billing is up to date." : "No billing records match your search."}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

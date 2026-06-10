@@ -7,6 +7,7 @@ import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { orgApi, ApiError } from "@/api";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { StaffMember, OrgRole } from "@/types";
 
 // Use shared types from @/types
@@ -192,7 +193,11 @@ export default function StaffPage() {
         {loading ? (
           <div className="text-center py-12 text-slate-500">Loading staff...</div>
         ) : members.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">No staff members yet.</div>
+          <EmptyState
+            title="No staff members yet"
+            description="Add your first staff member to get started."
+            action={{ label: "Add Staff", onClick: () => setShowModal(true) }}
+          />
         ) : (
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <table className="w-full text-sm">

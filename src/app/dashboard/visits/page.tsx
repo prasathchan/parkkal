@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { visitsApi } from "@/api";
 import { SkeletonTable } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Visit } from "@/types";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -129,12 +130,11 @@ export default function VisitsPage() {
               <SkeletonTable rows={8} cols={6} />
             </div>
           ) : visits.length === 0 ? (
-            <div className="text-center py-10 px-4">
-              <p className="text-slate-400 text-sm">{filtersActive ? "No visits match your filters." : "No visits yet."}</p>
-              {filtersActive && (
-                <button onClick={clearFilters} className="text-blue-600 hover:underline text-sm mt-1">Clear filters</button>
-              )}
-            </div>
+            <EmptyState
+              title={filtersActive ? "No visits match your filters" : "No visits yet"}
+              description={filtersActive ? "Try adjusting your filters or clearing them." : "Record a new visit to get started."}
+              action={filtersActive ? { label: "Clear filters", onClick: clearFilters } : { label: "New Visit", href: "/dashboard/visits/new" }}
+            />
           ) : (
             <>
               {/* Desktop table */}

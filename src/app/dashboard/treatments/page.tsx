@@ -7,6 +7,8 @@ import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { NewTreatmentModal } from "@/components/treatments/NewTreatmentModal";
 import { treatmentsApi, patientsApi, authApi, ApiError } from "@/api";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Treatment, Patient } from "@/types";
 import type { TreatmentStatus } from "@/constants/treatment";
 
@@ -146,10 +148,7 @@ export default function TreatmentsPage() {
 
       <main className="flex-1 p-6 space-y-4">
         {statusError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 flex items-center justify-between">
-            <span>{statusError}</span>
-            <button onClick={() => setStatusError("")} className="text-red-500 hover:text-red-700 ml-4">✕</button>
-          </div>
+          <ErrorState message={statusError} onRetry={() => { setStatusError(""); fetchTreatments(0); }} />
         )}
 
         {/* Filter bar */}
@@ -249,8 +248,12 @@ export default function TreatmentsPage() {
                   </tr>
                 ) : treatments.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-400">
-                      {hasFilters ? "No treatments match your filters." : "No treatment records found"}
+                    <td colSpan={7}>
+                      <EmptyState
+                        title={hasFilters ? "No treatments match your filters" : "No treatment records found"}
+                        description={hasFilters ? "Try clearing your filters." : "Start a new treatment plan for a patient."}
+                        action={hasFilters ? undefined : { label: "New Treatment Plan", onClick: () => setShowModal(true) }}
+                      />
                     </td>
                   </tr>
                 ) : (

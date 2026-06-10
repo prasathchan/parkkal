@@ -1,0 +1,19 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check production health
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://parkkal.com/api/cron/health || echo "000")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Production health check failed (HTTP $STATUS)"
+            exit 1
+          fi

@@ -30,6 +30,8 @@ import { SkeletonTable } from "@/components/ui/skeleton";
 import { calculateAge, formatDate } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { patientsApi } from "@/api";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import type { Patient } from "@/types";
 
 // How many patients to show per page
@@ -89,15 +91,7 @@ export default function PatientsPage() {
       <main className="flex-1 p-6">
         {/* Error banner — shown if the API call fails */}
         {errorMsg && (
-          <div role="alert" className="mb-4 flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-            <span>{errorMsg}</span>
-            <button
-              onClick={() => setErrorMsg(null)}
-              className="text-red-400 hover:text-red-600 font-medium"
-            >
-              ✕
-            </button>
-          </div>
+          <ErrorState message={errorMsg} onRetry={() => fetchPatients(search, offset)} />
         )}
 
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -127,9 +121,11 @@ export default function PatientsPage() {
               <SkeletonTable rows={8} cols={5} />
             </div>
           ) : patients.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">
-              {searchInput ? "No patients found matching your search" : "No patients yet"}
-            </div>
+            <EmptyState
+              title={searchInput ? "No patients found" : "No patients yet"}
+              description={searchInput ? "Try a different name, phone, or patient code." : "Add your first patient to get started."}
+              action={searchInput ? undefined : { label: "Add Patient", href: "/dashboard/patients/new" }}
+            />
           ) : (
             <>
               {/* Desktop table */}
