@@ -250,12 +250,14 @@ export default function StaffPage() {
                         {m.role === "ADMIN" && (
                           <button
                             type="button"
-                            title={m.isDoctor === 1 ? "Remove doctor access" : "Grant doctor access"}
                             disabled={togglingDoctor === m.memberId}
                             onClick={() => toggleDoctor(m)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${m.isDoctor === 1 ? "bg-blue-600" : "bg-slate-300"}`}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${m.isDoctor === 1 ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"}`}
                           >
-                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${m.isDoctor === 1 ? "translate-x-4" : "translate-x-1"}`} />
+                            <span className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${m.isDoctor === 1 ? "bg-blue-500" : "bg-slate-300"}`}>
+                              <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${m.isDoctor === 1 ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                            </span>
+                            {togglingDoctor === m.memberId ? "Saving…" : m.isDoctor === 1 ? "Acts as Doctor" : "Can act as Doctor?"}
                           </button>
                         )}
                       </div>
