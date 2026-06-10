@@ -86,7 +86,7 @@ jobs:
 
       # Deploy the worker + assets to Cloudflare
       - name: Deploy worker
-        run: npx wrangler deploy
+        run: npx wrangler deploy --env=prod
         env:
           CLOUDFLARE_API_TOKEN:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

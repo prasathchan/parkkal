@@ -20,6 +20,23 @@ bucket_name = "parkkal-files"
 [triggers]
 crons = ["*/15 * * * *"]
 
+# ─── Production Environment ───────────────────────────────────────────────────
+[env.prod]
+name = "parkkal-dental"
+
+[[env.prod.d1_databases]]
+binding = "DB"
+database_name = "parkkal-db"
+database_id = "9928a95f-17d2-4e84-80a1-c7b30d779704"
+migrations_dir = "drizzle/migrations"
+
+[[env.prod.r2_buckets]]
+binding = "FILES"
+bucket_name = "parkkal-files"
+
+[env.prod.triggers]
+crons = ["*/15 * * * *"]
+
 # ─── Staging Environment ──────────────────────────────────────────────────────
 [env.staging]
 name = "parkkal-dental-staging"
