@@ -128,38 +128,33 @@ export default function VisitsPage() {
             <div role="status" aria-label="Loading visits..." className="p-4">
               <SkeletonTable rows={8} cols={6} />
             </div>
+          ) : visits.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <p className="text-slate-400 text-sm">{filtersActive ? "No visits match your filters." : "No visits yet."}</p>
+              {filtersActive && (
+                <button onClick={clearFilters} className="text-blue-600 hover:underline text-sm mt-1">Clear filters</button>
+              )}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Visit Code</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Patient</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Doctor</th>
-                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
-                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Total</th>
-                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid</th>
-                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Due</th>
-                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Status</th>
-                    <th className="text-center px-4 py-3 font-semibold text-slate-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {visits.length === 0 ? (
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <td colSpan={9} className="text-center py-10">
-                        <p className="text-slate-400">
-                          {filtersActive ? "No visits match your filters." : "No visits yet."}
-                        </p>
-                        {filtersActive && (
-                          <button onClick={clearFilters} className="text-blue-600 hover:underline text-sm mt-1">
-                            Clear filters
-                          </button>
-                        )}
-                      </td>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Visit Code</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Patient</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Doctor</th>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
+                      <th className="text-right px-4 py-3 font-semibold text-slate-600">Total</th>
+                      <th className="text-right px-4 py-3 font-semibold text-slate-600">Paid</th>
+                      <th className="text-right px-4 py-3 font-semibold text-slate-600">Due</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Status</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Actions</th>
                     </tr>
-                  ) : (
-                    visits.map((v) => {
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visits.map((v) => {
                       const due = v.totalAmount - v.paidAmount;
                       return (
                         <tr key={v.id} className="hover:bg-slate-50 transition">
@@ -181,17 +176,38 @@ export default function VisitsPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <Link href={`/dashboard/visits/${v.id}`} className="text-blue-600 hover:underline text-xs">
-                              View
-                            </Link>
+                            <Link href={`/dashboard/visits/${v.id}`} className="text-blue-600 hover:underline text-xs">View</Link>
                           </td>
                         </tr>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {visits.map((v) => {
+                  const due = v.totalAmount - v.paidAmount;
+                  return (
+                    <Link key={v.id} href={`/dashboard/visits/${v.id}`} className="flex items-start justify-between px-4 py-3 hover:bg-slate-50 transition">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-blue-700">{v.visitCode}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${STATUS_COLORS[v.status] ?? "bg-slate-100 text-slate-600"}`}>{v.status}</span>
+                        </div>
+                        <p className="text-sm font-medium text-slate-900 mt-0.5">{v.patientName}</p>
+                        <p className="text-xs text-slate-500">{v.visitDate} · {v.doctorName}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <p className="text-sm font-semibold text-slate-900">{formatCurrency(v.totalAmount)}</p>
+                        {due > 0 && <p className="text-xs text-red-500">Due {formatCurrency(due)}</p>}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {!loading && hasMore && (

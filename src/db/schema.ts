@@ -59,6 +59,9 @@ export const organizations = sqliteTable("organizations", {
   email: text("email"),
   logoUrl: text("logo_url"),
   themeConfig: text("theme_config"),
+  gstin: text("gstin"),                          // 15-char GST Identification Number
+  gstRegistered: integer("gst_registered").notNull().default(0),
+  gstStateCode: text("gst_state_code"),          // 2-digit state code e.g. "33" for Tamil Nadu
   isActive: integer("is_active").notNull().default(1),
   scheduledDeleteAt: integer("scheduled_delete_at"),
   createdAt: integer("created_at").notNull(),
@@ -239,6 +242,17 @@ export const invoices = sqliteTable("invoices", {
     enum: ["PENDING", "PARTIAL", "PAID"],
   }).notNull().default("PENDING"),
   notes: text("notes"),
+  // GST fields (India)
+  gstEnabled: integer("gst_enabled").notNull().default(0),
+  isInterState: integer("is_inter_state").notNull().default(0),
+  taxableAmount: real("taxable_amount"),
+  cgstRate: real("cgst_rate").notNull().default(9),
+  sgstRate: real("sgst_rate").notNull().default(9),
+  igstRate: real("igst_rate").notNull().default(18),
+  cgstAmount: real("cgst_amount"),
+  sgstAmount: real("sgst_amount"),
+  igstAmount: real("igst_amount"),
+  sacCode: text("sac_code").notNull().default("999312"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -419,6 +433,20 @@ export const calendarIntegrations = sqliteTable("calendar_integrations", {
   createdAt:      integer("created_at").notNull(),
   updatedAt:      integer("updated_at").notNull(),
 });
+
+// ─── Tooth Chart ─────────────────────────────────────────────────────────────
+// One row per patient per organisation. tooth_data is a JSON object keyed by
+// FDI tooth number (e.g. "11") with condition + notes per tooth.
+export const toothChart = sqliteTable("tooth_chart", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  patientId:      text("patient_id").notNull().references(() => patients.id),
+  toothData:      text("tooth_data").notNull().default("{}"), // JSON: Record<string, { condition, notes? }>
+  updatedAt:      integer("updated_at").notNull(),
+  updatedBy:      text("updated_by").notNull().references(() => users.id),
+}, (t) => ({
+  uniqOrgPatient: unique().on(t.organizationId, t.patientId),
+}));
 
 export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),

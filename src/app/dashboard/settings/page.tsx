@@ -36,6 +36,7 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "" });
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -55,6 +56,12 @@ export default function SettingsPage() {
         setTheme(t);
         setCustomColor(t.primaryColor);
         setLogoPreview(o.logoUrl ?? null);
+        const orgAny = o as unknown as Record<string, unknown>;
+        setGstForm({
+          gstin: (orgAny.gstin as string) ?? "",
+          gstRegistered: !!orgAny.gstRegistered,
+          gstStateCode: (orgAny.gstStateCode as string) ?? "",
+        });
         setLoading(false);
       });
     orgApi.members.list()
@@ -75,7 +82,13 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage("");
     try {
-      await orgApi.updateProfile({ ...form, address: serializeAddress(addressData) });
+      await orgApi.updateProfile({
+        ...form,
+        address: serializeAddress(addressData),
+        gstin: gstForm.gstin || null,
+        gstRegistered: gstForm.gstRegistered,
+        gstStateCode: gstForm.gstStateCode || null,
+      } as Parameters<typeof orgApi.updateProfile>[0]);
       toast.success("Profile saved successfully");
       setMessage("Profile saved successfully.");
     } catch (e) {
@@ -229,6 +242,47 @@ export default function SettingsPage() {
               <Field label="Address">
                 <AddressForm value={addressData} onChange={setAddressData} />
               </Field>
+
+              {/* GST Section */}
+              <div className="pt-4 mt-4 border-t" style={{ borderColor: "var(--border)" }}>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>GST Details (India)</h3>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={gstForm.gstRegistered}
+                      onChange={e => setGstForm(g => ({ ...g, gstRegistered: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm" style={{ color: "var(--foreground)" }}>GST Registered</span>
+                  </label>
+                  {gstForm.gstRegistered && (
+                    <>
+                      <Field label="GSTIN (15-digit)">
+                        <input
+                          type="text"
+                          value={gstForm.gstin}
+                          onChange={e => setGstForm(g => ({ ...g, gstin: e.target.value.toUpperCase() }))}
+                          placeholder="33ABCDE1234F1Z5"
+                          maxLength={15}
+                          className="field-input font-mono uppercase"
+                        />
+                      </Field>
+                      <Field label="State Code">
+                        <input
+                          type="text"
+                          value={gstForm.gstStateCode}
+                          onChange={e => setGstForm(g => ({ ...g, gstStateCode: e.target.value }))}
+                          placeholder="33 (Tamil Nadu)"
+                          maxLength={2}
+                          className="field-input"
+                        />
+                        <p className="text-xs text-slate-400 mt-0.5">First 2 digits of your GSTIN (e.g. 33 for Tamil Nadu, 27 for Maharashtra)</p>
+                      </Field>
+                    </>
+                  )}
+                </div>
+              </div>
 
               {message && <StatusMessage message={message} />}
               <div className="pt-2">

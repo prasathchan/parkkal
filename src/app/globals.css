@@ -83,3 +83,62 @@ body {
   body { background: white !important; }
   .no-print { display: none !important; }
 }
+
+/*
+ * Dark mode overrides for hardcoded Tailwind colour classes.
+ *
+ * Most pages use concrete classes like `bg-white` or `text-slate-900` rather
+ * than CSS-variable utilities.  Adding `darkMode:"class"` to Tailwind config
+ * makes `dark:` prefixes work, but retrofitting every file is a large change.
+ * These rules map the most-used light-palette classes to their dark equivalents
+ * under the `.dark` selector so every existing page gets dark mode for free.
+ */
+.dark .bg-white          { background-color: var(--card) !important; }
+.dark .bg-slate-50       { background-color: #1e293b !important; }
+.dark .bg-slate-100      { background-color: #1e293b !important; }
+.dark .bg-slate-200      { background-color: #334155 !important; }
+.dark .bg-gray-50        { background-color: #1e293b !important; }
+.dark .bg-gray-100       { background-color: #1e293b !important; }
+
+.dark .text-slate-900    { color: #f1f5f9 !important; }
+.dark .text-slate-800    { color: #e2e8f0 !important; }
+.dark .text-slate-700    { color: #cbd5e1 !important; }
+.dark .text-slate-600    { color: #94a3b8 !important; }
+.dark .text-slate-500    { color: #64748b !important; }
+.dark .text-slate-400    { color: #475569 !important; }
+.dark .text-gray-900     { color: #f1f5f9 !important; }
+.dark .text-gray-800     { color: #e2e8f0 !important; }
+.dark .text-gray-700     { color: #cbd5e1 !important; }
+.dark .text-gray-600     { color: #94a3b8 !important; }
+.dark .text-gray-500     { color: #64748b !important; }
+
+.dark .border-slate-200  { border-color: var(--border) !important; }
+.dark .border-slate-100  { border-color: #334155 !important; }
+.dark .border-gray-200   { border-color: var(--border) !important; }
+.dark .border-gray-100   { border-color: #334155 !important; }
+
+/* Divide utilities (table / list separators) */
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-y > :not([hidden]) ~ :not([hidden])          { border-color: var(--border) !important; }
+
+/* Hover variants */
+.dark .hover\:bg-slate-50:hover  { background-color: #1e293b !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
+.dark .hover\:bg-gray-50:hover   { background-color: #1e293b !important; }
+
+/* Table header */
+.dark thead, .dark .bg-slate-50.text-xs { background-color: #1e293b !important; }
+
+/* Inputs / selects not using field-input */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.dark select,
+.dark textarea {
+  background-color: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+  color-scheme: dark;
+}
+
+/* Placeholder text */
+.dark ::placeholder { color: #475569; }

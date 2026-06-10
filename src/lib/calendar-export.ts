@@ -157,7 +157,7 @@ function buildICSContent(params: CalendarEventParams): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Parkkal Dental//Appointment//EN",
+    "PRODID:-//Parkkal//Appointment//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

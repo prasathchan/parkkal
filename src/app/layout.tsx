@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Parkkal Dental Clinic",
-  description: "Dental Clinic Management System",
+  title: "Parkkal",
+  description: "One Platform. Every Clinic. Zero Compromises",
 };
 
 export default function RootLayout({

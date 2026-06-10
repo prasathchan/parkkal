@@ -8,13 +8,16 @@
 
 import { ToastProvider } from "@/context/toast-context";
 import { ToastContainer } from "@/components/ui/toast";
+import { SidebarProvider } from "@/context/sidebar-context";
 import type { ReactNode } from "react";
 
 export function DashboardProviders({ children }: { children: ReactNode }) {
   return (
-    <ToastProvider>
-      {children}
-      <ToastContainer />
-    </ToastProvider>
+    <SidebarProvider>
+      <ToastProvider>
+        {children}
+        <ToastContainer />
+      </ToastProvider>
+    </SidebarProvider>
   );
 }

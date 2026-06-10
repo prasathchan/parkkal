@@ -114,7 +114,7 @@ export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): P
     .from(users)
     .where(eq(users.id, appt.doctorId));
 
-  const clinicName  = org?.name    ?? "Parkkal Dental";
+  const clinicName  = org?.name    ?? "Parkkal";
   const doctorName  = doctor?.name ?? undefined;
 
   // ── Determine which channels apply for this patient ───────────────────────

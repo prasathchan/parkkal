@@ -121,58 +121,84 @@ export default function PatientsPage() {
             </Link>
           </div>
 
-          {/* Patient table */}
+          {/* Patient list */}
           {loading ? (
             <div role="status" aria-label="Loading patients..." className="p-4">
               <SkeletonTable rows={8} cols={5} />
             </div>
+          ) : patients.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-sm">
+              {searchInput ? "No patients found matching your search" : "No patients yet"}
+            </div>
           ) : (
-          <Table>
-            <TableHead>
-              <tr>
-                <TableHeadCell>Code</TableHeadCell>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Phone</TableHeadCell>
-                <TableHeadCell>Age / Gender</TableHeadCell>
-                <TableHeadCell>Registered</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {patients.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-400">
-                    {searchInput ? "No patients found matching your search" : "No patients yet"}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                patients.map((patient) => (
-                  <TableRow key={patient.id}>
-                    <TableCell className="font-mono text-xs font-medium text-blue-700">
-                      {patient.patientCode}
-                    </TableCell>
-                    <TableCell className="font-medium">{patient.name}</TableCell>
-                    <TableCell>{patient.phone}</TableCell>
-                    <TableCell>
-                      {patient.dateOfBirth ? `${calculateAge(patient.dateOfBirth)} yrs` : "—"}
-                      {patient.gender ? ` · ${patient.gender}` : ""}
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      {formatDate(patient.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/patients/${patient.id}`}
-                        className="text-blue-600 hover:underline text-xs font-medium"
-                      >
-                        View
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+            <>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHead>
+                    <tr>
+                      <TableHeadCell>Code</TableHeadCell>
+                      <TableHeadCell>Name</TableHeadCell>
+                      <TableHeadCell>Phone</TableHeadCell>
+                      <TableHeadCell>Age / Gender</TableHeadCell>
+                      <TableHeadCell>Registered</TableHeadCell>
+                      <TableHeadCell>Actions</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody>
+                    {patients.map((patient) => (
+                      <TableRow key={patient.id}>
+                        <TableCell className="font-mono text-xs font-medium text-blue-700">
+                          {patient.patientCode}
+                        </TableCell>
+                        <TableCell className="font-medium">{patient.name}</TableCell>
+                        <TableCell>{patient.phone}</TableCell>
+                        <TableCell>
+                          {patient.dateOfBirth ? `${calculateAge(patient.dateOfBirth)} yrs` : "—"}
+                          {patient.gender ? ` · ${patient.gender}` : ""}
+                        </TableCell>
+                        <TableCell className="text-slate-500">
+                          {formatDate(patient.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            href={`/dashboard/patients/${patient.id}`}
+                            className="text-blue-600 hover:underline text-xs font-medium"
+                          >
+                            View
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {patients.map((patient) => (
+                  <Link
+                    key={patient.id}
+                    href={`/dashboard/patients/${patient.id}`}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm text-slate-900 truncate">{patient.name}</span>
+                        <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded flex-shrink-0">{patient.patientCode}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{patient.phone}</p>
+                      {patient.dateOfBirth && (
+                        <p className="text-xs text-slate-400">{calculateAge(patient.dateOfBirth)} yrs{patient.gender ? ` · ${patient.gender}` : ""}</p>
+                      )}
+                    </div>
+                    <svg className="w-4 h-4 text-slate-300 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Pagination — only shown when there are more than PAGE_SIZE results */}

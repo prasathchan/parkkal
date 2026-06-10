@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 import { getSidebarColors } from "@/lib/theme";
 import { authApi } from "@/api";
+import { useSidebar } from "@/context/sidebar-context";
 
 type SidebarColors = ReturnType<typeof getSidebarColors>;
 
@@ -177,10 +178,9 @@ const navSections: NavSection[] = [
     ],
   },
 
-  // ── System (admin only) ───────────────────────────────────────────────────
+  // ── System ────────────────────────────────────────────────────────────────
   {
     heading: "System",
-    adminOnly: true,
     items: [
       {
         label: "Calendar Sync",
@@ -213,15 +213,18 @@ function NavLink({
   item,
   isActive,
   colors,
+  onNavigate,
 }: {
   item: NavItem;
   isActive: boolean;
   colors: SidebarColors;
+  onNavigate?: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors",
         item.sub ? "px-3 py-2" : "px-3 py-2.5"
@@ -278,6 +281,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
   const colors = getSidebarColors(theme);
   const isAdmin = user.role === "ADMIN";
   const isLight = theme.sidebarStyle === "light";
+  const { isOpen, close } = useSidebar();
 
   async function handleLogout() {
     await authApi.logout().catch(() => {});
@@ -296,11 +300,27 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
     .filter((s) => s.items.length > 0);
 
   return (
-    <aside
-      data-sidebar=""
-      className="print:hidden w-56 flex-shrink-0 h-screen sticky top-0 flex flex-col transition-colors duration-200"
-      style={{ background: colors.bg, borderRight: isLight ? `1px solid ${colors.border}` : "none" }}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={close}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        data-sidebar=""
+        className={cn(
+          "print:hidden w-56 flex-shrink-0 h-screen flex flex-col transition-all duration-200",
+          // Desktop: always visible, sticky
+          "md:sticky md:top-0",
+          // Mobile: fixed overlay, hidden by default, slides in when open
+          "fixed top-0 left-0 z-50 md:relative md:z-auto",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+        style={{ background: colors.bg, borderRight: isLight ? `1px solid ${colors.border}` : "none" }}
+      >
       {/* Logo / Org Name */}
       <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.divider}` }}>
         <div className="flex items-center gap-3">
@@ -317,9 +337,9 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
           )}
           <div>
             <p className="font-bold text-sm leading-tight" style={{ color: colors.textActive }}>
-              {user.orgName || "Parkkal Dental"}
+              {user.orgName || "Parkkal"}
             </p>
-            <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>Clinic Management</p>
+            <p className="text-xs" style={{ color: colors.text, opacity: 0.7 }}>One Platform. Every Clinic.</p>
           </div>
         </div>
       </div>
@@ -343,7 +363,7 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
                 return (
-                  <NavLink key={item.href} item={item} isActive={isActive} colors={colors} />
+                  <NavLink key={item.href} item={item} isActive={isActive} colors={colors} onNavigate={close} />
                 );
               })}
             </div>
@@ -367,5 +387,6 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

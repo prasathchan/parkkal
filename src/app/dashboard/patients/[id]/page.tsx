@@ -8,6 +8,7 @@ import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { formatDate, calculateAge, formatCurrency, formatDoctorName } from "@/lib/utils";
+import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
 
 interface Patient {
   id: string;
@@ -32,7 +33,7 @@ interface PatientBalance {
   lastVisit: string | null;
 }
 
-type TabType = "visits" | "appointments" | "treatments" | "invoices" | "emergency";
+type TabType = "visits" | "appointments" | "treatments" | "invoices" | "chart" | "emergency";
 
 interface EmergencyContact {
   id: string;
@@ -50,6 +51,8 @@ export default function PatientDetailPage() {
   const [tab, setTab] = useState<TabType>("visits");
   const [tabData, setTabData] = useState<unknown[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [chartData, setChartData] = useState<ChartData>({});
+  const [chartSaving, setChartSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,13 +75,20 @@ export default function PatientDetailPage() {
         .catch(() => setEmergencyContacts([]));
       return;
     }
-    const urls: Record<Exclude<TabType, "emergency">, string> = {
+    if (tab === "chart") {
+      fetch(`/api/patients/${id}/tooth-chart`)
+        .then((r) => r.json())
+        .then((d) => setChartData(d.toothData ?? {}))
+        .catch(() => {});
+      return;
+    }
+    const urls: Record<Exclude<TabType, "emergency" | "chart">, string> = {
       visits: `/api/visits?patientId=${id}`,
       appointments: `/api/appointments?patientId=${id}`,
       treatments: `/api/treatments?patientId=${id}`,
       invoices: `/api/invoices?patientId=${id}`,
     };
-    fetch(urls[tab as Exclude<TabType, "emergency">])
+    fetch(urls[tab as Exclude<TabType, "emergency" | "chart">])
       .then((r) => r.json())
       .then((d) => setTabData(d.visits || d.appointments || d.treatments || d.invoices || []));
   }, [id, tab]);
@@ -102,11 +112,26 @@ export default function PatientDetailPage() {
     );
   }
 
+  async function saveChart(data: ChartData) {
+    setChartData(data);
+    setChartSaving(true);
+    try {
+      await fetch(`/api/patients/${id}/tooth-chart`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ toothData: data }),
+      });
+    } finally {
+      setChartSaving(false);
+    }
+  }
+
   const tabs: { key: TabType; label: string }[] = [
     { key: "visits", label: "Visits" },
     { key: "appointments", label: "Appointments" },
     { key: "treatments", label: "Treatments" },
     { key: "invoices", label: "Invoices" },
+    { key: "chart", label: "Tooth Chart" },
     { key: "emergency", label: "Emergency" },
   ];
 
@@ -256,7 +281,20 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <CardContent>
-            {tab === "emergency" ? (
+            {tab === "chart" ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-800">FDI Dental Chart</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Click any tooth to record its condition. Changes save automatically.</p>
+                  </div>
+                  {chartSaving && (
+                    <span className="text-xs text-slate-400 animate-pulse">Saving…</span>
+                  )}
+                </div>
+                <ToothChart data={chartData} onChange={saveChart} />
+              </div>
+            ) : tab === "emergency" ? (
               emergencyContacts.length === 0 ? (
                 <p className="text-center text-slate-400 text-sm py-6">No emergency contacts on file.</p>
               ) : (

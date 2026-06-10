@@ -146,7 +146,7 @@ async function sendEmail(to: string, subject: string, message: string, patientNa
           <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155;">${message.replace(/\n/g, "<br>")}</p>
         </div>
         <p style="color: #94a3b8; font-size: 12px; margin: 16px 0 0;">
-          This is an automated reminder from Parkkal Dental Management.
+          This is an automated reminder from Parkkal.
           Please contact the clinic directly to reschedule or cancel.
         </p>
       </div>
@@ -195,7 +195,7 @@ export async function sendNotification(params: SendNotificationParams): Promise<
     case "EMAIL":
       await sendEmail(
         to,
-        subject ?? "Appointment Reminder — Parkkal Dental",
+        subject ?? "Appointment Reminder — Parkkal",
         message,
         patientName,
       );

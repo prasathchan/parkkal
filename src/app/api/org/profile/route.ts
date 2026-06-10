@@ -11,6 +11,9 @@ const updateOrgSchema = z.object({
   email: z.string().email().optional().or(z.literal("")).nullable(),
   logoUrl: z.string().url().optional().or(z.literal("")).nullable(),
   themeConfig: z.union([z.string(), z.record(z.unknown())]).optional(),
+  gstin: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).optional().nullable().or(z.literal("")),
+  gstRegistered: z.boolean().optional(),
+  gstStateCode: z.string().max(2).optional().nullable(),
 });
 
 /** GET /api/org/profile — fetch the current org's settings */
@@ -30,7 +33,7 @@ export const PATCH = withRoute(
     const parsed = updateOrgSchema.safeParse(await req.json());
     if (!parsed.success) return apiError("Invalid input", 400);
 
-    const { name, address, phone, email, logoUrl, themeConfig } = parsed.data;
+    const { name, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode } = parsed.data;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
     if (address !== undefined) updates.address = address;
@@ -38,6 +41,9 @@ export const PATCH = withRoute(
     if (email !== undefined) updates.email = email || null;
     if (logoUrl !== undefined) updates.logoUrl = logoUrl || null;
     if (themeConfig !== undefined) updates.themeConfig = typeof themeConfig === "string" ? themeConfig : JSON.stringify(themeConfig);
+    if (gstin !== undefined) updates.gstin = gstin || null;
+    if (gstRegistered !== undefined) updates.gstRegistered = gstRegistered ? 1 : 0;
+    if (gstStateCode !== undefined) updates.gstStateCode = gstStateCode || null;
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
 

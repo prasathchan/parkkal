@@ -40,13 +40,13 @@ export async function sendStaffInviteEmail(
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
       <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal Dental</h1>
-          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">Smile, We Care</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal</h1>
+          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">One Platform. Every Clinic. Zero Compromises</p>
         </div>
         <div style="padding: 40px 32px;">
           <p style="color: #374151; font-size: 16px; margin: 0 0 8px;">Hi ${name},</p>
           <p style="color: #6b7280; font-size: 15px; margin: 0 0 24px;">
-            You've been added as a staff member at <strong style="color: #1e40af;">${orgName}</strong> on Parkkal Dental.
+            You've been added as a staff member at <strong style="color: #1e40af;">${orgName}</strong> on Parkkal.
             Click the button below to set up your account and get started.
           </p>
           <div style="text-align: center; margin: 0 0 32px;">
@@ -62,7 +62,7 @@ export async function sendStaffInviteEmail(
           </p>
         </div>
         <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal Dental Clinic</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal</p>
         </div>
       </div>
     </body>
@@ -76,7 +76,7 @@ export async function sendStaffInviteEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal Dental <noreply@parkkal.com>",
+      from: "Parkkal <noreply@parkkal.com>",
       to: [to],
       subject: `You've been added to ${orgName} — Set up your account`,
       html,
@@ -111,8 +111,8 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
       <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
         <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 32px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal Dental</h1>
-          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">Smile, We Care</p>
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal</h1>
+          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">One Platform. Every Clinic. Zero Compromises</p>
         </div>
         <div style="padding: 40px 32px; text-align: center;">
           <p style="color: #374151; font-size: 16px; margin: 0 0 8px;">Hi ${name},</p>
@@ -123,7 +123,7 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">If you didn't request this, you can safely ignore this email.</p>
         </div>
         <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal Dental Clinic</p>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal</p>
         </div>
       </div>
     </body>
@@ -137,7 +137,7 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal Dental <noreply@parkkal.com>",
+      from: "Parkkal <noreply@parkkal.com>",
       to: [to],
       subject: "Your Parkkal verification code",
       html,

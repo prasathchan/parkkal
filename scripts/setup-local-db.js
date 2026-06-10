@@ -365,6 +365,31 @@ async function main() {
     `ALTER TABLE visits ADD COLUMN recall_notes TEXT`,
     `ALTER TABLE patients ADD COLUMN referral_source TEXT`,
     `CREATE INDEX IF NOT EXISTS idx_visits_recall_date ON visits(organization_id, recall_date) WHERE recall_date IS NOT NULL`,
+    // 0034: GST invoicing
+    `ALTER TABLE organizations ADD COLUMN gstin TEXT`,
+    `ALTER TABLE organizations ADD COLUMN gst_registered INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE organizations ADD COLUMN gst_state_code TEXT`,
+    `ALTER TABLE invoices ADD COLUMN gst_enabled INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE invoices ADD COLUMN is_inter_state INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE invoices ADD COLUMN taxable_amount REAL`,
+    `ALTER TABLE invoices ADD COLUMN cgst_rate REAL NOT NULL DEFAULT 9`,
+    `ALTER TABLE invoices ADD COLUMN sgst_rate REAL NOT NULL DEFAULT 9`,
+    `ALTER TABLE invoices ADD COLUMN igst_rate REAL NOT NULL DEFAULT 18`,
+    `ALTER TABLE invoices ADD COLUMN cgst_amount REAL`,
+    `ALTER TABLE invoices ADD COLUMN sgst_amount REAL`,
+    `ALTER TABLE invoices ADD COLUMN igst_amount REAL`,
+    `ALTER TABLE invoices ADD COLUMN sac_code TEXT NOT NULL DEFAULT '999312'`,
+    // 0035: tooth chart
+    `CREATE TABLE IF NOT EXISTS tooth_chart (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL REFERENCES organizations(id),
+  patient_id TEXT NOT NULL REFERENCES patients(id),
+  tooth_data TEXT NOT NULL DEFAULT '{}',
+  updated_at INTEGER NOT NULL,
+  updated_by TEXT NOT NULL REFERENCES users(id),
+  UNIQUE(organization_id, patient_id)
+)`,
+    `CREATE INDEX IF NOT EXISTS idx_tooth_chart_org_patient ON tooth_chart(organization_id, patient_id)`,
   ];
   for (const sql of migrations) {
     try { await client.execute(sql); } catch { /* column already exists */ }
