@@ -5,20 +5,37 @@ import { formatCurrency } from "@/lib/utils";
 import { CATEGORIES, DEFAULT_NEW_ITEM, type NewItemState, type Treatment, type VisitItem } from "./types";
 import { visitsApi, ApiError } from "@/api";
 
+interface Payment { id: string; }
+
 interface Props {
   visitId: string;
   visitStatus: string;
   items: VisitItem[];
   treatments: Treatment[];
+  payments: Payment[];
   prefillItem?: NewItemState | null;
   onRefresh: () => Promise<void>;
   onPageError: (msg: string) => void;
 }
 
-export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefillItem, onRefresh, onPageError }: Props) {
+interface EditState {
+  itemId: string;
+  itemName: string;
+  category: string;
+  toothNumber: string;
+  quantity: string;
+  unitPrice: string;
+  notes: string;
+}
+
+export function VisitItemsTab({ visitId, visitStatus, items, treatments, payments, prefillItem, onRefresh, onPageError }: Props) {
   const [newItem, setNewItem] = useState<NewItemState>(prefillItem ?? DEFAULT_NEW_ITEM);
   const [addingItem, setAddingItem] = useState(false);
   const [addItemError, setAddItemError] = useState("");
+  const [editState, setEditState] = useState<EditState | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const hasPayments = payments.length > 0;
 
   // Sync prefill from parent (e.g., "Add to Bill" from treatment tab)
   // We use a key pattern: parent passes prefillItem and we capture it into local state on mount.
@@ -50,6 +67,40 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
       await onRefresh();
     } catch (e) {
       onPageError(e instanceof ApiError ? e.message : "Failed to delete item");
+    }
+  }
+
+  function startEdit(item: VisitItem) {
+    setEditState({
+      itemId: item.id,
+      itemName: item.itemName,
+      category: item.category,
+      toothNumber: item.toothNumber || "",
+      quantity: String(item.quantity),
+      unitPrice: String(item.unitPrice),
+      notes: item.notes || "",
+    });
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editState) return;
+    setSavingEdit(true);
+    try {
+      await visitsApi.items.update(visitId, editState.itemId, {
+        itemName: editState.itemName,
+        category: editState.category as import("@/constants/visit").ItemCategory,
+        toothNumber: editState.toothNumber || undefined,
+        quantity: Number(editState.quantity),
+        unitPrice: Number(editState.unitPrice),
+        notes: editState.notes || undefined,
+      });
+      setEditState(null);
+      await onRefresh();
+    } catch (e) {
+      onPageError(e instanceof ApiError ? e.message : "Failed to update item");
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -226,31 +277,127 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, prefill
                 <td colSpan={7} className="text-center py-6 text-slate-400">No items added yet</td>
               </tr>
             ) : (
-              items.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-2.5">
-                    <div className="font-medium text-slate-900">{item.itemName}</div>
-                    {item.notes && <div className="text-xs text-slate-400">{item.notes}</div>}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{item.category}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-500">{item.toothNumber || "—"}</td>
-                  <td className="px-3 py-2.5 text-right">{item.quantity}</td>
-                  <td className="px-3 py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold">{formatCurrency(item.amount)}</td>
-                  {visitStatus !== "CANCELLED" && (
-                    <td className="px-3 py-2.5 text-right">
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        Delete
-                      </button>
+              items.map((item) => {
+                const isEditing = editState?.itemId === item.id;
+                if (isEditing && editState) {
+                  return (
+                    <tr key={item.id} className="bg-blue-50">
+                      <td className="px-3 py-2" colSpan={7}>
+                        <form onSubmit={handleSaveEdit} className="flex flex-wrap gap-2 items-end">
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-0.5">Category</label>
+                            <select
+                              value={editState.category}
+                              onChange={(e) => setEditState({ ...editState, category: e.target.value })}
+                              className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              {CATEGORIES.map((c) => (
+                                <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex-1 min-w-[140px]">
+                            <label className="block text-xs text-slate-500 mb-0.5">Item Name *</label>
+                            <input
+                              required
+                              value={editState.itemName}
+                              onChange={(e) => setEditState({ ...editState, itemName: e.target.value })}
+                              className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-0.5">Tooth #</label>
+                            <input
+                              value={editState.toothNumber}
+                              onChange={(e) => setEditState({ ...editState, toothNumber: e.target.value })}
+                              placeholder="—"
+                              className="w-20 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-0.5">Qty</label>
+                            <input
+                              type="number" min="0.01" step="0.01"
+                              value={editState.quantity}
+                              onChange={(e) => setEditState({ ...editState, quantity: e.target.value })}
+                              className="w-16 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-500 mb-0.5">Unit Price (₹)</label>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={editState.unitPrice}
+                              onChange={(e) => setEditState({ ...editState, unitPrice: e.target.value })}
+                              className="w-24 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-[100px]">
+                            <label className="block text-xs text-slate-500 mb-0.5">Notes</label>
+                            <input
+                              value={editState.notes}
+                              onChange={(e) => setEditState({ ...editState, notes: e.target.value })}
+                              placeholder="Optional..."
+                              className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              disabled={savingEdit}
+                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {savingEdit ? "Saving…" : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditState(null)}
+                              className="border border-slate-300 text-slate-600 px-3 py-1 rounded text-sm hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  );
+                }
+                return (
+                  <tr key={item.id} className="hover:bg-slate-50">
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium text-slate-900">{item.itemName}</div>
+                      {item.notes && <div className="text-xs text-slate-400">{item.notes}</div>}
                     </td>
-                  )}
-                </tr>
-              ))
+                    <td className="px-3 py-2.5">
+                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{item.category}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-slate-500">{item.toothNumber || "—"}</td>
+                    <td className="px-3 py-2.5 text-right">{item.quantity}</td>
+                    <td className="px-3 py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
+                    <td className="px-3 py-2.5 text-right font-semibold">{formatCurrency(item.amount)}</td>
+                    {visitStatus !== "CANCELLED" && (
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="flex justify-end gap-3">
+                          <button
+                            onClick={() => startEdit(item)}
+                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                          >
+                            Edit
+                          </button>
+                          {!hasPayments && (
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
           {items.length > 0 && (

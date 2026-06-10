@@ -455,6 +455,7 @@ export default function VisitDetailPage() {
                 visitStatus={visit.status}
                 items={items}
                 treatments={treatments}
+                payments={payments}
                 prefillItem={prefillItem}
                 onRefresh={fetchVisit}
                 onPageError={setPageError}
