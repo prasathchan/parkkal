@@ -4,6 +4,9 @@
  * TypeScript shapes for the reports/analytics API response.
  */
 
+export type ReportPeriod = "7d" | "30d" | "90d" | "365d";
+// Re-exported so pages can import from either @/types or @/api/reports
+
 export interface DayRevenue {
   date: string;      // "YYYY-MM-DD"
   billed: number;

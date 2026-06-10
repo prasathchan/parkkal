@@ -27,10 +27,10 @@ export interface Visit {
   visitType?: string | null;
   recallDate?: string | null;
   recallNotes?: string | null;
-  patientName: string;
-  patientCode: string;
+  patientName?: string | null;
+  patientCode?: string | null;
   patientId: string;
-  doctorName: string;
+  doctorName?: string | null;
   doctorId: string;
 }
 
@@ -72,7 +72,7 @@ export interface HistoryVisit {
   id: string;
   visitCode: string;
   visitDate: string;
-  doctorName: string;
+  doctorName?: string | null;
   totalAmount: number;
   status: string;
 }

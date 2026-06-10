@@ -12,22 +12,22 @@ import { treatmentsApi, ApiError } from "@/api";
 interface Treatment {
   id: string;
   description: string;
-  procedure: string | null;
-  toothNumbers: string | null;
+  procedure?: string | null;
+  toothNumbers?: string | null;
   cost: number;
   status: "PLANNED" | "IN_PROGRESS" | "COMPLETED";
   consentStatus: string;
-  consentDocumentUrl: string | null;
-  consentDocumentName: string | null;
-  consentNotes: string | null;
+  consentDocumentUrl?: string | null;
+  consentDocumentName?: string | null;
+  consentNotes?: string | null;
   emergencyOverride: number;
-  emergencyReason: string | null;
+  emergencyReason?: string | null;
   createdAt: number;
   patientId: string;
-  patientName: string | null;
-  patientCode: string | null;
+  patientName?: string | null;
+  patientCode?: string | null;
   doctorId: string;
-  doctorName: string | null;
+  doctorName?: string | null;
 }
 
 interface VisitRow {

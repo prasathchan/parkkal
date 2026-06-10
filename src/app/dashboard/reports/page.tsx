@@ -6,7 +6,8 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { useAsync } from "@/hooks/use-async";
 import { reportsApi, ApiError } from "@/api";
-import type { ReportData, ReportPeriod } from "@/types";
+import type { ReportData } from "@/types";
+import type { ReportPeriod } from "@/api/reports";
 
 // ─── Bar chart (pure CSS) ──────────────────────────────────────────────────────
 
@@ -117,9 +118,10 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
 // ─── Period config ─────────────────────────────────────────────────────────────
 
 const PERIOD_LABELS: Record<ReportPeriod, string> = {
-  "7d":  "Last 7 days",
-  "30d": "Last 30 days",
-  "90d": "Last 90 days",
+  "7d":   "Last 7 days",
+  "30d":  "Last 30 days",
+  "90d":  "Last 90 days",
+  "365d": "Last 12 months",
 };
 
 // ─── Page ──────────────────────────────────────────────────────────────────────

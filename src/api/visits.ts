@@ -60,8 +60,16 @@ export function listVisits(params: ListVisitsParams = {}): Promise<VisitListResp
 
 // ─── Get / update / delete a visit ───────────────────────────────────────────
 
-export function getVisit(id: string): Promise<{ visit: Visit }> {
-  return apiFetch<{ visit: Visit }>(`/api/visits/${id}`);
+export interface VisitDetailResponse {
+  visit: Visit;
+  items: VisitItem[];
+  payments: Payment[];
+  attachments: Attachment[];
+  prescriptions: Prescription[];
+}
+
+export function getVisit(id: string): Promise<VisitDetailResponse> {
+  return apiFetch<VisitDetailResponse>(`/api/visits/${id}`);
 }
 
 export interface CreateVisitPayload {
@@ -114,7 +122,7 @@ export function listItems(visitId: string): Promise<{ items: VisitItem[] }> {
 
 export interface AddItemPayload {
   itemName: string;
-  category: ItemCategory;
+  category: ItemCategory | string;
   toothNumber?: string;
   quantity: number;
   unitPrice: number;

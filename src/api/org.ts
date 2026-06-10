@@ -84,6 +84,7 @@ export interface AddMemberPayload {
   password?: string;
   salaryType?: "FIXED" | "PER_APPOINTMENT";
   salaryAmount?: number;
+  isActive?: boolean;
   joinedAt?: string;
   emergencyContact?: {
     name: string;

@@ -24,9 +24,9 @@ interface Doctor {
 interface Appointment {
   id: string;
   appointmentDate: string;
-  appointmentTime: string;
+  appointmentTime?: string | null;
   type: string;
-  notes: string | null;
+  notes?: string | null;
   doctorId: string;
 }
 

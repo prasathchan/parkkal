@@ -43,7 +43,15 @@ export interface AppLogEntry {
   statusCode?: number | null;
   durationMs?: number | null;
   createdAt: number;
-  [key: string]: unknown;
+  // Fields present when level === "error"
+  errorName?: string | null;
+  errorStack?: string | null;
+  // Fields present for authenticated requests
+  userId?: string | null;
+  userRole?: string | null;
+  organizationId?: string | null;
+  // Arbitrary extra context logged with the entry
+  data?: Record<string, unknown> | null;
 }
 
 export interface ListAppLogsParams {

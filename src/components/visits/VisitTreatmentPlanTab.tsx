@@ -71,7 +71,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   async function handleUpdateTreatmentStatus(txId: string, status: string) {
     setTxUpdating(txId);
     try {
-      await treatmentsApi.update(txId, { status });
+      await treatmentsApi.update(txId, { status: status as import("@/constants/treatment").TreatmentStatus });
       await onRefresh();
     } catch (err) {
       onPageError(err instanceof ApiError ? err.message : "Failed to update treatment status");
@@ -128,7 +128,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     try {
       await visitsApi.payments.add(visitId, {
         amount: Number(txPayForm.amount),
-        paymentMethod: txPayForm.paymentMethod,
+        paymentMethod: txPayForm.paymentMethod as import("@/constants/visit").PaymentMethod,
         referenceNumber: txPayForm.referenceNumber || null,
         notes: txPayForm.notes || null,
         treatmentId: txPayModal.treatmentId,

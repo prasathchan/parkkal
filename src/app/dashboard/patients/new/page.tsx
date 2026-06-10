@@ -98,7 +98,7 @@ export default function NewPatientPage() {
       phone: form.phone,
       email: form.email,
       dateOfBirth: form.dateOfBirth,
-      gender: form.gender,
+      gender: form.gender as "MALE" | "FEMALE" | "OTHER" | undefined,
       bloodGroup: form.bloodGroup || undefined,
       address: addressString || undefined,
       medicalHistory: form.medicalHistory,

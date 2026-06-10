@@ -110,9 +110,7 @@ export default function SettingsPage() {
   async function handleLogoUpload(file: File) {
     setLogoUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("logo", file);
-      const { logoUrl } = await orgApi.uploadLogo(fd);
+      const { logoUrl } = await orgApi.uploadLogo(file);
       setLogoPreview(logoUrl);
       setOrg(o => o ? { ...o, logoUrl } : o);
     } catch (e) {
@@ -157,7 +155,7 @@ export default function SettingsPage() {
     setPwSaving(true);
     setPwMessage(null);
     try {
-      await authApi.changePassword(pwForm.currentPassword, pwForm.newPassword);
+      await authApi.changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
       toast.success("Password changed successfully");
       setPwMessage({ type: "success", text: "Password changed successfully." });
       setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });

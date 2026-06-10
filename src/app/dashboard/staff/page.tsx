@@ -220,8 +220,8 @@ export default function StaffPage() {
                     <td className="px-4 py-3 text-slate-700">{m.salaryType}</td>
                     <td className="px-4 py-3 text-slate-700">
                       {m.salaryType === "PER_APPOINTMENT"
-                        ? `₹${m.salaryAmount.toLocaleString("en-IN")}/appt`
-                        : `₹${m.salaryAmount.toLocaleString("en-IN")}/mo`}
+                        ? `₹${(m.salaryAmount ?? 0).toLocaleString("en-IN")}/appt`
+                        : `₹${(m.salaryAmount ?? 0).toLocaleString("en-IN")}/mo`}
                     </td>
                     <td className="px-4 py-3 text-slate-500">{m.joinedAt || "—"}</td>
                     <td className="px-4 py-3">

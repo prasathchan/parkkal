@@ -480,7 +480,7 @@ export default function VisitDetailPage() {
             )}
             {tab === "history" && (
               <VisitHistoryTab
-                patientName={visit.patientName}
+                patientName={visit.patientName ?? ""}
                 history={history}
               />
             )}

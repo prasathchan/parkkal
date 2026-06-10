@@ -35,7 +35,7 @@ export default function VisitsPage() {
 
     try {
       const data = await visitsApi.list({
-        status: statusFilter || undefined,
+        status: (statusFilter || undefined) as import("@/constants/visit").VisitStatus | undefined,
         date:   dateFilter   || undefined,
         search: debouncedSearch.trim() || undefined,
         limit:  LIMIT,

@@ -4,22 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { adminApi } from "@/api";
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
-interface AppLogEntry {
-  id: string;
-  level: "error" | "security" | "warn";
-  route: string;
-  message: string;
-  organizationId: string | null;
-  userId: string | null;
-  userRole: string | null;
-  errorName: string | null;
-  errorStack: string | null;
-  data: Record<string, unknown> | null;
-  createdAt: number;
-}
+import type { AppLogEntry } from "@/api/admin";
 
 // ─── Styling maps ──────────────────────────────────────────────────────────────
 
@@ -315,7 +300,7 @@ export default function AppLogsPage() {
                         </td>
 
                         {/* Route */}
-                        <td className="px-4 py-3 text-xs font-mono text-slate-600 truncate max-w-[14rem]" title={entry.route}>
+                        <td className="px-4 py-3 text-xs font-mono text-slate-600 truncate max-w-[14rem]" title={entry.route ?? undefined}>
                           {entry.route}
                         </td>
 

@@ -17,8 +17,8 @@ interface EmergencyContact {
   name: string;
   relationship: string;
   phone: string;
-  email: string | null;
-  address: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 type SalaryRecord = {
@@ -110,7 +110,7 @@ export default function StaffDetailPage() {
   async function fetchEmergencyContacts() {
     try {
       const data = await emergencyContactsApi.list("USER", userId);
-      setEmergencyContacts(data.contacts ?? []);
+      setEmergencyContacts((data.contacts ?? []) as EmergencyContact[]);
     } catch {
       // non-fatal
     }
@@ -271,7 +271,7 @@ export default function StaffDetailPage() {
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">Salary</p>
                 <p className="font-medium text-slate-900">
-                  ₹{member.salaryAmount.toLocaleString("en-IN")}
+                  ₹{(member.salaryAmount ?? 0).toLocaleString("en-IN")}
                   {member.salaryType === "PER_APPOINTMENT" ? "/appt" : "/month"}
                 </p>
               </div>

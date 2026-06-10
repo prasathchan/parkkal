@@ -94,7 +94,7 @@ export default function PatientEditPage() {
         phone: form.phone.trim() || undefined,
         email: form.email.trim() || undefined,
         dateOfBirth: form.dateOfBirth || undefined,
-        gender: form.gender || undefined,
+        gender: (form.gender || undefined) as "MALE" | "FEMALE" | "OTHER" | undefined,
         address: serializeAddress(addressData) || undefined,
         medicalHistory: form.medicalHistory || undefined,
         bloodGroup: form.bloodGroup || undefined,

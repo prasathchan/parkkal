@@ -12,7 +12,7 @@
 import { apiFetch } from "./_client";
 import type { ReportData } from "@/types";
 
-export type ReportPeriod = "7d" | "30d" | "90d";
+export type ReportPeriod = "7d" | "30d" | "90d" | "365d";
 
 export function getReport(period: ReportPeriod): Promise<ReportData> {
   return apiFetch<ReportData>(`/api/reports?period=${period}`);
