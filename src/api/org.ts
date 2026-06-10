@@ -27,6 +27,7 @@ export function getOrgProfile(): Promise<{ organization: OrgProfile }> {
 
 export interface UpdateOrgProfilePayload {
   name?: string;
+  tagline?: string | null;
   phone?: string;
   email?: string;
   address?: string;

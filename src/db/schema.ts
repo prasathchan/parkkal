@@ -53,6 +53,7 @@ import { relations } from "drizzle-orm";
 export const organizations = sqliteTable("organizations", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  tagline: text("tagline"),
   slug: text("slug").notNull().unique(),
   address: text("address"),
   phone: text("phone"),

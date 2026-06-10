@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const updateOrgSchema = z.object({
   name: z.string().min(1).optional(),
+  tagline: z.string().max(100).optional().nullable(),
   address: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
   email: z.string().email().optional().or(z.literal("")).nullable(),
@@ -33,9 +34,10 @@ export const PATCH = withRoute(
     const parsed = updateOrgSchema.safeParse(await req.json());
     if (!parsed.success) return apiError("Invalid input", 400);
 
-    const { name, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode } = parsed.data;
+    const { name, tagline, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode } = parsed.data;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
+    if (tagline !== undefined) updates.tagline = tagline || null;
     if (address !== undefined) updates.address = address;
     if (phone !== undefined) updates.phone = phone;
     if (email !== undefined) updates.email = email || null;

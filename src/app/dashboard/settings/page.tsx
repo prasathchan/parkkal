@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [org, setOrg] = useState<OrgProfile | null>(null);
   const [tab, setTab] = useState<Tab>("profile");
-  const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [form, setForm] = useState({ name: "", tagline: "", phone: "", email: "" });
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [theme, setTheme] = useState<OrgThemeConfig>(DEFAULT_THEME);
@@ -50,7 +50,7 @@ export default function SettingsPage() {
       .then(data => {
         const o = data.organization;
         setOrg(o);
-        setForm({ name: o.name || "", phone: o.phone ?? "", email: o.email ?? "" });
+        setForm({ name: o.name || "", tagline: o.tagline ?? "", phone: o.phone ?? "", email: o.email ?? "" });
         setAddressData(parseAddress(o.address ?? null));
         const t = parseThemeConfig(o.themeConfig ?? null);
         setTheme(t);
@@ -84,6 +84,7 @@ export default function SettingsPage() {
     try {
       await orgApi.updateProfile({
         ...form,
+        tagline: form.tagline || null,
         address: serializeAddress(addressData),
         gstin: gstForm.gstin || null,
         gstRegistered: gstForm.gstRegistered,
@@ -210,7 +211,10 @@ export default function SettingsPage() {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <Field label="Organization Name *">
-                <input type="text" value={form.name} required onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="field-input" />
+                <input type="text" value={form.name} required onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="field-input" placeholder="e.g. Parkkal Dental Clinic" />
+              </Field>
+              <Field label="Tagline">
+                <input type="text" value={form.tagline} maxLength={100} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} className="field-input" placeholder="e.g. One Platform. Every Clinic. Zero Compromises." />
               </Field>
               <Field label="Phone">
                 <input type="text" value={form.phone} placeholder="+91 98765 43210" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="field-input" />

@@ -7,6 +7,7 @@
 export interface OrgProfile {
   id: string;
   name: string;
+  tagline?: string | null;
   slug: string;
   phone?: string | null;
   email?: string | null;
