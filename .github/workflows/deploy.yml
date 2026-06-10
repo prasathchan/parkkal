@@ -72,7 +72,7 @@ jobs:
 
       # Build Next.js app for Cloudflare Workers via OpenNext
       - name: Build (OpenNext for Cloudflare)
-        run: npm run build
+        run: npm run cf:build
         env:
           NODE_ENV: production
 
