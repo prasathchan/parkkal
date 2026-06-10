@@ -59,8 +59,21 @@ export default function StaffPage() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [togglingDoctor, setTogglingDoctor] = useState<string | null>(null);
 
   function touch(field: string) { setTouched(t => ({ ...t, [field]: true })); }
+
+  async function toggleDoctor(member: Member) {
+    setTogglingDoctor(member.memberId);
+    try {
+      await orgApi.members.update(member.memberId, { isDoctor: member.isDoctor !== 1 });
+      setMembers(ms => ms.map(m => m.memberId === member.memberId ? { ...m, isDoctor: member.isDoctor === 1 ? 0 : 1 } : m));
+    } catch {
+      // silently ignore — user can retry
+    } finally {
+      setTogglingDoctor(null);
+    }
+  }
 
   const fieldErrors = {
     email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? "Enter a valid email address" : "",
@@ -230,9 +243,22 @@ export default function StaffPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/dashboard/staff/${m.userId}`} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
-                        View
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link href={`/dashboard/staff/${m.userId}`} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                          View
+                        </Link>
+                        {m.role === "ADMIN" && (
+                          <button
+                            type="button"
+                            title={m.isDoctor === 1 ? "Remove doctor access" : "Grant doctor access"}
+                            disabled={togglingDoctor === m.memberId}
+                            onClick={() => toggleDoctor(m)}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${m.isDoctor === 1 ? "bg-blue-600" : "bg-slate-300"}`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${m.isDoctor === 1 ? "translate-x-4" : "translate-x-1"}`} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
