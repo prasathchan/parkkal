@@ -22,6 +22,7 @@ import type {
   VisitItem,
   Payment,
   Prescription,
+  Medicine,
   Attachment,
 } from "@/types";
 import type { VisitStatus, ItemCategory, PaymentMethod } from "@/constants/visit";
@@ -201,10 +202,7 @@ export function listPrescriptions(
 }
 
 export interface AddPrescriptionPayload {
-  medicineName: string;
-  dosage?: string;
-  frequency?: string;
-  duration?: string;
+  medicines: Medicine[];
   instructions?: string;
 }
 

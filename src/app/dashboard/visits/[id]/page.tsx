@@ -13,6 +13,7 @@ import { VisitAttachmentsTab } from "@/components/visits/VisitAttachmentsTab";
 import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
 import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
+import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab";
 import type {
   Visit,
   VisitItem,
@@ -22,8 +23,9 @@ import type {
   Treatment,
   NewItemState,
 } from "@/components/visits/types";
+import type { Prescription } from "@/types";
 
-type TabKey = "items" | "payments" | "attachments" | "history" | "treatmentPlan" | "chart";
+type TabKey = "items" | "payments" | "attachments" | "prescriptions" | "history" | "treatmentPlan" | "chart";
 
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,7 @@ export default function VisitDetailPage() {
   const [items, setItems] = useState<VisitItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [history, setHistory] = useState<HistoryVisit[]>([]);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
 
@@ -85,6 +88,9 @@ export default function VisitDetailPage() {
       }
       treatmentsApi.forVisit.list(id)
         .then((d) => setTreatments(d.treatments ?? []))
+        .catch(() => {});
+      visitsApi.prescriptions.list(id)
+        .then((d) => setPrescriptions(d.prescriptions ?? []))
         .catch(() => {});
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : `Failed to load visit`);
@@ -433,7 +439,7 @@ export default function VisitDetailPage() {
         {/* Tabs */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 px-6 flex gap-1 overflow-x-auto">
-            {(["items", "payments", "attachments", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
+            {(["items", "payments", "attachments", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -444,6 +450,7 @@ export default function VisitDetailPage() {
                 {t === "items" ? "Items"
                   : t === "treatmentPlan" ? "Treatment Plan"
                   : t === "chart" ? "Dental Chart"
+                  : t === "prescriptions" ? "Prescriptions"
                   : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -477,6 +484,15 @@ export default function VisitDetailPage() {
                 visitStatus={visit.status}
                 attachments={attachments}
                 patientId={visit.patientId}
+                onRefresh={fetchVisit}
+                onPageError={setPageError}
+              />
+            )}
+            {tab === "prescriptions" && (
+              <VisitPrescriptionsTab
+                visitId={id}
+                visitStatus={visit.status}
+                prescriptions={prescriptions}
                 onRefresh={fetchVisit}
                 onPageError={setPageError}
               />

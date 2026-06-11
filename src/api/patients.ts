@@ -132,6 +132,24 @@ export function getToothChartHistory(patientId: string): Promise<{ history: Toot
   return apiFetch<{ history: ToothChartHistoryEntry[] }>(`/api/patients/${patientId}/tooth-chart/history`);
 }
 
+// ─── Prescriptions ────────────────────────────────────────────────────────────
+
+export interface PatientPrescription {
+  id: string;
+  visitId: string;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  medicines: Array<{ name: string; dosage: string; frequency: string; duration: string; notes?: string }>;
+  instructions?: string | null;
+  createdAt: number;
+  visitDate: string | null;
+}
+
+export function listPatientPrescriptions(patientId: string): Promise<{ prescriptions: PatientPrescription[] }> {
+  return apiFetch<{ prescriptions: PatientPrescription[] }>(`/api/patients/${patientId}/prescriptions`);
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 /** Use this object for a clean import: `import { patientsApi } from "@/api/patients"` */
@@ -146,4 +164,5 @@ export const patientsApi = {
   getToothChart,
   saveToothChart,
   getToothChartHistory,
+  listPrescriptions: listPatientPrescriptions,
 };

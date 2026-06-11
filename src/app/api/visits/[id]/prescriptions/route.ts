@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { prescriptions, visits } from "@/db/schema";
+import { prescriptions, visits, users } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
@@ -27,11 +27,27 @@ export const GET = withRoute<{ id: string }>(
     if (!visit) return apiError("Visit not found", 404);
 
     const rows = await db
-      .select()
+      .select({
+        id: prescriptions.id,
+        visitId: prescriptions.visitId,
+        patientId: prescriptions.patientId,
+        doctorId: prescriptions.doctorId,
+        doctorName: users.name,
+        medicines: prescriptions.medicines,
+        instructions: prescriptions.instructions,
+        createdAt: prescriptions.createdAt,
+      })
       .from(prescriptions)
+      .leftJoin(users, eq(prescriptions.doctorId, users.id))
       .where(and(eq(prescriptions.visitId, id), eq(prescriptions.organizationId, session.orgId)));
 
-    return apiOk({ prescriptions: rows });
+    const parsed = rows.map((r: typeof rows[number]) => ({
+      ...r,
+      doctorName: r.doctorName ?? "Unknown",
+      medicines: JSON.parse(r.medicines) as object[],
+    }));
+
+    return apiOk({ prescriptions: parsed });
   }
 );
 

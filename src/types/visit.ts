@@ -66,13 +66,21 @@ export interface Payment {
 
 // ─── Prescription ─────────────────────────────────────────────────────────────
 
+export interface Medicine {
+  name: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  notes?: string;
+}
+
 export interface Prescription {
   id: string;
   visitId: string;
-  medicineName: string;
-  dosage?: string | null;
-  frequency?: string | null;
-  duration?: string | null;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  medicines: Medicine[];
   instructions?: string | null;
   createdAt: number;
 }
