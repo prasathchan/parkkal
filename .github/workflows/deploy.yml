@@ -38,6 +38,13 @@ jobs:
         run: npm run cf:build
         env:
           NODE_ENV: production
+          # next build imports API route modules during "Collecting page data".
+          # env.ts validates at module load time, so it needs *something* here.
+          # These are throw-away build-time placeholders — real secrets are
+          # injected at runtime via Cloudflare Workers secrets and never touch CI.
+          JWT_SECRET: "build-time-placeholder-not-used-at-runtime-xxxxxxxxxxxxxxxx"
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          RESEND_API_KEY: "re_build_placeholder_key"
 
       # Runs BEFORE deploy so schema is ready when the new worker boots
       - name: Apply D1 migrations
