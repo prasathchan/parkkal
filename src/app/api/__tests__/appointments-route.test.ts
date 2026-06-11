@@ -14,7 +14,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ─── Module-level mocks ────────────────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ describe("GET /api/appointments", () => {
 
     const res = await GET(makeReq("http://localhost/api/appointments"), CTX);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.total).toBe(1);
     expect(body.appointments).toHaveLength(1);
     expect(body.appointments[0].patientName).toBe("Ravi Kumar");
@@ -115,7 +115,7 @@ describe("GET /api/appointments", () => {
     vi.mocked(getSession).mockResolvedValue(ADMIN_SESSION);
     vi.mocked(getDb).mockReturnValue(makeDbMock([[{ total: 0 }], []]) as never);
 
-    const body = await (await GET(makeReq("http://localhost/api/appointments"), CTX)).json();
+    const body = await responseJson(await GET(makeReq("http://localhost/api/appointments"), CTX));
     expect(body.appointments).toHaveLength(0);
     expect(body.total).toBe(0);
   });
@@ -138,7 +138,7 @@ describe("GET /api/appointments", () => {
     const twoAppts = [APPOINTMENT, { ...APPOINTMENT, id: "a2" }];
     vi.mocked(getDb).mockReturnValue(makeDbMock([[{ total: 3 }], twoAppts]) as never);
 
-    const body = await (await GET(makeReq("http://localhost/api/appointments?limit=2&offset=0"), CTX)).json();
+    const body = await responseJson(await GET(makeReq("http://localhost/api/appointments?limit=2&offset=0"), CTX));
     expect(body.hasMore).toBe(true);
   });
 });
@@ -159,7 +159,7 @@ describe("POST /api/appointments", () => {
 
     const res = await POST(makeReq("http://localhost/api/appointments", "POST", VALID_POST), CTX);
     expect(res.status).toBe(201);
-    expect((await res.json()).appointment.patientId).toBe("p1");
+    expect(( await responseJson(res) ).appointment.patientId).toBe("p1");
   });
 
   it("DOCTOR: overrides doctorId to their own userId", async () => {
@@ -174,7 +174,7 @@ describe("POST /api/appointments", () => {
       ...VALID_POST, doctorId: "u_admin",  // body says admin, but session is DOCTOR
     }), CTX);
     expect(res.status).toBe(201);
-    expect((await res.json()).appointment.doctorId).toBe("u_doc");
+    expect(( await responseJson(res) ).appointment.doctorId).toBe("u_doc");
   });
 
   it("returns 409 when DB trigger fires SLOT_TAKEN (double-booking)", async () => {
@@ -198,7 +198,7 @@ describe("POST /api/appointments", () => {
 
     const res = await POST(makeReq("http://localhost/api/appointments", "POST", VALID_POST), CTX);
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toMatch(/already has an appointment/i);
+    expect(( await responseJson(res) ).error).toMatch(/already has an appointment/i);
   });
 
   it("returns 400 for invalid appointmentDate format (must be YYYY-MM-DD)", async () => {
@@ -239,7 +239,7 @@ describe("POST /api/appointments", () => {
 
     const res = await POST(makeReq("http://localhost/api/appointments", "POST", VALID_POST), CTX);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/organization/i);
+    expect(( await responseJson(res) ).error).toMatch(/organization/i);
   });
 
   it("accepts all valid appointment types", async () => {

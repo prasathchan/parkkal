@@ -96,39 +96,46 @@ export type DbInstance = ReturnType<typeof getDb>;
  *     db.delete(visits).where(eq(visits.id, id)),
  *   ]);
  */
+// Drizzle builders are thenable objects — D1's batch API and the libsql
+// transaction path both accept them without needing a concrete generic type.
+// Using PromiseLike<unknown>[] avoids importing private Drizzle internals.
+type DrizzleBuilder = PromiseLike<unknown>;
+
+interface D1BatchDb {
+  batch(builders: DrizzleBuilder[]): Promise<unknown>;
+}
+
+interface LibsqlTxDb {
+  transaction(fn: (tx: { run: (b: DrizzleBuilder) => Promise<unknown> }) => Promise<void>): Promise<void>;
+}
+
 export async function runCascade(
   db: DbInstance,
-  // Unresolved Drizzle builders (delete / update / insert) — thenable but not yet awaited.
-  // We intentionally use `object[]` here: the D1 batch API accepts any Drizzle builder
-  // and the libsql fallback awaits each one. Typing this as a concrete Drizzle type would
-  // require importing private generics from drizzle-orm internals.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  builders: any[]
+  builders: DrizzleBuilder[]
 ): Promise<void> {
   if (builders.length === 0) return;
 
   // D1 production path: use the batch API for atomicity
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ("batch" in db && typeof (db as any).batch === "function") {
+  if ("batch" in db && typeof (db as unknown as D1BatchDb).batch === "function") {
+    const d1 = db as unknown as D1BatchDb;
     const BATCH_LIMIT = 100; // D1 hard limit per batch request
     for (let i = 0; i < builders.length; i += BATCH_LIMIT) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (db as any).batch(builders.slice(i, i + BATCH_LIMIT));
+      await d1.batch(builders.slice(i, i + BATCH_LIMIT));
     }
     return;
   }
 
   // libsql dev fallback: wrap in a transaction for dev/test parity with D1 batch
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (typeof (db as any).transaction === "function") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (db as any).transaction(async (tx: any) => {
+  if ("transaction" in db && typeof (db as unknown as LibsqlTxDb).transaction === "function") {
+    const libsql = db as unknown as LibsqlTxDb;
+    await libsql.transaction(async (tx) => {
       for (const builder of builders) {
         await tx.run(builder);
       }
     });
     return;
   }
+
   // Final fallback: sequential execution (no transaction guarantee)
   for (const builder of builders) {
     await builder;

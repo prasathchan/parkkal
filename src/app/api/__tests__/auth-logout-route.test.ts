@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, NO_PARAMS, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -37,7 +37,6 @@ vi.mock("drizzle-orm",      () => ({
 import { getSession, revokeToken } from "@/lib/auth";
 import { checkRateLimit }           from "@/lib/rate-limit";
 import { getDb }                    from "@/lib/db";
-import { NO_PARAMS }                from "@/lib/__tests__/helpers/db-mock";
 
 const SESSION = {
   userId: "u1", orgId: "org1", role: "ADMIN",
@@ -57,7 +56,7 @@ describe("POST /api/auth/logout", () => {
     const req = new NextRequest("http://localhost/api/auth/logout", { method: "POST" });
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect((await res.json()).success).toBe(true);
+    expect(( await responseJson(res) ).success).toBe(true);
     // Both cookies should be cleared (set to empty + Max-Age=0)
     const cookies = res.headers.getSetCookie?.() ?? [res.headers.get("set-cookie") ?? ""];
     const cookieStr = cookies.join("; ");
@@ -107,7 +106,7 @@ describe("GET /api/auth/me", () => {
     const req = new NextRequest("http://localhost/api/auth/me");
     const res = await GET(req, NO_PARAMS);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.user.userId).toBe("u1");
     expect(body.user.orgId).toBe("org1");
     expect(body.user.role).toBe("ADMIN");

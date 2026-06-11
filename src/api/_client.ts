@@ -69,8 +69,7 @@ export class ApiError extends Error {
      * Use when the server attaches custom fields to error responses,
      * e.g. a 409 Conflict that includes the existing `visitId`.
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public readonly data?: Record<string, any>,
+    public readonly data?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "ApiError";
@@ -108,8 +107,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     // Parse the error body for a human-readable message and Zod field details.
     let errorMessage = `Request failed with status ${res.status}`;
     let errorDetails: Array<{ path: string[]; message: string }> | undefined;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let errorData: Record<string, any> | undefined;
+    let errorData: Record<string, unknown> | undefined;
 
     try {
       const body = await res.json() as {
@@ -119,7 +117,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       };
       if (body.error) errorMessage = body.error;
       if (body.details) errorDetails = body.details;
-      errorData = body as Record<string, unknown>;
+      errorData = body;
     } catch {
       // Server returned a non-JSON body (e.g. a Cloudflare error page).
       // The default message is good enough.

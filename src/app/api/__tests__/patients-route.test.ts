@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ─── Module-level mocks (hoisted by Vitest) ───────────────────────────────────
 
@@ -105,7 +105,7 @@ describe("GET /api/patients", () => {
 
     const res = await GET(makeReq("http://localhost/api/patients"), CTX);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.total).toBe(1);
     expect(body.patients).toHaveLength(1);
     expect(body.patients[0].name).toBe("Ravi Kumar");
@@ -118,7 +118,7 @@ describe("GET /api/patients", () => {
     ]) as never);
 
     const res = await GET(makeReq("http://localhost/api/patients"), CTX);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.patients[0].panNumber).toBeNull();
     expect(body.patients[0].aadhaarNumber).toBeNull();
   });
@@ -130,7 +130,7 @@ describe("GET /api/patients", () => {
     ]) as never);
 
     const res = await GET(makeReq("http://localhost/api/patients"), CTX);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.total).toBe(0);
     expect(body.patients).toHaveLength(0);
   });
@@ -148,7 +148,7 @@ describe("GET /api/patients", () => {
     ]) as never);
 
     const res = await GET(makeReq("http://localhost/api/patients?limit=10&offset=20"), CTX);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.limit).toBe(10);
     expect(body.offset).toBe(20);
   });
@@ -180,7 +180,7 @@ describe("POST /api/patients", () => {
 
     const res = await POST(makeReq("http://localhost/api/patients", "POST", VALID_BODY), CTX);
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.patient.name).toBe("Sunita Devi");
     expect(body.patient.patientCode).toMatch(/^PKL-/);
   });
@@ -189,7 +189,7 @@ describe("POST /api/patients", () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([]) as never);
     const res = await POST(makeReq("http://localhost/api/patients", "POST", { phone: "9999900000" }), CTX);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("Invalid input");
+    expect(( await responseJson(res) ).error).toBe("Invalid input");
   });
 
   it("returns 400 when phone is missing", async () => {

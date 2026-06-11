@@ -16,7 +16,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock, NO_PARAMS } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, NO_PARAMS, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ── Module-level mocks ──────────────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ describe("GET /api/visits", () => {
     const { GET } = await import("@/app/api/visits/route");
     const res = await GET(new NextRequest("http://localhost/api/visits"), NO_PARAMS);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.visits).toHaveLength(1);
     expect(body.visits[0].visitCode).toBe("VIS-20260101-0001");
     expect(body.total).toBe(1);
@@ -104,7 +104,7 @@ describe("GET /api/visits", () => {
     const { GET } = await import("@/app/api/visits/route");
     const res = await GET(new NextRequest("http://localhost/api/visits"), NO_PARAMS);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.visits).toHaveLength(0);
     expect(body.total).toBe(0);
   });
@@ -119,7 +119,7 @@ describe("GET /api/visits", () => {
     const { GET } = await import("@/app/api/visits/route");
     const res = await GET(new NextRequest("http://localhost/api/visits"), NO_PARAMS);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.visits).toHaveLength(1);
   });
 
@@ -171,7 +171,7 @@ describe("POST /api/visits", () => {
     const { POST } = await import("@/app/api/visits/route");
     const res = await POST(makeReq(VALID_BODY), NO_PARAMS);
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.visit.visitCode).toMatch(/^VIS-/);
     expect(body.visit.status).toBe("OPEN");
     expect(body.visit.totalAmount).toBe(0);
@@ -196,7 +196,7 @@ describe("POST /api/visits", () => {
     const { POST } = await import("@/app/api/visits/route");
     const res = await POST(makeReq(VALID_BODY), NO_PARAMS);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/Patient does not belong/i);
+    expect(( await responseJson(res) ).error).toMatch(/Patient does not belong/i);
   });
 
   it("returns 400 when doctor not in org", async () => {
@@ -207,7 +207,7 @@ describe("POST /api/visits", () => {
     const { POST } = await import("@/app/api/visits/route");
     const res = await POST(makeReq(VALID_BODY), NO_PARAMS);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/Doctor does not belong/i);
+    expect(( await responseJson(res) ).error).toMatch(/Doctor does not belong/i);
   });
 
   it("returns 409 when visit already exists for appointment", async () => {
@@ -219,7 +219,7 @@ describe("POST /api/visits", () => {
     const { POST } = await import("@/app/api/visits/route");
     const res = await POST(makeReq({ ...VALID_BODY, appointmentId: "appt1" }), NO_PARAMS);
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toMatch(/already exists/i);
+    expect(( await responseJson(res) ).error).toMatch(/already exists/i);
   });
 
   it("DOCTOR: overrides doctorId to own userId regardless of body", async () => {
@@ -235,7 +235,7 @@ describe("POST /api/visits", () => {
     const res = await POST(makeReq({ ...VALID_BODY, doctorId: "u_someone_else" }), NO_PARAMS);
     expect(res.status).toBe(201);
     // DOCTOR should always be assigned to their own session userId
-    expect((await res.json()).visit.doctorId).toBe("u_doc");
+    expect(( await responseJson(res) ).visit.doctorId).toBe("u_doc");
   });
 
   it("visit code uses todayCount + 1 as sequence", async () => {
@@ -248,7 +248,7 @@ describe("POST /api/visits", () => {
     const { POST } = await import("@/app/api/visits/route");
     const res = await POST(makeReq(VALID_BODY), NO_PARAMS);
     expect(res.status).toBe(201);
-    const { visit } = await res.json();
+    const { visit } = await responseJson(res);
     expect(visit.visitCode).toMatch(/0005$/);
   });
 });

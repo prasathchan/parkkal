@@ -12,7 +12,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ─── Module-level mocks ────────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ describe("GET /api/treatments", () => {
 
     const res = await GET(makeReq("http://localhost/api/treatments"), CTX);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.total).toBe(1);
     expect(body.treatments).toHaveLength(1);
     expect(body.treatments[0].description).toBe("Root Canal");
@@ -114,14 +114,14 @@ describe("GET /api/treatments", () => {
 
     const res = await GET(makeReq("http://localhost/api/treatments"), CTX);
     expect(res.status).toBe(200);
-    expect((await res.json()).treatments).toHaveLength(1);
+    expect(( await responseJson(res) ).treatments).toHaveLength(1);
   });
 
   it("returns empty list when no treatments", async () => {
     vi.mocked(getSession).mockResolvedValue(ADMIN_SESSION);
     vi.mocked(getDb).mockReturnValue(makeDbMock([[{ total: 0 }], []]) as never);
 
-    const body = await (await GET(makeReq("http://localhost/api/treatments"), CTX)).json();
+    const body = await responseJson(await GET(makeReq("http://localhost/api/treatments"), CTX));
     expect(body.treatments).toHaveLength(0);
     expect(body.hasMore).toBe(false);
   });
@@ -151,7 +151,7 @@ describe("POST /api/treatments", () => {
 
     const res = await POST(makeReq("http://localhost/api/treatments", "POST", VALID), CTX);
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.treatment.description).toBe("Root Canal Treatment");
     expect(body.treatment.cost).toBe(5000);
   });
@@ -170,7 +170,7 @@ describe("POST /api/treatments", () => {
     }), CTX);
     expect(res.status).toBe(201);
     // doctorId in response must be the session's userId, not the body's
-    expect((await res.json()).treatment.doctorId).toBe("u_doc");
+    expect(( await responseJson(res) ).treatment.doctorId).toBe("u_doc");
   });
 
   it("returns 403 when patient is not linked to the org", async () => {
@@ -192,7 +192,7 @@ describe("POST /api/treatments", () => {
 
     const res = await POST(makeReq("http://localhost/api/treatments", "POST", VALID), CTX);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/organization/i);
+    expect(( await responseJson(res) ).error).toMatch(/organization/i);
   });
 
   it("returns 400 for missing description", async () => {
@@ -202,7 +202,7 @@ describe("POST /api/treatments", () => {
       patientId: "p1", doctorId: "u_doc", cost: 500,
     }), CTX);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("Invalid input");
+    expect(( await responseJson(res) ).error).toBe("Invalid input");
   });
 
   it("returns 400 for missing patientId", async () => {
@@ -225,7 +225,7 @@ describe("POST /api/treatments", () => {
       patientId: "p1", doctorId: "u_doc", description: "Free checkup",
     }), CTX);
     expect(res.status).toBe(201);
-    expect((await res.json()).treatment.cost).toBe(0);
+    expect(( await responseJson(res) ).treatment.cost).toBe(0);
   });
 
   it("accepts optional procedure and toothNumbers", async () => {
@@ -239,7 +239,7 @@ describe("POST /api/treatments", () => {
       ...VALID, procedure: "Root Canal Treatment", toothNumbers: "16,17",
     }), CTX);
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.treatment.procedure).toBe("Root Canal Treatment");
     expect(body.treatment.toothNumbers).toBe("16,17");
   });

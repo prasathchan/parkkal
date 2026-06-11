@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ── Module-level mocks ──────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ password: "pass1234" }));
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toBe("Invalid input");
+    expect(( await responseJson(res) ).error).toBe("Invalid input");
   });
 
   it("returns 400 for invalid email format", async () => {
@@ -104,7 +104,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "notfound@test.com", password: "pass1234" }));
     expect(res.status).toBe(401);
-    expect((await res.json()).error).toMatch(/Invalid email or password/i);
+    expect(( await responseJson(res) ).error).toMatch(/Invalid email or password/i);
   });
 
   it("returns 401 for inactive account", async () => {
@@ -114,7 +114,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "admin@test.com", password: "pass1234" }));
     expect(res.status).toBe(401);
-    expect((await res.json()).error).toMatch(/inactive/i);
+    expect(( await responseJson(res) ).error).toMatch(/inactive/i);
   });
 
   it("returns 401 for account with no password hash (invite pending)", async () => {
@@ -124,7 +124,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "admin@test.com", password: "pass1234" }));
     expect(res.status).toBe(401);
-    expect((await res.json()).error).toMatch(/incomplete/i);
+    expect(( await responseJson(res) ).error).toMatch(/incomplete/i);
   });
 
   it("returns 401 for wrong password", async () => {
@@ -145,7 +145,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "admin@test.com", password: "pass1234" }));
     expect(res.status).toBe(403);
-    expect((await res.json()).error).toMatch(/No organization access/i);
+    expect(( await responseJson(res) ).error).toMatch(/No organization access/i);
   });
 
   it("single org: sets org session cookie and redirects to /dashboard", async () => {
@@ -156,7 +156,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "admin@test.com", password: "pass1234" }));
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.redirect).toBe("/dashboard");
     // HttpOnly org session cookie must be set
     const setCookie = res.headers.get("set-cookie") ?? "";
@@ -172,7 +172,7 @@ describe("POST /api/auth/login", () => {
     const { POST } = await import("@/app/api/auth/login/route");
     const res = await POST(makeReq({ email: "admin@test.com", password: "pass1234" }));
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.requireOrgSelection).toBe(true);
     expect(body.organizations).toHaveLength(2);
     const setCookie = res.headers.get("set-cookie") ?? "";

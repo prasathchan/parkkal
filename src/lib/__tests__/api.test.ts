@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { apiOk, apiError, withRoute, RATE_LIMITS } from "@/lib/api";
+import { responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ describe("apiOk", () => {
   it("returns 200 with JSON body by default", async () => {
     const res = apiOk({ id: "abc" });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body).toEqual({ id: "abc" });
   });
 
@@ -116,7 +117,7 @@ describe("apiOk", () => {
 
   it("serialises nested objects", async () => {
     const res = apiOk({ patients: [{ id: "1", name: "Ravi" }], total: 1 });
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.patients[0].name).toBe("Ravi");
   });
 });
@@ -130,12 +131,12 @@ describe("apiError", () => {
   });
 
   it("includes error message in body", async () => {
-    const body = await apiError("Forbidden", 403).json();
+    const body = await responseJson(apiError("Forbidden", 403));
     expect(body.error).toBe("Forbidden");
   });
 
   it("merges extra fields into the body", async () => {
-    const body = await apiError("Visit exists", 409, { visitId: "v_123" }).json();
+    const body = await responseJson(apiError("Visit exists", 409, { visitId: "v_123" }));
     expect(body.error).toBe("Visit exists");
     expect(body.visitId).toBe("v_123");
   });
@@ -174,7 +175,7 @@ describe("withRoute — authentication", () => {
     const handler = withRoute({ route: "GET /test" }, async () => apiOk({ ok: true }));
     const res = await handler(makeRequest(), makeContext({}));
     expect(res.status).toBe(401);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.error).toBe("Unauthorized");
   });
 
@@ -358,7 +359,7 @@ describe("withRoute — error handling", () => {
     });
     const res = await handler(makeRequest("POST"), makeContext({}));
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.error).toBe("Invalid input");
     expect(body.details).toBeDefined();
   });
@@ -369,7 +370,7 @@ describe("withRoute — error handling", () => {
     });
     const res = await handler(makeRequest(), makeContext({}));
     expect(res.status).toBe(500);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.error).toBe("Internal server error");
     expect(JSON.stringify(body)).not.toContain("DB connection failed");
   });

@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock, NO_PARAMS } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, NO_PARAMS, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ── Module-level mocks ──────────────────────────────────────────────────────
 
@@ -78,7 +78,7 @@ describe("GET /api/org/roles", () => {
     const { GET } = await import("@/app/api/org/roles/route");
     const res = await GET(new NextRequest("http://localhost/api/org/roles"), NO_PARAMS);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.roles).toHaveLength(1);
     expect(body.roles[0].permissions).toEqual(["patients.view", "visits.view"]);
     expect(body.roles[0].userCount).toBe(0);
@@ -102,7 +102,7 @@ describe("GET /api/org/roles", () => {
     ]) as never);
     const { GET } = await import("@/app/api/org/roles/route");
     const res = await GET(new NextRequest("http://localhost/api/org/roles"), NO_PARAMS);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.roles[0].userCount).toBe(3);
   });
 
@@ -147,7 +147,7 @@ describe("POST /api/org/roles", () => {
       permissions: ["patients.view"],
     }), NO_PARAMS);
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.role.name).toBe("Hygienist");
     expect(body.role.permissions).toEqual(["patients.view"]);
     expect(body.role.slug).toBe("hygienist");
@@ -157,7 +157,7 @@ describe("POST /api/org/roles", () => {
     const { POST } = await import("@/app/api/org/roles/route");
     const res = await POST(makeReq({ name: "   " }), NO_PARAMS);
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/Name is required/i);
+    expect(( await responseJson(res) ).error).toMatch(/Name is required/i);
   });
 
   it("returns 400 when name is missing", async () => {
@@ -173,7 +173,7 @@ describe("POST /api/org/roles", () => {
     const { POST } = await import("@/app/api/org/roles/route");
     const res = await POST(makeReq({ name: "Doctor", permissions: [] }), NO_PARAMS);
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toMatch(/already exists/i);
+    expect(( await responseJson(res) ).error).toMatch(/already exists/i);
   });
 
   it("defaults color to #3B82F6 when not provided", async () => {
@@ -181,7 +181,7 @@ describe("POST /api/org/roles", () => {
     const { POST } = await import("@/app/api/org/roles/route");
     const res = await POST(makeReq({ name: "NewRole" }), NO_PARAMS);
     expect(res.status).toBe(201);
-    expect((await res.json()).role.color).toBe("#3B82F6");
+    expect(( await responseJson(res) ).role.color).toBe("#3B82F6");
   });
 
   it("returns 403 for non-ADMIN", async () => {

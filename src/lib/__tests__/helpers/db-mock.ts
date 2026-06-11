@@ -35,6 +35,20 @@
  */
 export const NO_PARAMS = { params: Promise.resolve({} as Record<string, string>) };
 
+/**
+ * Parse a Response body as JSON for use in test assertions.
+ *
+ * Response.json() returns Promise<unknown> in TypeScript 5.5+.
+ * Using `any` here is intentional — test assertions do their own narrowing
+ * (toBe, toHaveLength, toMatch) so strict typing of the body adds no safety.
+ * Production code never uses this helper.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function responseJson(res: Response): Promise<Record<string, any>> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return res.json() as Promise<Record<string, any>>;
+}
+
 export function makeDbMock(results: unknown[] = []) {
   let callIndex = 0;
 

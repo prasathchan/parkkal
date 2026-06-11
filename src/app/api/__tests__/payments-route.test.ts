@@ -18,7 +18,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { makeDbMock } from "@/lib/__tests__/helpers/db-mock";
+import { makeDbMock, responseJson } from "@/lib/__tests__/helpers/db-mock";
 
 // ── Module-level mocks ──────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ describe("GET /api/visits/[id]/payments", () => {
     const { GET } = await import("@/app/api/visits/[id]/payments/route");
     const res = await GET(makeGetReq("v1"), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.payments).toHaveLength(1);
     expect(body.payments[0].amount).toBe(500);
   });
@@ -120,7 +120,7 @@ describe("GET /api/visits/[id]/payments", () => {
     const { GET } = await import("@/app/api/visits/[id]/payments/route");
     const res = await GET(makeGetReq("v1"), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(200);
-    expect((await res.json()).payments).toHaveLength(0);
+    expect(( await responseJson(res) ).payments).toHaveLength(0);
   });
 });
 
@@ -138,7 +138,7 @@ describe("POST /api/visits/[id]/payments", () => {
     const { POST } = await import("@/app/api/visits/[id]/payments/route");
     const res = await POST(makeReq("v1", { amount: 500, paymentMethod: "CASH" }), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await responseJson(res);
     expect(body.payment.amount).toBe(500);
     expect(body.payment.paymentMethod).toBe("CASH");
   });
@@ -177,7 +177,7 @@ describe("POST /api/visits/[id]/payments", () => {
     const { POST } = await import("@/app/api/visits/[id]/payments/route");
     const res = await POST(makeReq("v1", { amount: 100, paymentMethod: "CASH" }), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/cancelled/i);
+    expect(( await responseJson(res) ).error).toMatch(/cancelled/i);
   });
 
   it("returns 400 when visit is already fully paid", async () => {
@@ -187,7 +187,7 @@ describe("POST /api/visits/[id]/payments", () => {
     const { POST } = await import("@/app/api/visits/[id]/payments/route");
     const res = await POST(makeReq("v1", { amount: 1, paymentMethod: "UPI" }), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/fully paid/i);
+    expect(( await responseJson(res) ).error).toMatch(/fully paid/i);
   });
 
   it("returns 400 when payment exceeds balance due", async () => {
@@ -198,7 +198,7 @@ describe("POST /api/visits/[id]/payments", () => {
     // Due = 300, trying to pay 400 → should reject
     const res = await POST(makeReq("v1", { amount: 400, paymentMethod: "CARD" }), { params: Promise.resolve({ id: "v1" }) });
     expect(res.status).toBe(400);
-    expect((await res.json()).error).toMatch(/exceeds balance/i);
+    expect(( await responseJson(res) ).error).toMatch(/exceeds balance/i);
   });
 
   it("returns 422 when treatmentId is not linked to this visit", async () => {
@@ -212,7 +212,7 @@ describe("POST /api/visits/[id]/payments", () => {
       { params: Promise.resolve({ id: "v1" }) }
     );
     expect(res.status).toBe(422);
-    expect((await res.json()).error).toMatch(/not linked/i);
+    expect(( await responseJson(res) ).error).toMatch(/not linked/i);
   });
 
   it("accepts UPI with referenceNumber", async () => {
@@ -227,7 +227,7 @@ describe("POST /api/visits/[id]/payments", () => {
       { params: Promise.resolve({ id: "v1" }) }
     );
     expect(res.status).toBe(201);
-    expect((await res.json()).payment.referenceNumber).toBe("UPI123456");
+    expect(( await responseJson(res) ).payment.referenceNumber).toBe("UPI123456");
   });
 
   it("all four payment methods are accepted", async () => {
