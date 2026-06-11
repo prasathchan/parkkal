@@ -36,12 +36,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, lte, inArray } from "drizzle-orm";
-import { appointmentReminders, patients } from "@/db/schema";
+import { appointmentReminders, patients, organizations } from "@/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sendNotification } from "@/lib/notifications";
 import env from "@/lib/env";
 import type { NotificationChannel } from "@/lib/notifications";
+import { createSnapshot, autoSnapshotNeeded } from "@/lib/backup-engine";
 
 type ReminderRow = InferSelectModel<typeof appointmentReminders>;
 type PatientContact = Pick<InferSelectModel<typeof patients>, "id" | "name" | "phone" | "email">;
@@ -153,5 +154,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   );
 
   console.info(`[CRON] Reminders: sent=${sent} failed=${failed} total=${due.length}`);
-  return NextResponse.json({ sent, failed, total: due.length });
+
+  // ── Nightly backup at 2 AM ─────────────────────────────────────────────────
+  // The cron fires every 15 minutes; we only snapshot once per org per day.
+  const hour = new Date().getUTCHours();
+  let backupsDone = 0;
+  if (hour === 2) {
+    const orgs = await db.select({ id: organizations.id }).from(organizations);
+    for (const org of orgs) {
+      try {
+        if (await autoSnapshotNeeded(db, org.id)) {
+          await createSnapshot(db, org.id, "auto", null);
+          backupsDone++;
+        }
+      } catch (err) {
+        console.error(`[CRON] Auto-backup failed for org ${org.id}:`, err instanceof Error ? err.message : err);
+      }
+    }
+    if (backupsDone > 0) console.info(`[CRON] Auto-backups created: ${backupsDone}`);
+  }
+
+  return NextResponse.json({ sent, failed, total: due.length, backupsDone });
 }

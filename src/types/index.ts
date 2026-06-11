@@ -27,3 +27,4 @@ export type * from "./recall";
 export type * from "./report";
 export type * from "./org";
 export type * from "./auth";
+export type * from "./backup";

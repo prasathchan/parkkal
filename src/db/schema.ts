@@ -473,6 +473,19 @@ export const consentAuditLog = sqliteTable("consent_audit_log", {
   createdAt: integer("created_at").notNull(),
 });
 
+export const orgBackups = sqliteTable("org_backups", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  type:           text("type", { enum: ["auto", "manual"] }).notNull(),
+  status:         text("status", { enum: ["pending", "completed", "failed"] }).notNull().default("pending"),
+  r2Key:          text("r2_key"),          // backups/{orgId}/{timestamp}_{type}.json.gz
+  sizeBytes:      integer("size_bytes"),
+  rowCounts:      text("row_counts"),      // JSON: { patients: 42, visits: 130, ... }
+  errorMessage:   text("error_message"),
+  createdBy:      text("created_by").references(() => users.id), // null = auto
+  createdAt:      integer("created_at").notNull(),
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DRIZZLE RELATIONS
 //

@@ -40,7 +40,8 @@ export type AuditAction =
   | "SALARY_DELETED"
   | "VISIT_DELETED"
   | "TREATMENT_DELETED"
-  | "ORG_DELETED";
+  | "ORG_DELETED"
+  | "BACKUP_RESTORE";
 
 export interface AuditParams {
   organizationId: string;

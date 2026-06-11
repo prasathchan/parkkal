@@ -14,6 +14,10 @@ migrations_dir = "drizzle/migrations"
 binding = "FILES"
 bucket_name = "parkkal-files"
 
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "parkkal-backups"
+
 # ─── Cron Triggers ────────────────────────────────────────────────────────────
 # Runs every 15 minutes. Cloudflare delivers a GET to /api/cron/reminders
 # with the header x-cloudflare-cron: <expression>.
@@ -47,6 +51,10 @@ migrations_dir = "drizzle/migrations"
 binding = "FILES"
 bucket_name = "parkkal-files"
 
+[[env.prod.r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "parkkal-backups"
+
 [env.prod.triggers]
 crons = ["*/15 * * * *"]
 
@@ -62,6 +70,10 @@ database_id = "9ee8ea59-62d7-4cdd-97d4-97a19d4ee3b8"
 [[env.staging.r2_buckets]]
 binding = "FILES"
 bucket_name = "parkkal-files-staging"
+
+[[env.staging.r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "parkkal-backups-staging"
 
 [env.staging.triggers]
 crons = ["*/15 * * * *"]
