@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { visitsApi } from "@/api";
+import { exportVisits } from "@/api/export";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Visit } from "@/types";
@@ -111,6 +112,16 @@ export default function VisitsPage() {
                 {filtersActive ? `${visits.length} of ${total} match` : `${total} total`}
               </span>
             )}
+            <button
+              type="button"
+              onClick={exportVisits}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export CSV
+            </button>
             <Link
               href="/dashboard/visits/new"
               className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"

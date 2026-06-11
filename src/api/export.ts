@@ -2,6 +2,10 @@ export function exportPatients(): void {
   window.location.href = "/api/export?type=patients";
 }
 
-export function exportBilling(): void {
-  window.location.href = "/api/export?type=billing";
+export function exportVisits(): void {
+  window.location.href = "/api/export?type=visits";
+}
+
+export function exportTreatments(): void {
+  window.location.href = "/api/export?type=treatments";
 }
