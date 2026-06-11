@@ -382,7 +382,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       </div>
 
       {/* Row 2: Pincode + State — Pincode first so auto-fill populates State before user picks it */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1">Pincode / ZIP</label>
           <div className="relative">
@@ -433,7 +433,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       </div>
 
       {/* Row 3: District + City */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-700 mb-1">District</label>
           <input

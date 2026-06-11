@@ -150,7 +150,7 @@ export function VisitPrescriptionsTab({
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-xs text-slate-500 mb-1">Drug name *</label>
                     <input
@@ -300,28 +300,30 @@ export function VisitPrescriptionsTab({
               </div>
 
               {/* Medicines table */}
-              <div className="divide-y divide-slate-100">
-                {rx.medicines.map((med, i) => (
-                  <div key={i} className="px-5 py-3 grid grid-cols-4 gap-2 text-sm">
-                    <div>
-                      <p className="font-medium text-slate-800">{med.name}</p>
-                      {med.notes && <p className="text-xs text-slate-400">{med.notes}</p>}
+              <div className="overflow-x-auto">
+                <div className="min-w-[400px]">
+                  {rx.medicines.length > 0 && (
+                    <div className="px-5 py-1.5 grid grid-cols-4 gap-2 bg-slate-50 border-t border-slate-100">
+                      {["Drug", "Dosage", "Frequency", "Duration"].map((h) => (
+                        <p key={h} className="text-xs text-slate-400 font-medium">{h}</p>
+                      ))}
                     </div>
-                    <p className="text-slate-600">{med.dosage}</p>
-                    <p className="text-slate-600">{med.frequency}</p>
-                    <p className="text-slate-600">{med.duration}</p>
+                  )}
+                  <div className="divide-y divide-slate-100">
+                    {rx.medicines.map((med, i) => (
+                      <div key={i} className="px-5 py-3 grid grid-cols-4 gap-2 text-sm">
+                        <div>
+                          <p className="font-medium text-slate-800">{med.name}</p>
+                          {med.notes && <p className="text-xs text-slate-400">{med.notes}</p>}
+                        </div>
+                        <p className="text-slate-600">{med.dosage}</p>
+                        <p className="text-slate-600">{med.frequency}</p>
+                        <p className="text-slate-600">{med.duration}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* Column labels (shown only with medicines) */}
-              {rx.medicines.length > 0 && (
-                <div className="px-5 py-1.5 grid grid-cols-4 gap-2 bg-slate-50 border-t border-slate-100">
-                  {["Drug", "Dosage", "Frequency", "Duration"].map((h) => (
-                    <p key={h} className="text-xs text-slate-400 font-medium">{h}</p>
-                  ))}
                 </div>
-              )}
+              </div>
 
               {/* Instructions */}
               {rx.instructions && (

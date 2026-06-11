@@ -288,7 +288,7 @@ export default function StaffPage() {
               </button>
             </div>
             <form onSubmit={handleAddStaff} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
                   <input
@@ -412,7 +412,7 @@ export default function StaffPage() {
               {/* Documents */}
               <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
                 <p className="text-sm font-medium text-yellow-800 mb-3">Documents (Optional)</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">PAN Number</label>
                     <input
@@ -499,7 +499,7 @@ export default function StaffPage() {
               <div className="border border-slate-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-slate-900 mb-1">Emergency Contact <span className="text-red-500">*</span></p>
                 <p className="text-xs text-slate-500 mb-3">Required before the staff record can be saved.</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">Contact Name *</label>
                     <input

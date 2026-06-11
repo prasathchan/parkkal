@@ -14,7 +14,7 @@ export function VisitPaymentsTab({ visit, payments, due, onOpenPayModal }: Props
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-slate-50 rounded-lg p-4 text-center">
           <p className="text-xs text-slate-500 mb-1">Total Bill</p>
           <p className="text-lg font-bold text-slate-900">{formatCurrency(visit.totalAmount)}</p>

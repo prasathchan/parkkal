@@ -176,7 +176,7 @@ export default function PatientEditPage() {
                 error={touched.email ? fieldErrors.email : ""}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   id="dob"
                   type="date"

@@ -247,7 +247,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* ── Financial summary ── */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
               {/* Box 1 — Treatment Cost (neutral) */}
               <div className="bg-white rounded-xl border border-slate-200 p-5 text-center">

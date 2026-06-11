@@ -27,23 +27,27 @@ export function PatientPrescriptionsTab({ prescriptions }: Props) {
               </span>
             )}
           </div>
-          <div className="divide-y divide-slate-100">
-            {rx.medicines.map((med, i) => (
-              <div key={i} className="px-5 py-3 grid grid-cols-4 gap-2 text-sm">
-                <p className="font-medium text-slate-800">{med.name}</p>
-                <p className="text-slate-600">{med.dosage}</p>
-                <p className="text-slate-600">{med.frequency}</p>
-                <p className="text-slate-600">{med.duration}</p>
+          <div className="overflow-x-auto">
+            <div className="min-w-[400px]">
+              {rx.medicines.length > 0 && (
+                <div className="px-5 py-1.5 grid grid-cols-4 gap-2 bg-slate-50 border-t border-slate-100">
+                  {["Drug", "Dosage", "Frequency", "Duration"].map((h) => (
+                    <p key={h} className="text-xs text-slate-400 font-medium">{h}</p>
+                  ))}
+                </div>
+              )}
+              <div className="divide-y divide-slate-100">
+                {rx.medicines.map((med, i) => (
+                  <div key={i} className="px-5 py-3 grid grid-cols-4 gap-2 text-sm">
+                    <p className="font-medium text-slate-800">{med.name}</p>
+                    <p className="text-slate-600">{med.dosage}</p>
+                    <p className="text-slate-600">{med.frequency}</p>
+                    <p className="text-slate-600">{med.duration}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {rx.medicines.length > 0 && (
-            <div className="px-5 py-1.5 grid grid-cols-4 gap-2 bg-slate-50 border-t border-slate-100">
-              {["Drug", "Dosage", "Frequency", "Duration"].map((h) => (
-                <p key={h} className="text-xs text-slate-400 font-medium">{h}</p>
-              ))}
             </div>
-          )}
+          </div>
           {rx.instructions && (
             <div className="px-5 py-3 border-t border-slate-100 bg-amber-50">
               <p className="text-xs text-amber-700"><span className="font-semibold">Instructions: </span>{rx.instructions}</p>

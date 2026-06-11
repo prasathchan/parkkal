@@ -292,7 +292,7 @@ export default function SettingsPage() {
                         />
                         <p className="text-xs text-slate-400 mt-0.5">First 2 digits of your GSTIN (e.g. 33 for Tamil Nadu, 27 for Maharashtra)</p>
                       </Field>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field label="CGST Rate (%)">
                           <input
                             type="number"
@@ -445,7 +445,7 @@ export default function SettingsPage() {
 
             {/* Sidebar Style */}
             <Section title="Sidebar Style" subtitle="Background style for the navigation sidebar">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {([
                   { value: "dark", label: "Dark", desc: "Classic dark sidebar", preview: "#0f172a" },
                   { value: "light", label: "Light", desc: "Clean white sidebar", preview: "#ffffff" },
