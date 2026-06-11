@@ -231,16 +231,24 @@ export default function InvoicesPage() {
                         {new Date(inv.createdAt).toLocaleDateString("en-IN")}
                       </TableCell>
                       <TableCell>
-                        {inv.status !== "PAID" ? (
-                          <button
-                            onClick={() => openPayModal(inv)}
-                            className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition"
+                        <div className="flex items-center gap-2">
+                          {inv.status !== "PAID" && (
+                            <button
+                              onClick={() => openPayModal(inv)}
+                              className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition"
+                            >
+                              Record Payment
+                            </button>
+                          )}
+                          <a
+                            href={`/api/invoices/${inv.id}/pdf`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition"
                           >
-                            Record Payment
-                          </button>
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
-                        )}
+                            PDF
+                          </a>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

@@ -230,11 +230,19 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                     href={treatment.consentDocumentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-blue-600 hover:underline ml-auto"
+                    className="text-xs text-blue-600 hover:underline"
                   >
                     View Consent Document ↗
                   </a>
                 )}
+                <a
+                  href={`/api/treatments/${treatment.id}/consent-pdf`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition ml-auto"
+                >
+                  Download Consent Form PDF
+                </a>
               </div>
             </div>
 
