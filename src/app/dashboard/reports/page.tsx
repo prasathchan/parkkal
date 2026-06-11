@@ -8,6 +8,7 @@ import { useAsync } from "@/hooks/use-async";
 import { reportsApi } from "@/api";
 import type { ReportData } from "@/types";
 import type { ReportPeriod, ReportParams } from "@/api/reports";
+import type { ReportSummary, AgingBucket, PatientFunnel } from "@/types/report";
 
 // ─── SVG bar chart ─────────────────────────────────────────────────────────────
 
@@ -131,6 +132,146 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
   );
 }
 
+// ─── Period-over-period stat card ─────────────────────────────────────────────
+
+function StatWithChange({ label, value, sub, prevValue, color = "text-slate-900", isRate = false }: {
+  label: string; value: string; sub?: string; prevValue?: number; color?: string; isRate?: boolean;
+}) {
+  const current = parseFloat(value.replace(/[^0-9.-]/g, ""));
+  const hasChange = prevValue !== undefined && !isNaN(current) && prevValue !== 0;
+  const pct = hasChange ? Math.round(((current - prevValue) / Math.abs(prevValue)) * 100) : null;
+  const up = pct !== null && pct > 0;
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-4">
+      <p className="text-xs text-slate-500 mb-1">{label}</p>
+      <p className={`text-xl font-bold ${color}`}>{value}</p>
+      {pct !== null && (
+        <p className={`text-xs mt-0.5 ${up ? (isRate ? "text-red-500" : "text-green-600") : (isRate ? "text-green-600" : "text-red-500")}`}>
+          {up ? "▲" : "▼"} {Math.abs(pct)}% vs prior period
+        </p>
+      )}
+      {sub && !pct && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+// ─── Aging table ───────────────────────────────────────────────────────────────
+
+function AgingTable({ buckets }: { buckets: AgingBucket[] }) {
+  const total = buckets.reduce((s, b) => s + b.amount, 0);
+  if (total === 0) return <p className="text-xs text-slate-400 py-4 text-center">No outstanding balances.</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[320px]">
+        <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+          <tr>
+            <th className="px-5 py-3 text-left font-medium">Age</th>
+            <th className="px-5 py-3 text-right font-medium">Visits</th>
+            <th className="px-5 py-3 text-right font-medium">Balance Due</th>
+            <th className="px-5 py-3 text-right font-medium">% of Total</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {buckets.filter((b) => b.count > 0).map((b) => (
+            <tr key={b.label} className="hover:bg-slate-50">
+              <td className="px-5 py-3 font-medium text-slate-800">{b.label}</td>
+              <td className="px-5 py-3 text-right text-slate-700">{b.count}</td>
+              <td className="px-5 py-3 text-right font-semibold text-red-700">{formatCurrency(b.amount)}</td>
+              <td className="px-5 py-3 text-right text-slate-500">{Math.round((b.amount / total) * 100)}%</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot className="border-t-2 border-slate-200">
+          <tr>
+            <td className="px-5 py-3 font-semibold text-slate-900">Total</td>
+            <td className="px-5 py-3 text-right font-semibold">{buckets.reduce((s, b) => s + b.count, 0)}</td>
+            <td className="px-5 py-3 text-right font-bold text-red-700">{formatCurrency(total)}</td>
+            <td />
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+// ─── Patient funnel ────────────────────────────────────────────────────────────
+
+function FunnelChart({ funnel }: { funnel: PatientFunnel }) {
+  const steps = [
+    { label: "Registered",     value: funnel.registered },
+    { label: "Had Visit",      value: funnel.hadVisit },
+    { label: "Treatment Plan", value: funnel.hadTreatmentPlan },
+    { label: "Invoice",        value: funnel.hadInvoice },
+    { label: "Payment",        value: funnel.hadPayment },
+  ];
+  const max = steps[0].value || 1;
+  return (
+    <div className="space-y-3">
+      {steps.map((step, i) => {
+        const pct = Math.round((step.value / max) * 100);
+        const dropPct = i > 0 ? Math.round(((steps[i - 1].value - step.value) / Math.max(steps[i - 1].value, 1)) * 100) : 0;
+        return (
+          <div key={step.label}>
+            <div className="flex items-center justify-between mb-1 text-xs text-slate-600">
+              <span className="font-medium">{step.label}</span>
+              <span className="text-slate-500">{step.value.toLocaleString("en-IN")}
+                {i > 0 && dropPct > 0 && <span className="text-red-400 ml-1">−{dropPct}%</span>}
+              </span>
+            </div>
+            <div className="h-5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-blue-500 transition-all"
+                style={{ width: `${pct}%`, opacity: 1 - i * 0.12 }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── CSV export helper ─────────────────────────────────────────────────────────
+
+function exportCsv(data: ReportData, label: string) {
+  const lines: string[] = [];
+
+  lines.push(`# Parkkal Report — ${label}`);
+  lines.push("");
+
+  lines.push("## Summary");
+  lines.push("Metric,Value");
+  lines.push(`Total Patients,${data.summary.totalPatients}`);
+  lines.push(`Visits (period),${data.summary.periodVisits}`);
+  lines.push(`Total Billed,${data.summary.totalBilled}`);
+  lines.push(`Total Collected,${data.summary.totalCollected}`);
+  lines.push(`Collection Rate,${data.summary.collectionRate}%`);
+  lines.push(`Outstanding,${data.summary.outstanding}`);
+  lines.push("");
+
+  lines.push("## Revenue by Day");
+  lines.push("Date,Billed,Collected");
+  for (const r of data.revenueByDay) lines.push(`${r.date},${r.billed},${r.collected}`);
+  lines.push("");
+
+  lines.push("## Doctor Performance");
+  lines.push("Doctor,Visits,Billed,Collected");
+  for (const d of data.doctorBreakdown) lines.push(`"${d.doctorName}",${d.visits},${d.billed},${d.collected}`);
+  lines.push("");
+
+  lines.push("## Outstanding Aging");
+  lines.push("Bucket,Visits,Amount");
+  for (const b of data.agingBuckets) if (b.count > 0) lines.push(`"${b.label}",${b.count},${b.amount}`);
+
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `parkkal-report-${label.replace(/\s/g, "-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // ─── Period selector ───────────────────────────────────────────────────────────
 
 const PRESET_LABELS: Record<string, string> = {
@@ -195,6 +336,14 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
+            {data && (
+              <button
+                onClick={() => exportCsv(data, data.period.label)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+              >
+                ↓ Export CSV
+              </button>
+            )}
             {/* Preset buttons */}
             {(["7d", "30d", "90d", "365d"] as ReportPeriod[]).map((p) => (
               <button
@@ -260,26 +409,35 @@ export default function ReportsPage() {
 
         {!loading && data && (
           <>
-            {/* ── Summary stat cards ────────────────────────────────────────── */}
+            {/* ── Summary stat cards with period-over-period ────────────────── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <Stat label="Total Patients" value={String(data.summary.totalPatients)} sub="registered in org" />
-              <Stat label="Visits (period)" value={String(data.summary.periodVisits)} sub="excl. cancelled" />
-              <Stat label="Billed" value={formatCurrency(data.summary.totalBilled)} sub="total amount raised" />
-              <Stat
+              <StatWithChange label="Total Patients" value={String(data.summary.totalPatients)} sub="registered in org" />
+              <StatWithChange
+                label="Visits (period)"
+                value={String(data.summary.periodVisits)}
+                prevValue={data.prevSummary?.periodVisits}
+              />
+              <StatWithChange
+                label="Billed"
+                value={formatCurrency(data.summary.totalBilled)}
+                prevValue={data.prevSummary?.totalBilled}
+              />
+              <StatWithChange
                 label="Collected"
                 value={formatCurrency(data.summary.totalCollected)}
-                sub={`${data.summary.collectionRate}% of billed`}
+                prevValue={data.prevSummary?.totalCollected}
                 color={data.summary.collectionRate >= 80 ? "text-green-700" : "text-orange-700"}
               />
-              <Stat
+              <StatWithChange
                 label="Outstanding"
                 value={formatCurrency(data.summary.outstanding)}
-                sub="open visits balance"
                 color={data.summary.outstanding > 0 ? "text-red-700" : "text-green-700"}
               />
-              <Stat
+              <StatWithChange
                 label="Collection Rate"
                 value={`${data.summary.collectionRate}%`}
+                prevValue={data.prevSummary?.collectionRate}
+                isRate
                 color={data.summary.collectionRate >= 90 ? "text-green-700" : data.summary.collectionRate >= 70 ? "text-yellow-700" : "text-red-700"}
               />
             </div>
@@ -398,6 +556,22 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               )}
+            </div>
+
+            {/* ── Outstanding balance aging ──────────────────────────────────── */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100">
+                <h2 className="text-sm font-semibold text-slate-900">Outstanding Balance Aging</h2>
+                <p className="text-xs text-slate-400 mt-0.5">Open visits bucketed by days since creation.</p>
+              </div>
+              <AgingTable buckets={data.agingBuckets} />
+            </div>
+
+            {/* ── Patient funnel ─────────────────────────────────────────────── */}
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="text-sm font-semibold text-slate-900 mb-1">Patient Funnel</h2>
+              <p className="text-xs text-slate-400 mb-4">Conversion from registration through payment (all-time).</p>
+              <FunnelChart funnel={data.patientFunnel} />
             </div>
           </>
         )}

@@ -41,6 +41,20 @@ export interface ReportSummary {
   outstanding: number;
 }
 
+export interface AgingBucket {
+  label: string;   // "0–30 days", "31–60 days", etc.
+  count: number;
+  amount: number;
+}
+
+export interface PatientFunnel {
+  registered: number;
+  hadVisit: number;
+  hadTreatmentPlan: number;
+  hadInvoice: number;
+  hadPayment: number;
+}
+
 export interface ReportData {
   period: {
     days: number;
@@ -49,6 +63,7 @@ export interface ReportData {
     label: string;
   };
   summary: ReportSummary;
+  prevSummary?: ReportSummary;  // same period shifted back — for period-over-period
   revenueByDay: DayRevenue[];
   newPatients: DayCount[];
   visitsByStatus: Record<string, number>;
@@ -56,4 +71,6 @@ export interface ReportData {
   topProcedures: TopProcedure[];
   treatmentByStatus: Record<string, number>;
   doctorBreakdown: DoctorStats[];
+  agingBuckets: AgingBucket[];
+  patientFunnel: PatientFunnel;
 }

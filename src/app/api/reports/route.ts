@@ -18,8 +18,8 @@
  *   topProcedures — [{ procedure: string, count: number, revenue: number }] top 10
  *   treatmentByStatus — { PLANNED, IN_PROGRESS, COMPLETED }
  */
-import { eq, and, gte, lte, sum, count, ne } from "drizzle-orm";
-import { visits, payments, organizationPatients, appointments, treatments, users } from "@/db/schema";
+import { eq, and, gte, lte, lt, sum, count, ne, isNotNull } from "drizzle-orm";
+import { visits, payments, organizationPatients, appointments, treatments, users, invoices } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 
@@ -218,6 +218,71 @@ export const GET = withRoute(
       }))
       .sort((a: { visits: number }, b: { visits: number }) => b.visits - a.visits);
 
+    // ── 9. Previous period summary (for period-over-period comparison) ────────
+    const prevEnd   = start;
+    const prevStart = start - (end - start);
+    const prevInPeriodNoCx = and(eq(visits.organizationId, orgId), gte(visits.createdAt, prevStart), lt(visits.createdAt, prevEnd), ne(visits.status, "CANCELLED"));
+
+    const [prevPeriodVisits, prevBilledRows, prevCollectedRows] = await Promise.all([
+      db.select({ val: count() }).from(visits).where(prevInPeriodNoCx),
+      db.select({ val: sum(visits.totalAmount) }).from(visits).where(prevInPeriodNoCx),
+      db.select({ val: sum(payments.amount) }).from(payments)
+        .innerJoin(visits, eq(payments.visitId, visits.id))
+        .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, prevStart), lt(payments.paidAt, prevEnd))),
+    ]);
+
+    const prevBilled    = Number(prevBilledRows[0]?.val)    || 0;
+    const prevCollected = Number(prevCollectedRows[0]?.val) || 0;
+    const prevSummary = {
+      totalPatients:  totalPatients[0]?.val ?? 0,
+      periodVisits:   Number(prevPeriodVisits[0]?.val) || 0,
+      totalBilled:    prevBilled,
+      totalCollected: prevCollected,
+      collectionRate: prevBilled > 0 ? Math.round((prevCollected / prevBilled) * 100) : 100,
+      outstanding:    0,
+    };
+
+    // ── 10. Outstanding balance aging (open visits, bucketed by age) ──────────
+    const openVisits = await db
+      .select({ createdAt: visits.createdAt, totalAmount: visits.totalAmount, paidAmount: visits.paidAmount })
+      .from(visits)
+      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN")));
+
+    const agingBuckets = [
+      { label: "0–30 days",   minDays: 0,   maxDays: 30,  count: 0, amount: 0 },
+      { label: "31–60 days",  minDays: 31,  maxDays: 60,  count: 0, amount: 0 },
+      { label: "61–90 days",  minDays: 61,  maxDays: 90,  count: 0, amount: 0 },
+      { label: "91–180 days", minDays: 91,  maxDays: 180, count: 0, amount: 0 },
+      { label: "180+ days",   minDays: 181, maxDays: Infinity, count: 0, amount: 0 },
+    ];
+
+    for (const v of openVisits) {
+      const due = (Number(v.totalAmount) || 0) - (Number(v.paidAmount) || 0);
+      if (due <= 0) continue;
+      const ageDays = Math.floor((now - Number(v.createdAt)) / 86_400_000);
+      const bucket = agingBuckets.find((b) => ageDays >= b.minDays && ageDays <= b.maxDays);
+      if (bucket) { bucket.count++; bucket.amount += due; }
+    }
+
+    // ── 11. Patient funnel ────────────────────────────────────────────────────
+    const [funnelRegistered, funnelVisit, funnelTx, funnelInvoice, funnelPayment] = await Promise.all([
+      db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
+      db.select({ val: count(visits.patientId) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
+      db.select({ val: count(treatments.patientId) }).from(treatments).where(eq(treatments.organizationId, orgId)),
+      db.select({ val: count() }).from(invoices).where(eq(invoices.organizationId, orgId)),
+      db.select({ val: count() }).from(payments)
+        .innerJoin(visits, eq(payments.visitId, visits.id))
+        .where(and(eq(visits.organizationId, orgId), isNotNull(payments.id))),
+    ]);
+
+    const patientFunnel = {
+      registered:        Number(funnelRegistered[0]?.val) || 0,
+      hadVisit:          Number(funnelVisit[0]?.val)      || 0,
+      hadTreatmentPlan:  Number(funnelTx[0]?.val)         || 0,
+      hadInvoice:        Number(funnelInvoice[0]?.val)    || 0,
+      hadPayment:        Number(funnelPayment[0]?.val)    || 0,
+    };
+
     return apiOk({
       period: { days, startMs: start, endMs: end, label },
       summary: {
@@ -228,6 +293,7 @@ export const GET = withRoute(
         collectionRate:  totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 100) : 100,
         outstanding,
       },
+      prevSummary,
       revenueByDay,
       newPatients,
       visitsByStatus,
@@ -235,6 +301,8 @@ export const GET = withRoute(
       topProcedures,
       treatmentByStatus,
       doctorBreakdown,
+      agingBuckets: agingBuckets.map(({ label, count, amount }) => ({ label, count, amount })),
+      patientFunnel,
     });
   }
 );
