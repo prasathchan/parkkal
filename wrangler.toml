@@ -66,6 +66,7 @@ name = "parkkal-dental-staging"
 binding = "DB"
 database_name = "parkkal-db-staging"
 database_id = "9ee8ea59-62d7-4cdd-97d4-97a19d4ee3b8"
+migrations_dir = "drizzle/migrations"
 
 [[env.staging.r2_buckets]]
 binding = "FILES"
