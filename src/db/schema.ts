@@ -454,6 +454,20 @@ export const toothChart = sqliteTable("tooth_chart", {
   uniqOrgPatient: unique().on(t.organizationId, t.patientId),
 }));
 
+// ─── Tooth Chart History ──────────────────────────────────────────────────────
+// Full snapshot written every time the cumulative chart is saved.
+// visit_id is nullable — direct edits from the patient page are still tracked.
+export const toothChartHistory = sqliteTable("tooth_chart_history", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  patientId:      text("patient_id").notNull().references(() => patients.id),
+  visitId:        text("visit_id").references(() => visits.id),
+  toothData:      text("tooth_data").notNull(),              // JSON full snapshot
+  changedTeeth:   text("changed_teeth").notNull().default("[]"), // JSON string[]
+  recordedBy:     text("recorded_by").notNull().references(() => users.id),
+  recordedAt:     integer("recorded_at").notNull(),
+});
+
 // ─── Patient code sequences ───────────────────────────────────────────────────
 // Atomic counters for patient code generation. Replaces SELECT COUNT(*) which
 // produces duplicate codes under concurrent inserts.

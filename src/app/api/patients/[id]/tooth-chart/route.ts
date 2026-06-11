@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { toothChart, organizationPatients } from "@/db/schema";
+import { toothChart, toothChartHistory, organizationPatients } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
@@ -22,7 +22,6 @@ export const GET = withRoute(
   async (_req, { session, db }, params) => {
     const patientId = (params as Record<string, string>).id;
 
-    // Verify patient belongs to this org
     const [link] = await db.select({ id: organizationPatients.id })
       .from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)))
@@ -47,7 +46,6 @@ export const PUT = withRoute(
   async (req, { session, db }, params) => {
     const patientId = (params as Record<string, string>).id;
 
-    // Verify patient belongs to this org
     const [link] = await db.select({ id: organizationPatients.id })
       .from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, patientId)))
@@ -58,27 +56,57 @@ export const PUT = withRoute(
     const parsed = toothDataSchema.safeParse(body.toothData ?? {});
     if (!parsed.success) return apiError("Invalid tooth data", 400);
 
+    // Optional visitId — links this save to a specific visit for history tracking
+    const visitId = typeof body.visitId === "string" ? body.visitId : null;
+
     const now = Date.now();
-    const existing = await db.select({ id: toothChart.id })
+    const newData = parsed.data;
+
+    // Load existing chart to compute diff
+    const [existing] = await db.select()
       .from(toothChart)
       .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)))
       .limit(1);
 
-    if (existing.length > 0) {
+    const oldData = existing ? (JSON.parse(existing.toothData) as Record<string, { condition: string }>) : {};
+
+    // Compute which FDI teeth changed condition
+    const allTeeth = new Set([...Object.keys(oldData), ...Object.keys(newData)]);
+    const changedTeeth: string[] = [];
+    for (const tooth of allTeeth) {
+      const oldCond = oldData[tooth]?.condition ?? "HEALTHY";
+      const newCond = newData[tooth]?.condition ?? "HEALTHY";
+      if (oldCond !== newCond) changedTeeth.push(tooth);
+    }
+
+    // Update cumulative chart
+    if (existing) {
       await db.update(toothChart)
-        .set({ toothData: JSON.stringify(parsed.data), updatedAt: now, updatedBy: session.userId })
+        .set({ toothData: JSON.stringify(newData), updatedAt: now, updatedBy: session.userId })
         .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)));
     } else {
       await db.insert(toothChart).values({
         id: randomUUID(),
         organizationId: session.orgId,
         patientId,
-        toothData: JSON.stringify(parsed.data),
+        toothData: JSON.stringify(newData),
         updatedAt: now,
         updatedBy: session.userId,
       });
     }
 
-    return apiOk({ success: true });
+    // Always write a history snapshot so every save is auditable
+    await db.insert(toothChartHistory).values({
+      id:             randomUUID(),
+      organizationId: session.orgId,
+      patientId,
+      visitId,
+      toothData:      JSON.stringify(newData),
+      changedTeeth:   JSON.stringify(changedTeeth),
+      recordedBy:     session.userId,
+      recordedAt:     now,
+    });
+
+    return apiOk({ success: true, changedTeeth });
   }
 );

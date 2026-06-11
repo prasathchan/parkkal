@@ -109,11 +109,27 @@ export function getToothChart(patientId: string): Promise<{ toothData: Record<st
 export function saveToothChart(
   patientId: string,
   toothData: Record<string, unknown>,
-): Promise<{ success: true }> {
-  return apiFetch<{ success: true }>(`/api/patients/${patientId}/tooth-chart`, {
+  visitId?: string,
+): Promise<{ success: true; changedTeeth: string[] }> {
+  return apiFetch<{ success: true; changedTeeth: string[] }>(`/api/patients/${patientId}/tooth-chart`, {
     method: "PUT",
-    body: JSON.stringify({ toothData }),
+    body: JSON.stringify({ toothData, visitId }),
   });
+}
+
+export interface ToothChartHistoryEntry {
+  id: string;
+  visitId: string | null;
+  visitCode: string | null;
+  toothData: Record<string, unknown>;
+  changedTeeth: string[];
+  recordedBy: string;
+  recordedByName: string;
+  recordedAt: number;
+}
+
+export function getToothChartHistory(patientId: string): Promise<{ history: ToothChartHistoryEntry[] }> {
+  return apiFetch<{ history: ToothChartHistoryEntry[] }>(`/api/patients/${patientId}/tooth-chart/history`);
 }
 
 // ─── Grouped export ───────────────────────────────────────────────────────────
@@ -129,4 +145,5 @@ export const patientsApi = {
   emergencyContacts: listEmergencyContacts,
   getToothChart,
   saveToothChart,
+  getToothChartHistory,
 };

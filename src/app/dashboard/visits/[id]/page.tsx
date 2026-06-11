@@ -12,6 +12,7 @@ import { VisitPaymentsTab } from "@/components/visits/VisitPaymentsTab";
 import { VisitAttachmentsTab } from "@/components/visits/VisitAttachmentsTab";
 import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
+import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
 import type {
   Visit,
   VisitItem,
@@ -22,7 +23,7 @@ import type {
   NewItemState,
 } from "@/components/visits/types";
 
-type TabKey = "items" | "payments" | "attachments" | "history" | "treatmentPlan";
+type TabKey = "items" | "payments" | "attachments" | "history" | "treatmentPlan" | "chart";
 
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -432,7 +433,7 @@ export default function VisitDetailPage() {
         {/* Tabs */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 px-6 flex gap-1 overflow-x-auto">
-            {(["items", "payments", "attachments", "history", "treatmentPlan"] as TabKey[]).map((t) => (
+            {(["items", "payments", "attachments", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -441,7 +442,8 @@ export default function VisitDetailPage() {
                 }`}
               >
                 {t === "items" ? "Items"
-                  : t === "treatmentPlan" ? "🦷 Treatment Plan"
+                  : t === "treatmentPlan" ? "Treatment Plan"
+                  : t === "chart" ? "Dental Chart"
                   : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -493,6 +495,14 @@ export default function VisitDetailPage() {
                 onRefresh={fetchVisit}
                 onPageError={setPageError}
                 onAddToBill={handleAddToBill}
+              />
+            )}
+            {tab === "chart" && (
+              <VisitToothChartTab
+                visitId={id}
+                patientId={visit.patientId}
+                visitStatus={visit.status}
+                items={items}
               />
             )}
           </div>
