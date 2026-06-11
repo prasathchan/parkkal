@@ -90,6 +90,7 @@ export const users = sqliteTable("users", {
   profileImageUrl: text("profile_image_url"),
   isActive: integer("is_active").notNull().default(1),
   isVerified: integer("is_verified").notNull().default(0),
+  isSuperAdmin: integer("is_super_admin").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at"),
 });
@@ -650,3 +651,84 @@ export const consentAuditLogRelations = relations(consentAuditLog, ({ one }) => 
   actor:        one(users,         { fields: [consentAuditLog.actorId],         references: [users.id] }),
 }));
 
+
+// ── Subscription billing ───────────────────────────────────────────────────────
+
+export const subscriptionPlans = sqliteTable("subscription_plans", {
+  id:           text("id").primaryKey(),
+  name:         text("name").notNull(),
+  slug:         text("slug").notNull().unique(),
+  description:  text("description"),
+  priceMonthly: real("price_monthly").notNull().default(0),
+  maxDoctors:   integer("max_doctors"),
+  maxStaff:     integer("max_staff"),
+  features:     text("features").notNull().default("[]"),
+  isActive:     integer("is_active").notNull().default(1),
+  sortOrder:    integer("sort_order").notNull().default(0),
+  createdAt:    integer("created_at").notNull(),
+  updatedAt:    integer("updated_at").notNull(),
+});
+
+export const coupons = sqliteTable("coupons", {
+  id:            text("id").primaryKey(),
+  code:          text("code").notNull().unique(),
+  description:   text("description"),
+  discountType:  text("discount_type", { enum: ["percent", "amount"] }).notNull(),
+  discountValue: real("discount_value").notNull(),
+  maxUses:       integer("max_uses"),
+  usedCount:     integer("used_count").notNull().default(0),
+  validFrom:     integer("valid_from"),
+  validUntil:    integer("valid_until"),
+  planSlug:      text("plan_slug"),
+  isActive:      integer("is_active").notNull().default(1),
+  createdAt:     integer("created_at").notNull(),
+  updatedAt:     integer("updated_at").notNull(),
+});
+
+export const subscriptions = sqliteTable("subscriptions", {
+  id:                   text("id").primaryKey(),
+  organizationId:       text("organization_id").notNull().references(() => organizations.id),
+  planId:               text("plan_id").notNull().references(() => subscriptionPlans.id),
+  status:               text("status", { enum: ["trialing", "active", "past_due", "cancelled", "expired"] }).notNull().default("trialing"),
+  trialEndAt:           integer("trial_end_at"),
+  currentPeriodStart:   integer("current_period_start"),
+  currentPeriodEnd:     integer("current_period_end"),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  stripeCustomerId:     text("stripe_customer_id"),
+  couponId:             text("coupon_id").references(() => coupons.id),
+  discountApplied:      real("discount_applied").notNull().default(0),
+  cancelledAt:          integer("cancelled_at"),
+  notes:                text("notes"),
+  createdAt:            integer("created_at").notNull(),
+  updatedAt:            integer("updated_at").notNull(),
+});
+
+export const couponRedemptions = sqliteTable("coupon_redemptions", {
+  id:             text("id").primaryKey(),
+  couponId:       text("coupon_id").notNull().references(() => coupons.id),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  subscriptionId: text("subscription_id").notNull().references(() => subscriptions.id),
+  redeemedAt:     integer("redeemed_at").notNull(),
+});
+
+export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
+  subscriptions: many(subscriptions),
+}));
+
+export const couponsRelations = relations(coupons, ({ many }) => ({
+  redemptions: many(couponRedemptions),
+  subscriptions: many(subscriptions),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one, many }) => ({
+  organization: one(organizations, { fields: [subscriptions.organizationId], references: [organizations.id] }),
+  plan:         one(subscriptionPlans, { fields: [subscriptions.planId], references: [subscriptionPlans.id] }),
+  coupon:       one(coupons, { fields: [subscriptions.couponId], references: [coupons.id] }),
+  redemptions:  many(couponRedemptions),
+}));
+
+export const couponRedemptionsRelations = relations(couponRedemptions, ({ one }) => ({
+  coupon:       one(coupons,       { fields: [couponRedemptions.couponId],       references: [coupons.id] }),
+  organization: one(organizations, { fields: [couponRedemptions.organizationId], references: [organizations.id] }),
+  subscription: one(subscriptions, { fields: [couponRedemptions.subscriptionId], references: [subscriptions.id] }),
+}));

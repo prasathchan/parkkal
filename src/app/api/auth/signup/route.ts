@@ -6,6 +6,7 @@ import { users, organizations, organizationMembers, verificationTokens, orgRoles
 import { hashPassword } from "@/lib/auth";
 import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { createTrialSubscription } from "@/lib/subscription";
 import { sendEmailOTP } from "@/lib/email";
 import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
@@ -191,6 +192,8 @@ export async function POST(request: NextRequest) {
       isActive: 0,
       createdAt: now,
     });
+
+    await createTrialSubscription(db, orgId);
 
     // Generate OTP codes and hash them before storage.
     // Plaintext codes are only sent via email/SMS — never persisted.

@@ -58,6 +58,11 @@ const envSchema = z.object({
   ALERT_RECIPIENT_EMAIL: z.string().email().optional(),
   TWILIO_WHATSAPP_NUMBER: z.string().startsWith("whatsapp:+").optional(),
 
+  // ── Stripe ────────────────────────────────────────────────────────────────
+  STRIPE_SECRET_KEY:      z.string().startsWith("sk_").optional(),
+  STRIPE_WEBHOOK_SECRET:  z.string().startsWith("whsec_").optional(),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional(),
+
   // ── App URL ───────────────────────────────────────────────────────────────
   // APP_URL is the canonical public URL injected as a Cloudflare Worker secret.
   // NEXT_PUBLIC_APP_URL is the Next.js build-time equivalent (optional).

@@ -77,6 +77,7 @@ import { checkRateLimit, type RateLimitConfig } from "@/lib/rate-limit";
 import { logger, type RouteLogger } from "@/lib/logger";
 import { getDb, type DbInstance } from "@/lib/db";
 import { organizationMembers } from "@/db/schema";
+import { getOrgSubscription } from "@/lib/subscription";
 import { writeAppLog } from "@/lib/app-logger";
 import type { OrgSessionPayload } from "@/lib/auth-edge";
 
@@ -231,6 +232,13 @@ interface RouteOptions {
    * Use this for destructive operations that should never be delegated to staff.
    */
   adminOnly?: boolean;
+
+  /**
+   * If true, skip the subscription enforcement check.
+   * Use for billing/subscription management endpoints and superadmin routes
+   * so expired orgs can still access their billing page.
+   */
+  skipSubscriptionCheck?: boolean;
 }
 
 // ─── withRoute ────────────────────────────────────────────────────────────────
@@ -325,6 +333,28 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
             organizationId: session.orgId, userId: session.userId, userRole: session.role,
           });
           return apiError("Your account has been deactivated. Please contact your administrator.", 403);
+        }
+      }
+
+      // ── 1b. Subscription enforcement ────────────────────────────────────
+      // Expired orgs can read but cannot write. Superadmin routes are exempt.
+      if (!options.skipSubscriptionCheck) {
+        const method = request.method.toUpperCase();
+        const isWrite = method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
+        if (isWrite) {
+          const db = getDb();
+          const sub = await getOrgSubscription(db, session.orgId);
+          if (!sub) {
+            return apiError("No active subscription found. Please contact support.", 402);
+          }
+          if (sub.isReadOnly) {
+            return apiError(
+              sub.status === "trialing"
+                ? "Your 30-day free trial has ended. Please upgrade to continue."
+                : "Your subscription has expired. Please renew to continue.",
+              402
+            );
+          }
         }
       }
 

@@ -5,6 +5,7 @@ import { verifyOrgToken } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { organizations } from "@/db/schema";
 import { parseThemeConfig } from "@/lib/theme";
+import { getOrgSubscription } from "@/lib/subscription";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/sidebar";
 import { DashboardProviders } from "@/components/providers/dashboard-providers";
@@ -30,6 +31,8 @@ export default async function DashboardLayout({
     dpaAcceptedAt: organizations.dpaAcceptedAt,
   }).from(organizations).where(eq(organizations.id, session.orgId));
 
+  const subscription = await getOrgSubscription(db, session.orgId);
+
   // DPA gate: admins must accept the data processing agreement before using the dashboard.
   // Non-admins are not blocked — the org admin is responsible for org-level acceptance.
   if (session.role === "ADMIN" && !org?.dpaAcceptedAt) {
@@ -37,6 +40,8 @@ export default async function DashboardLayout({
   }
 
   const themeConfig = parseThemeConfig(org?.themeConfig);
+  const isReadOnly  = subscription?.isReadOnly ?? false;
+  const trialDaysLeft = subscription?.status === "trialing" ? (subscription.daysRemaining ?? 0) : null;
 
   return (
     <ThemeProvider config={themeConfig}>
@@ -46,6 +51,32 @@ export default async function DashboardLayout({
           logoUrl={org?.logoUrl ?? null}
         />
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+          {/* Subscription banners */}
+          {isReadOnly && (
+            <div className="bg-red-600 text-white px-5 py-2.5 flex items-center justify-between text-sm print:hidden">
+              <span>
+                {subscription?.status === "trialing"
+                  ? "Your 30-day free trial has ended."
+                  : "Your subscription has expired."}{" "}
+                All records are read-only until you upgrade.
+              </span>
+              <a href="/dashboard/settings/billing" className="underline font-medium ml-4 whitespace-nowrap">
+                Upgrade now →
+              </a>
+            </div>
+          )}
+          {!isReadOnly && trialDaysLeft !== null && trialDaysLeft <= 7 && trialDaysLeft >= 0 && (
+            <div className="bg-amber-500 text-white px-5 py-2 flex items-center justify-between text-sm print:hidden">
+              <span>
+                {trialDaysLeft === 0
+                  ? "Your free trial ends today."
+                  : `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial.`}
+              </span>
+              <a href="/dashboard/settings/billing" className="underline font-medium ml-4 whitespace-nowrap">
+                View plans →
+              </a>
+            </div>
+          )}
           <DashboardProviders>{children}</DashboardProviders>
         </div>
       </div>
