@@ -2,35 +2,51 @@ name: Health Check
 
 on:
   schedule:
+    # Every 30 minutes. Cloudflare Workers cold-start in <50 ms so this is
+    # enough to catch outages within one billing cycle.
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
 jobs:
   ping:
+    name: Production health ping
     runs-on: ubuntu-latest
-    # APP_URL must be set as a GitHub Actions secret (Settings → Secrets → Actions).
-    # Until the app is deployed and the secret is configured, this job is skipped
-    # so the workflow always passes without generating false-alarm failure emails.
+    timeout-minutes: 5
+    permissions:
+      contents: none   # health check needs no repo access
+
     steps:
+      # Skip cleanly when APP_URL is not configured rather than failing.
+      # This keeps the workflow green in development forks that haven't deployed.
       - name: Skip if APP_URL not configured
         if: ${{ env.APP_URL == '' }}
         run: |
-          echo "APP_URL secret not set — skipping health check ping."
-          echo "Set APP_URL to your deployed worker URL (e.g. https://parkkal-dental.<account>.workers.dev)"
+          echo "APP_URL secret not set — skipping health check."
+          echo "Configure APP_URL (Settings → Secrets → Actions) to enable monitoring."
         env:
           APP_URL: ${{ secrets.APP_URL }}
 
-      - name: Check production health
+      - name: Ping /api/cron/health
         if: ${{ env.APP_URL != '' }}
         run: |
           URL="${APP_URL}/api/cron/health"
           echo "Pinging: $URL"
-          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+          STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" "$URL" || echo "000")
           echo "HTTP status: $STATUS"
           if [ "$STATUS" != "200" ]; then
-            echo "::error::Production health check failed (HTTP $STATUS) — $URL"
+            echo "::error::Production health check FAILED (HTTP $STATUS) — $URL"
+            echo "Check Cloudflare dashboard and recent deployments."
             exit 1
           fi
           echo "Health check passed."
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+
+      - name: Health summary
+        if: ${{ env.APP_URL != '' && always() }}
+        run: |
+          echo "### Health Check" >> $GITHUB_STEP_SUMMARY
+          echo "Checked: \`${APP_URL}/api/cron/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "Time: $(date -u)" >> $GITHUB_STEP_SUMMARY
         env:
           APP_URL: ${{ secrets.APP_URL }}
