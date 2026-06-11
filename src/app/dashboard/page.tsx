@@ -6,8 +6,10 @@ import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { verifyOrgToken } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { organizationPatients, appointments, payments, visits, patients, users } from "@/db/schema";
+import { organizationPatients, appointments, payments, visits, patients, users, organizations, organizationMembers } from "@/db/schema";
 import { eq, and, count, sum, gte, desc } from "drizzle-orm";
+import { OnboardingChecklist, type OnboardingStep } from "@/components/onboarding-checklist";
+import type { SystemRole } from "@/types";
 
 async function getDashboardStats(orgId: string) {
   const db = getDb();
@@ -89,14 +91,34 @@ async function getTodayAppointments(orgId: string): Promise<Array<{
   return rows.sort((a: (typeof rows)[number], b: (typeof rows)[number]) => a.appointmentTime.localeCompare(b.appointmentTime));
 }
 
+async function getOnboardingState(orgId: string) {
+  const db = getDb();
+  const [orgRows, memberCountRows, patientCountRows, apptCountRows] = await Promise.all([
+    db.select({ phone: organizations.phone, address: organizations.address, logoUrl: organizations.logoUrl, onboardingDismissedAt: organizations.onboardingDismissedAt }).from(organizations).where(eq(organizations.id, orgId)).limit(1),
+    db.select({ val: count() }).from(organizationMembers).where(eq(organizationMembers.organizationId, orgId)),
+    db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
+    db.select({ val: count() }).from(appointments).where(eq(appointments.organizationId, orgId)),
+  ]);
+  const org = orgRows[0];
+  return {
+    dismissed: !!org?.onboardingDismissedAt,
+    profileDone: !!(org?.phone && org?.address),
+    teamDone: (memberCountRows[0]?.val ?? 0) > 1,
+    patientDone: (patientCountRows[0]?.val ?? 0) > 0,
+    appointmentDone: (apptCountRows[0]?.val ?? 0) > 0,
+    logoDone: !!org?.logoUrl,
+  };
+}
+
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const orgToken = cookieStore.get("pkd_org_session")?.value;
   const session = orgToken ? await verifyOrgToken(orgToken) : null;
 
-  const [statsData, todayAppointments] = await Promise.all([
+  const [statsData, todayAppointments, onboarding] = await Promise.all([
     session ? getDashboardStats(session.orgId) : Promise.resolve(null),
     session ? getTodayAppointments(session.orgId) : Promise.resolve([] as Awaited<ReturnType<typeof getTodayAppointments>>),
+    session ? getOnboardingState(session.orgId) : Promise.resolve(null),
   ]);
 
   const stats = statsData ?? {
@@ -120,32 +142,58 @@ export default async function DashboardPage() {
 
 
       <main className="flex-1 p-6 space-y-6">
-        {/* Onboarding checklist — shown only when clinic has no data yet */}
-        {stats.totalPatients === 0 && stats.todayAppointments === 0 && (
-          <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
-            <h2 className="text-sm font-semibold text-blue-800 mb-3">
-              🎉 Welcome to Parkkal — let&apos;s get started
-            </h2>
-            <ol className="space-y-2 text-sm text-blue-700">
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">1</span>
-                <Link href="/dashboard/patients/new" className="underline hover:text-blue-900">Add your first patient</Link>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">2</span>
-                <Link href="/dashboard/appointments/new" className="underline hover:text-blue-900">Schedule an appointment</Link>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">3</span>
-                <Link href="/dashboard/staff" className="underline hover:text-blue-900">Invite your team</Link>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-200 text-xs font-bold">4</span>
-                <Link href="/dashboard/settings" className="underline hover:text-blue-900">Configure clinic profile</Link>
-              </li>
-            </ol>
-          </div>
-        )}
+        {onboarding && session && (() => {
+          const steps: OnboardingStep[] = [
+            {
+              id: "profile",
+              label: "Set up your clinic profile",
+              description: "Name, address, and phone — appears on invoices and notifications",
+              href: "/dashboard/settings",
+              done: onboarding.profileDone,
+              adminOnly: true,
+            },
+            {
+              id: "team",
+              label: "Invite your team",
+              description: "Add doctors, receptionists, or assistants",
+              href: "/dashboard/staff",
+              done: onboarding.teamDone,
+              adminOnly: true,
+            },
+            {
+              id: "patient",
+              label: "Add your first patient",
+              description: "Patient records, contact details, and medical history",
+              href: "/dashboard/patients/new",
+              done: onboarding.patientDone,
+              adminOnly: false,
+            },
+            {
+              id: "appointment",
+              label: "Book an appointment",
+              description: "Schedule the first visit and send an automated reminder",
+              href: "/dashboard/appointments/new",
+              done: onboarding.appointmentDone,
+              adminOnly: false,
+            },
+            {
+              id: "logo",
+              label: "Upload your clinic logo",
+              description: "Appears on invoices and consent forms",
+              href: "/dashboard/settings",
+              done: onboarding.logoDone,
+              adminOnly: true,
+            },
+          ];
+          return (
+            <OnboardingChecklist
+              steps={steps}
+              role={session.role as SystemRole}
+              dismissed={onboarding.dismissed}
+              canDismiss={session.role === "ADMIN"}
+            />
+          );
+        })()}
 
         {/* Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">

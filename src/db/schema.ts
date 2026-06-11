@@ -65,6 +65,7 @@ export const organizations = sqliteTable("organizations", {
   gstStateCode: text("gst_state_code"),          // 2-digit state code e.g. "33" for Tamil Nadu
   isActive: integer("is_active").notNull().default(1),
   scheduledDeleteAt: integer("scheduled_delete_at"),
+  onboardingDismissedAt: integer("onboarding_dismissed_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
