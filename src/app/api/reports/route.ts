@@ -5,7 +5,9 @@
  * Requires REPORTS_VIEW permission (ADMIN/MANAGER by default).
  *
  * Query params:
- *   period — '30d' | '90d' | '365d'  (default '30d')
+ *   period — '7d' | '30d' | '90d' | '365d'  (default '30d')
+ *   from   — YYYY-MM-DD  (custom range start; overrides period when both from+to are set)
+ *   to     — YYYY-MM-DD  (custom range end, inclusive)
  *
  * Response shape:
  *   summary       — total revenue, total paid, outstanding, patient count, visit count
@@ -16,8 +18,8 @@
  *   topProcedures — [{ procedure: string, count: number, revenue: number }] top 10
  *   treatmentByStatus — { PLANNED, IN_PROGRESS, COMPLETED }
  */
-import { eq, and, gte, sum, count, ne } from "drizzle-orm";
-import { visits, payments, organizationPatients, appointments, treatments } from "@/db/schema";
+import { eq, and, gte, lte, sum, count, ne } from "drizzle-orm";
+import { visits, payments, organizationPatients, appointments, treatments, users } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 
@@ -36,11 +38,32 @@ export const GET = withRoute(
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
     const periodParam = searchParams.get("period") ?? "30d";
-    const days = periodParam === "365d" ? 365 : periodParam === "90d" ? 90 : 30;
+    const fromParam   = searchParams.get("from");  // YYYY-MM-DD
+    const toParam     = searchParams.get("to");    // YYYY-MM-DD
 
     const orgId = session.orgId;
     const now   = Date.now();
-    const start = dayStart(new Date(now - (days - 1) * 86_400_000));
+
+    let start: number;
+    let end: number;
+    let days: number;
+    let label: string;
+
+    if (fromParam && toParam) {
+      // Custom date range
+      start = dayStart(new Date(fromParam));
+      end   = dayStart(new Date(toParam)) + 86_400_000; // inclusive of toParam day
+      days  = Math.max(1, Math.round((end - start) / 86_400_000));
+      label = `${fromParam} – ${toParam}`;
+    } else {
+      days  = periodParam === "365d" ? 365 : periodParam === "90d" ? 90 : periodParam === "7d" ? 7 : 30;
+      start = dayStart(new Date(now - (days - 1) * 86_400_000));
+      end   = dayStart(new Date(now)) + 86_400_000;
+      label = periodParam;
+    }
+
+    const inPeriod     = and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), lte(visits.createdAt, end));
+    const inPeriodNoCx = and(inPeriod, ne(visits.status, "CANCELLED"));
 
     // ── 1. Summary totals ─────────────────────────────────────────────────────
     const [totalPatients, periodVisits, totalBilledRows, totalCollectedRows, outstandingVisits] = await Promise.all([
@@ -48,14 +71,14 @@ export const GET = withRoute(
         .where(eq(organizationPatients.organizationId, orgId)),
 
       db.select({ val: count() }).from(visits)
-        .where(and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), ne(visits.status, "CANCELLED"))),
+        .where(inPeriodNoCx),
 
       db.select({ val: sum(visits.totalAmount) }).from(visits)
-        .where(and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), ne(visits.status, "CANCELLED"))),
+        .where(inPeriodNoCx),
 
       db.select({ val: sum(payments.amount) }).from(payments)
         .innerJoin(visits, eq(payments.visitId, visits.id))
-        .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, start))),
+        .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, start), lte(payments.paidAt, end))),
 
       db.select({ val: sum(visits.totalAmount) }).from(visits)
         .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN"))),
@@ -76,13 +99,13 @@ export const GET = withRoute(
     const [visitsByDay, paymentsByDay] = await Promise.all([
       db.select({ date: visits.visitDate, billed: sum(visits.totalAmount) })
         .from(visits)
-        .where(and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), ne(visits.status, "CANCELLED")))
+        .where(inPeriodNoCx)
         .groupBy(visits.visitDate),
 
       db.select({ date: visits.visitDate, collected: sum(payments.amount) })
         .from(payments)
         .innerJoin(visits, eq(payments.visitId, visits.id))
-        .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, start)))
+        .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, start), lte(payments.paidAt, end)))
         .groupBy(visits.visitDate),
     ]);
 
@@ -99,7 +122,7 @@ export const GET = withRoute(
     const patientRows = await db
       .select({ date: organizationPatients.registeredAt, val: count() })
       .from(organizationPatients)
-      .where(and(eq(organizationPatients.organizationId, orgId), gte(organizationPatients.registeredAt, start)))
+      .where(and(eq(organizationPatients.organizationId, orgId), gte(organizationPatients.registeredAt, start), lte(organizationPatients.registeredAt, end)))
       .groupBy(organizationPatients.registeredAt);
 
     // registeredAt is a Unix ms timestamp — group by date string
@@ -117,7 +140,7 @@ export const GET = withRoute(
     const visitStatusRows = await db
       .select({ status: visits.status, val: count() })
       .from(visits)
-      .where(and(eq(visits.organizationId, orgId), gte(visits.createdAt, start)))
+      .where(inPeriod)
       .groupBy(visits.status);
 
     const visitsByStatus: Record<string, number> = {};
@@ -127,18 +150,17 @@ export const GET = withRoute(
     const apptStatusRows = await db
       .select({ status: appointments.status, val: count() })
       .from(appointments)
-      .where(and(eq(appointments.organizationId, orgId), gte(appointments.createdAt, start)))
+      .where(and(eq(appointments.organizationId, orgId), gte(appointments.createdAt, start), lte(appointments.createdAt, end)))
       .groupBy(appointments.status);
 
     const apptByStatus: Record<string, number> = {};
     for (const r of apptStatusRows) apptByStatus[r.status] = Number(r.val);
 
     // ── 6. Top 10 procedures by count + revenue ───────────────────────────────
-    // Group by description (the label users type), falling back to procedure code.
     const procedureRows = await db
       .select({ description: treatments.description, procedure: treatments.procedure, cnt: count(), rev: sum(treatments.cost) })
       .from(treatments)
-      .where(and(eq(treatments.organizationId, orgId), gte(treatments.createdAt, start)))
+      .where(and(eq(treatments.organizationId, orgId), gte(treatments.createdAt, start), lte(treatments.createdAt, end)))
       .groupBy(treatments.description);
 
     const topProcedures = procedureRows
@@ -154,14 +176,50 @@ export const GET = withRoute(
     const txStatusRows = await db
       .select({ status: treatments.status, val: count() })
       .from(treatments)
-      .where(and(eq(treatments.organizationId, orgId), gte(treatments.createdAt, start)))
+      .where(and(eq(treatments.organizationId, orgId), gte(treatments.createdAt, start), lte(treatments.createdAt, end)))
       .groupBy(treatments.status);
 
     const treatmentByStatus: Record<string, number> = {};
     for (const r of txStatusRows) treatmentByStatus[r.status] = Number(r.val);
 
+    // ── 8. Per-doctor breakdown ───────────────────────────────────────────────
+    const doctorVisitRows = await db
+      .select({
+        doctorId:   visits.doctorId,
+        doctorName: users.name,
+        visits:     count(),
+        billed:     sum(visits.totalAmount),
+      })
+      .from(visits)
+      .leftJoin(users, eq(visits.doctorId, users.id))
+      .where(inPeriodNoCx)
+      .groupBy(visits.doctorId, users.name);
+
+    // Collect per-doctor payments
+    const doctorPaymentRows = await db
+      .select({ doctorId: visits.doctorId, collected: sum(payments.amount) })
+      .from(payments)
+      .innerJoin(visits, eq(payments.visitId, visits.id))
+      .where(and(eq(visits.organizationId, orgId), gte(payments.paidAt, start), lte(payments.paidAt, end)))
+      .groupBy(visits.doctorId);
+
+    const doctorCollectedMap = new Map<string, number>();
+    for (const r of doctorPaymentRows) {
+      if (r.doctorId) doctorCollectedMap.set(r.doctorId, Number(r.collected) || 0);
+    }
+
+    const doctorBreakdown = doctorVisitRows
+      .map((r: typeof doctorVisitRows[number]) => ({
+        doctorId:   r.doctorId ?? "",
+        doctorName: r.doctorName ?? "Unknown",
+        visits:     Number(r.visits),
+        billed:     Number(r.billed)  || 0,
+        collected:  doctorCollectedMap.get(r.doctorId ?? "") ?? 0,
+      }))
+      .sort((a: { visits: number }, b: { visits: number }) => b.visits - a.visits);
+
     return apiOk({
-      period: { days, startMs: start, label: periodParam },
+      period: { days, startMs: start, endMs: end, label },
       summary: {
         totalPatients:   totalPatients[0]?.val ?? 0,
         periodVisits:    periodVisits[0]?.val  ?? 0,
@@ -176,6 +234,7 @@ export const GET = withRoute(
       apptByStatus,
       topProcedures,
       treatmentByStatus,
+      doctorBreakdown,
     });
   }
 );

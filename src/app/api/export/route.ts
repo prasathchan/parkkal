@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { patients, organizationPatients, visits, treatments } from "@/db/schema";
-import { withRoute, RATE_LIMITS } from "@/lib/api";
-import { PERMISSIONS } from "@/lib/permissions";
+import { withRoute, apiError, RATE_LIMITS } from "@/lib/api";
+import { PERMISSIONS, hasPermission } from "@/lib/permissions";
 
 /** GET /api/export?type=patients|visits|treatments — download CSV of org data */
 export const GET = withRoute(
@@ -10,6 +10,14 @@ export const GET = withRoute(
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type") ?? "patients";
+
+    // patients.view is checked by withRoute; visits and treatments have their own gates
+    if (type === "visits" && !(await hasPermission(session, PERMISSIONS.VISITS_VIEW))) {
+      return apiError("You do not have permission to export visits.", 403);
+    }
+    if (type === "treatments" && !(await hasPermission(session, PERMISSIONS.TREATMENTS_VIEW))) {
+      return apiError("You do not have permission to export treatment plans.", 403);
+    }
 
     if (type === "patients") {
       const rows = await db.select({

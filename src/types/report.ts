@@ -24,6 +24,14 @@ export interface TopProcedure {
   revenue: number;
 }
 
+export interface DoctorStats {
+  doctorId: string;
+  doctorName: string;
+  visits: number;
+  billed: number;
+  collected: number;
+}
+
 export interface ReportSummary {
   totalPatients: number;
   periodVisits: number;
@@ -37,6 +45,7 @@ export interface ReportData {
   period: {
     days: number;
     startMs: number;
+    endMs: number;
     label: string;
   };
   summary: ReportSummary;
@@ -46,4 +55,5 @@ export interface ReportData {
   apptByStatus: Record<string, number>;
   topProcedures: TopProcedure[];
   treatmentByStatus: Record<string, number>;
+  doctorBreakdown: DoctorStats[];
 }

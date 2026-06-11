@@ -7,63 +7,79 @@ import { formatCurrency } from "@/lib/utils";
 import { useAsync } from "@/hooks/use-async";
 import { reportsApi } from "@/api";
 import type { ReportData } from "@/types";
-import type { ReportPeriod } from "@/api/reports";
+import type { ReportPeriod, ReportParams } from "@/api/reports";
 
-// ─── Bar chart (pure CSS) ──────────────────────────────────────────────────────
+// ─── SVG bar chart ─────────────────────────────────────────────────────────────
 
-function BarChart({
+function SvgBarChart({
   data,
   barKey,
   secondKey,
-  color = "bg-blue-500",
-  secondColor = "bg-green-400",
-  maxHeight = 80,
+  color = "#3b82f6",
+  secondColor = "#22c55e",
   label,
   secondLabel,
+  formatValue = (v: number) => String(v),
 }: {
   data: (Record<string, number> & { date?: string })[];
   barKey: string;
   secondKey?: string;
   color?: string;
   secondColor?: string;
-  maxHeight?: number;
   label: string;
   secondLabel?: string;
+  formatValue?: (v: number) => string;
 }) {
+  const W = 800, H = 100, PAD = 4;
   const maxVal = Math.max(...data.map((d) => Math.max(d[barKey] ?? 0, d[secondKey ?? ""] ?? 0)), 1);
+  const n = data.length;
+  const groupW = (W - PAD * 2) / Math.max(n, 1);
+  const cols = secondKey ? 2 : 1;
+  const barW = Math.max(1, (groupW - 1) / cols - 0.5);
 
   return (
     <div>
       {secondKey && (
         <div className="flex items-center gap-4 mb-2 text-xs text-slate-500">
-          <span className={`inline-block w-3 h-3 rounded-sm ${color}`} /> {label}
-          <span className={`inline-block w-3 h-3 rounded-sm ${secondColor}`} /> {secondLabel}
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} /> {label}
+          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: secondColor }} /> {secondLabel}
         </div>
       )}
-      <div className="flex items-end gap-0.5 h-20 overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
         {data.map((d, i) => {
-          const primary   = d[barKey]     ?? 0;
-          const secondary = d[secondKey ?? ""] ?? 0;
-          const ph = Math.round((primary   / maxVal) * maxHeight);
-          const sh = Math.round((secondary / maxVal) * maxHeight);
+          const primary   = d[barKey]           ?? 0;
+          const secondary = d[secondKey ?? ""]  ?? 0;
+          const ph = primary   > 0 ? Math.max(2, Math.round((primary   / maxVal) * (H - 4))) : 0;
+          const sh = secondary > 0 ? Math.max(2, Math.round((secondary / maxVal) * (H - 4))) : 0;
+          const x0 = PAD + i * groupW;
           return (
-            <div key={i} className="flex items-end gap-px flex-shrink-0" style={{ width: `${Math.max(2, 100 / data.length)}%` }}>
-              <div
-                className={`${color} rounded-t-sm w-full transition-all`}
-                style={{ height: ph, minHeight: primary > 0 ? 2 : 0 }}
-                title={`${d.date ?? ""}: ${formatCurrency(primary)}`}
-              />
+            <g key={i}>
+              <rect
+                x={x0}
+                y={H - ph}
+                width={barW}
+                height={ph}
+                fill={color}
+                rx={1}
+              >
+                <title>{`${d.date ?? ""}: ${formatValue(primary)}`}</title>
+              </rect>
               {secondKey && (
-                <div
-                  className={`${secondColor} rounded-t-sm w-full transition-all`}
-                  style={{ height: sh, minHeight: secondary > 0 ? 2 : 0 }}
-                  title={`${d.date ?? ""}: ${formatCurrency(secondary)}`}
-                />
+                <rect
+                  x={x0 + barW + 0.5}
+                  y={H - sh}
+                  width={barW}
+                  height={sh}
+                  fill={secondColor}
+                  rx={1}
+                >
+                  <title>{`${d.date ?? ""}: ${formatValue(secondary)}`}</title>
+                </rect>
               )}
-            </div>
+            </g>
           );
         })}
-      </div>
+      </svg>
     </div>
   );
 }
@@ -101,7 +117,7 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
     <div className="space-y-1.5">
       {Object.entries(data).sort((a, b) => b[1] - a[1]).map(([status, n]) => (
         <div key={status} className="flex items-center gap-3">
-          <div className="w-24 text-xs text-slate-600 capitalize">{status.replace("_", " ")}</div>
+          <div className="w-24 text-xs text-slate-600 capitalize">{status.replace(/_/g, " ")}</div>
           <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
             <div
               className={`${STATUS_COLORS[status] ?? "bg-slate-400"} h-full rounded-full transition-all`}
@@ -115,26 +131,41 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
   );
 }
 
-// ─── Period config ─────────────────────────────────────────────────────────────
+// ─── Period selector ───────────────────────────────────────────────────────────
 
-const PERIOD_LABELS: Record<ReportPeriod, string> = {
-  "7d":   "Last 7 days",
-  "30d":  "Last 30 days",
-  "90d":  "Last 90 days",
-  "365d": "Last 12 months",
+const PRESET_LABELS: Record<string, string> = {
+  "7d":   "7 days",
+  "30d":  "30 days",
+  "90d":  "90 days",
+  "365d": "1 year",
 };
+
+function today(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+function daysAgo(n: number): string {
+  return new Date(Date.now() - n * 86_400_000).toLocaleDateString("en-CA");
+}
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
-  const [period, setPeriod] = useState<ReportPeriod>("30d");
+  const [period, setPeriod]     = useState<ReportPeriod>("30d");
+  const [fromDate, setFromDate] = useState<string>(daysAgo(29));
+  const [toDate,   setToDate]   = useState<string>(today());
+  const [useCustom, setUseCustom] = useState(false);
+
+  const params: ReportParams = useCustom
+    ? { period: "custom", from: fromDate, to: toDate }
+    : { period };
 
   const { data, loading, error } = useAsync<ReportData>(
-    () => reportsApi.get(period),
-    [period],
+    () => reportsApi.get(params),
+    [period, useCustom, useCustom ? fromDate : "", useCustom ? toDate : ""],
   );
 
-  const forbidden = error !== null && error.includes("403") || (error ?? "").toLowerCase().includes("forbidden") || (error ?? "").toLowerCase().includes("permission");
+  const forbidden = (error ?? "").includes("403") || (error ?? "").toLowerCase().includes("permission");
 
   if (forbidden) {
     return (
@@ -156,33 +187,67 @@ export default function ReportsPage() {
       />
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Period selector */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        {/* ── Period selector ───────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-lg font-bold text-slate-900">Business Reports</h1>
             <p className="text-xs text-slate-500 mt-0.5">Revenue, patient activity, and clinical statistics.</p>
           </div>
-          <div className="flex gap-1.5">
-            {(["30d", "90d"] as ReportPeriod[]).map((p) => (
+
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Preset buttons */}
+            {(["7d", "30d", "90d", "365d"] as ReportPeriod[]).map((p) => (
               <button
                 key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  period === p
+                onClick={() => { setPeriod(p); setUseCustom(false); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  !useCustom && period === p
                     ? "bg-blue-600 text-white"
                     : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {PERIOD_LABELS[p]}
+                {PRESET_LABELS[p]}
               </button>
             ))}
+
+            {/* Custom range toggle */}
+            <button
+              onClick={() => setUseCustom((v) => !v)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                useCustom
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              Custom
+            </button>
+
+            {/* Date inputs — only shown when custom is active */}
+            {useCustom && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={fromDate}
+                  max={toDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-slate-400 text-sm">–</span>
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate}
+                  max={today()}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
           </div>
         </div>
 
         {error && !forbidden && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-            {error}
-          </div>
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>
         )}
 
         {loading && (
@@ -198,12 +263,12 @@ export default function ReportsPage() {
             {/* ── Summary stat cards ────────────────────────────────────────── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <Stat label="Total Patients" value={String(data.summary.totalPatients)} sub="registered in org" />
-              <Stat label={`Visits (${PERIOD_LABELS[period]})`} value={String(data.summary.periodVisits)} sub="excluding cancelled" />
+              <Stat label="Visits (period)" value={String(data.summary.periodVisits)} sub="excl. cancelled" />
               <Stat label="Billed" value={formatCurrency(data.summary.totalBilled)} sub="total amount raised" />
               <Stat
                 label="Collected"
                 value={formatCurrency(data.summary.totalCollected)}
-                sub={`${data.summary.collectionRate}% collection rate`}
+                sub={`${data.summary.collectionRate}% of billed`}
                 color={data.summary.collectionRate >= 80 ? "text-green-700" : "text-orange-700"}
               />
               <Stat
@@ -221,18 +286,19 @@ export default function ReportsPage() {
 
             {/* ── Revenue chart ─────────────────────────────────────────────── */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-1">Revenue — {PERIOD_LABELS[period]}</h2>
-              <p className="text-xs text-slate-400 mb-4">Daily billed vs. collected. Each bar group = one day.</p>
-              <BarChart
+              <h2 className="text-sm font-semibold text-slate-900 mb-1">Revenue — {data.period.label}</h2>
+              <p className="text-xs text-slate-400 mb-4">Daily billed vs. collected.</p>
+              <SvgBarChart
                 data={data.revenueByDay as unknown as (Record<string, number> & { date?: string })[]}
                 barKey="billed"
                 secondKey="collected"
-                color="bg-blue-300"
-                secondColor="bg-green-500"
+                color="#93c5fd"
+                secondColor="#22c55e"
                 label="Billed"
                 secondLabel="Collected"
+                formatValue={formatCurrency}
               />
-              <div className="flex justify-between text-xs text-slate-400 mt-2">
+              <div className="flex justify-between text-xs text-slate-400 mt-1">
                 <span>{data.revenueByDay[0]?.date}</span>
                 <span>{data.revenueByDay[data.revenueByDay.length - 1]?.date}</span>
               </div>
@@ -242,12 +308,13 @@ export default function ReportsPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 p-5">
                 <h2 className="text-sm font-semibold text-slate-900 mb-1">New Patient Registrations</h2>
-                <p className="text-xs text-slate-400 mb-4">Patients registered per day in this period.</p>
-                <BarChart
+                <p className="text-xs text-slate-400 mb-4">Patients registered per day.</p>
+                <SvgBarChart
                   data={data.newPatients as unknown as (Record<string, number> & { date?: string })[]}
                   barKey="count"
-                  color="bg-indigo-400"
+                  color="#818cf8"
                   label="New patients"
+                  formatValue={(v) => `${v} patient${v !== 1 ? "s" : ""}`}
                 />
               </div>
               <div className="bg-white rounded-xl border border-slate-200 p-5">
@@ -264,7 +331,44 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* ── Top procedures table ────────────────────────────────────────── */}
+            {/* ── Per-doctor breakdown ──────────────────────────────────────── */}
+            {data.doctorBreakdown.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100">
+                  <h2 className="text-sm font-semibold text-slate-900">Doctor Performance</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Visits, billing, and collection per doctor this period.</p>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                    <tr>
+                      <th className="px-5 py-3 text-left font-medium">Doctor</th>
+                      <th className="px-5 py-3 text-right font-medium">Visits</th>
+                      <th className="px-5 py-3 text-right font-medium">Billed</th>
+                      <th className="px-5 py-3 text-right font-medium">Collected</th>
+                      <th className="px-5 py-3 text-right font-medium">Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {data.doctorBreakdown.map((d) => {
+                      const rate = d.billed > 0 ? Math.round((d.collected / d.billed) * 100) : 100;
+                      return (
+                        <tr key={d.doctorId} className="hover:bg-slate-50">
+                          <td className="px-5 py-3 font-medium text-slate-800">{d.doctorName}</td>
+                          <td className="px-5 py-3 text-right text-slate-700">{d.visits}</td>
+                          <td className="px-5 py-3 text-right text-slate-700">{formatCurrency(d.billed)}</td>
+                          <td className="px-5 py-3 text-right text-slate-700">{formatCurrency(d.collected)}</td>
+                          <td className={`px-5 py-3 text-right font-medium ${rate >= 90 ? "text-green-700" : rate >= 70 ? "text-yellow-700" : "text-red-700"}`}>
+                            {rate}%
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Top procedures table ──────────────────────────────────────── */}
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100">
                 <h2 className="text-sm font-semibold text-slate-900">Top Procedures</h2>
