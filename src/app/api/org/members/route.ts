@@ -1,4 +1,5 @@
 import { eq, and } from "drizzle-orm";
+import env from "@/lib/env";
 import { organizationMembers, users, organizations, orgRoles, verificationTokens, emergencyContacts } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { hashPassword } from "@/lib/auth";
@@ -99,7 +100,7 @@ export const POST = withRoute(
   { route: "POST /api/org/members", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
   async (req, { session, db, log }) => {
     // Derive base URL so invite links work in any environment
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const appBaseUrl = env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
     const data = addMemberSchema.parse(await req.json());
 
     // Emergency contact is mandatory for staff records

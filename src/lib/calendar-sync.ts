@@ -33,6 +33,7 @@ import { eq, and } from "drizzle-orm";
 import { calendarIntegrations } from "@/db/schema";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { generateId } from "@/lib/utils";
+import env from "@/lib/env";
 import type { DbInstance } from "@/lib/db";
 type DrizzleDB = DbInstance;
 
@@ -69,8 +70,8 @@ async function refreshGoogleToken(refreshToken: string): Promise<{ accessToken: 
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id:     process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      client_id:     env.GOOGLE_CLIENT_ID ?? "",
+      client_secret: env.GOOGLE_CLIENT_SECRET ?? "",
       refresh_token: refreshToken,
       grant_type:    "refresh_token",
     }),
@@ -85,8 +86,8 @@ async function refreshOutlookToken(refreshToken: string): Promise<{ accessToken:
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id:     process.env.MICROSOFT_CLIENT_ID ?? "",
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET ?? "",
+      client_id:     env.MICROSOFT_CLIENT_ID ?? "",
+      client_secret: env.MICROSOFT_CLIENT_SECRET ?? "",
       refresh_token: refreshToken,
       grant_type:    "refresh_token",
       scope:         "Calendars.ReadWrite offline_access",
@@ -302,8 +303,8 @@ export async function removeAppointmentFromCalendar(
 
 export function getGoogleAuthUrl(state: string): string {
   const q = new URLSearchParams({
-    client_id:     process.env.GOOGLE_CLIENT_ID ?? "",
-    redirect_uri:  process.env.GOOGLE_REDIRECT_URI ?? "",
+    client_id:     env.GOOGLE_CLIENT_ID ?? "",
+    redirect_uri:  env.GOOGLE_REDIRECT_URI ?? "",
     response_type: "code",
     scope:         "https://www.googleapis.com/auth/calendar.events",
     access_type:   "offline",
@@ -315,8 +316,8 @@ export function getGoogleAuthUrl(state: string): string {
 
 export function getOutlookAuthUrl(state: string): string {
   const q = new URLSearchParams({
-    client_id:     process.env.MICROSOFT_CLIENT_ID ?? "",
-    redirect_uri:  process.env.MICROSOFT_REDIRECT_URI ?? "",
+    client_id:     env.MICROSOFT_CLIENT_ID ?? "",
+    redirect_uri:  env.MICROSOFT_REDIRECT_URI ?? "",
     response_type: "code",
     scope:         "Calendars.ReadWrite offline_access",
     state,
@@ -332,9 +333,9 @@ export async function exchangeGoogleCode(
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id:     process.env.GOOGLE_CLIENT_ID ?? "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      redirect_uri:  process.env.GOOGLE_REDIRECT_URI ?? "",
+      client_id:     env.GOOGLE_CLIENT_ID ?? "",
+      client_secret: env.GOOGLE_CLIENT_SECRET ?? "",
+      redirect_uri:  env.GOOGLE_REDIRECT_URI ?? "",
       grant_type:    "authorization_code",
     }),
   });
@@ -355,9 +356,9 @@ export async function exchangeOutlookCode(
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id:     process.env.MICROSOFT_CLIENT_ID ?? "",
-      client_secret: process.env.MICROSOFT_CLIENT_SECRET ?? "",
-      redirect_uri:  process.env.MICROSOFT_REDIRECT_URI ?? "",
+      client_id:     env.MICROSOFT_CLIENT_ID ?? "",
+      client_secret: env.MICROSOFT_CLIENT_SECRET ?? "",
+      redirect_uri:  env.MICROSOFT_REDIRECT_URI ?? "",
       grant_type:    "authorization_code",
       scope:         "Calendars.ReadWrite offline_access",
     }),

@@ -1,4 +1,5 @@
 import { eq, and, ne } from "drizzle-orm";
+import env from "@/lib/env";
 import { organizationMembers, users, organizations, verificationTokens } from "@/db/schema";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { writeAuditLog } from "@/lib/audit";
@@ -31,7 +32,7 @@ export const PATCH = withRoute<{ userId: string }>(
         .from(users).where(eq(users.id, userId));
 
       if (user && !user.isActive) {
-        const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+        const appBaseUrl = env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
         const tokenCode = crypto.randomUUID();
         const tokenId = `vt_${Array.from(crypto.getRandomValues(new Uint8Array(12)), (b: number) => b.toString(16).padStart(2, "0")).join("")}`;
 

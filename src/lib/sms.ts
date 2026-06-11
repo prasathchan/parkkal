@@ -16,6 +16,8 @@
  *   sendSMSOTP(to, code)   → sends a 6-digit OTP to the given phone number
  */
 
+import env from "@/lib/env";
+
 // Normalize bare 10-digit Indian mobile numbers to E.164 (+91XXXXXXXXXX).
 // Twilio rejects numbers without a country code prefix.
 function toE164(phone: string): string {
@@ -27,9 +29,9 @@ function toE164(phone: string): string {
 }
 
 export async function sendSMSOTP(to: string, code: string): Promise<void> {
-  const sid = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  const sid = env.TWILIO_ACCOUNT_SID;
+  const token = env.TWILIO_AUTH_TOKEN;
+  const from = env.TWILIO_PHONE_NUMBER;
 
   if (!sid || !token || !from) {
     if (process.env.NODE_ENV !== "production") {

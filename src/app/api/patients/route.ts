@@ -8,8 +8,8 @@
  *   GET  → any logged-in staff with patients.view permission
  *   POST → staff with patients.create permission
  */
-import { like, or, desc, count, eq, and } from "drizzle-orm";
-import { patients, organizationPatients, emergencyContacts } from "@/db/schema";
+import { like, or, desc, count, eq, and, sql } from "drizzle-orm";
+import { patients, organizationPatients, emergencyContacts, patientCodeSequences } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId, escapeLike } from "@/lib/utils";
 import { encryptField } from "@/lib/encryption";
@@ -128,35 +128,35 @@ export const POST = withRoute(
       updatedAt: now,
     };
 
-    // Retry loop handles race condition: two concurrent requests may compute the same code.
-    // On UNIQUE constraint collision, re-count and retry.
-    let newPatient: typeof basePatient & { patientCode: string } = {
-      ...basePatient,
-      patientCode: "",
-    };
-    const [{ orgCount }] = await db
-      .select({ orgCount: count() })
-      .from(organizationPatients)
-      .where(eq(organizationPatients.organizationId, session.orgId));
-    const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(
-      (orgCount as number) + 1
-    ).padStart(4, "0")}`;
+    // Atomically increment the global sequence and get the new value in one statement.
+    // This eliminates the SELECT COUNT(*) race that could produce duplicate patient codes.
+    const globalScope = "global";
+    const orgScope = `org:${session.orgSlug}`;
 
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const [{ totalCount }] = await db.select({ totalCount: count() }).from(patients);
+    const [globalRow, orgRow] = await Promise.all([
+      db
+        .insert(patientCodeSequences)
+        .values({ scope: globalScope, lastSeq: 1, updatedAt: now })
+        .onConflictDoUpdate({
+          target: patientCodeSequences.scope,
+          set: { lastSeq: sql`${patientCodeSequences.lastSeq} + 1`, updatedAt: now },
+        })
+        .returning({ lastSeq: patientCodeSequences.lastSeq }),
+      db
+        .insert(patientCodeSequences)
+        .values({ scope: orgScope, lastSeq: 1, updatedAt: now })
+        .onConflictDoUpdate({
+          target: patientCodeSequences.scope,
+          set: { lastSeq: sql`${patientCodeSequences.lastSeq} + 1`, updatedAt: now },
+        })
+        .returning({ lastSeq: patientCodeSequences.lastSeq }),
+    ]);
 
-      const seq = (totalCount as number) + 1 + attempt;
-      const globalCode = `PKL-${String(seq).padStart(6, "0")}`;
-      newPatient = { ...basePatient, patientCode: globalCode };
+    const globalCode = `PKL-${String(globalRow[0].lastSeq).padStart(6, "0")}`;
+    const orgCode = `${session.orgSlug.toUpperCase().slice(0, 3)}-${String(orgRow[0].lastSeq).padStart(4, "0")}`;
 
-      try {
-        await db.insert(patients).values(newPatient);
-        break;
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        if (attempt === 4 || !msg.includes("UNIQUE")) throw e;
-      }
-    }
+    const newPatient = { ...basePatient, patientCode: globalCode };
+    await db.insert(patients).values(newPatient);
 
     await db.insert(organizationPatients).values({
       id: crypto.randomUUID(),

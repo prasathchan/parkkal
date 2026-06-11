@@ -1,3 +1,4 @@
+import env from "@/lib/env";
 import { eq, and } from "drizzle-orm";
 import { treatments } from "@/db/schema";
 import { storeFile } from "@/lib/storage";
@@ -20,7 +21,7 @@ async function verifyWithClaude(
   base64Data: string,
   mimeType: string
 ): Promise<VerifyResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     const log = logger.forRoute("POST /api/treatments/[id]/consent/upload");
     log.warn("ANTHROPIC_API_KEY not set — skipping AI consent verification", {});

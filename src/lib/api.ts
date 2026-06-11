@@ -262,6 +262,8 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
     context: { params: Promise<P> }
   ): Promise<NextResponse> => {
 
+    const requestStart = Date.now();
+
     // ── 0. Body size guard ─────────────────────────────────────────────────
     // Reject oversized request bodies before touching auth or the DB.
     // Content-Length is not mandatory (chunked transfer omits it), but when
@@ -359,7 +361,9 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
       // ── 4. Business Logic ────────────────────────────────────────────────
       const db = getDb();
       const params = await context?.params ?? {} as P;
-      return await handler(request, { session, db, log }, params);
+      const response = await handler(request, { session, db, log }, params);
+      response.headers.set("X-Response-Time", `${Date.now() - requestStart}ms`);
+      return response;
 
     } catch (error) {
       // Zod validation errors → 400 Bad Request with field-level details

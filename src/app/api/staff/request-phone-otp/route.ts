@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import env from "@/lib/env";
 import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
@@ -103,9 +104,9 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    const sid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const from = process.env.TWILIO_PHONE_NUMBER;
+    const sid = env.TWILIO_ACCOUNT_SID;
+    const authToken = env.TWILIO_AUTH_TOKEN;
+    const from = env.TWILIO_PHONE_NUMBER;
 
     if (!sid || !authToken || !from) {
       if (process.env.NODE_ENV !== "production") {

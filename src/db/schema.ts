@@ -451,6 +451,17 @@ export const toothChart = sqliteTable("tooth_chart", {
   uniqOrgPatient: unique().on(t.organizationId, t.patientId),
 }));
 
+// ─── Patient code sequences ───────────────────────────────────────────────────
+// Atomic counters for patient code generation. Replaces SELECT COUNT(*) which
+// produces duplicate codes under concurrent inserts.
+// scope='global'         → PKL-XXXXXX (cross-org code)
+// scope='org:{slug}'     → {ORG}-XXXX (per-org display code)
+export const patientCodeSequences = sqliteTable("patient_code_sequences", {
+  scope:     text("scope").primaryKey(),
+  lastSeq:   integer("last_seq").notNull().default(0),
+  updatedAt: integer("updated_at").notNull(),
+});
+
 export const consentAuditLog = sqliteTable("consent_audit_log", {
   id: text("id").primaryKey(),
   treatmentId: text("treatment_id").notNull().references(() => treatments.id),

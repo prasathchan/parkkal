@@ -52,9 +52,22 @@ jobs:
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Smoke test — health endpoint
+        run: |
+          echo "Waiting 15 s for worker to boot..."
+          sleep 15
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://parkkal.com/api/cron/health)
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check returned HTTP $STATUS — deployment may be broken" >&2
+            exit 1
+          fi
+          echo "Health check OK (HTTP $STATUS)"
+        env:
+          # No secrets needed — health endpoint is public
+
       - name: Deployment summary
         run: |
-          echo "### ✅ Deployed to production" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployed to production" >> $GITHUB_STEP_SUMMARY
           echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

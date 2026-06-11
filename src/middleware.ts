@@ -17,6 +17,8 @@ const CSP = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  // Report violations to our own endpoint so we hear about CSP bypasses in production
+  ...(isDev ? [] : ["report-uri /api/csp-report"]),
 ].join("; ");
 
 export async function middleware(request: NextRequest) {

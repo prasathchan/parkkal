@@ -47,6 +47,8 @@
  *   Use buildReminderMessage() to generate the standard reminder text.
  */
 
+import env from "@/lib/env";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type NotificationChannel = "SMS" | "WHATSAPP" | "EMAIL";
@@ -72,8 +74,8 @@ function toE164(phone: string): string {
 // ─── Twilio helper (shared by SMS + WhatsApp) ─────────────────────────────────
 
 async function sendViaTwilio(from: string, to: string, body: string): Promise<void> {
-  const sid   = process.env.TWILIO_ACCOUNT_SID;
-  const token = process.env.TWILIO_AUTH_TOKEN;
+  const sid   = env.TWILIO_ACCOUNT_SID;
+  const token = env.TWILIO_AUTH_TOKEN;
 
   if (!sid || !token) {
     console.warn("[NOTIFY] Twilio not configured — skipping notification to", to);
@@ -103,7 +105,7 @@ async function sendViaTwilio(from: string, to: string, body: string): Promise<vo
 // ─── SMS ─────────────────────────────────────────────────────────────────────
 
 async function sendSMS(to: string, message: string): Promise<void> {
-  const from = process.env.TWILIO_PHONE_NUMBER;
+  const from = env.TWILIO_PHONE_NUMBER;
   if (!from) {
     console.warn("[NOTIFY] TWILIO_PHONE_NUMBER not set — skipping SMS to", to);
     return;
@@ -114,7 +116,7 @@ async function sendSMS(to: string, message: string): Promise<void> {
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────
 
 async function sendWhatsApp(to: string, message: string): Promise<void> {
-  const from = process.env.TWILIO_WHATSAPP_NUMBER; // e.g. "whatsapp:+14155238886"
+  const from = env.TWILIO_WHATSAPP_NUMBER; // e.g. "whatsapp:+14155238886"
   if (!from) {
     console.warn("[NOTIFY] TWILIO_WHATSAPP_NUMBER not set — skipping WhatsApp to", to);
     return;
@@ -127,8 +129,8 @@ async function sendWhatsApp(to: string, message: string): Promise<void> {
 // ─── Email ────────────────────────────────────────────────────────────────────
 
 async function sendEmail(to: string, subject: string, message: string, patientName?: string): Promise<void> {
-  const apiKey  = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL ?? "reminders@parkkal.com";
+  const apiKey  = env.RESEND_API_KEY;
+  const fromEmail = env.RESEND_FROM_EMAIL ?? "reminders@parkkal.com";
 
   if (!apiKey) {
     console.warn("[NOTIFY] RESEND_API_KEY not set — skipping email to", to);

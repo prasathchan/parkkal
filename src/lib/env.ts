@@ -60,8 +60,10 @@ const envSchema = z.object({
   // ── OAuth providers (optional) ────────────────────────────────────────────
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
   MICROSOFT_CLIENT_ID: z.string().optional(),
   MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_REDIRECT_URI: z.string().url().optional(),
 
   // ── AI ────────────────────────────────────────────────────────────────────
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),

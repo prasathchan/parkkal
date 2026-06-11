@@ -1,4 +1,5 @@
 import { eq, and } from "drizzle-orm";
+import env from "@/lib/env";
 import { organizationMembers, users, organizations, verificationTokens } from "@/db/schema";
 import { sendStaffInviteEmail } from "@/lib/email";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
@@ -12,7 +13,7 @@ const schema = z.object({
 export const POST = withRoute<{ userId: string }>(
   { route: "POST /api/org/members/[userId]/send-activation", rateLimit: RATE_LIMITS.ADMIN, adminOnly: true },
   async (req, { session, db, log }, { userId }) => {
-    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
+    const appBaseUrl = env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
     const body = await req.json().catch(() => ({}));
     const { mode } = schema.parse(body);
 

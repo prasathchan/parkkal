@@ -18,13 +18,15 @@
  *        Code expires in 15 minutes (enforced by the calling route, not here).
  */
 
+import env from "@/lib/env";
+
 export async function sendStaffInviteEmail(
   to: string,
   name: string,
   orgName: string,
   activationUrl: string
 ): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[EMAIL] RESEND_API_KEY not set — skipping invite email. URL:", activationUrl);
     return;
@@ -91,7 +93,7 @@ export async function sendStaffInviteEmail(
 }
 
 export async function sendEmailOTP(to: string, name: string, code: string): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = env.RESEND_API_KEY;
   if (!apiKey) {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[EMAIL] RESEND_API_KEY not set — skipping email send. OTP:", code);

@@ -44,15 +44,17 @@ vi.mock("@/lib/utils", () => ({
   escapeLike:  vi.fn((v: string) => (v ?? "").replace(/%/g, "\\%").replace(/_/g, "\\_")),
 }));
 vi.mock("@/db/schema", () => ({
-  patients:             { id: "id", name: "name", phone: "phone", patientCode: "pc", createdAt: "ca" },
-  organizationPatients: { organizationId: "orgId", patientId: "patientId", isActive: "isActive" },
-  emergencyContacts:    { id: "id", entityType: "et", entityId: "eid" },
-  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  patients:               { id: "id", name: "name", phone: "phone", patientCode: "pc", createdAt: "ca" },
+  organizationPatients:   { organizationId: "orgId", patientId: "patientId", isActive: "isActive" },
+  emergencyContacts:      { id: "id", entityType: "et", entityId: "eid" },
+  organizationMembers:    { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  patientCodeSequences:   { scope: "scope", lastSeq: "lastSeq", updatedAt: "updatedAt" },
 }));
 vi.mock("drizzle-orm", () => ({
   like: vi.fn(), or: vi.fn(), and: vi.fn((...a: unknown[]) => a),
   desc: vi.fn(), count: vi.fn(() => "count"), eq: vi.fn(),
   gte: vi.fn(), lte: vi.fn(), ne: vi.fn(), asc: vi.fn(), inArray: vi.fn(),
+  sql: vi.fn(() => "sql"),
 }));
 
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
@@ -170,12 +172,12 @@ describe("POST /api/patients", () => {
   };
 
   it("creates a patient and returns 201", async () => {
-    // ADMIN: handler queries = org count → total count → insert → insert org link
+    // ADMIN: handler queries = global seq upsert → org seq upsert (parallel) → insert patients → insert org link
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ orgCount: 5 }],
-      [{ totalCount: 10 }],
-      undefined,   // insert patients
-      undefined,   // insert organizationPatients
+      [{ lastSeq: 11 }],  // global sequence
+      [{ lastSeq: 6 }],   // org sequence
+      undefined,          // insert patients
+      undefined,          // insert organizationPatients
     ]) as never);
 
     const res = await POST(makeReq("http://localhost/api/patients", "POST", VALID_BODY), CTX);
@@ -223,7 +225,7 @@ describe("POST /api/patients", () => {
   it("accepts all 8 valid blood group values", async () => {
     for (const bg of ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]) {
       vi.mocked(getDb).mockReturnValue(makeDbMock([
-        [{ orgCount: 0 }], [{ totalCount: 0 }], undefined, undefined,
+        [{ lastSeq: 1 }], [{ lastSeq: 1 }], undefined, undefined,
       ]) as never);
       const res = await POST(makeReq("http://localhost/api/patients", "POST", {
         ...VALID_BODY, bloodGroup: bg,
