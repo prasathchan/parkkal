@@ -75,6 +75,15 @@ const envSchema = z.object({
 type Env = z.infer<typeof envSchema>;
 
 function validateEnv(): Env {
+  // During `next build`'s "Collecting page data" phase, Next.js statically
+  // imports every route module. Cloudflare secrets aren't available at that
+  // point (neither in Cloudflare Pages builds nor in any CI that doesn't
+  // inject them). Skip strict validation here — the real check runs at Worker
+  // boot time (first request), when Cloudflare injects the actual secrets.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return process.env as unknown as Env;
+  }
+
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
     const issues = result.error.issues
