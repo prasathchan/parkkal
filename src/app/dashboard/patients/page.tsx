@@ -89,7 +89,7 @@ export default function PatientsPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Patients" }]}
       />
 
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         {/* Error banner — shown if the API call fails */}
         {errorMsg && (
           <ErrorState message={errorMsg} onRetry={() => fetchPatients(search, offset)} />

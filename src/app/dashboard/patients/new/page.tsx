@@ -176,7 +176,7 @@ export default function NewPatientPage() {
         ]}
       />
 
-      <main className="flex-1 p-6 max-w-2xl">
+      <main id="main-content" className="flex-1 p-6 max-w-2xl">
         <Card>
           <CardHeader>
             <CardTitle>Patient Information</CardTitle>

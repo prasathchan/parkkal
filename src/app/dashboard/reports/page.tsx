@@ -171,7 +171,7 @@ export default function ReportsPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <Header title="Reports" />
-        <main className="max-w-5xl mx-auto px-4 py-16 text-center">
+        <main id="main-content" className="max-w-5xl mx-auto px-4 py-16 text-center">
           <p className="text-slate-500 text-sm">You don&apos;t have permission to view reports.</p>
           <Link href="/dashboard" className="mt-4 inline-block text-blue-600 hover:underline text-sm">Back to Dashboard</Link>
         </main>
@@ -185,7 +185,7 @@ export default function ReportsPage() {
         title="Reports"
         breadcrumb={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reports" }]}
       />
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <main id="main-content" className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
         {/* ── Period selector ───────────────────────────────────────────────── */}
         <div className="flex items-start justify-between flex-wrap gap-3">

@@ -141,7 +141,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
   return (
     <div className="min-h-screen bg-slate-50">
       <Header title={treatment?.description ?? "Treatment Plan"} />
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <main id="main-content" className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
         {/* Breadcrumb */}
         <nav className="text-sm text-slate-500 flex items-center gap-1.5">

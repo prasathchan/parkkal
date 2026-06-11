@@ -218,7 +218,7 @@ export default function StaffDetailPage() {
           { label: member.name },
         ]}
       />
-      <main className="flex-1 p-6 max-w-3xl space-y-6">
+      <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {/* Profile Card */}
         <Card>

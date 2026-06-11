@@ -73,7 +73,7 @@ export default function VisitsPage() {
         title="Visits"
         breadcrumb={[{ label: "Dashboard" }, { label: "Visits" }]}
       />
-      <main className="flex-1 p-6 space-y-4">
+      <main id="main-content" className="flex-1 p-6 space-y-4">
         {/* Filters + New Visit */}
         <div className="flex items-center gap-3 flex-wrap">
           <select

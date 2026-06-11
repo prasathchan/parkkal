@@ -141,7 +141,7 @@ export default async function DashboardPage() {
       />
 
 
-      <main className="flex-1 p-6 space-y-6">
+      <main id="main-content" className="flex-1 p-6 space-y-6">
         {onboarding && session && (() => {
           const steps: OnboardingStep[] = [
             {

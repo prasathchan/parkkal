@@ -476,7 +476,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-base font-semibold text-slate-900">Link Existing Treatment Plan</h3>
-              <button onClick={() => setShowLinkModal(false)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+              <button onClick={() => setShowLinkModal(false)} aria-label="Close modal" className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
             </div>
             <div className="overflow-y-auto flex-1 p-5 space-y-3">
               {linkLoading ? (

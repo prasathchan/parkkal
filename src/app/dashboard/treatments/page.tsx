@@ -147,7 +147,7 @@ export default function TreatmentsPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Treatment Plans" }]}
       />
 
-      <main className="flex-1 p-6 space-y-4">
+      <main id="main-content" className="flex-1 p-6 space-y-4">
         {statusError && (
           <ErrorState message={statusError} onRetry={() => { setStatusError(""); fetchTreatments(0); }} />
         )}

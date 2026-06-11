@@ -187,11 +187,11 @@ export default function VisitDetailPage() {
   return (
     <div className="flex-1 flex flex-col">
       <Header title={visit.visitCode} breadcrumb={[{ label: "Dashboard" }, { label: "Visits", href: "/dashboard/visits" }, { label: visit.visitCode }]} />
-      <main className="flex-1 p-6 space-y-5">
+      <main id="main-content" className="flex-1 p-6 space-y-5">
         {pageError && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center justify-between">
             <span>{pageError}</span>
-            <button onClick={() => setPageError("")} className="ml-4 text-red-400 hover:text-red-600 font-bold leading-none">&times;</button>
+            <button onClick={() => setPageError("")} aria-label="Dismiss error" className="ml-4 text-red-400 hover:text-red-600 font-bold leading-none">&times;</button>
           </div>
         )}
 

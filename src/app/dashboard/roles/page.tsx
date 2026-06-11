@@ -353,7 +353,7 @@ export default function RolesPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Roles" }]}
       />
 
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-slate-900">Roles</h1>

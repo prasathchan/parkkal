@@ -194,7 +194,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 flex flex-col" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       <Header title="Settings" breadcrumb={[{ label: "Dashboard" }, { label: "Settings" }]} />
-      <main className="flex-1 p-6 max-w-2xl">
+      <main id="main-content" className="flex-1 p-6 max-w-2xl">
         {/* Tabs */}
         <div className="flex gap-1 mb-6 p-1 rounded-lg w-fit" style={{ background: "var(--muted)" }}>
           {tabs.map(t => (

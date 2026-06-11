@@ -53,7 +53,7 @@ export default function SalaryPage() {
   return (
     <div className="flex-1 flex flex-col">
       <Header title="Salary Management" breadcrumb={[{ label: "Dashboard" }, { label: "Salary" }]} />
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         {/* Controls */}
         <div className="flex items-center gap-4 mb-6">
           <div>

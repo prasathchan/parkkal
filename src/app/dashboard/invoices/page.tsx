@@ -130,7 +130,7 @@ export default function InvoicesPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Invoices" }]}
       />
 
-      <main className="flex-1 p-6 space-y-4">
+      <main id="main-content" className="flex-1 p-6 space-y-4">
         {/* Filter bar */}
         <div className="flex items-center gap-3 flex-wrap">
           <input
@@ -266,7 +266,7 @@ export default function InvoicesPage() {
           <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <h2 className="text-base font-semibold text-slate-900">New Invoice</h2>
-              <button onClick={() => setShowSlideover(false)} className="text-slate-400 hover:text-slate-600 transition">
+              <button onClick={() => setShowSlideover(false)} aria-label="Close panel" className="text-slate-400 hover:text-slate-600 transition">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>

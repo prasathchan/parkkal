@@ -128,7 +128,7 @@ export default function PatientEditPage() {
         ]}
       />
 
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Edit Patient Details</CardTitle>

@@ -123,7 +123,7 @@ export default function BillingPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Billing" }]}
       />
 
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         {errorMsg && (
           <ErrorState message={errorMsg} onRetry={() => fetchData(page, search)} />
         )}

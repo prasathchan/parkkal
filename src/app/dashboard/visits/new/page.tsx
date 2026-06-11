@@ -218,7 +218,7 @@ function NewVisitForm() {
           { label: "New" },
         ]}
       />
-      <main className="flex-1 p-6">
+      <main id="main-content" className="flex-1 p-6">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Create New Visit</CardTitle>

@@ -133,7 +133,7 @@ export default function AuditLogPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <Header title="Audit Log" />
-        <main className="max-w-5xl mx-auto px-4 py-16 text-center">
+        <main id="main-content" className="max-w-5xl mx-auto px-4 py-16 text-center">
           <p className="text-slate-500 text-sm">Only administrators can view the audit log.</p>
           <Link href="/dashboard/settings" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
             Back to Settings
@@ -146,7 +146,7 @@ export default function AuditLogPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header title="Audit Log" />
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-5">
+      <main id="main-content" className="max-w-5xl mx-auto px-4 py-8 space-y-5">
 
         {/* Breadcrumb */}
         <nav className="text-sm text-slate-500 flex items-center gap-1.5">

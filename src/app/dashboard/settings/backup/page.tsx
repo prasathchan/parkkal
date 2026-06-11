@@ -165,7 +165,7 @@ export default function BackupPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Settings" }, { label: "Backup" }]}
       />
 
-      <main className="flex-1 p-6 max-w-3xl space-y-6">
+      <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {/* Info card */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
