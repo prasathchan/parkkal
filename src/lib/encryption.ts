@@ -25,6 +25,8 @@
  *   decryptField(value)  → plaintext, or null on decryption failure
  */
 
+import env from "@/lib/env";
+
 const PREFIX = "enc:";
 
 // Cache the CryptoKey per hex value — importKey() is expensive and the ENCRYPTION_KEY
@@ -33,9 +35,9 @@ let _keyCache: { hex: string; key: CryptoKey } | null = null;
 let _keyMissingWarned = false;
 
 async function importKey(): Promise<CryptoKey | null> {
-  const hex = process.env.ENCRYPTION_KEY;
+  const hex = env.ENCRYPTION_KEY;
   if (!hex || hex.length !== 64) {
-    if (process.env.NODE_ENV === "production") {
+    if (env.NODE_ENV === "production") {
       throw new Error("ENCRYPTION_KEY is not set or invalid — cannot store PII in production");
     }
     if (!_keyMissingWarned) {

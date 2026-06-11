@@ -59,6 +59,9 @@ const envSchema = z.object({
   TWILIO_WHATSAPP_NUMBER: z.string().startsWith("whatsapp:+").optional(),
 
   // ── App URL ───────────────────────────────────────────────────────────────
+  // APP_URL is the canonical public URL injected as a Cloudflare Worker secret.
+  // NEXT_PUBLIC_APP_URL is the Next.js build-time equivalent (optional).
+  APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 
   // ── OAuth providers (optional) ────────────────────────────────────────────

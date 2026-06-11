@@ -27,6 +27,7 @@
  */
 /// <reference types="@cloudflare/workers-types" />
 import * as schema from "@/db/schema";
+import env from "@/lib/env";
 
 function getD1(): D1Database {
   try {
@@ -51,19 +52,19 @@ function createDevDb() {
   const { createClient } = eval("require")("@libsql/client");
   // eslint-disable-next-line @typescript-eslint/no-require-imports, no-eval
   const { drizzle } = eval("require")("drizzle-orm/libsql");
-  const url = process.env.DATABASE_URL || "file:local.db";
+  const url = env.DATABASE_URL ?? "file:local.db";
   const client = createClient({ url });
   return drizzle(client, { schema });
 }
 
-export function getDb(env?: { DB: D1Database }) {
-  if (env?.DB) {
+export function getDb(cfEnv?: { DB: D1Database }) {
+  if (cfEnv?.DB) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { drizzle } = require("drizzle-orm/d1");
-    return drizzle(env.DB, { schema });
+    return drizzle(cfEnv.DB, { schema });
   }
 
-  if (process.env.NODE_ENV !== "production") {
+  if (env.NODE_ENV !== "production") {
     if (!devDbCache) devDbCache = createDevDb();
     return devDbCache;
   }

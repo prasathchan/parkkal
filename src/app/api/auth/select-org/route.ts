@@ -6,10 +6,11 @@ import { getPreOrgSession, createOrgToken } from "@/lib/auth";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import env from "@/lib/env";
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
 };

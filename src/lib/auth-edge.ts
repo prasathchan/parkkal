@@ -38,6 +38,7 @@
  *   isTokenRevoked(jti)          → true if jti has been revoked
  */
 import { SignJWT, jwtVerify } from "jose";
+import env from "@/lib/env";
 
 // ─── JWT Secret ───────────────────────────────────────────────────────────────
 
@@ -47,10 +48,7 @@ let cachedSecret: Uint8Array | null = null;
 
 function getSecret(): Uint8Array {
   if (cachedSecret) return cachedSecret;
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET environment variable is not set");
-  }
-  cachedSecret = new TextEncoder().encode(process.env.JWT_SECRET);
+  cachedSecret = new TextEncoder().encode(env.JWT_SECRET);
   return cachedSecret;
 }
 

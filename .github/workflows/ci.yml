@@ -145,16 +145,13 @@ jobs:
       - name: Apply migrations and seed test data
         run: node scripts/setup-local-db.js
 
-      - name: Start dev server (background)
-        run: npm run dev &
-        env:
-          NODE_ENV: test
-
-      - name: Wait for dev server
-        run: npx wait-on http://localhost:3000 --timeout 60000
-
+      # Playwright's webServer config (playwright.config.ts) starts and manages
+      # the dev server automatically. Do not start it manually here — two concurrent
+      # `npm run dev` processes fight over port 3000 and cause flaky failures.
       - name: Run E2E tests
         run: npx playwright test
+        env:
+          NODE_ENV: test
 
       - name: Upload Playwright report
         if: always()

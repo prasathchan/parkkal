@@ -4,10 +4,11 @@ import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { createOrgToken } from "@/lib/auth";
 import { z } from "zod";
+import env from "@/lib/env";
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
 };

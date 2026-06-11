@@ -7,6 +7,7 @@ import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import env from "@/lib/env";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -17,7 +18,7 @@ const LOGIN_RATE_LIMIT = { limit: 10, windowMs: 15 * 60 * 1000 };
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
 };

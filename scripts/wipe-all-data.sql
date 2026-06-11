@@ -1,0 +1,33 @@
+PRAGMA foreign_keys = OFF;
+
+DELETE FROM consent_audit_log;
+DELETE FROM tooth_chart_history;
+DELETE FROM tooth_chart;
+DELETE FROM org_backups;
+DELETE FROM calendar_integrations;
+DELETE FROM patient_code_sequences;
+DELETE FROM app_logs;
+DELETE FROM admin_audit_log;
+DELETE FROM revoked_tokens;
+DELETE FROM verification_tokens;
+DELETE FROM attachments;
+DELETE FROM payments;
+DELETE FROM visit_items;
+DELETE FROM visit_treatments;
+DELETE FROM visits;
+DELETE FROM invoice_treatments;
+DELETE FROM invoices;
+DELETE FROM prescriptions;
+DELETE FROM salary_records;
+DELETE FROM appointment_reminders;
+DELETE FROM appointments;
+DELETE FROM emergency_contacts;
+DELETE FROM organization_patients;
+DELETE FROM organization_members;
+DELETE FROM treatments;
+DELETE FROM patients;
+DELETE FROM org_roles;
+DELETE FROM organizations;
+DELETE FROM users;
+
+PRAGMA foreign_keys = ON;

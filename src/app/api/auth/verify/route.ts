@@ -8,6 +8,7 @@ import { verifyOTP } from "@/lib/otp";
 import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import env from "@/lib/env";
 
 // Limit OTP guesses to prevent brute-forcing the 6-digit codes.
 // 10 attempts per 15 min per IP, and 20 per 15 min per userId.
@@ -22,7 +23,7 @@ const verifySchema = z.object({
 
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
   path: "/",
 };
