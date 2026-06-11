@@ -44,14 +44,14 @@ export default function SignupPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
 
       if (!res.ok) {
         setError(data.error || "Signup failed. Please try again.");
         return;
       }
 
-      sessionStorage.setItem("pkd_signup_userId", data.userId);
+      sessionStorage.setItem("pkd_signup_userId", data.userId ?? "");
       sessionStorage.setItem("pkd_signup_email", form.email);
       sessionStorage.setItem("pkd_signup_phone", form.phone);
       router.push("/signup/verify");

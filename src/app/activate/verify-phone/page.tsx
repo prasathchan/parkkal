@@ -36,7 +36,7 @@ function VerifyPhoneForm() {
         body: JSON.stringify({ userId, phone }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
 
       if (!res.ok) {
         setError(data.error || "Failed to send OTP");
@@ -73,7 +73,7 @@ function VerifyPhoneForm() {
         body: JSON.stringify({ userId, code: otp }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
 
       if (!res.ok) {
         setError(data.error || "Verification failed");

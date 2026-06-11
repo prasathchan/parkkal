@@ -56,7 +56,7 @@ function SelectOrgInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orgId }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) {
         setError(data.error || "Failed to select organization");
         return;

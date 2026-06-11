@@ -55,7 +55,7 @@ export default function VerifyPage() {
         body: JSON.stringify({ userId, emailCode, phoneCode }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
 
       if (!res.ok) {
         setError(data.error || "Verification failed. Please try again.");
@@ -88,7 +88,7 @@ export default function VerifyPage() {
         body: JSON.stringify({ userId, type }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
 
       if (!res.ok) {
         setError(data.error || "Failed to resend OTP.");

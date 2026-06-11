@@ -48,10 +48,10 @@ function ActivateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, mode: "verify" }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) { setError(data.error || "Invalid or expired link"); return; }
-      setUserId(data.userId);
-      await sendEmailOtp(data.userId);
+      setUserId(data.userId ?? "");
+      await sendEmailOtp(data.userId ?? "");
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ function ActivateForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: uid }),
     });
-    const data = await res.json();
+    const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
     if (res.ok) setMaskedEmail(data.maskedEmail || "");
   }
 
@@ -79,10 +79,10 @@ function ActivateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) { setError(data.error || "Activation failed"); return; }
-      setUserId(data.userId);
-      await sendEmailOtp(data.userId);
+      setUserId(data.userId ?? "");
+      await sendEmailOtp(data.userId ?? "");
       setStep("verify-email");
     } catch { setError("Something went wrong. Please try again."); }
     finally { setLoading(false); }
@@ -98,7 +98,7 @@ function ActivateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code: emailOtp }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) { setError(data.error || "Verification failed"); return; }
       setStep("verify-phone");
     } catch { setError("Something went wrong. Please try again."); }
@@ -116,7 +116,7 @@ function ActivateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, phone }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) { setError(data.error || "Failed to send OTP"); return; }
       setPhoneStep("enter-otp");
     } catch { setError("Something went wrong. Please try again."); }
@@ -133,7 +133,7 @@ function ActivateForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, code: phoneOtp }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; userId?: string; maskedEmail?: string; redirect?: string; requireOrgSelection?: boolean; organizations?: unknown; slug?: string };
       if (!res.ok) { setError(data.error || "Verification failed"); return; }
       if (isVerifyOnly) {
         setStep("done");
