@@ -9,8 +9,6 @@ import { NextResponse } from "next/server";
  * Returns 200 { status: "ok", ts: <unix ms> } when healthy.
  * Returns 503 when the DB binding is missing or throws.
  */
-export const runtime = "edge";
-
 export async function GET(req: Request): Promise<Response> {
   const ts = Date.now();
   try {
