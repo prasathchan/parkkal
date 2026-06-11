@@ -30,15 +30,24 @@ export const GET = withRoute<{ id: string }>(
 
     if (!visitRow) return apiError("Visit not found", 404);
 
-    const [org] = await db
-      .select({ name: organizations.name, address: organizations.address, phone: organizations.phone, email: organizations.email })
-      .from(organizations)
-      .where(eq(organizations.id, session.orgId));
-
-    const [items, paymentRows, prescriptionRows] = await Promise.all([
-      db.select().from(visitItems).where(eq(visitItems.visitId, id)),
-      db.select().from(payments).where(eq(payments.visitId, id)),
-      db.select().from(prescriptions).where(eq(prescriptions.visitId, id)),
+    const [[org], [items, paymentRows, prescriptionRows]] = await Promise.all([
+      db.select({
+        name: organizations.name,
+        address: organizations.address,
+        phone: organizations.phone,
+        email: organizations.email,
+        logoUrl: organizations.logoUrl,
+        gstin: organizations.gstin,
+        gstRegistered: organizations.gstRegistered,
+        gstStateCode: organizations.gstStateCode,
+        cgstRate: organizations.cgstRate,
+        sgstRate: organizations.sgstRate,
+      }).from(organizations).where(eq(organizations.id, session.orgId)),
+      Promise.all([
+        db.select().from(visitItems).where(eq(visitItems.visitId, id)),
+        db.select().from(payments).where(eq(payments.visitId, id)),
+        db.select().from(prescriptions).where(eq(prescriptions.visitId, id)),
+      ]),
     ]);
 
     return apiOk({
@@ -51,6 +60,12 @@ export const GET = withRoute<{ id: string }>(
         address: org?.address ?? "",
         phone: org?.phone ?? "",
         email: org?.email ?? "",
+        logoUrl: org?.logoUrl ?? null,
+        gstin: org?.gstin ?? null,
+        gstRegistered: !!(org?.gstRegistered),
+        gstStateCode: org?.gstStateCode ?? null,
+        cgstRate: org?.cgstRate ?? 9,
+        sgstRate: org?.sgstRate ?? 9,
       },
     });
   }

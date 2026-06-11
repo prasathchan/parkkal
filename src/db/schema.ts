@@ -63,6 +63,8 @@ export const organizations = sqliteTable("organizations", {
   gstin: text("gstin"),                          // 15-char GST Identification Number
   gstRegistered: integer("gst_registered").notNull().default(0),
   gstStateCode: text("gst_state_code"),          // 2-digit state code e.g. "33" for Tamil Nadu
+  cgstRate: real("cgst_rate").notNull().default(9),
+  sgstRate: real("sgst_rate").notNull().default(9),
   isActive: integer("is_active").notNull().default(1),
   scheduledDeleteAt: integer("scheduled_delete_at"),
   onboardingDismissedAt: integer("onboarding_dismissed_at"),

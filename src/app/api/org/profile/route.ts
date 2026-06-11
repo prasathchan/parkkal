@@ -23,6 +23,8 @@ const updateOrgSchema = z.object({
   gstin: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/).optional().nullable().or(z.literal("")),
   gstRegistered: z.boolean().optional(),
   gstStateCode: z.string().max(2).optional().nullable(),
+  cgstRate: z.number().min(0).max(14).optional(),
+  sgstRate: z.number().min(0).max(14).optional(),
 });
 
 /** GET /api/org/profile — fetch the current org's settings */
@@ -42,7 +44,7 @@ export const PATCH = withRoute(
     const parsed = updateOrgSchema.safeParse(await req.json());
     if (!parsed.success) return apiError("Invalid input", 400);
 
-    const { name, tagline, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode } = parsed.data;
+    const { name, tagline, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode, cgstRate, sgstRate } = parsed.data;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
     if (tagline !== undefined) updates.tagline = tagline || null;
@@ -54,6 +56,8 @@ export const PATCH = withRoute(
     if (gstin !== undefined) updates.gstin = gstin || null;
     if (gstRegistered !== undefined) updates.gstRegistered = gstRegistered ? 1 : 0;
     if (gstStateCode !== undefined) updates.gstStateCode = gstStateCode || null;
+    if (cgstRate !== undefined) updates.cgstRate = cgstRate;
+    if (sgstRate !== undefined) updates.sgstRate = sgstRate;
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
 

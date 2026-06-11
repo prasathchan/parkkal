@@ -36,7 +36,7 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "" });
+  const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "", cgstRate: 9, sgstRate: 9 });
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -61,6 +61,8 @@ export default function SettingsPage() {
           gstin: (orgAny.gstin as string) ?? "",
           gstRegistered: !!orgAny.gstRegistered,
           gstStateCode: (orgAny.gstStateCode as string) ?? "",
+          cgstRate: (orgAny.cgstRate as number) ?? 9,
+          sgstRate: (orgAny.sgstRate as number) ?? 9,
         });
         setLoading(false);
       });
@@ -89,6 +91,8 @@ export default function SettingsPage() {
         gstin: gstForm.gstin || null,
         gstRegistered: gstForm.gstRegistered,
         gstStateCode: gstForm.gstStateCode || null,
+        cgstRate: gstForm.cgstRate,
+        sgstRate: gstForm.sgstRate,
       } as Parameters<typeof orgApi.updateProfile>[0]);
       toast.success("Profile saved successfully");
       setMessage("Profile saved successfully.");
@@ -283,6 +287,33 @@ export default function SettingsPage() {
                         />
                         <p className="text-xs text-slate-400 mt-0.5">First 2 digits of your GSTIN (e.g. 33 for Tamil Nadu, 27 for Maharashtra)</p>
                       </Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="CGST Rate (%)">
+                          <input
+                            type="number"
+                            min={0}
+                            max={14}
+                            step={0.5}
+                            value={gstForm.cgstRate}
+                            onChange={e => setGstForm(g => ({ ...g, cgstRate: parseFloat(e.target.value) || 0 }))}
+                            className="field-input"
+                          />
+                        </Field>
+                        <Field label="SGST Rate (%)">
+                          <input
+                            type="number"
+                            min={0}
+                            max={14}
+                            step={0.5}
+                            value={gstForm.sgstRate}
+                            onChange={e => setGstForm(g => ({ ...g, sgstRate: parseFloat(e.target.value) || 0 }))}
+                            className="field-input"
+                          />
+                        </Field>
+                      </div>
+                      <p className="text-xs text-slate-400 -mt-1">
+                        Total GST: {gstForm.cgstRate + gstForm.sgstRate}% — most dental procedures use 9% + 9% = 18%. Healthcare services may be exempt (0%).
+                      </p>
                     </>
                   )}
                 </div>

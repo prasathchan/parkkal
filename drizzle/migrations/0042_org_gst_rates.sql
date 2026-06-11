@@ -1,0 +1,2 @@
+ALTER TABLE organizations ADD COLUMN cgst_rate REAL NOT NULL DEFAULT 9;
+ALTER TABLE organizations ADD COLUMN sgst_rate REAL NOT NULL DEFAULT 9;
