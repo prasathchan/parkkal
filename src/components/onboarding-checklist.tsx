@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { SystemRole } from "@/types";
+import { orgApi } from "@/api";
 
 export interface OnboardingStep {
   id: string;
@@ -44,7 +45,7 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
   function handleDismiss() {
     startTransition(async () => {
       try {
-        await fetch("/api/org/onboarding/dismiss", { method: "POST" });
+        await orgApi.dismissOnboarding();
       } finally {
         setIsDismissed(true);
       }

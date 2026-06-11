@@ -213,6 +213,12 @@ export function deleteOrg(confirmName: string): Promise<{ success: true }> {
   });
 }
 
+// ─── Onboarding dismiss ───────────────────────────────────────────────────────
+
+export function dismissOnboarding(): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>("/api/org/onboarding/dismiss", { method: "POST" });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const orgApi = {
@@ -239,5 +245,6 @@ export const orgApi = {
     generate: generateSalary,
     update:   updateSalaryRecord,
   },
-  delete: deleteOrg,
+  delete:            deleteOrg,
+  dismissOnboarding: dismissOnboarding,
 };

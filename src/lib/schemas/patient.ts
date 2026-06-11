@@ -16,7 +16,11 @@ import { indianPhoneSchema, isoDateSchema, idSchema, textFields } from "./common
 
 // ─── Blood group ──────────────────────────────────────────────────────────────
 
-export const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "UNKNOWN", "A1", "A2", "A1B", "A2B", "Bombay Oh"] as const;
+export const BLOOD_GROUPS = [
+  "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-",
+  "A1+", "A1-", "A2+", "A2-", "A1B+", "A1B-", "A2B+", "A2B-",
+  "Bombay Oh", "UNKNOWN",
+] as const;
 export type BloodGroup = (typeof BLOOD_GROUPS)[number];
 
 // ─── Gender ───────────────────────────────────────────────────────────────────
