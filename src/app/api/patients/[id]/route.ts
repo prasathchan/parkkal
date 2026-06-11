@@ -83,10 +83,13 @@ export const PATCH = withRoute<{ id: string }>(
   }
 );
 
-/** DELETE /api/patients/[id] — cascade-delete a patient (ADMIN only) */
+/** DELETE /api/patients/[id]?confirm=erase — cascade-erase all patient data (ADMIN only, DPDP right to erasure) */
 export const DELETE = withRoute<{ id: string }>(
   { route: "DELETE /api/patients/[id]", rateLimit: RATE_LIMITS.DESTRUCTIVE, adminOnly: true },
-  async (_req, { session, db, log }, { id }) => {
+  async (req, { session, db, log }, { id }) => {
+    const confirm = new URL(req.url).searchParams.get("confirm");
+    if (confirm !== "erase") return apiError("Add ?confirm=erase to confirm permanent data erasure", 400);
+
     const [orgLink] = await db.select().from(organizationPatients)
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
     if (!orgLink) return apiError("Forbidden", 403);
@@ -135,8 +138,8 @@ export const DELETE = withRoute<{ id: string }>(
 
     await runCascade(db, cascadeOps);
 
-    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "PATIENT_DELETED", targetType: "patient", targetId: id });
-    log.info("Patient deleted", { patientId: id });
+    writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "PATIENT_DELETED", targetType: "patient", targetId: id, metadata: { reason: "right-to-erasure", compliance: "DPDP Act 2023" } });
+    log.info("Patient data erased", { patientId: id });
     return apiOk({ success: true });
   }
 );

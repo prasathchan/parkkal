@@ -62,6 +62,7 @@ export default function NewPatientPage() {
     ecEmail: "",
   });
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
+  const [dataConsent, setDataConsent] = useState(false);
 
   // Referral
   const [referralType, setReferralType] = useState<"external" | "patient">("external");
@@ -113,7 +114,7 @@ export default function NewPatientPage() {
   const hasValidationErrors =
     !!fieldErrors.phone || !!fieldErrors.email || !!fieldErrors.panNumber || !!fieldErrors.aadhaarNumber ||
     (ecPartiallyFilled && !!fieldErrors.ecPhone);
-  const canSubmit = requiredFilled && !hasValidationErrors;
+  const canSubmit = requiredFilled && !hasValidationErrors && dataConsent;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -140,6 +141,7 @@ export default function NewPatientPage() {
       emergencyContact: form.ecName && form.ecRelationship && form.ecPhone
         ? { name: form.ecName, relationship: form.ecRelationship, phone: form.ecPhone, email: form.ecEmail }
         : undefined,
+      dataConsent: true as const,
     };
 
     try {
@@ -428,10 +430,27 @@ export default function NewPatientPage() {
                 </div>
               )}
 
+              {/* Data processing consent — required by DPDP Act 2023 */}
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition">
+                <input
+                  type="checkbox"
+                  checked={dataConsent}
+                  onChange={(e) => setDataConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                />
+                <span className="text-xs text-slate-600">
+                  <span className="font-semibold text-slate-800">Patient has given data processing consent</span>
+                  {" "}— The patient (or guardian) has been informed about how their personal data will be collected and used,
+                  and has given consent as required under the Digital Personal Data Protection Act 2023.
+                </span>
+              </label>
+
               {!canSubmit && (
                 <p className="text-xs text-slate-400 pt-1">
                   {hasValidationErrors
                     ? "Fix the errors above to continue."
+                    : !dataConsent
+                    ? "Patient data processing consent is required."
                     : "Fill in all required fields (*) to register."}
                 </p>
               )}

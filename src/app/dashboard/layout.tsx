@@ -23,9 +23,18 @@ export default async function DashboardLayout({
   if (!session) redirect("/login");
 
   const db = getDb();
-  const [org] = await db.select({ logoUrl: organizations.logoUrl, themeConfig: organizations.themeConfig, tagline: organizations.tagline })
-    .from(organizations)
-    .where(eq(organizations.id, session.orgId));
+  const [org] = await db.select({
+    logoUrl: organizations.logoUrl,
+    themeConfig: organizations.themeConfig,
+    tagline: organizations.tagline,
+    dpaAcceptedAt: organizations.dpaAcceptedAt,
+  }).from(organizations).where(eq(organizations.id, session.orgId));
+
+  // DPA gate: admins must accept the data processing agreement before using the dashboard.
+  // Non-admins are not blocked — the org admin is responsible for org-level acceptance.
+  if (session.role === "ADMIN" && !org?.dpaAcceptedAt) {
+    redirect("/accept-dpa");
+  }
 
   const themeConfig = parseThemeConfig(org?.themeConfig);
 

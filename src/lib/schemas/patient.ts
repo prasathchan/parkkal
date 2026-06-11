@@ -47,6 +47,8 @@ export const createPatientSchema = z.object({
   panNumber:     z.string().max(10).optional(),
   aadhaarNumber: z.string().length(12).optional(),
   referredByPatientId: z.string().optional().nullable(),
+  // Data processing consent — must be explicitly checked at registration (DPDP Act 2023)
+  dataConsent: z.literal(true, { errorMap: () => ({ message: "Patient data processing consent is required" }) }),
   // Emergency contact (optional at creation)
   emergencyContact: z.object({
     name:         textFields.name,

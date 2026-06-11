@@ -68,6 +68,10 @@ export const organizations = sqliteTable("organizations", {
   isActive: integer("is_active").notNull().default(1),
   scheduledDeleteAt: integer("scheduled_delete_at"),
   onboardingDismissedAt: integer("onboarding_dismissed_at"),
+  dpaVersion: text("dpa_version"),
+  dpaAcceptedAt: integer("dpa_accepted_at"),
+  dpaAcceptedBy: text("dpa_accepted_by"),
+  dataRetentionYears: integer("data_retention_years").notNull().default(7),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -138,6 +142,8 @@ export const patients = sqliteTable("patients", {
   emergencyContactAdded: integer("emergency_contact_added").notNull().default(0),
   referralSource: text("referral_source"),
   referredByPatientId: text("referred_by_patient_id").references((): AnySQLiteColumn => patients.id),
+  dataConsentAt: integer("data_consent_at"),
+  dataConsentIp: text("data_consent_ip"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

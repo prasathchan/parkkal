@@ -37,6 +37,8 @@ export default function SettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "", cgstRate: 9, sgstRate: 9 });
+  const [dataRetentionYears, setDataRetentionYears] = useState(7);
+  const [dpaStatus, setDpaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -64,6 +66,8 @@ export default function SettingsPage() {
           cgstRate: (orgAny.cgstRate as number) ?? 9,
           sgstRate: (orgAny.sgstRate as number) ?? 9,
         });
+        setDataRetentionYears((orgAny.dataRetentionYears as number) ?? 7);
+        setDpaStatus({ version: (o.dpaVersion ?? null), acceptedAt: (o.dpaAcceptedAt ?? null) });
         setLoading(false);
       });
     orgApi.members.list()
@@ -93,6 +97,7 @@ export default function SettingsPage() {
         gstStateCode: gstForm.gstStateCode || null,
         cgstRate: gstForm.cgstRate,
         sgstRate: gstForm.sgstRate,
+        dataRetentionYears,
       } as Parameters<typeof orgApi.updateProfile>[0]);
       toast.success("Profile saved successfully");
       setMessage("Profile saved successfully.");
@@ -316,6 +321,36 @@ export default function SettingsPage() {
                       </p>
                     </>
                   )}
+                </div>
+              </div>
+
+              {/* Data & Privacy Section */}
+              <div className="rounded-xl border border-slate-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>Data & Privacy (DPDP Act 2023)</h3>
+                <div className="flex items-center gap-3">
+                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${dpaStatus.acceptedAt ? "bg-green-50 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
+                    {dpaStatus.acceptedAt
+                      ? `DPA accepted (${dpaStatus.version}) on ${new Date(dpaStatus.acceptedAt).toLocaleDateString("en-IN")}`
+                      : "DPA not yet accepted"}
+                  </div>
+                  {!dpaStatus.acceptedAt && (
+                    <a href="/accept-dpa" className="text-xs text-blue-600 hover:underline">Accept DPA →</a>
+                  )}
+                  <a href="/legal/dpa/v1" target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:underline ml-auto">View DPA text →</a>
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-500 mb-1">Data retention period (years)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={dataRetentionYears}
+                      onChange={e => setDataRetentionYears(Math.max(1, parseInt(e.target.value) || 7))}
+                      className="field-input w-24"
+                    />
+                    <span className="text-xs text-slate-400">years (minimum 7 years recommended under DPDP Act 2023)</span>
+                  </div>
                 </div>
               </div>
 

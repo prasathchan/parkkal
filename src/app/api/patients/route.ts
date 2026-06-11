@@ -124,6 +124,8 @@ export const POST = withRoute(
       emergencyContactAdded: data.emergencyContact ? 1 : 0,
       referralSource: data.referralSource || null,
       referredByPatientId: data.referredByPatientId || null,
+      dataConsentAt: now,
+      dataConsentIp: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("cf-connecting-ip") ?? null,
       createdAt: now,
       updatedAt: now,
     };

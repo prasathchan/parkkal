@@ -247,4 +247,9 @@ export const orgApi = {
   },
   delete:            deleteOrg,
   dismissOnboarding: dismissOnboarding,
+  acceptDpa:         acceptDpa,
 };
+
+async function acceptDpa(): Promise<{ accepted: boolean; version: string }> {
+  return apiFetch("/api/org/accept-dpa", { method: "POST" });
+}

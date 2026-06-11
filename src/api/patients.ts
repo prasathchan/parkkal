@@ -84,6 +84,10 @@ export function deletePatient(id: string): Promise<{ success: true }> {
   return apiFetch<{ success: true }>(`/api/patients/${id}`, { method: "DELETE" });
 }
 
+export function erasePatient(id: string): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/patients/${id}?confirm=erase`, { method: "DELETE" });
+}
+
 // ─── Patient balance ──────────────────────────────────────────────────────────
 
 export function getPatientBalance(id: string): Promise<PatientBalance> {
@@ -159,6 +163,7 @@ export const patientsApi = {
   create: createPatient,
   update: updatePatient,
   delete: deletePatient,
+  erase:  erasePatient,
   balance: getPatientBalance,
   emergencyContacts: listEmergencyContacts,
   getToothChart,
