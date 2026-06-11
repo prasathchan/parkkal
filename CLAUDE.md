@@ -381,6 +381,45 @@ npm run test:watch              # watch mode for TDD
 
 ---
 
+## Git & deployment workflow
+
+### Branch strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `staging` | Pre-production validation — every change lands here first |
+| `main` | Production — only receives changes confirmed green on staging |
+
+### Mandatory push sequence — NO EXCEPTIONS
+
+**Every code change must follow this exact order:**
+
+1. **Push to `staging` first**
+   ```bash
+   git push origin main:staging
+   ```
+2. **Wait for the staging CI run to complete** — check GitHub Actions for a green ✅ on the `staging` branch (`CI` workflow + Cloudflare Pages build)
+3. **Only after staging is confirmed green**, push to `main` (production):
+   ```bash
+   git push origin main
+   ```
+
+> **Never push directly to `main` without a confirmed staging success.**
+> If staging fails, fix the issue on `staging` first — do not skip ahead to production.
+
+When Claude Code makes changes, the standard commit-and-push sequence is:
+```bash
+git add <files>
+git commit -m "..."
+git push origin main        # triggers Cloudflare Pages build on main
+git push origin main:staging  # keep staging in sync
+```
+
+Wait for `gh run list --branch staging --limit 3` to show `completed success` before
+considering the work done.
+
+---
+
 ## Deployment
 
 Deployment is via Cloudflare. **Never deploy manually** — use CI or the Wrangler CLI
