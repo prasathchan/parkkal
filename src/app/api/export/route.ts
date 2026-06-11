@@ -28,7 +28,7 @@ export const GET = withRoute(
         .orderBy(organizationPatients.registeredAt);
 
       const header = "Code,Name,Phone,Date of Birth,Gender,Blood Group,Address,Referral Source,Registered At";
-      const csvRows = rows.map((r) => [
+      const csvRows = rows.map((r: typeof rows[number]) => [
         r.code ?? "",
         csvEscape(r.name),
         r.phone ?? "",
@@ -48,18 +48,18 @@ export const GET = withRoute(
         visitCode:   visits.visitCode,
         patientName: patients.name,
         patientCode: patients.patientCode,
-        visitDate:   visits.visitDate,
-        total:       visits.totalAmount,
-        paid:        visits.paidAmount,
-        status:      visits.status,
-        notes:       visits.notes,
+        visitDate:      visits.visitDate,
+        total:          visits.totalAmount,
+        paid:           visits.paidAmount,
+        status:         visits.status,
+        chiefComplaint: visits.chiefComplaint,
       }).from(visits)
         .leftJoin(patients, eq(visits.patientId, patients.id))
         .where(eq(visits.organizationId, session.orgId))
         .orderBy(visits.visitDate);
 
-      const header = "Visit Code,Patient Name,Patient Code,Visit Date,Total (₹),Paid (₹),Due (₹),Status,Notes";
-      const csvRows = rows.map((r) => {
+      const header = "Visit Code,Patient Name,Patient Code,Visit Date,Total (₹),Paid (₹),Due (₹),Status,Chief Complaint";
+      const csvRows = rows.map((r: typeof rows[number]) => {
         const due = (r.total ?? 0) - (r.paid ?? 0);
         return [
           r.visitCode ?? "",
@@ -70,7 +70,7 @@ export const GET = withRoute(
           r.paid ?? 0,
           due,
           r.status ?? "",
-          csvEscape(r.notes ?? ""),
+          csvEscape(r.chiefComplaint ?? ""),
         ].join(",");
       });
 
@@ -86,15 +86,15 @@ export const GET = withRoute(
         toothNumbers: treatments.toothNumbers,
         status:       treatments.status,
         cost:         treatments.cost,
-        notes:        treatments.notes,
+        consentNotes: treatments.consentNotes,
         createdAt:    treatments.createdAt,
       }).from(treatments)
         .leftJoin(patients, eq(treatments.patientId, patients.id))
         .where(eq(treatments.organizationId, session.orgId))
         .orderBy(treatments.createdAt);
 
-      const header = "Patient Name,Patient Code,Description,Procedure,Tooth Numbers,Status,Cost (₹),Notes,Created At";
-      const csvRows = rows.map((r) => [
+      const header = "Patient Name,Patient Code,Description,Procedure,Tooth Numbers,Status,Cost (₹),Consent Notes,Created At";
+      const csvRows = rows.map((r: typeof rows[number]) => [
         csvEscape(r.patientName ?? ""),
         r.patientCode ?? "",
         csvEscape(r.description ?? ""),
@@ -102,7 +102,7 @@ export const GET = withRoute(
         r.toothNumbers ?? "",
         r.status ?? "",
         r.cost ?? 0,
-        csvEscape(r.notes ?? ""),
+        csvEscape(r.consentNotes ?? ""),
         r.createdAt ? new Date(r.createdAt).toISOString() : "",
       ].join(","));
 
