@@ -65,8 +65,9 @@ jobs:
         run: |
           # Capture deploy output so we can extract the workers.dev URL
           npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
-          # Extract the first workers.dev or custom-domain URL from wrangler output
-          DEPLOYED_URL=$(grep -oE 'https://[a-z0-9._-]+\.(workers\.dev|[a-z]{2,})(/[^ ]*)?'  \
+          # Extract the workers.dev URL wrangler prints after a successful deploy.
+          # Scoped to *.workers.dev only — avoids picking up telemetry/docs URLs.
+          DEPLOYED_URL=$(grep -oE 'https://[a-z0-9-]+\.workers\.dev' \
             /tmp/deploy-output.txt | head -1)
           echo "deployed_url=${DEPLOYED_URL}" >> "$GITHUB_OUTPUT"
         env:
@@ -75,10 +76,12 @@ jobs:
 
       - name: Smoke test — health endpoint
         run: |
-          # Prefer the explicit APP_URL secret; fall back to the URL wrangler printed.
+          # Prefer the explicit APP_URL secret; fall back to the workers.dev URL wrangler printed.
           URL="${APP_URL:-${{ steps.deploy.outputs.deployed_url }}}"
-          if [ -z "$URL" ]; then
-            echo "No URL available for smoke test — skipping."
+          # Guard: must start with https:// — skip if not set or picked up junk.
+          if [[ -z "$URL" || "$URL" != https://* ]]; then
+            echo "No valid URL available for smoke test — skipping."
+            echo "Set APP_URL secret (Settings → Secrets → Actions) to enable post-deploy smoke tests."
             exit 0
           fi
           echo "Waiting 15 s for worker to boot..."
