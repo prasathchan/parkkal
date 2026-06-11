@@ -72,14 +72,7 @@ describe("runCascade — libsql transaction path", () => {
 
 describe("runCascade — sequential fallback", () => {
   it("awaits each builder in order when no batch/transaction exists", async () => {
-    const order: number[] = [];
     const db = {} as never; // no .batch() or .transaction()
-    const builders = [0, 1, 2].map((i) =>
-      Object.assign(
-        new Promise<void>((resolve) => { order.push(i); resolve(); }),
-        { then: (r: (v: void) => void) => { order.push(i); r(undefined); return Promise.resolve(); } }
-      )
-    );
 
     // Use simple resolved promises to test the loop
     await runCascade(db, [Promise.resolve("a"), Promise.resolve("b"), Promise.resolve("c")]);

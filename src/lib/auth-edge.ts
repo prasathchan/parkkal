@@ -44,7 +44,6 @@ import { SignJWT, jwtVerify } from "jose";
 // Resolve the signing secret lazily so the "not set" warning fires at runtime
 // (first token operation) rather than at module load / build time.
 let cachedSecret: Uint8Array | null = null;
-let warned = false;
 
 function getSecret(): Uint8Array {
   if (cachedSecret) return cachedSecret;

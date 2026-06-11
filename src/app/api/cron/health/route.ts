@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
  * Returns 200 { status: "ok", ts: <unix ms> } when healthy.
  * Returns 503 when the DB binding is missing or throws.
  */
-export async function GET(req: Request): Promise<Response> {
+export async function GET(_req: Request): Promise<Response> {
   const ts = Date.now();
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

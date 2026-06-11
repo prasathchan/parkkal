@@ -47,7 +47,7 @@ interface TraceItem {
   event?: Record<string, unknown>;
 }
 
-export default {
+const tailWorker = {
   async tail(events: TraceItem[], env: TailEnv): Promise<void> {
     const url = env.LOG_DRAIN_URL;
     if (!url) return; // Not configured — silently skip (no drain = no-op, not an error)
@@ -85,3 +85,5 @@ export default {
     }
   },
 };
+
+export default tailWorker;
