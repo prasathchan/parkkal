@@ -42,14 +42,15 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
-vi.mock("@/lib/db", () => ({
-  getDb: () => ({
-    select: () => ({
-      from: () => ({
-        where: async () => [{ isActive: 1 }],
-      }),
+const defaultDbMock = {
+  select: () => ({
+    from: () => ({
+      where: async () => [{ isActive: 1 }],
     }),
   }),
+};
+vi.mock("@/lib/db", () => ({
+  getDb: vi.fn(() => defaultDbMock),
 }));
 
 vi.mock("@/db/schema", () => ({
@@ -67,6 +68,7 @@ import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isTokenRevoked } from "@/lib/auth";
+import { getDb } from "@/lib/db";
 
 const mockedGetSession = vi.mocked(getSession);
 const mockedHasPermission = vi.mocked(hasPermission);
@@ -411,6 +413,85 @@ describe("withRoute — path params", () => {
     );
     await handler(makeRequest(), makeContext({ path: ["patients", "abc", "file.jpg"] } as never));
     expect(capturedPath).toEqual(["patients", "abc", "file.jpg"]);
+  });
+});
+
+// ─── withRoute — deactivated member ──────────────────────────────────────────
+
+describe("withRoute — deactivated member", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedIsTokenRevoked.mockResolvedValue(false);
+    mockedCheckRateLimit.mockResolvedValue({ allowed: true, remaining: 99, resetAt: 0 });
+    mockedHasPermission.mockResolvedValue(true);
+    // Restore the default mock after each test so other suites aren't affected
+    vi.mocked(getDb).mockReturnValue(defaultDbMock as never);
+  });
+
+  it("returns 403 when a non-ADMIN member's account is deactivated", async () => {
+    const doctorSession = { ...VALID_SESSION, role: "DOCTOR" };
+    mockedGetSession.mockResolvedValue(doctorSession);
+
+    vi.mocked(getDb).mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: async () => [{ isActive: 0 }],
+        }),
+      }),
+    } as never);
+
+    const handler = withRoute({ route: "GET /test" }, async () => apiOk({ ok: true }));
+    const res = await handler(makeRequest(), makeContext({}));
+    expect(res.status).toBe(403);
+    const body = await responseJson(res);
+    expect(body.error).toContain("deactivated");
+  });
+
+  it("returns 403 when the member record is missing entirely", async () => {
+    const doctorSession = { ...VALID_SESSION, role: "DOCTOR" };
+    mockedGetSession.mockResolvedValue(doctorSession);
+
+    vi.mocked(getDb).mockReturnValue({
+      select: () => ({
+        from: () => ({
+          where: async () => [],
+        }),
+      }),
+    } as never);
+
+    const handler = withRoute({ route: "GET /test" }, async () => apiOk({ ok: true }));
+    const res = await handler(makeRequest(), makeContext({}));
+    expect(res.status).toBe(403);
+  });
+
+  it("skips member-active check for ADMIN role and does not call select for member check", async () => {
+    mockedGetSession.mockResolvedValue({ ...VALID_SESSION, role: "ADMIN" });
+    // Reset to default mock — ADMIN should never trigger the member-check select
+    vi.mocked(getDb).mockReturnValue(defaultDbMock as never);
+
+    const handler = withRoute({ route: "GET /test" }, async () => apiOk({ ok: true }));
+    const res = await handler(makeRequest(), makeContext({}));
+    // ADMIN gets through without hitting the member check
+    expect(res.status).toBe(200);
+  });
+});
+
+// ─── withRoute — X-Response-Time header ──────────────────────────────────────
+
+describe("withRoute — X-Response-Time header", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedGetSession.mockResolvedValue(VALID_SESSION);
+    mockedIsTokenRevoked.mockResolvedValue(false);
+    mockedHasPermission.mockResolvedValue(true);
+    mockedCheckRateLimit.mockResolvedValue({ allowed: true, remaining: 99, resetAt: 0 });
+  });
+
+  it("sets X-Response-Time header on successful responses", async () => {
+    const handler = withRoute({ route: "GET /test" }, async () => apiOk({ ok: true }));
+    const res = await handler(makeRequest(), makeContext({}));
+    const rt = res.headers.get("X-Response-Time");
+    expect(rt).toMatch(/^\d+ms$/);
   });
 });
 

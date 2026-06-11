@@ -32,6 +32,16 @@ jobs:
       - name: Unit tests with coverage
         run: npx vitest run --coverage --reporter=verbose
 
+      # Verify all migration files in drizzle/migrations/ have been applied to
+      # the local D1 database. Catches forgotten migrations before they reach prod.
+      - name: Check migration drift (local)
+        run: |
+          node scripts/setup-local-db.js
+          node scripts/check-migration-drift.js || true
+        # || true: local D1 may not have wrangler-managed d1_migrations table in CI;
+        # the script prints the diff but doesn't fail the build for local checks.
+        # The --remote check in deploy.yml is the authoritative gate.
+
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v5

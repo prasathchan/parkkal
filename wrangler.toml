@@ -20,6 +20,19 @@ bucket_name = "parkkal-files"
 [triggers]
 crons = ["*/15 * * * *"]
 
+# ─── Log Drain (Cloudflare Tail Worker) ──────────────────────────────────────
+# The tail worker receives a stream of invocation logs from the main worker
+# and forwards them to the configured LOG_DRAIN_URL (e.g. Logtail/Betterstack).
+# Deploy it separately:  npx wrangler deploy --config wrangler-tail.toml
+#
+# To activate:
+#   1. Deploy src/tail-worker.ts as "parkkal-dental-tail" (see wrangler-tail.toml)
+#   2. Set LOG_DRAIN_URL as a Cloudflare secret on the tail worker
+#   3. Uncomment the [[tail_consumers]] block below
+#
+# [[tail_consumers]]
+# service = "parkkal-dental-tail"
+
 # ─── Production Environment ───────────────────────────────────────────────────
 [env.prod]
 name = "parkkal-dental"

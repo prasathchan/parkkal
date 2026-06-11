@@ -1,0 +1,19 @@
+# wrangler-tail.toml
+#
+# Separate wrangler config for the log-drain tail worker.
+# Deploy with:  npx wrangler deploy --config wrangler-tail.toml
+#
+# After deploying, add the tail consumer in wrangler.toml:
+#   [[tail_consumers]]
+#   service = "parkkal-dental-tail"
+#
+# Then set the destination URL secret:
+#   npx wrangler secret put LOG_DRAIN_URL --config wrangler-tail.toml
+#   # Value: your Logtail/Betterstack/Datadog ingest URL
+
+name              = "parkkal-dental-tail"
+compatibility_date = "2025-06-01"
+main              = "src/tail-worker.ts"
+
+# Tail workers have no bindings — they only receive trace events.
+# LOG_DRAIN_URL is a Cloudflare secret (not listed here).

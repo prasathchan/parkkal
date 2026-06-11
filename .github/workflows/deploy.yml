@@ -46,24 +46,43 @@ jobs:
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Verify no unapplied migration files remain after the apply step
+      - name: Check migration drift
+        run: node scripts/check-migration-drift.js --remote
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy worker
-        run: npx wrangler deploy --env=prod
+        id: deploy
+        run: |
+          # Capture deploy output so we can extract the workers.dev URL
+          npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
+          # Extract the first workers.dev or custom-domain URL from wrangler output
+          DEPLOYED_URL=$(grep -oE 'https://[a-z0-9._-]+\.(workers\.dev|[a-z]{2,})(/[^ ]*)?'  \
+            /tmp/deploy-output.txt | head -1)
+          echo "deployed_url=${DEPLOYED_URL}" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Smoke test — health endpoint
-        if: ${{ secrets.APP_URL != '' }}
         run: |
+          # Prefer the explicit APP_URL secret; fall back to the URL wrangler printed.
+          URL="${APP_URL:-${{ steps.deploy.outputs.deployed_url }}}"
+          if [ -z "$URL" ]; then
+            echo "No URL available for smoke test — skipping."
+            exit 0
+          fi
           echo "Waiting 15 s for worker to boot..."
           sleep 15
-          URL="${APP_URL}/api/cron/health"
-          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+          HEALTH="${URL}/api/cron/health"
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
+          echo "Health check HTTP $STATUS — $HEALTH"
           if [ "$STATUS" != "200" ]; then
-            echo "Health check returned HTTP $STATUS — deployment may be broken" >&2
+            echo "::error::Smoke test failed (HTTP $STATUS) — $HEALTH"
             exit 1
           fi
-          echo "Health check OK (HTTP $STATUS)"
         env:
           APP_URL: ${{ secrets.APP_URL }}
 
@@ -73,3 +92,4 @@ jobs:
           echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "URL: ${{ steps.deploy.outputs.deployed_url }}" >> $GITHUB_STEP_SUMMARY
