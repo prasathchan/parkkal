@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { patientsApi } from "@/api";
 import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
 import type { VisitItem } from "./types";
@@ -18,6 +18,11 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState("");
+
+  // Prevent concurrent saves: if a save is already in-flight, queue the latest
+  // data and re-save once the current request completes.
+  const saveInFlight = useRef(false);
+  const latestData = useRef<ChartData>({});
 
   // Teeth referenced in this visit's bill items — shown as a hint
   const billedTeeth = Array.from(
@@ -39,14 +44,27 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
 
   const handleChange = useCallback(async (data: ChartData) => {
     setChartData(data);
+    latestData.current = data;
+
+    // If a save is already running, the in-flight loop will pick up latestData
+    // on its next iteration — no need to start a second concurrent request.
+    if (saveInFlight.current) return;
+
+    saveInFlight.current = true;
     setSaving(true);
     setError("");
     try {
-      await patientsApi.saveToothChart(patientId, data as Record<string, unknown>, visitId);
+      // Loop until no new changes arrived while the previous save was in-flight.
+      while (true) {
+        const toSave = latestData.current;
+        await patientsApi.saveToothChart(patientId, toSave as Record<string, unknown>, visitId);
+        if (latestData.current === toSave) break;
+      }
       setSavedAt(Date.now());
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   }, [patientId, visitId]);

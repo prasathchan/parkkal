@@ -79,32 +79,34 @@ export const PUT = withRoute(
       if (oldCond !== newCond) changedTeeth.push(tooth);
     }
 
-    // Update cumulative chart
-    if (existing) {
-      await db.update(toothChart)
-        .set({ toothData: JSON.stringify(newData), updatedAt: now, updatedBy: session.userId })
-        .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)));
-    } else {
-      await db.insert(toothChart).values({
-        id: randomUUID(),
+    // Both writes must succeed together — a partial write would leave the
+    // cumulative chart updated but the audit trail incomplete (or vice versa).
+    await db.transaction(async (tx: typeof db) => {
+      if (existing) {
+        await tx.update(toothChart)
+          .set({ toothData: JSON.stringify(newData), updatedAt: now, updatedBy: session.userId })
+          .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)));
+      } else {
+        await tx.insert(toothChart).values({
+          id: randomUUID(),
+          organizationId: session.orgId,
+          patientId,
+          toothData: JSON.stringify(newData),
+          updatedAt: now,
+          updatedBy: session.userId,
+        });
+      }
+
+      await tx.insert(toothChartHistory).values({
+        id:             randomUUID(),
         organizationId: session.orgId,
         patientId,
-        toothData: JSON.stringify(newData),
-        updatedAt: now,
-        updatedBy: session.userId,
+        visitId,
+        toothData:      JSON.stringify(newData),
+        changedTeeth:   JSON.stringify(changedTeeth),
+        recordedBy:     session.userId,
+        recordedAt:     now,
       });
-    }
-
-    // Always write a history snapshot so every save is auditable
-    await db.insert(toothChartHistory).values({
-      id:             randomUUID(),
-      organizationId: session.orgId,
-      patientId,
-      visitId,
-      toothData:      JSON.stringify(newData),
-      changedTeeth:   JSON.stringify(changedTeeth),
-      recordedBy:     session.userId,
-      recordedAt:     now,
     });
 
     return apiOk({ success: true, changedTeeth });

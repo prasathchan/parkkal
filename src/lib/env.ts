@@ -52,6 +52,10 @@ const envSchema = z.object({
 
   // ── Notifications ─────────────────────────────────────────────────────────
   RESEND_FROM_EMAIL: z.string().email().optional(),
+  // Alert recipient for server-side error emails. Should be a monitored inbox,
+  // not the noreply sender. Falls back to RESEND_FROM_EMAIL if unset (which
+  // silently discards alerts if that address is unmonitored).
+  ALERT_RECIPIENT_EMAIL: z.string().email().optional(),
   TWILIO_WHATSAPP_NUMBER: z.string().startsWith("whatsapp:+").optional(),
 
   // ── App URL ───────────────────────────────────────────────────────────────

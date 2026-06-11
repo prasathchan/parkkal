@@ -45,6 +45,9 @@ const ALERT_DEDUP_MS = 5 * 60 * 1_000;
 async function sendErrorAlert(params: AppLogParams): Promise<void> {
   const apiKey = env.RESEND_API_KEY;
   const fromEmail = env.RESEND_FROM_EMAIL ?? "alerts@parkkal.com";
+  // ALERT_RECIPIENT_EMAIL should be a monitored inbox distinct from the sender.
+  // Without it, alerts go to the from-address which may be noreply/unmonitored.
+  const toEmail = env.ALERT_RECIPIENT_EMAIL ?? fromEmail;
   // Only alert for 'error' level, and only when Resend is configured.
   if (!apiKey || params.level !== "error") return;
 
@@ -68,7 +71,7 @@ async function sendErrorAlert(params: AppLogParams): Promise<void> {
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: `Parkkal Alerts <${fromEmail}>`,
-        to: [fromEmail],
+        to: [toEmail],
         subject: `[Parkkal ERROR] ${params.route}`,
         html: body,
       }),
