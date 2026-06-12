@@ -732,3 +732,16 @@ export const couponRedemptionsRelations = relations(couponRedemptions, ({ one })
   organization: one(organizations, { fields: [couponRedemptions.organizationId], references: [organizations.id] }),
   subscription: one(subscriptions, { fields: [couponRedemptions.subscriptionId], references: [subscriptions.id] }),
 }));
+
+// ─── Onboarding email sequence ───────────────────────────────────────────────
+// One row per scheduled email. Inserted at signup; processed by the daily cron.
+export const onboardingEmails = sqliteTable("onboarding_emails", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  userId:         text("user_id").notNull().references(() => users.id),
+  step:           integer("step").notNull(), // 0=welcome, 1=day1, 2=day3, 3=day7
+  scheduledAt:    integer("scheduled_at").notNull(),
+  sentAt:         integer("sent_at"),
+  status:         text("status", { enum: ["pending", "sent", "failed"] }).notNull().default("pending"),
+  createdAt:      integer("created_at").notNull(),
+});

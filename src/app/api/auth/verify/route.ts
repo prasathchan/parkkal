@@ -9,6 +9,7 @@ import { resolveRolePermissions } from "@/lib/permissions";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import env from "@/lib/env";
+import { scheduleOnboardingEmails } from "@/lib/onboarding-emails";
 
 // Limit OTP guesses to prevent brute-forcing the 6-digit codes.
 // 10 attempts per 15 min per IP, and 20 per 15 min per userId.
@@ -139,6 +140,9 @@ export async function POST(request: NextRequest) {
       role: m.role,
       permissions,
     });
+
+    // Fire-and-forget — don't delay the response if scheduling fails
+    scheduleOnboardingEmails(db, m.orgId, userId).catch(() => {});
 
     log.info("Signup verification successful", { userId, orgId: m.orgId });
     const response = NextResponse.json({ redirect: "/dashboard" });

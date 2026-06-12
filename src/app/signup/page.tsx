@@ -231,6 +231,12 @@ export default function SignupPage() {
         </p>
 
         <p className="text-center text-xs text-slate-400 mt-4">
+          By signing up you agree to our{" "}
+          <a href="/legal/terms" className="underline hover:text-slate-600">Terms of Service</a>{" "}
+          and{" "}
+          <a href="/legal/privacy" className="underline hover:text-slate-600">Privacy Policy</a>.
+        </p>
+        <p className="text-center text-xs text-slate-400 mt-2">
           © {new Date().getFullYear()} Parkkal Clinic · app.parkkal.com
         </p>
       </div>

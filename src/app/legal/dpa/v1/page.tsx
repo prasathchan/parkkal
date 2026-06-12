@@ -79,9 +79,10 @@ export default function DpaV1Page() {
           <section>
             <h2 className="text-base font-semibold text-slate-800 mb-2">7. Sub-processors</h2>
             <p className="text-slate-600">
-              Parkkal uses the following sub-processors: Cloudflare, Inc. (infrastructure and database), Resend
-              (transactional email), and Twilio Inc. (SMS, if configured). Each sub-processor is bound by data
-              processing terms no less protective than this DPA.
+              Parkkal uses the following sub-processors: Cloudflare, Inc. (infrastructure and database), Resend,
+              Inc. (transactional email), and Stripe, Inc. (subscription billing). Each sub-processor is bound by
+              data processing terms no less protective than this DPA. An up-to-date sub-processor list is
+              published at{" "}<a href="/legal/privacy" className="text-blue-600 hover:underline">parkkal.com/legal/privacy</a>.
             </p>
           </section>
 
