@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { visitsApi, ApiError } from "@/api";
 import type { Prescription, Medicine } from "@/types";
+import { searchDrugs, type DrugSuggestion } from "@/constants";
 
 interface Props {
   visitId: string;
@@ -14,6 +15,83 @@ interface Props {
 
 const EMPTY_MEDICINE: Medicine = { name: "", dosage: "", frequency: "", duration: "", notes: "" };
 const FREQ_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "SOS", "BD", "TDS", "OD"];
+
+function DrugAutocomplete({
+  value,
+  onChange,
+  onSelect,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  onSelect: (drug: DrugSuggestion) => void;
+}) {
+  const [suggestions, setSuggestions] = useState<DrugSuggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const results = searchDrugs(value);
+    setSuggestions(results);
+    setOpen(results.length > 0 && value.trim().length > 0);
+    setActiveIdx(-1);
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!open) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIdx((i) => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && activeIdx >= 0) {
+      e.preventDefault();
+      onSelect(suggestions[activeIdx]);
+      setOpen(false);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => { if (suggestions.length > 0 && value.trim()) setOpen(true); }}
+        placeholder="e.g. Amoxicillin 500mg"
+        autoComplete="off"
+        className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      {open && (
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          {suggestions.map((drug, i) => (
+            <li
+              key={drug.name}
+              onMouseDown={(e) => { e.preventDefault(); onSelect(drug); setOpen(false); }}
+              className={`px-3 py-2 text-sm cursor-pointer transition ${i === activeIdx ? "bg-blue-50 text-blue-700" : "hover:bg-slate-50 text-slate-700"}`}
+            >
+              {drug.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function VisitPrescriptionsTab({
   visitId,
@@ -137,12 +215,24 @@ export function VisitPrescriptionsTab({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <label className="block text-xs text-slate-500 mb-1">Drug name *</label>
-                    <input
-                      type="text"
+                    <DrugAutocomplete
                       value={med.name}
-                      onChange={(e) => updateMedicine(idx, "name", e.target.value)}
-                      placeholder="e.g. Amoxicillin 500mg"
-                      className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(val) => updateMedicine(idx, "name", val)}
+                      onSelect={(drug) => {
+                        setMedicines((prev) =>
+                          prev.map((m, i) =>
+                            i === idx
+                              ? {
+                                  ...m,
+                                  name: drug.name,
+                                  dosage: drug.defaultDosage ?? m.dosage,
+                                  frequency: drug.defaultFrequency ?? m.frequency,
+                                  duration: drug.defaultDuration ?? m.duration,
+                                }
+                              : m
+                          )
+                        );
+                      }}
                     />
                   </div>
                   <div>

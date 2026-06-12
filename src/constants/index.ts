@@ -8,3 +8,4 @@
 export * from "./visit";
 export * from "./treatment";
 export * from "./ui";
+export * from "./dental-drugs";
