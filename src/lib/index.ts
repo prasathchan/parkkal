@@ -15,7 +15,7 @@
  *   getSession, createToken, hashPassword     →  lib/auth.ts
  *   checkRateLimit                            →  lib/rate-limit.ts
  *   sendStaffInviteEmail, sendEmailOTP        →  lib/email.ts
- *   sendMSG91WidgetOTP, verifyMSG91WidgetOTP  →  lib/sms.ts
+ *   sendSMSOTP                                →  lib/sms.ts
  *   uploadFile, deleteFile                    →  lib/storage.ts
  *   encrypt, decrypt                          →  lib/encryption.ts
  *   generateOTP, hashOTP, verifyOTP           →  lib/otp.ts
@@ -48,7 +48,7 @@ export { writeAuditLog } from "./audit";
 
 // External services
 export { sendStaffInviteEmail, sendEmailOTP } from "./email";
-export { sendMSG91WidgetOTP, verifyMSG91WidgetOTP } from "./sms";
+export { sendSMSOTP } from "./sms";
 export { storeFile, getFile, deleteFile } from "./storage";
 export type { StoredFile } from "./storage";
 

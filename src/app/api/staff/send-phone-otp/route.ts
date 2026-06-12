@@ -18,7 +18,7 @@ import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS } from "@/lib/permissions";
 import { users, verificationTokens, organizationMembers } from "@/db/schema";
 import { hashOTP } from "@/lib/otp";
-import { sendMSG91WidgetOTP } from "@/lib/sms";
+import { sendSMSOTP } from "@/lib/sms";
 import { sendPhoneVerificationEmail } from "@/lib/email";
 
 const bodySchema = z.object({
@@ -54,28 +54,23 @@ export const POST = withRoute(
     if (!user.email) return apiError("This staff member has no email address on file", 400);
 
     const now = Date.now();
-    const mkId = () => `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-
-    // SMS: MSG91 Widget generates and sends the OTP
-    const { sent: smsSent, reqId } = await sendMSG91WidgetOTP(user.phone);
-    if (smsSent && reqId) {
-      await db.insert(verificationTokens).values({
-        id: mkId(), userId, type: "PHONE_OTP",
-        code: `msg91:${reqId}`,
-        expiresAt: now + 15 * 60 * 1000, used: 0, createdAt: now,
-      });
-    }
-
-    // Email: our own OTP as fallback
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
     const otp = String(100000 + (buf[0] % 900000));
     const otpHash = await hashOTP(otp);
+    const tokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
     await db.insert(verificationTokens).values({
-      id: mkId(), userId, type: "PHONE_OTP",
+      id: tokenId,
+      userId,
+      type: "PHONE_OTP",
       code: otpHash,
-      expiresAt: now + 15 * 60 * 1000, used: 0, createdAt: now,
+      expiresAt: now + 15 * 60 * 1000,
+      used: 0,
+      createdAt: now,
     });
+
+    const smsSent = await sendSMSOTP(user.phone, otp);
 
     let emailSent = false;
     try {

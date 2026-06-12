@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendPhoneVerificationEmail } from "@/lib/email";
-import { sendMSG91WidgetOTP } from "@/lib/sms";
+import { sendSMSOTP } from "@/lib/sms";
 import { hashOTP } from "@/lib/otp";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -66,47 +66,31 @@ export async function POST(request: NextRequest) {
   }
 
   const now = Date.now();
-  const tokenBase = () =>
-    `vt_${Array.from(crypto.getRandomValues(new Uint8Array(12)), (b: number) =>
-      b.toString(16).padStart(2, "0")
-    ).join("")}`;
-
-  // ── SMS path: MSG91 Widget generates and delivers the OTP ─────────────────
-  const { sent: smsSent, reqId } = await sendMSG91WidgetOTP(user.phone);
-
-  if (smsSent && reqId) {
-    // Store reqId so we can verify against MSG91 API later
-    await db.insert(verificationTokens).values({
-      id: tokenBase(),
-      userId:    session.userId,
-      type:      "PHONE_OTP",
-      code:      `msg91:${reqId}`,
-      expiresAt: now + 15 * 60 * 1000,
-      used:      0,
-      createdAt: now,
-    });
-  } else {
-    log.warn("MSG91 widget SMS failed, will rely on email OTP", { userId: session.userId });
-  }
-
-  // ── Email path: always send our own OTP as a fallback ─────────────────────
-  const emailCode = generateOTP();
-  const emailHash = await hashOTP(emailCode);
+  const code = generateOTP();
+  const codeHash = await hashOTP(code); // always store hash, never plaintext
+  const tokenId = `vt_${Array.from(
+    crypto.getRandomValues(new Uint8Array(12)),
+    (b: number) => b.toString(16).padStart(2, "0")
+  ).join("")}`;
 
   await db.insert(verificationTokens).values({
-    id:        tokenBase(),
-    userId:    session.userId,
-    type:      "PHONE_OTP",
-    code:      emailHash,
+    id: tokenId,
+    userId: session.userId,
+    type: "PHONE_OTP",
+    code: codeHash,
     expiresAt: now + 15 * 60 * 1000,
-    used:      0,
+    used: 0,
     createdAt: now,
   });
 
-  let emailSent = false;
+  // Try SMS first; always follow with email as fallback.
+  const smsSent = await sendSMSOTP(user.phone, code);
+  if (!smsSent) {
+    log.warn("SMS OTP failed, falling back to email", { userId: session.userId });
+  }
+
   try {
-    await sendPhoneVerificationEmail(user.email, user.name, emailCode);
-    emailSent = true;
+    await sendPhoneVerificationEmail(user.email, user.name, code);
   } catch (err) {
     if (!smsSent) {
       log.error("Both SMS and email failed for phone OTP", { error: String(err), userId: session.userId });
@@ -122,6 +106,6 @@ export async function POST(request: NextRequest) {
 
   const maskedPhone = user.phone.slice(-4).padStart(user.phone.length, "*");
 
-  log.info("Phone OTP sent", { userId: session.userId, smsSent, emailSent });
+  log.info("Phone OTP sent", { userId: session.userId, smsSent });
   return NextResponse.json({ sent: true, maskedEmail, maskedPhone, smsSent });
 }
