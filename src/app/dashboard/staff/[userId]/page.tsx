@@ -61,6 +61,8 @@ export default function StaffDetailPage() {
   const [linkSent, setLinkSent] = useState(false);
   const [linkError, setLinkError] = useState("");
   const [linkMode, setLinkMode] = useState<"invite_link" | "no_login_verify">("invite_link");
+  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
+  const [phoneOtpResult, setPhoneOtpResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -195,6 +197,30 @@ export default function StaffDetailPage() {
       setLinkError(e instanceof ApiError ? e.message : "Failed to send link");
     } finally {
       setSendingLink(false);
+    }
+  }
+
+  async function handleSendPhoneOtp() {
+    if (!member?.phone) return;
+    setSendingPhoneOtp(true);
+    setPhoneOtpResult(null);
+    try {
+      const res = await fetch("/api/staff/request-phone-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, phone: member.phone }),
+      });
+      const data = await res.json() as { sent?: boolean; error?: string; smsSent?: boolean };
+      if (res.ok && data.sent) {
+        const channels = [data.smsSent ? "SMS" : null, "email"].filter(Boolean).join(" + ");
+        setPhoneOtpResult({ ok: true, msg: `OTP sent via ${channels} to ${member.phone}` });
+      } else {
+        setPhoneOtpResult({ ok: false, msg: data.error ?? "Failed to send OTP" });
+      }
+    } catch {
+      setPhoneOtpResult({ ok: false, msg: "Network error — please try again" });
+    } finally {
+      setSendingPhoneOtp(false);
     }
   }
 
@@ -533,6 +559,23 @@ export default function StaffDetailPage() {
                 {sendingLink ? "Sending..." : "Send link"}
               </Button>
             </div>
+
+            {member.phone && (
+              <div className="border-t border-slate-100 pt-4 space-y-2">
+                <p className="text-sm font-medium text-slate-700">Phone OTP</p>
+                <p className="text-xs text-slate-500">
+                  Send a one-time code to <span className="font-mono">{member.phone}</span> via SMS and email. Use this to test SMS delivery or manually re-verify a phone number.
+                </p>
+                {phoneOtpResult && (
+                  <p className={`text-sm ${phoneOtpResult.ok ? "text-green-600" : "text-red-600"}`}>
+                    {phoneOtpResult.msg}
+                  </p>
+                )}
+                <Button size="sm" variant="outline" onClick={handleSendPhoneOtp} disabled={sendingPhoneOtp}>
+                  {sendingPhoneOtp ? "Sending..." : "Send phone OTP"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
