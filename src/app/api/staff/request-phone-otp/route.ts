@@ -6,6 +6,7 @@ import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { sendPhoneVerificationEmail } from "@/lib/email";
+import { sendSMSOTP } from "@/lib/sms";
 
 // Activation window: a STAFF_INVITE token must have been used within this many ms
 // for the userId to be considered "in activation flow" and allowed to set their phone.
@@ -94,14 +95,20 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
+    // Try SMS first; email is always sent as backup
+    const smsSent = await sendSMSOTP(phoneDigits, otp);
+
     try {
       await sendPhoneVerificationEmail(user.email, user.name ?? "there", otp);
     } catch (emailErr) {
-      log.error("Email send failed for phone OTP", emailErr, { userId });
-      return NextResponse.json({ error: "Failed to send verification email. Please try again." }, { status: 500 });
+      if (!smsSent) {
+        log.error("Both SMS and email failed for staff phone OTP", emailErr, { userId });
+        return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
+      }
+      log.warn("Email fallback failed for staff phone OTP (SMS succeeded)", { userId });
     }
 
-    log.info("Phone OTP sent via email", { userId });
+    log.info("Phone OTP sent", { userId, smsSent });
     return NextResponse.json({ sent: true });
   } catch (error) {
     log.error("Request phone OTP error", error);

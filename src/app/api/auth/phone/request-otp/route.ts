@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendPhoneVerificationEmail } from "@/lib/email";
+import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -81,10 +82,22 @@ export async function POST(request: NextRequest) {
     createdAt: now,
   });
 
+  // Try SMS first; always follow with email as fallback — if SMS fails silently,
+  // the user still gets the code via email.
+  const smsSent = await sendSMSOTP(user.phone, code);
+  if (!smsSent) {
+    log.warn("SMS OTP failed, falling back to email", { userId: session.userId });
+  }
+
   try {
     await sendPhoneVerificationEmail(user.email, user.name, code);
   } catch (err) {
-    log.warn("Email send failed for phone OTP", { error: String(err) });
+    if (!smsSent) {
+      // Both channels failed — the user has no way to receive the code.
+      log.error("Both SMS and email failed for phone OTP", { error: String(err), userId: session.userId });
+      return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
+    }
+    log.warn("Email fallback failed for phone OTP (SMS succeeded)", { error: String(err) });
   }
 
   const maskedEmail = (() => {
@@ -92,6 +105,8 @@ export async function POST(request: NextRequest) {
     return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 3))}@${domain}`;
   })();
 
-  log.info("Phone OTP sent via email", { userId: session.userId });
-  return NextResponse.json({ sent: true, maskedEmail });
+  const maskedPhone = user.phone.slice(-4).padStart(user.phone.length, "*");
+
+  log.info("Phone OTP sent", { userId: session.userId, smsSent });
+  return NextResponse.json({ sent: true, maskedEmail, maskedPhone, smsSent });
 }

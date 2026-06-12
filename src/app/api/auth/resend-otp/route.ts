@@ -6,6 +6,7 @@ import { users, verificationTokens } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashOTP } from "@/lib/otp";
 import { sendEmailOTP, sendPhoneVerificationEmail } from "@/lib/email";
+import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 
 const resendSchema = z.object({
@@ -103,11 +104,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
       }
     } else {
+      // PHONE type: try SMS first, always send email as backup
+      const smsSent = user.phone ? await sendSMSOTP(user.phone, code) : false;
       try {
         await sendPhoneVerificationEmail(user.email, user.name, code);
       } catch (sendErr) {
-        log.warn("Email send failed for phone OTP resend", { userId, error: String(sendErr) });
-        return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
+        if (!smsSent) {
+          log.warn("Both SMS and email failed for phone OTP resend", { userId, error: String(sendErr) });
+          return NextResponse.json({ error: "Failed to send verification code. Please try again shortly." }, { status: 502 });
+        }
+        log.warn("Email fallback failed for phone OTP resend (SMS succeeded)", { userId });
       }
     }
 
