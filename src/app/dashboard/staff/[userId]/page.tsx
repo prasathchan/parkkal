@@ -205,14 +205,14 @@ export default function StaffDetailPage() {
     setSendingPhoneOtp(true);
     setPhoneOtpResult(null);
     try {
-      const res = await fetch("/api/staff/request-phone-otp", {
+      const res = await fetch("/api/staff/send-phone-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, phone: member.phone }),
+        body: JSON.stringify({ userId }),
       });
-      const data = await res.json() as { sent?: boolean; error?: string; smsSent?: boolean };
+      const data = await res.json() as { sent?: boolean; error?: string; smsSent?: boolean; emailSent?: boolean };
       if (res.ok && data.sent) {
-        const channels = [data.smsSent ? "SMS" : null, "email"].filter(Boolean).join(" + ");
+        const channels = [data.smsSent ? "SMS" : null, data.emailSent ? "email" : null].filter(Boolean).join(" + ");
         setPhoneOtpResult({ ok: true, msg: `OTP sent via ${channels} to ${member.phone}` });
       } else {
         setPhoneOtpResult({ ok: false, msg: data.error ?? "Failed to send OTP" });
