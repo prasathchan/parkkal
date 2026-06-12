@@ -77,32 +77,22 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Post-deploy smoke test.
-      # Policy:
-      #   APP_URL configured → mandatory; fails the job on non-200.
-      #   APP_URL not set    → best-effort using the workers.dev URL wrangler
-      #                        printed; warns and skips if that URL is unavailable.
-      #                        Configure APP_URL secret to make smoke tests mandatory.
+      # Always uses the workers.dev URL (direct Worker, no Cloudflare proxy/WAF)
+      # so datacenter IPs (GitHub Actions runners) are never blocked.
+      # APP_URL is informational only — shown in the summary.
       - name: Smoke test — health endpoint
         run: |
-          APP_URL_SECRET="${APP_URL}"
-          FALLBACK_URL="${{ steps.deploy.outputs.deployed_url }}"
+          WORKERS_URL="${{ steps.deploy.outputs.deployed_url }}"
 
-          if [[ -n "$APP_URL_SECRET" ]]; then
-            URL="$APP_URL_SECRET"
-            REQUIRED=true
-          elif [[ -n "$FALLBACK_URL" && "$FALLBACK_URL" == https://* ]]; then
-            URL="$FALLBACK_URL"
-            REQUIRED=false
-          else
-            echo "::warning::APP_URL secret not configured and no workers.dev URL was extracted."
-            echo "Set APP_URL (Settings → Secrets → Actions) to enable mandatory smoke tests."
+          if [[ -z "$WORKERS_URL" || "$WORKERS_URL" != https://* ]]; then
+            echo "::warning::No workers.dev URL extracted from deploy output — skipping smoke test."
             exit 0
           fi
 
           echo "Waiting 15 s for worker cold start..."
           sleep 15
-          HEALTH="${URL}/api/cron/health"
-          STATUS=$(curl -sf --max-time 15 -A "parkkal-ci-healthcheck/1.0" -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
+          HEALTH="${WORKERS_URL}/api/cron/health"
+          STATUS=$(curl -sf --max-time 15 -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
           echo "Health check HTTP $STATUS — $HEALTH"
 
           if [ "$STATUS" != "200" ]; then
@@ -110,8 +100,6 @@ jobs:
             exit 1
           fi
           echo "Smoke test passed."
-        env:
-          APP_URL: ${{ secrets.APP_URL }}
 
       - name: Deployment summary
         if: always()
