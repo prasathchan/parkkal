@@ -380,7 +380,7 @@ export const attachments = sqliteTable("attachments", {
 export const verificationTokens = sqliteTable("verification_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
-  type: text("type", { enum: ["EMAIL", "PHONE", "STAFF_INVITE", "PHONE_OTP"] }).notNull(),
+  type: text("type", { enum: ["EMAIL", "PHONE", "STAFF_INVITE", "PHONE_OTP", "PASSWORD_RESET"] }).notNull(),
   code: text("code").notNull(),
   expiresAt: integer("expires_at").notNull(),
   used: integer("used").notNull().default(0),

@@ -132,6 +132,29 @@ export function apiError(
   return NextResponse.json({ error: message, ...extra }, { status });
 }
 
+/**
+ * Build a 429 response carrying standard rate-limit headers so well-behaved
+ * clients can back off instead of hammering the API.
+ */
+export function rateLimitError(
+  rl: { remaining: number; resetAt: number },
+  limit: number
+): NextResponse {
+  const retryAfterSec = Math.max(1, Math.ceil((rl.resetAt - Date.now()) / 1000));
+  return NextResponse.json(
+    { error: "Too many requests. Please slow down." },
+    {
+      status: 429,
+      headers: {
+        "Retry-After":           String(retryAfterSec),
+        "X-RateLimit-Limit":     String(limit),
+        "X-RateLimit-Remaining": String(Math.max(0, rl.remaining)),
+        "X-RateLimit-Reset":     String(Math.ceil(rl.resetAt / 1000)),
+      },
+    },
+  );
+}
+
 // ─── Rate limit presets ───────────────────────────────────────────────────────
 /**
  * Pre-built rate limit configurations for common route categories.
@@ -370,7 +393,7 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
           ? options.rateLimitKey(session, request)
           : `write:${session.userId}`;
         const rl = await checkRateLimit(key, options.rateLimit);
-        if (!rl.allowed) return apiError("Too many requests. Please slow down.", 429);
+        if (!rl.allowed) return rateLimitError(rl, options.rateLimit.limit);
       }
 
       // ── 3. Authorization ─────────────────────────────────────────────────

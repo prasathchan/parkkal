@@ -40,7 +40,7 @@ import { appointmentReminders, patients, organizations } from "@/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { sendNotification } from "@/lib/notifications";
-import env from "@/lib/env";
+import { verifyCronAuth } from "@/lib/cron-auth";
 import type { NotificationChannel } from "@/lib/notifications";
 import { createSnapshot, autoSnapshotNeeded } from "@/lib/backup-engine";
 
@@ -53,16 +53,11 @@ const BATCH_LIMIT = 50;
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  // ── Auth: Cloudflare cron OR explicit Bearer token ─────────────────────────
-  const isCronDelivery = req.headers.get("x-cloudflare-cron") !== null;
-  const authHeader     = req.headers.get("authorization") ?? "";
-  const cronSecret     = env.CRON_SECRET;
-
-  if (!isCronDelivery) {
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  // ── Auth: internal Cloudflare cron delivery OR explicit Bearer token ───────
+  // x-cloudflare-cron is spoofable; verifyCronAuth only trusts it for requests
+  // that did not traverse the public edge (no cf-connecting-ip).
+  const denied = verifyCronAuth(req);
+  if (denied) return denied;
 
   const db  = getDb();
   const now = Date.now();

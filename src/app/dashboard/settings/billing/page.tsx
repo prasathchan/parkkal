@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
 
 interface Subscription {
@@ -37,21 +38,48 @@ const STATUS_COPY: Record<string, { label: string; color: string }> = {
   expired:   { label: "Expired — read-only",  color: "text-red-700 bg-red-50 border-red-200" },
 };
 
-export default function BillingPage() {
-  const [sub, setSub]     = useState<Subscription | null>(null);
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+function BillingPageInner() {
+  const searchParams    = useSearchParams();
+  const upgraded        = searchParams.get("upgraded") === "1";
+  const cancelled       = searchParams.get("cancelled") === "1";
+
+  const [sub,        setSub]        = useState<Subscription | null>(null);
+  const [plans,      setPlans]      = useState<Plan[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [upgrading,  setUpgrading]  = useState<string | null>(null);
+
+  const startCheckout = useCallback(async (planId: string) => {
+    setUpgrading(planId);
+    try {
+      const res  = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json() as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        alert(data.error ?? "Could not start checkout. Please try again.");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setUpgrading(null);
+    }
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/org/subscription").then((r) => r.json() as Promise<{ subscription: Subscription | null }>),
-      fetch("/api/superadmin/plans").catch(() => ({ json: () => ({ plans: [] }) })),
-    ]).then(([subData]) => {
-      setSub(subData.subscription ?? null);
-    }).finally(() => setLoading(false));
+    fetch("/api/org/subscription")
+      .then((r) => r.json() as Promise<{ subscription: Subscription | null }>)
+      .then((d) => setSub(d.subscription ?? null))
+      .catch(() => {})
+      .finally(() => setLoading(false));
 
-    // Load public plans from a public endpoint
-    fetch("/api/plans").then((r) => r.json() as Promise<{ plans: Plan[] }>).then((d) => setPlans(d.plans ?? [])).catch(() => {});
+    fetch("/api/plans")
+      .then((r) => r.json() as Promise<{ plans: Plan[] }>)
+      .then((d) => setPlans(d.plans ?? []))
+      .catch(() => {});
   }, []);
 
   const statusInfo = sub ? (STATUS_COPY[sub.status] ?? STATUS_COPY["expired"]) : null;
@@ -67,6 +95,20 @@ export default function BillingPage() {
         breadcrumb={[{ label: "Dashboard" }, { label: "Settings", href: "/dashboard/settings" }, { label: "Billing" }]}
       />
       <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
+
+        {upgraded && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+            <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Subscription updated successfully! Your new plan will be active within a few minutes.
+          </div>
+        )}
+        {cancelled && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+            Checkout was cancelled. No changes were made to your subscription.
+          </div>
+        )}
 
         {loading ? (
           <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-sm">Loading…</div>
@@ -129,13 +171,13 @@ export default function BillingPage() {
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="font-semibold text-slate-900 mb-1">Upgrade or renew</h2>
               <p className="text-sm text-slate-500 mb-4">
-                To upgrade, renew, or apply a coupon code — contact us and we&apos;ll activate your plan manually.
+                Select a plan below to upgrade online, or contact us if you need a custom quote or want to pay via bank transfer.
               </p>
               <a
                 href="mailto:support@parkkal.com?subject=Subscription%20upgrade"
-                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                className="inline-flex items-center gap-2 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
               >
-                Contact us to upgrade
+                Contact support
               </a>
             </div>
 
@@ -166,9 +208,20 @@ export default function BillingPage() {
                             </div>
                           )}
                         </div>
-                        <div className="text-right flex-shrink-0 ml-4">
-                          <p className="text-2xl font-bold text-slate-900">₹{plan.priceMonthly.toLocaleString("en-IN")}</p>
-                          <p className="text-xs text-slate-400">/month</p>
+                        <div className="text-right flex-shrink-0 ml-4 flex flex-col items-end gap-2">
+                          <div>
+                            <p className="text-2xl font-bold text-slate-900">₹{plan.priceMonthly.toLocaleString("en-IN")}</p>
+                            <p className="text-xs text-slate-400">/month</p>
+                          </div>
+                          {!isCurrent && plan.priceMonthly > 0 && (
+                            <button
+                              onClick={() => startCheckout(plan.id)}
+                              disabled={upgrading === plan.id}
+                              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                            >
+                              {upgrading === plan.id ? "Redirecting…" : "Upgrade →"}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -184,5 +237,13 @@ export default function BillingPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense>
+      <BillingPageInner />
+    </Suspense>
   );
 }

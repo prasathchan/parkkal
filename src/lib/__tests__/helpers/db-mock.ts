@@ -49,6 +49,15 @@ export async function responseJson(res: Response): Promise<Record<string, any>> 
   return res.json() as Promise<Record<string, any>>;
 }
 
+/**
+ * Sentinel for "this query found no row". Use it where the route awaits
+ * `.get()` and checks for undefined — a plain `undefined` entry in the results
+ * array would be coerced to `[]` (truthy) by the default fallback.
+ *
+ *   makeDbMock([NO_ROW])  →  first await resolves to undefined
+ */
+export const NO_ROW: unique symbol = Symbol("db-mock-no-row");
+
 export function makeDbMock(results: unknown[] = []) {
   let callIndex = 0;
 
@@ -56,7 +65,8 @@ export function makeDbMock(results: unknown[] = []) {
     get(_, prop: string | symbol) {
       // Make the proxy thenable — called implicitly by `await`
       if (prop === "then") {
-        const value = results[callIndex++] ?? [];
+        const raw   = results[callIndex++];
+        const value = raw === NO_ROW ? undefined : raw ?? [];
         return (
           resolve: (v: unknown) => void,
           reject?: (e: unknown) => void

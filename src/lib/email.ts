@@ -152,3 +152,54 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
     throw new Error(`Email send failed: ${res.status}`);
   }
 }
+
+export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[EMAIL] RESEND_API_KEY not set — password reset OTP:", code);
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8" /><title>Reset your Parkkal password</title></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
+      <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 32px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal</h1>
+          <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 14px;">One Platform. Every Clinic. Zero Compromises</p>
+        </div>
+        <div style="padding: 40px 32px; text-align: center;">
+          <p style="color: #374151; font-size: 16px; margin: 0 0 8px;">Hi ${name},</p>
+          <p style="color: #6b7280; font-size: 14px; margin: 0 0 32px;">Use the code below to reset your Parkkal password. This code expires in <strong>15 minutes</strong>.</p>
+          <div style="background: #fff7ed; border: 2px dashed #f97316; border-radius: 12px; padding: 24px; margin: 0 0 32px;">
+            <p style="color: #c2410c; font-size: 40px; font-weight: 800; letter-spacing: 12px; margin: 0; font-family: monospace;">${code}</p>
+          </div>
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">If you didn't request a password reset, you can safely ignore this email. Your password will not change.</p>
+        </div>
+        <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "Parkkal <noreply@parkkal.com>",
+      to: [to],
+      subject: "Reset your Parkkal password",
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[EMAIL] Failed to send password reset email:", err);
+    throw new Error(`Email send failed: ${res.status}`);
+  }
+}

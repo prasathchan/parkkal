@@ -52,7 +52,7 @@ import {
   adminAuditLog,
 } from "@/db/schema";
 import { getDb } from "@/lib/db";
-import env from "@/lib/env";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export const runtime = "nodejs";
 
@@ -60,15 +60,10 @@ const BATCH_LIMIT = 20; // patients per run (cascade per patient is many stateme
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   // ── Auth ──────────────────────────────────────────────────────────────────
-  const isCronDelivery = req.headers.get("x-cloudflare-cron") !== null;
-  const authHeader     = req.headers.get("authorization") ?? "";
-  const cronSecret     = env.CRON_SECRET;
-
-  if (!isCronDelivery) {
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  // x-cloudflare-cron is spoofable; verifyCronAuth only trusts it for requests
+  // that did not traverse the public edge (no cf-connecting-ip).
+  const denied = verifyCronAuth(req);
+  if (denied) return denied;
 
   const db  = getDb();
   const now = Date.now();

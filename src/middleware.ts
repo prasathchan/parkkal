@@ -109,5 +109,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/select-org/:path*"],
+  // Run on every page and API route so security headers (CSP, HSTS, COOP/CORP)
+  // apply to the landing page, signup, forgot-password, and API responses —
+  // not just the dashboard. Auth-redirect logic above is path-guarded, so
+  // widening the matcher only adds headers elsewhere. Static assets skipped.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };

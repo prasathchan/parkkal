@@ -86,6 +86,17 @@ function CalendarSettingsInner() {
           </div>
         )}
 
+        {/* Coming soon banner */}
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800 flex gap-3 items-start">
+          <svg className="h-5 w-5 flex-shrink-0 mt-0.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <div>
+            <p className="font-semibold">Coming soon — not yet active</p>
+            <p className="mt-0.5 text-amber-700">Calendar sync is under development. The Connect buttons below will not work yet. We will notify you when this feature is live.</p>
+          </div>
+        </div>
+
         {/* Explanation */}
         <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-4 text-sm text-blue-700 space-y-1">
           <p className="font-semibold">How it works</p>
