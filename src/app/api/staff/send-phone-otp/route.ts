@@ -18,7 +18,6 @@ import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS } from "@/lib/permissions";
 import { users, verificationTokens, organizationMembers } from "@/db/schema";
 import { hashOTP } from "@/lib/otp";
-import { sendSMSOTP } from "@/lib/sms";
 import { sendPhoneVerificationEmail } from "@/lib/email";
 
 const bodySchema = z.object({
@@ -70,18 +69,12 @@ export const POST = withRoute(
       createdAt: now,
     });
 
-    const smsSent = await sendSMSOTP(user.phone, otp);
-
-    let emailSent = false;
     try {
       await sendPhoneVerificationEmail(user.email, user.name ?? "there", otp);
-      emailSent = true;
     } catch {
-      if (!smsSent) {
-        return apiError("Both SMS and email failed — please check MSG91 and Resend configuration", 500);
-      }
+      return apiError("Email failed — please check Resend configuration", 500);
     }
 
-    return apiOk({ sent: true, smsSent, emailSent });
+    return apiOk({ sent: true });
   },
 );
