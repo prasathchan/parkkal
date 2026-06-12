@@ -50,6 +50,10 @@ const envSchema = z.object({
   // ── Cron ──────────────────────────────────────────────────────────────────
   CRON_SECRET: z.string().min(16).optional(),
 
+  // ── Internal API (Pricing Console server-to-server) ───────────────────────
+  // When unset, every /api/internal/* endpoint returns 503 (surface disabled).
+  INTERNAL_API_KEY: z.string().min(32).optional(),
+
   // ── Notifications ─────────────────────────────────────────────────────────
   RESEND_FROM_EMAIL: z.string().email().optional(),
   // Alert recipient for server-side error emails. Should be a monitored inbox,

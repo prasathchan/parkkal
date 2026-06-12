@@ -41,7 +41,8 @@ export type AuditAction =
   | "VISIT_DELETED"
   | "TREATMENT_DELETED"
   | "ORG_DELETED"
-  | "BACKUP_RESTORE";
+  | "BACKUP_RESTORE"
+  | "SUBSCRIPTION_ACTIVATED_VIA_CONSOLE";
 
 export interface AuditParams {
   organizationId: string;
