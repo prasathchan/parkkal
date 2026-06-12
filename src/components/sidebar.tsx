@@ -276,6 +276,7 @@ function LogoutButton({
     <button
       onClick={onLogout}
       title="Sign out"
+      aria-label="Sign out"
       className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
       style={{
         color: hovered ? "#ef4444" : colors.text,

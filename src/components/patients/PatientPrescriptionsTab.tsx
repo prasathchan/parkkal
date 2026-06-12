@@ -16,16 +16,28 @@ export function PatientPrescriptionsTab({ prescriptions }: Props) {
     <div className="space-y-4">
       {prescriptions.map((rx) => (
         <div key={rx.id} className="border border-slate-200 rounded-xl overflow-hidden">
-          <div className="flex items-center gap-3 px-5 py-3 bg-slate-50 border-b border-slate-100">
-            <Link href={`/dashboard/visits/${rx.visitId}?tab=prescriptions`} className="text-xs text-blue-600 hover:underline font-medium">
-              View visit →
-            </Link>
-            <span className="text-sm font-medium text-slate-700">Dr. {rx.doctorName}</span>
-            {rx.visitDate && (
-              <span className="text-xs text-slate-400">
-                {new Date(rx.visitDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
-            )}
+          <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <Link href={`/dashboard/visits/${rx.visitId}?tab=prescriptions`} className="text-xs text-blue-600 hover:underline font-medium">
+                View visit →
+              </Link>
+              <span className="text-sm font-medium text-slate-700">Dr. {rx.doctorName}</span>
+              {rx.visitDate && (
+                <span className="text-xs text-slate-400">
+                  {new Date(rx.visitDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => window.open(`/dashboard/visits/${rx.visitId}/print`, "_blank")}
+              aria-label="Print prescription"
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded hover:bg-slate-200 transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Print
+            </button>
           </div>
           <div className="overflow-x-auto">
             <div className="min-w-[400px]">

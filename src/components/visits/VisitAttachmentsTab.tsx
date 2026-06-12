@@ -98,6 +98,7 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
               {visitStatus !== "CANCELLED" && (
                 <button
                   onClick={() => handleDeleteAttachment(att.id)}
+                  aria-label={`Delete attachment ${att.originalName}`}
                   className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center justify-center w-6 h-6 bg-red-100 text-red-600 rounded-full text-xs hover:bg-red-200 transition"
                 >
                   ×

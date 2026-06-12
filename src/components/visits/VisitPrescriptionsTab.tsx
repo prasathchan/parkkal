@@ -90,24 +90,8 @@ export function VisitPrescriptionsTab({
     }
   }
 
-  function handlePrint(rx: Prescription) {
-    const lines = rx.medicines.map(
-      (m) => `• ${m.name} — ${m.dosage}, ${m.frequency}, ${m.duration}${m.notes ? ` (${m.notes})` : ""}`
-    ).join("\n");
-    const text = [
-      `Prescription — Dr. ${rx.doctorName}`,
-      `Date: ${new Date(rx.createdAt).toLocaleDateString("en-IN")}`,
-      "",
-      lines,
-      rx.instructions ? `\nInstructions: ${rx.instructions}` : "",
-    ].join("\n");
-
-    const win = window.open("", "_blank", "width=600,height=500");
-    if (!win) return;
-    win.document.write(`<pre style="font-family:sans-serif;padding:2rem;white-space:pre-wrap">${text}</pre>`);
-    win.document.close();
-    win.focus();
-    win.print();
+  function handlePrint() {
+    window.open(`/dashboard/visits/${visitId}/print`, "_blank");
   }
 
   const canEdit = visitStatus !== "CANCELLED";
@@ -121,7 +105,7 @@ export function VisitPrescriptionsTab({
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Prescription
@@ -276,10 +260,11 @@ export function VisitPrescriptionsTab({
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handlePrint(rx)}
+                    onClick={handlePrint}
+                    aria-label="Print visit receipt including prescription"
                     className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded hover:bg-slate-100 transition"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     Print
@@ -288,9 +273,10 @@ export function VisitPrescriptionsTab({
                     <button
                       onClick={() => handleDelete(rx.id)}
                       disabled={deletingId === rx.id}
+                      aria-label="Delete prescription"
                       className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition disabled:opacity-50"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                       {deletingId === rx.id ? "Deleting…" : "Delete"}
