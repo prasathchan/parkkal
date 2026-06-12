@@ -102,7 +102,7 @@ jobs:
           echo "Waiting 15 s for worker cold start..."
           sleep 15
           HEALTH="${URL}/api/cron/health"
-          STATUS=$(curl -sf --max-time 15 -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
+          STATUS=$(curl -sf --max-time 15 -A "parkkal-ci-healthcheck/1.0" -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
           echo "Health check HTTP $STATUS — $HEALTH"
 
           if [ "$STATUS" != "200" ]; then
