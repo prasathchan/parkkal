@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { subscriptionPlans } from "@/db/schema";

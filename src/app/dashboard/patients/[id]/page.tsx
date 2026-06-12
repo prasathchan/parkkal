@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { patientsApi, visitsApi, appointmentsApi, treatmentsApi, invoicesApi, ApiError } from "@/api";
+import { patientsApi, visitsApi, appointmentsApi, treatmentsApi, invoicesApi } from "@/api";
 import type { PatientPrescription, ToothChartHistoryEntry } from "@/api/patients";
 import Link from "next/link";
 import { Header } from "@/components/header";

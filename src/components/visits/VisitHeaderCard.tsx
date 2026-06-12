@@ -4,7 +4,6 @@ import Link from "next/link";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { STATUS_COLORS } from "./types";
 import type { Visit } from "./types";
-import { visitsApi } from "@/api";
 
 interface NotesForm {
   chiefComplaint: string;

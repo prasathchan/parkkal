@@ -342,18 +342,24 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
         const method = request.method.toUpperCase();
         const isWrite = method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
         if (isWrite) {
-          const db = getDb();
-          const sub = await getOrgSubscription(db, session.orgId);
-          if (!sub) {
-            return apiError("No active subscription found. Please contact support.", 402);
-          }
-          if (sub.isReadOnly) {
-            return apiError(
-              sub.status === "trialing"
-                ? "Your 30-day free trial has ended. Please upgrade to continue."
-                : "Your subscription has expired. Please renew to continue.",
-              402
-            );
+          // Fail-open by design: a billing-infra hiccup or a legacy org with
+          // no subscription row must never block clinical writes. Only a
+          // positively-known expired/cancelled subscription locks the org.
+          try {
+            const db = getDb();
+            const sub = await getOrgSubscription(db, session.orgId);
+            if (sub?.isReadOnly) {
+              return apiError(
+                sub.status === "trialing"
+                  ? "Your 30-day free trial has ended. Please upgrade to continue."
+                  : "Your subscription has expired. Please renew to continue.",
+                402
+              );
+            }
+          } catch (subErr) {
+            log.warn("Subscription check failed — allowing write (fail-open)", {
+              error: subErr instanceof Error ? subErr.message : String(subErr),
+            });
           }
         }
       }

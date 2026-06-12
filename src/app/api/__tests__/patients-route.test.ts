@@ -169,6 +169,7 @@ describe("POST /api/patients", () => {
     phone: "9123456789",
     email: "sunita@example.com",
     gender: "FEMALE",
+    dataConsent: true, // DPDP Act: required at registration
   };
 
   it("creates a patient and returns 201", async () => {

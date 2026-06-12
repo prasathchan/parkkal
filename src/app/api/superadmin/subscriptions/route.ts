@@ -1,4 +1,4 @@
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 type SubRow = {
   id: string; status: string; trialEndAt: number | null; currentPeriodEnd: number | null;
   notes: string | null; cancelledAt: number | null; createdAt: number;

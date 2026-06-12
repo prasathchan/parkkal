@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { z } from "zod";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 import { coupons } from "@/db/schema";

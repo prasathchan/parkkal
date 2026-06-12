@@ -27,7 +27,6 @@ export default function CouponsPage() {
   const [showNew, setShowNew]     = useState(false);
   const [form, setForm]           = useState({ ...blankForm });
   const [creating, setCreating]   = useState(false);
-  const [editId, setEditId]       = useState<string | null>(null);
   const [msg, setMsg]             = useState("");
 
   useEffect(() => { load(); }, []);

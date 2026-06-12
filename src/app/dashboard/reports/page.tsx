@@ -8,7 +8,7 @@ import { useAsync } from "@/hooks/use-async";
 import { reportsApi } from "@/api";
 import type { ReportData } from "@/types";
 import type { ReportPeriod, ReportParams } from "@/api/reports";
-import type { ReportSummary, AgingBucket, PatientFunnel } from "@/types/report";
+import type { AgingBucket, PatientFunnel } from "@/types/report";
 
 // ─── SVG bar chart ─────────────────────────────────────────────────────────────
 
@@ -87,7 +87,7 @@ function SvgBarChart({
 
 // ─── Mini stat card ────────────────────────────────────────────────────────────
 
-function Stat({ label, value, sub, color = "text-slate-900" }: {
+function _Stat({ label, value, sub, color = "text-slate-900" }: {
   label: string; value: string; sub?: string; color?: string;
 }) {
   return (

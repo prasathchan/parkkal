@@ -36,7 +36,7 @@ export default function SuperadminOverviewPage() {
 
   const trialing  = subs.filter((s) => s.status === "trialing").length;
   const active    = subs.filter((s) => s.status === "active").length;
-  const expired   = subs.filter((s) => s.status === "expired" || (s.status === "trialing" && (s.daysRemaining ?? 0) < 0)).length;
+  const _expired   = subs.filter((s) => s.status === "expired" || (s.status === "trialing" && (s.daysRemaining ?? 0) < 0)).length;
   const mrr       = subs.filter((s) => s.status === "active").reduce((sum, s) => sum + s.priceMonthly, 0);
 
   return (
