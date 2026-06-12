@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "eslint src",
     "cf:build": "opennextjs-cloudflare build",
     "cf:deploy": "opennextjs-cloudflare build && wrangler d1 migrations apply parkkal-db --env=prod --remote && wrangler deploy --env=prod",
     "cf:deploy:staging": "opennextjs-cloudflare build && wrangler d1 migrations apply parkkal-db-staging --env=staging --remote && wrangler deploy --env=staging",

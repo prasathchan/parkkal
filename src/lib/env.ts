@@ -39,10 +39,11 @@ const envSchema = z.object({
   // ── Email (Resend) ────────────────────────────────────────────────────────
   RESEND_API_KEY: z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'"),
 
-  // ── SMS (Twilio) — optional: SMS is gracefully skipped when not configured ──
-  TWILIO_ACCOUNT_SID: z.string().startsWith("AC").optional(),
-  TWILIO_AUTH_TOKEN:  z.string().min(1).optional(),
-  TWILIO_PHONE_NUMBER: z.string().startsWith("+").optional(),
+  // ── SMS (MSG91) — optional: SMS is gracefully skipped when not configured ──
+  MSG91_API_KEY:         z.string().min(1).optional(),
+  MSG91_SENDER_ID:       z.string().min(1).optional(),
+  MSG91_OTP_TEMPLATE_ID: z.string().min(1).optional(),
+  MSG91_SMS_FLOW_ID:     z.string().min(1).optional(),
 
   // ── Database (local dev only — D1 binding used in Workers) ───────────────
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL").optional(),
@@ -60,7 +61,8 @@ const envSchema = z.object({
   // not the noreply sender. Falls back to RESEND_FROM_EMAIL if unset (which
   // silently discards alerts if that address is unmonitored).
   ALERT_RECIPIENT_EMAIL: z.string().email().optional(),
-  TWILIO_WHATSAPP_NUMBER: z.string().startsWith("whatsapp:+").optional(),
+  // Reserved for future MSG91 WhatsApp Business API integration
+  // MSG91_WHATSAPP_API_KEY: z.string().optional(),
 
   // ── Stripe ────────────────────────────────────────────────────────────────
   STRIPE_SECRET_KEY:      z.string().startsWith("sk_").optional(),

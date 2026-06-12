@@ -31,6 +31,10 @@ async function verifyStripeSignature(
   const sig       = parts["v1"];
   if (!timestamp || !sig) return false;
 
+  // Reject events older than 5 minutes — prevents replay of captured webhooks.
+  const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
+  if (!Number.isFinite(ageSeconds) || ageSeconds > 300) return false;
+
   const signedPayload = `${timestamp}.${payload}`;
   const key = await crypto.subtle.importKey(
     "raw",
@@ -41,7 +45,11 @@ async function verifyStripeSignature(
   );
   const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signedPayload));
   const expected = Array.from(new Uint8Array(mac)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  return expected === sig;
+  // Constant-time comparison — a plain === leaks match length via timing.
+  if (expected.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
 }
 
 export async function POST(req: NextRequest) {

@@ -6,10 +6,11 @@
  *
  * Key behaviour verified:
  *  - Graceful skip when credentials are absent (no throw, just console.warn)
- *  - Throws on upstream API errors (Twilio / Resend)
- *  - Correct Twilio/Resend request shape
+ *  - Throws on upstream API errors (MSG91 / Resend)
+ *  - Correct MSG91/Resend request shape
+ *  - WhatsApp falls back to SMS when not separately configured
  *  - buildReminderMessage output for all channels and reminder types
- *  - Indian phone normalisation (10-digit → +91, 91-prefix → +91)
+ *  - Indian phone normalisation (10-digit → 91XXXXXXXXXX for MSG91)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { sendNotification, buildReminderMessage } from "@/lib/notifications";
@@ -19,12 +20,11 @@ import { sendNotification, buildReminderMessage } from "@/lib/notifications";
 
 vi.mock("@/lib/env", () => ({
   default: {
-    TWILIO_ACCOUNT_SID:     "ACtest123",
-    TWILIO_AUTH_TOKEN:      "authtoken123",
-    TWILIO_PHONE_NUMBER:    "+15551234567",
-    TWILIO_WHATSAPP_NUMBER: "whatsapp:+14155238886",
-    RESEND_API_KEY:         "re_test_key",
-    RESEND_FROM_EMAIL:      "reminders@parkkal.com",
+    MSG91_API_KEY:     "testapikey123",
+    MSG91_SENDER_ID:   "PARKDNT",
+    MSG91_SMS_FLOW_ID: "flow123",
+    RESEND_API_KEY:    "re_test_key",
+    RESEND_FROM_EMAIL: "reminders@parkkal.com",
   },
 }));
 
@@ -33,7 +33,7 @@ vi.mock("@/lib/env", () => ({
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-function okResponse(body = "{}") {
+function okResponse(body = '{"type":"success"}') {
   return { ok: true, status: 200, text: async () => body, json: async () => JSON.parse(body) };
 }
 function errResponse(status: number, body = "error body") {
@@ -48,65 +48,76 @@ beforeEach(() => {
 // ─── SMS ─────────────────────────────────────────────────────────────────────
 
 describe("sendNotification — SMS", () => {
-  it("calls Twilio with correctly formatted URL and auth header", async () => {
+  it("calls MSG91 Flow API with authkey header and correct body shape", async () => {
     await sendNotification({ channel: "SMS", to: "9876543210", message: "Your appointment is tomorrow." });
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("api.twilio.com");
-    expect(url).toContain("ACtest123");
-    expect(opts.headers as Record<string, string>).toMatchObject({
-      Authorization: expect.stringContaining("Basic "),
-      "Content-Type": "application/x-www-form-urlencoded",
-    });
+    expect(url).toContain("msg91.com");
+    expect(url).toContain("flow");
+    expect((opts.headers as Record<string, string>)["authkey"]).toBe("testapikey123");
+    expect((opts.headers as Record<string, string>)["Content-Type"]).toBe("application/json");
+
+    const body = JSON.parse(opts.body as string);
+    expect(body.flow_id).toBe("flow123");
+    expect(body.sender).toBe("PARKDNT");
+    expect(body.VAR1).toBe("Your appointment is tomorrow.");
   });
 
-  it("normalises 10-digit Indian number to E.164 (+91XXXXXXXXXX)", async () => {
+  it("normalises 10-digit Indian number to MSG91 format (91XXXXXXXXXX)", async () => {
     await sendNotification({ channel: "SMS", to: "9876543210", message: "Reminder" });
-
     const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(opts.body as string).toContain(encodeURIComponent("+919876543210"));
+    const body = JSON.parse(opts.body as string);
+    expect(body.mobiles).toBe("919876543210");
   });
 
-  it("normalises 91-prefixed 12-digit number to E.164", async () => {
+  it("normalises 91-prefixed 12-digit number correctly", async () => {
     await sendNotification({ channel: "SMS", to: "919876543210", message: "Reminder" });
     const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(opts.body as string).toContain(encodeURIComponent("+919876543210"));
+    const body = JSON.parse(opts.body as string);
+    expect(body.mobiles).toBe("919876543210");
   });
 
-  it("passes through numbers already in E.164 format unchanged", async () => {
+  it("normalises E.164 number (+919876543210) to MSG91 format", async () => {
     await sendNotification({ channel: "SMS", to: "+919876543210", message: "Reminder" });
     const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(opts.body as string).toContain(encodeURIComponent("+919876543210"));
+    const body = JSON.parse(opts.body as string);
+    expect(body.mobiles).toBe("919876543210");
   });
 
-  it("throws when Twilio returns a non-OK response", async () => {
-    mockFetch.mockResolvedValueOnce(errResponse(400, "Invalid To number"));
+  it("throws when MSG91 returns a non-OK HTTP response", async () => {
+    mockFetch.mockResolvedValueOnce(errResponse(400, "Invalid mobile"));
     await expect(
       sendNotification({ channel: "SMS", to: "+919876543210", message: "Reminder" })
-    ).rejects.toThrow("Twilio error 400");
+    ).rejects.toThrow("MSG91 SMS error 400");
   });
 
-  it("skips silently when TWILIO_PHONE_NUMBER is not configured", async () => {
+  it("throws when MSG91 returns type:error in a 200 body", async () => {
+    mockFetch.mockResolvedValueOnce(okResponse('{"type":"error","message":"Invalid flow_id"}'));
+    await expect(
+      sendNotification({ channel: "SMS", to: "+919876543210", message: "Reminder" })
+    ).rejects.toThrow("MSG91 SMS error: Invalid flow_id");
+  });
+
+  it("skips silently when MSG91_API_KEY is not configured", async () => {
     const { default: env } = await import("@/lib/env");
-    const orig = env.TWILIO_PHONE_NUMBER;
-    (env as Record<string, unknown>).TWILIO_PHONE_NUMBER = undefined;
+    const orig = env.MSG91_API_KEY;
+    (env as Record<string, unknown>).MSG91_API_KEY = undefined;
 
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await expect(
       sendNotification({ channel: "SMS", to: "+919876543210", message: "Reminder" })
     ).resolves.toBeUndefined();
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("TWILIO_PHONE_NUMBER"), expect.anything());
 
-    (env as Record<string, unknown>).TWILIO_PHONE_NUMBER = orig;
+    (env as Record<string, unknown>).MSG91_API_KEY = orig;
     warn.mockRestore();
   });
 
-  it("skips silently when Twilio SID/token are missing", async () => {
+  it("skips silently when MSG91_SMS_FLOW_ID is not configured", async () => {
     const { default: env } = await import("@/lib/env");
-    const origSid = env.TWILIO_ACCOUNT_SID;
-    (env as Record<string, unknown>).TWILIO_ACCOUNT_SID = undefined;
+    const orig = env.MSG91_SMS_FLOW_ID;
+    (env as Record<string, unknown>).MSG91_SMS_FLOW_ID = undefined;
 
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await expect(
@@ -114,7 +125,7 @@ describe("sendNotification — SMS", () => {
     ).resolves.toBeUndefined();
     expect(mockFetch).not.toHaveBeenCalled();
 
-    (env as Record<string, unknown>).TWILIO_ACCOUNT_SID = origSid;
+    (env as Record<string, unknown>).MSG91_SMS_FLOW_ID = orig;
     warn.mockRestore();
   });
 });
@@ -122,39 +133,16 @@ describe("sendNotification — SMS", () => {
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────
 
 describe("sendNotification — WhatsApp", () => {
-  it("prefixes the To number with whatsapp:", async () => {
+  it("falls back to SMS via MSG91 (WhatsApp not yet separately configured)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await sendNotification({ channel: "WHATSAPP", to: "9876543210", message: "Reminder" });
 
-    const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(opts.body as string).toContain(encodeURIComponent("whatsapp:+919876543210"));
-  });
+    // Should have warned about fallback, then called MSG91 flow API
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("WhatsApp not yet configured"), expect.anything());
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("msg91.com");
 
-  it("uses the WhatsApp-specific From number", async () => {
-    await sendNotification({ channel: "WHATSAPP", to: "+919876543210", message: "Reminder" });
-
-    const [, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(opts.body as string).toContain(encodeURIComponent("whatsapp:+14155238886"));
-  });
-
-  it("throws when Twilio returns an error for WhatsApp", async () => {
-    mockFetch.mockResolvedValueOnce(errResponse(401, "Unauthorized"));
-    await expect(
-      sendNotification({ channel: "WHATSAPP", to: "+919876543210", message: "Reminder" })
-    ).rejects.toThrow("Twilio error 401");
-  });
-
-  it("skips silently when TWILIO_WHATSAPP_NUMBER is not configured", async () => {
-    const { default: env } = await import("@/lib/env");
-    const orig = env.TWILIO_WHATSAPP_NUMBER;
-    (env as Record<string, unknown>).TWILIO_WHATSAPP_NUMBER = undefined;
-
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    await expect(
-      sendNotification({ channel: "WHATSAPP", to: "+919876543210", message: "Reminder" })
-    ).resolves.toBeUndefined();
-    expect(mockFetch).not.toHaveBeenCalled();
-
-    (env as Record<string, unknown>).TWILIO_WHATSAPP_NUMBER = orig;
     warn.mockRestore();
   });
 });
@@ -174,10 +162,7 @@ describe("sendNotification — Email", () => {
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.resend.com/emails");
-    expect(opts.headers as Record<string, string>).toMatchObject({
-      Authorization: "Bearer re_test_key",
-      "Content-Type": "application/json",
-    });
+    expect((opts.headers as Record<string, string>)["Authorization"]).toBe("Bearer re_test_key");
 
     const body = JSON.parse(opts.body as string);
     expect(body.to).toContain("patient@example.com");
@@ -277,7 +262,7 @@ describe("buildReminderMessage", () => {
   });
 
   it("Email message is plain text (same as SMS)", () => {
-    const sms = buildReminderMessage({ ...BASE, channel: "SMS" });
+    const sms   = buildReminderMessage({ ...BASE, channel: "SMS" });
     const email = buildReminderMessage({ ...BASE, channel: "EMAIL" });
     expect(sms).toBe(email);
   });

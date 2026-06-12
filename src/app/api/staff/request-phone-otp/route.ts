@@ -35,16 +35,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid phone number — must be at least 10 digits" }, { status: 400 });
     }
 
-    // Build E.164: 10 digits → +91, 12 digits starting 91 → +91xxx, else +xxx
-    let e164: string;
-    if (phoneDigits.length === 10) {
-      e164 = `+91${phoneDigits}`;
-    } else if (phoneDigits.length === 12 && phoneDigits.startsWith("91")) {
-      e164 = `+${phoneDigits}`;
-    } else {
-      e164 = `+${phoneDigits}`;
-    }
-
     const db = getDb();
     const now = Date.now();
 

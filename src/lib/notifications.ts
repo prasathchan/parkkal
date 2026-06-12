@@ -16,21 +16,23 @@
  *
  * ─── CHANNELS ────────────────────────────────────────────────────────────────
  *
- *   SMS       — Twilio SMS (same credentials as OTP)
- *   WHATSAPP  — Twilio WhatsApp Business API
- *               Requires: TWILIO_WHATSAPP_NUMBER env var (e.g. "whatsapp:+14155238886")
- *               The patient's number is automatically prefixed with "whatsapp:"
+ *   SMS       — MSG91 transactional SMS (DLT-registered flow)
+ *               Requires: MSG91_API_KEY, MSG91_SENDER_ID, MSG91_SMS_FLOW_ID
+ *               The flow template must have a single variable ##VAR1## which
+ *               receives the full reminder message text.
+ *               Register template at: https://control.msg91.com
+ *
+ *   WHATSAPP  — Not yet active. Requires MSG91 WhatsApp Business API approval.
+ *               Falls back to SMS silently when not configured.
+ *
  *   EMAIL     — Resend transactional email
  *
  * ─── SETUP ───────────────────────────────────────────────────────────────────
  *
- *   SMS / WhatsApp (same Twilio account):
- *     TWILIO_ACCOUNT_SID    → from console.twilio.com
- *     TWILIO_AUTH_TOKEN     → from console.twilio.com
- *     TWILIO_PHONE_NUMBER   → SMS sender number (e.g. "+15551234567")
- *     TWILIO_WHATSAPP_NUMBER → WhatsApp sender (e.g. "whatsapp:+14155238886")
- *                              Use the Twilio sandbox for testing, or apply for a
- *                              WhatsApp Business number for production.
+ *   SMS:
+ *     MSG91_API_KEY         → authkey from msg91.com dashboard
+ *     MSG91_SENDER_ID       → 6-char DLT sender ID (e.g. PARKDNT)
+ *     MSG91_SMS_FLOW_ID     → Flow ID for appointment reminder template
  *
  *   Email:
  *     RESEND_API_KEY        → from resend.com (already required for OTP emails)
@@ -63,67 +65,58 @@ export interface SendNotificationParams {
 
 // ─── Phone normalizer ─────────────────────────────────────────────────────────
 
-function toE164(phone: string): string {
+// MSG91 expects country code + number without the + prefix: "919876543210"
+function toMsg91Mobile(phone: string): string {
   const digits = phone.replace(/\D/g, "");
-  if (phone.startsWith("+")) return phone;
-  if (digits.length === 10) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
-  return phone;
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return digits;
+  return digits;
 }
 
-// ─── Twilio helper (shared by SMS + WhatsApp) ─────────────────────────────────
+// ─── SMS via MSG91 Flow API ───────────────────────────────────────────────────
 
-async function sendViaTwilio(from: string, to: string, body: string): Promise<void> {
-  const sid   = env.TWILIO_ACCOUNT_SID;
-  const token = env.TWILIO_AUTH_TOKEN;
+async function sendSMS(to: string, message: string): Promise<void> {
+  const apiKey   = env.MSG91_API_KEY;
+  const senderId = env.MSG91_SENDER_ID;
+  const flowId   = env.MSG91_SMS_FLOW_ID;
 
-  if (!sid || !token) {
-    console.warn("[NOTIFY] Twilio not configured — skipping notification to", to);
+  if (!apiKey || !senderId || !flowId) {
+    console.warn("[NOTIFY] MSG91 not configured — skipping SMS to", to);
     return;
   }
 
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-  const credentials = Buffer.from(`${sid}:${token}`).toString("base64");
-
-  const params = new URLSearchParams({ From: from, To: to, Body: body });
-
-  const res = await fetch(url, {
+  const res = await fetch("https://api.msg91.com/api/v5/flow/", {
     method: "POST",
     headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      authkey: apiKey,
+      "Content-Type": "application/json",
     },
-    body: params.toString(),
+    body: JSON.stringify({
+      flow_id: flowId,
+      sender:  senderId,
+      mobiles: toMsg91Mobile(to),
+      VAR1:    message,
+    }),
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Twilio error ${res.status}: ${errText.slice(0, 200)}`);
+    const err = await res.text();
+    throw new Error(`MSG91 SMS error ${res.status}: ${err.slice(0, 200)}`);
   }
-}
 
-// ─── SMS ─────────────────────────────────────────────────────────────────────
-
-async function sendSMS(to: string, message: string): Promise<void> {
-  const from = env.TWILIO_PHONE_NUMBER;
-  if (!from) {
-    console.warn("[NOTIFY] TWILIO_PHONE_NUMBER not set — skipping SMS to", to);
-    return;
+  const data = await res.json() as { type?: string; message?: string };
+  if (data.type === "error") {
+    throw new Error(`MSG91 SMS error: ${data.message}`);
   }
-  await sendViaTwilio(from, toE164(to), message);
 }
 
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────
+// WhatsApp via MSG91 requires separate WhatsApp Business API approval and
+// a different integration. Until that is set up, fall back to SMS silently.
 
 async function sendWhatsApp(to: string, message: string): Promise<void> {
-  const from = env.TWILIO_WHATSAPP_NUMBER; // e.g. "whatsapp:+14155238886"
-  if (!from) {
-    console.warn("[NOTIFY] TWILIO_WHATSAPP_NUMBER not set — skipping WhatsApp to", to);
-    return;
-  }
-  // Twilio requires "whatsapp:" prefix on the To number as well
-  const whatsappTo = `whatsapp:${toE164(to)}`;
-  await sendViaTwilio(from, whatsappTo, message);
+  console.warn("[NOTIFY] WhatsApp not yet configured — falling back to SMS for", to);
+  await sendSMS(to, message);
 }
 
 // ─── Email ────────────────────────────────────────────────────────────────────
