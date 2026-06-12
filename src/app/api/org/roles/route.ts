@@ -3,6 +3,7 @@ import { orgRoles, organizationMembers } from "@/db/schema";
 import { DEFAULT_ROLES } from "@/lib/default-roles";
 import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { getCached, invalidateCache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
 // Maps system role enum → default role slug for auto-backfill
 const SYSTEM_ROLE_TO_SLUG: Record<string, string> = {
@@ -30,45 +31,51 @@ async function seedDefaultRoles(db: ReturnType<typeof import("@/lib/db").getDb>,
 export const GET = withRoute(
   { route: "GET /api/org/roles", adminOnly: true },
   async (_req, { session, db, log }) => {
-    let roles = await db
-      .select({ id: orgRoles.id, name: orgRoles.name, slug: orgRoles.slug, description: orgRoles.description, color: orgRoles.color, isSystem: orgRoles.isSystem, permissions: orgRoles.permissions })
-      .from(orgRoles)
-      .where(eq(orgRoles.organizationId, session.orgId))
-      .orderBy(orgRoles.name);
-
-    // Auto-seed defaults for orgs created before the role system
-    if (roles.length === 0) {
-      try {
-        await seedDefaultRoles(db, session.orgId);
-        roles = await db
+    const result = await getCached(
+      CACHE_KEYS.orgRoles(session.orgId),
+      CACHE_TTL.ORG_ROLES,
+      async () => {
+        let roles = await db
           .select({ id: orgRoles.id, name: orgRoles.name, slug: orgRoles.slug, description: orgRoles.description, color: orgRoles.color, isSystem: orgRoles.isSystem, permissions: orgRoles.permissions })
-          .from(orgRoles).where(eq(orgRoles.organizationId, session.orgId)).orderBy(orgRoles.name);
-      } catch (e) { log.warn("Role seeding failed", { error: String(e) }); }
-    }
+          .from(orgRoles)
+          .where(eq(orgRoles.organizationId, session.orgId))
+          .orderBy(orgRoles.name);
 
-    // One-time backfill: assign orgRoleId to members that still have null (self-disabling)
-    try {
-      const slugToId: Record<string, string> = {};
-      for (const r of roles) slugToId[r.slug] = r.id;
-      const unassigned = await db.select({ id: organizationMembers.id, role: organizationMembers.role }).from(organizationMembers)
-        .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
-      for (const m of unassigned) {
-        const slug = SYSTEM_ROLE_TO_SLUG[m.role];
-        const roleId = slug ? slugToId[slug] : null;
-        if (roleId) await db.update(organizationMembers).set({ orgRoleId: roleId }).where(eq(organizationMembers.id, m.id));
+        // Auto-seed defaults for orgs created before the role system
+        if (roles.length === 0) {
+          try {
+            await seedDefaultRoles(db, session.orgId);
+            roles = await db
+              .select({ id: orgRoles.id, name: orgRoles.name, slug: orgRoles.slug, description: orgRoles.description, color: orgRoles.color, isSystem: orgRoles.isSystem, permissions: orgRoles.permissions })
+              .from(orgRoles).where(eq(orgRoles.organizationId, session.orgId)).orderBy(orgRoles.name);
+          } catch (e) { log.warn("Role seeding failed", { error: String(e) }); }
+        }
+
+        // One-time backfill: assign orgRoleId to members that still have null (self-disabling)
+        try {
+          const slugToId: Record<string, string> = {};
+          for (const r of roles) slugToId[r.slug] = r.id;
+          const unassigned = await db.select({ id: organizationMembers.id, role: organizationMembers.role }).from(organizationMembers)
+            .where(and(eq(organizationMembers.organizationId, session.orgId), isNull(organizationMembers.orgRoleId)));
+          for (const m of unassigned) {
+            const slug = SYSTEM_ROLE_TO_SLUG[m.role];
+            const roleId = slug ? slugToId[slug] : null;
+            if (roleId) await db.update(organizationMembers).set({ orgRoleId: roleId }).where(eq(organizationMembers.id, m.id));
+          }
+        } catch (e) { log.warn("Member role auto-assign failed", { error: String(e) }); }
+
+        // Attach active member counts per role
+        const memberCounts = await db
+          .select({ orgRoleId: organizationMembers.orgRoleId, count: sql<number>`count(*)` })
+          .from(organizationMembers)
+          .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)))
+          .groupBy(organizationMembers.orgRoleId);
+        const countMap: Record<string, number> = {};
+        for (const row of memberCounts) { if (row.orgRoleId) countMap[row.orgRoleId] = Number(row.count); }
+
+        return roles.map((r: typeof roles[number]) => ({ ...r, permissions: JSON.parse(r.permissions || "[]") as string[], userCount: countMap[r.id] || 0 }));
       }
-    } catch (e) { log.warn("Member role auto-assign failed", { error: String(e) }); }
-
-    // Attach active member counts per role
-    const memberCounts = await db
-      .select({ orgRoleId: organizationMembers.orgRoleId, count: sql<number>`count(*)` })
-      .from(organizationMembers)
-      .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.isActive, 1)))
-      .groupBy(organizationMembers.orgRoleId);
-    const countMap: Record<string, number> = {};
-    for (const row of memberCounts) { if (row.orgRoleId) countMap[row.orgRoleId] = Number(row.count); }
-
-    const result = roles.map((r: typeof roles[number]) => ({ ...r, permissions: JSON.parse(r.permissions || "[]") as string[], userCount: countMap[r.id] || 0 }));
+    );
     return apiOk({ roles: result });
   }
 );
@@ -96,6 +103,7 @@ export const POST = withRoute(
     };
 
     await db.insert(orgRoles).values(newRole);
+    await invalidateCache(CACHE_KEYS.orgRoles(session.orgId));
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_CREATED", targetType: "role", targetId: newRole.id, metadata: { roleName: newRole.name } });
     log.info("Role created", { roleId: newRole.id, roleName: newRole.name });
     return apiOk({ role: { ...newRole, permissions: permissions || [] } }, 201);

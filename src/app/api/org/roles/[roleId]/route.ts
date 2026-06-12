@@ -2,6 +2,7 @@ import { eq, and } from "drizzle-orm";
 import { orgRoles, organizationMembers, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { invalidateCache, CACHE_KEYS } from "@/lib/cache";
 
 function nameToSlug(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -48,6 +49,7 @@ export const PATCH = withRoute<{ roleId: string }>(
     if (permissions !== undefined) updates.permissions = JSON.stringify(permissions);
 
     await db.update(orgRoles).set(updates).where(eq(orgRoles.id, roleId));
+    await invalidateCache(CACHE_KEYS.orgRoles(session.orgId));
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_UPDATED", targetType: "role", targetId: roleId });
     log.info("Role updated", { roleId, affectedUsers: membersWithRole.length });
     return apiOk({ role: { ...role, ...updates, permissions: permissions ?? JSON.parse(role.permissions || "[]") }, affectedUsers: membersWithRole.length });
@@ -74,6 +76,7 @@ export const DELETE = withRoute<{ roleId: string }>(
     }
 
     await db.delete(orgRoles).where(eq(orgRoles.id, roleId));
+    await invalidateCache(CACHE_KEYS.orgRoles(session.orgId));
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ROLE_DELETED", targetType: "role", targetId: roleId });
     log.info("Role deleted", { roleId });
     return apiOk({ success: true });
