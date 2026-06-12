@@ -6,7 +6,7 @@ import { users, verificationTokens } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashOTP } from "@/lib/otp";
 import { sendEmailOTP, sendPhoneVerificationEmail } from "@/lib/email";
-import { sendSMSOTP } from "@/lib/sms";
+import { sendMSG91WidgetOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 
 const resendSchema = z.object({
@@ -104,8 +104,25 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
       }
     } else {
-      // PHONE type: try SMS first, always send email as backup
-      const smsSent = user.phone ? await sendSMSOTP(user.phone, code) : false;
+      // PHONE type: MSG91 Widget sends SMS (no DLT), email always sent as fallback.
+      // SMS and email use different OTPs — the verify route accepts either.
+      let smsSent = false;
+      if (user.phone) {
+        const { sent, reqId } = await sendMSG91WidgetOTP(user.phone);
+        smsSent = sent;
+        if (sent && reqId) {
+          await db.insert(verificationTokens).values({
+            id:        `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
+            userId,
+            type,
+            code:      `msg91:${reqId}`,
+            expiresAt: now + 15 * 60 * 1000,
+            used:      0,
+            createdAt: now,
+          });
+        }
+      }
+
       try {
         await sendPhoneVerificationEmail(user.email, user.name, code);
       } catch (sendErr) {

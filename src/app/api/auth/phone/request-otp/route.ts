@@ -4,16 +4,16 @@ import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendPhoneVerificationEmail } from "@/lib/email";
-import { sendSMSOTP } from "@/lib/sms";
+import { sendMSG91WidgetOTP } from "@/lib/sms";
+import { hashOTP } from "@/lib/otp";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const OTP_RATE_LIMIT = { limit: 3, windowMs: 60 * 60 * 1000 }; // 3 per hour per userId (DB-level)
-const IP_RATE_LIMIT = { limit: 10, windowMs: 60_000 }; // 10 per minute per IP (fast pre-check)
+const IP_RATE_LIMIT  = { limit: 10, windowMs: 60_000 };         // 10 per minute per IP (fast pre-check)
 
 function generateOTP(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(4));
-  // Treat the 4 bytes as a big-endian uint32 and take mod 1_000_000 for 6 digits
   const num = ((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0;
   return String(num % 1_000_000).padStart(6, "0");
 }
@@ -66,34 +66,49 @@ export async function POST(request: NextRequest) {
   }
 
   const now = Date.now();
-  const code = generateOTP();
-  const tokenId = `vt_${Array.from(
-    crypto.getRandomValues(new Uint8Array(12)),
-    (b: number) => b.toString(16).padStart(2, "0")
-  ).join("")}`;
+  const tokenBase = () =>
+    `vt_${Array.from(crypto.getRandomValues(new Uint8Array(12)), (b: number) =>
+      b.toString(16).padStart(2, "0")
+    ).join("")}`;
+
+  // ── SMS path: MSG91 Widget generates and delivers the OTP ─────────────────
+  const { sent: smsSent, reqId } = await sendMSG91WidgetOTP(user.phone);
+
+  if (smsSent && reqId) {
+    // Store reqId so we can verify against MSG91 API later
+    await db.insert(verificationTokens).values({
+      id: tokenBase(),
+      userId:    session.userId,
+      type:      "PHONE_OTP",
+      code:      `msg91:${reqId}`,
+      expiresAt: now + 15 * 60 * 1000,
+      used:      0,
+      createdAt: now,
+    });
+  } else {
+    log.warn("MSG91 widget SMS failed, will rely on email OTP", { userId: session.userId });
+  }
+
+  // ── Email path: always send our own OTP as a fallback ─────────────────────
+  const emailCode = generateOTP();
+  const emailHash = await hashOTP(emailCode);
 
   await db.insert(verificationTokens).values({
-    id: tokenId,
-    userId: session.userId,
-    type: "PHONE_OTP",
-    code,
-    expiresAt: now + 15 * 60 * 1000, // 15 minutes
-    used: 0,
+    id:        tokenBase(),
+    userId:    session.userId,
+    type:      "PHONE_OTP",
+    code:      emailHash,
+    expiresAt: now + 15 * 60 * 1000,
+    used:      0,
     createdAt: now,
   });
 
-  // Try SMS first; always follow with email as fallback — if SMS fails silently,
-  // the user still gets the code via email.
-  const smsSent = await sendSMSOTP(user.phone, code);
-  if (!smsSent) {
-    log.warn("SMS OTP failed, falling back to email", { userId: session.userId });
-  }
-
+  let emailSent = false;
   try {
-    await sendPhoneVerificationEmail(user.email, user.name, code);
+    await sendPhoneVerificationEmail(user.email, user.name, emailCode);
+    emailSent = true;
   } catch (err) {
     if (!smsSent) {
-      // Both channels failed — the user has no way to receive the code.
       log.error("Both SMS and email failed for phone OTP", { error: String(err), userId: session.userId });
       return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
     }
@@ -107,6 +122,6 @@ export async function POST(request: NextRequest) {
 
   const maskedPhone = user.phone.slice(-4).padStart(user.phone.length, "*");
 
-  log.info("Phone OTP sent", { userId: session.userId, smsSent });
+  log.info("Phone OTP sent", { userId: session.userId, smsSent, emailSent });
   return NextResponse.json({ sent: true, maskedEmail, maskedPhone, smsSent });
 }

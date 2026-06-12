@@ -40,13 +40,12 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'"),
 
   // ── SMS (MSG91) — optional: SMS is gracefully skipped when not configured ──
-  MSG91_API_KEY:         z.string().min(1).optional(),
-  MSG91_SENDER_ID:       z.string().min(1).optional(),
-  MSG91_OTP_TEMPLATE_ID: z.string().min(1).optional(),
-  MSG91_SMS_FLOW_ID:     z.string().min(1).optional(),
-  // Set to "1" to use MSG91 sandbox — requests are accepted and logged but not
-  // delivered to carrier. Bypasses DLT requirement. Never set in production.
-  MSG91_SANDBOX:         z.enum(["1", "0"]).optional(),
+  MSG91_API_KEY:     z.string().min(1).optional(),
+  MSG91_WIDGET_ID:   z.string().min(1).optional(),   // OTP Widget — no DLT required
+  MSG91_SENDER_ID:   z.string().min(1).optional(),   // Sender ID for Flow API (appointment reminders)
+  MSG91_SMS_FLOW_ID: z.string().min(1).optional(),   // Flow API for appointment reminders (needs DLT)
+  // Set to "1" to bypass carrier delivery for integration testing. Never set in production.
+  MSG91_SANDBOX:    z.enum(["1", "0"]).optional(),
 
   // ── Database (local dev only — D1 binding used in Workers) ───────────────
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL").optional(),

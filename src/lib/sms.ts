@@ -1,33 +1,31 @@
 /**
  * lib/sms.ts
  *
- * SMS delivery via MSG91 OTP API — used for OTP verification codes.
+ * SMS delivery via MSG91 OTP Widget API — used for OTP verification codes.
  *
  * ─── SETUP ───────────────────────────────────────────────────────────────────
  *   Required environment variables:
- *     MSG91_API_KEY         — authkey from msg91.com dashboard
- *     MSG91_SENDER_ID       — Sender ID (e.g. smsind or PARKDNT)
- *     MSG91_OTP_TEMPLATE_ID — Template ID approved by MSG91 (not TRAI DLT)
- *                             Current approved template: 6a2bf4ec79805f4a7d07f1c4
- *                             Body: "This is your OTP to Access: ##OTP##"
+ *     MSG91_API_KEY    — authkey from msg91.com dashboard
+ *     MSG91_WIDGET_ID  — Widget ID from MSG91 OTP Widgets section
  *
  *   Without these, SMS is silently skipped (email OTP is always the fallback).
- *   In development the OTP is printed to the console.
  *
- * ─── NOTE ─────────────────────────────────────────────────────────────────────
- *   MSG91's OTP API (/api/v5/otp) uses MSG91-approved templates which do NOT
- *   require TRAI DLT registration — the OTP route has a special transactional
- *   exemption. The Flow API (/api/v5/flow/) is used for appointment reminders
- *   and DOES require DLT registration.
+ * ─── WIDGET FLOW ─────────────────────────────────────────────────────────────
+ *   The Widget API has MSG91 manage the OTP entirely — no TRAI DLT registration
+ *   required. MSG91 generates and delivers the code; we store only the reqId.
+ *
+ *   1. sendMSG91WidgetOTP(phone)             → MSG91 sends SMS, returns reqId
+ *   2. Store reqId; user submits the code they received via SMS
+ *   3. verifyMSG91WidgetOTP(phone, reqId, otp) → MSG91 confirms or rejects
  *
  * ─── EXPORTS ─────────────────────────────────────────────────────────────────
- *   sendSMSOTP(to, code)   → sends a 6-digit OTP to the given phone number
- *                            Returns true on success, false on failure (never throws)
+ *   sendMSG91WidgetOTP(phone)               → { sent, reqId? }  (never throws)
+ *   verifyMSG91WidgetOTP(phone, reqId, otp) → boolean           (never throws)
  */
 
 import env from "@/lib/env";
 
-// Normalize to MSG91's expected format: country code + number, no + prefix.
+// Normalize to MSG91's expected format: country code + digits, no + prefix.
 // E.g. "9876543210" → "919876543210", "+919876543210" → "919876543210"
 function toMsg91Mobile(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -36,56 +34,86 @@ function toMsg91Mobile(phone: string): string {
   return digits;
 }
 
-export async function sendSMSOTP(to: string, code: string): Promise<boolean> {
-  const apiKey     = env.MSG91_API_KEY;
-  const templateId = env.MSG91_OTP_TEMPLATE_ID;
-  const senderId   = env.MSG91_SENDER_ID;
+export async function sendMSG91WidgetOTP(
+  to: string
+): Promise<{ sent: boolean; reqId?: string }> {
+  const apiKey   = env.MSG91_API_KEY;
+  const widgetId = env.MSG91_WIDGET_ID;
 
-  if (!apiKey || !templateId || !senderId) {
+  if (!apiKey || !widgetId) {
     if (env.NODE_ENV !== "production") {
-      console.warn("[SMS] MSG91 not configured — skipping SMS. OTP:", code);
-    } else {
-      console.warn("[SMS] MSG91 not configured — skipping SMS send.");
+      console.warn("[SMS] MSG91 widget not configured — skipping SMS.");
     }
-    return false;
+    return { sent: false };
   }
 
-  const sandbox = env.MSG91_SANDBOX === "1";
-  if (sandbox) {
-    console.warn("[SMS] MSG91 sandbox mode — OTP will not be delivered to phone:", code);
+  if (env.MSG91_SANDBOX === "1") {
+    console.warn("[SMS] MSG91 sandbox mode — OTP not delivered to phone.");
+    return { sent: true, reqId: `sandbox_${Date.now()}` };
   }
 
   try {
-    const res = await fetch("https://api.msg91.com/api/v5/otp", {
-      method: "POST",
-      headers: {
-        authkey: apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        template_id: templateId,
-        mobile:      toMsg91Mobile(to),
-        otp:         code,
-        sender:      senderId,
-        ...(sandbox ? { sandbox: "1" } : {}),
-      }),
-    });
+    const res = await fetch(
+      "https://control.msg91.com/api/v5/widget/create-process-otp",
+      {
+        method: "POST",
+        headers: { authkey: apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ widgetId, identifier: toMsg91Mobile(to) }),
+      }
+    );
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("[SMS] MSG91 OTP send failed:", res.status, err.slice(0, 200));
-      return false;
+      console.error("[SMS] MSG91 widget send failed:", res.status, err.slice(0, 200));
+      return { sent: false };
     }
 
-    const data = await res.json() as { type?: string; message?: string };
+    const data = await res.json() as { type?: string; message?: string; reqId?: string };
     if (data.type === "error") {
-      console.error("[SMS] MSG91 error:", data.message);
-      return false;
+      console.error("[SMS] MSG91 widget error:", data.message);
+      return { sent: false };
     }
 
-    return true;
+    return { sent: true, reqId: data.reqId };
   } catch (err) {
-    console.error("[SMS] MSG91 unexpected error:", err);
+    console.error("[SMS] MSG91 widget unexpected error:", err);
+    return { sent: false };
+  }
+}
+
+export async function verifyMSG91WidgetOTP(
+  phone: string,
+  reqId: string,
+  otp: string
+): Promise<boolean> {
+  const apiKey   = env.MSG91_API_KEY;
+  const widgetId = env.MSG91_WIDGET_ID;
+
+  if (!apiKey || !widgetId) return false;
+
+  // In sandbox mode MSG91 accepts any 6-digit code.
+  if (env.MSG91_SANDBOX === "1") return /^\d{6}$/.test(otp);
+
+  try {
+    const res = await fetch(
+      "https://control.msg91.com/api/v5/widget/verify-process-otp",
+      {
+        method: "POST",
+        headers: { authkey: apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          widgetId,
+          identifier: toMsg91Mobile(phone),
+          otp,
+          reqId,
+        }),
+      }
+    );
+
+    if (!res.ok) return false;
+    const data = await res.json() as { type?: string };
+    return data.type === "success";
+  } catch (err) {
+    console.error("[SMS] MSG91 widget verify error:", err);
     return false;
   }
 }

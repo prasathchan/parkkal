@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { verificationTokens } from "@/db/schema";
+import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { verifyOTP } from "@/lib/otp";
+import { verifyMSG91WidgetOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
-const OTP_VERIFY_RATE_LIMIT = { limit: 10, windowMs: 60_000 }; // brute-force guard on OTP guessing
+const OTP_VERIFY_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 
 const verifySchema = z.object({
   code: z.string().length(6).regex(/^\d+$/, "OTP must be 6 digits"),
@@ -30,8 +31,15 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     const now = Date.now();
 
-    // Fetch the latest valid PHONE_OTP token; bcrypt.compare checks the code
-    const [token] = await db
+    // Fetch user's phone (needed for MSG91 widget verify call)
+    const [user] = await db
+      .select({ phone: users.phone })
+      .from(users)
+      .where(eq(users.id, session.userId));
+
+    // Fetch ALL valid PHONE_OTP tokens — there may be one for SMS (msg91:) and
+    // one for email (bcrypt hash). Accept whichever the user submits.
+    const tokens = await db
       .select()
       .from(verificationTokens)
       .where(
@@ -43,16 +51,40 @@ export async function POST(request: NextRequest) {
         )
       );
 
-    if (!token || !(await verifyOTP(code, token.code))) {
+    if (tokens.length === 0) {
+      log.security("Phone OTP verification failed: no valid token found", { userId: session.userId });
+      return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
+    }
+
+    let matched = false;
+    for (const token of tokens) {
+      if (token.code.startsWith("msg91:") && user?.phone) {
+        // SMS path: verify against MSG91 Widget API
+        const reqId = token.code.slice(6);
+        matched = await verifyMSG91WidgetOTP(user.phone, reqId, code);
+      } else {
+        // Email path: verify against local bcrypt hash
+        matched = await verifyOTP(code, token.code);
+      }
+      if (matched) break;
+    }
+
+    if (!matched) {
       log.security("Phone OTP verification failed: invalid or expired", { userId: session.userId });
       return NextResponse.json({ error: "Invalid or expired OTP" }, { status: 400 });
     }
 
-    // Mark token as used
+    // Mark all tokens for this user+type as used
     await db
       .update(verificationTokens)
       .set({ used: 1 })
-      .where(eq(verificationTokens.id, token.id));
+      .where(
+        and(
+          eq(verificationTokens.userId, session.userId),
+          eq(verificationTokens.type, "PHONE_OTP"),
+          eq(verificationTokens.used, 0)
+        )
+      );
 
     log.info("Phone OTP verified", { userId: session.userId });
     return NextResponse.json({ verified: true });

@@ -6,7 +6,7 @@ import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { sendPhoneVerificationEmail } from "@/lib/email";
-import { sendSMSOTP } from "@/lib/sms";
+import { sendMSG91WidgetOTP } from "@/lib/sms";
 
 // Activation window: a STAFF_INVITE token must have been used within this many ms
 // for the userId to be considered "in activation flow" and allowed to set their phone.
@@ -78,25 +78,27 @@ export async function POST(request: NextRequest) {
     await db.delete(verificationTokens)
       .where(and(eq(verificationTokens.userId, userId), eq(verificationTokens.type, "PHONE_OTP")));
 
+    const expiresAt = now + 15 * 60 * 1000;
+    const mkId = () => `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
+    // SMS: MSG91 Widget generates and delivers the OTP
+    const { sent: smsSent, reqId } = await sendMSG91WidgetOTP(phoneDigits);
+    if (smsSent && reqId) {
+      await db.insert(verificationTokens).values({
+        id: mkId(), userId, type: "PHONE_OTP",
+        code: `msg91:${reqId}`, expiresAt, used: 0, createdAt: now,
+      });
+    }
+
+    // Email: our own OTP as fallback
     const buf = new Uint32Array(1);
     crypto.getRandomValues(buf);
     const otp = String(100000 + (buf[0] % 900000));
     const otpHash = await hashOTP(otp);
-    const expiresAt = now + 15 * 60 * 1000;
-    const tokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-
     await db.insert(verificationTokens).values({
-      id: tokenId,
-      userId,
-      type: "PHONE_OTP",
-      code: otpHash,
-      expiresAt,
-      used: 0,
-      createdAt: now,
+      id: mkId(), userId, type: "PHONE_OTP",
+      code: otpHash, expiresAt, used: 0, createdAt: now,
     });
-
-    // Try SMS first; email is always sent as backup
-    const smsSent = await sendSMSOTP(phoneDigits, otp);
 
     try {
       await sendPhoneVerificationEmail(user.email, user.name ?? "there", otp);
