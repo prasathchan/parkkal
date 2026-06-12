@@ -18,7 +18,6 @@ const VERIFY_USER_RATE_LIMIT = { limit: 20, windowMs: 15 * 60 * 1000 };
 const verifySchema = z.object({
   userId: z.string(),
   emailCode: z.string().length(6),
-  phoneCode: z.string().length(6),
 });
 
 const COOKIE_OPTS = {
@@ -42,7 +41,7 @@ export async function POST(request: NextRequest) {
   const log = logger.forRoute("POST /api/auth/verify");
   try {
     const body = await request.json();
-    const { userId, emailCode, phoneCode } = verifySchema.parse(body);
+    const { userId, emailCode } = verifySchema.parse(body);
 
     const userRl = await checkRateLimit(`verify:user:${userId}`, VERIFY_USER_RATE_LIMIT);
     if (!userRl.allowed) {
@@ -75,34 +74,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email code" }, { status: 400 });
     }
 
-    // Find valid PHONE token — fetch by userId+type only; bcrypt.compare checks the code
-    const phoneTokens = await db
-      .select()
-      .from(verificationTokens)
-      .where(
-        and(
-          eq(verificationTokens.userId, userId),
-          eq(verificationTokens.type, "PHONE"),
-          eq(verificationTokens.used, 0),
-          gt(verificationTokens.expiresAt, now)
-        )
-      );
-
-    const phoneToken = phoneTokens[0];
-    if (!phoneToken || !(await verifyOTP(phoneCode, phoneToken.code))) {
-      log.security("Signup verification failed: invalid phone code", { userId });
-      return NextResponse.json({ error: "Invalid phone code" }, { status: 400 });
-    }
-
-    // Mark both tokens as used
+    // Mark token as used
     await db
       .update(verificationTokens)
       .set({ used: 1 })
       .where(eq(verificationTokens.id, emailToken.id));
-    await db
-      .update(verificationTokens)
-      .set({ used: 1 })
-      .where(eq(verificationTokens.id, phoneToken.id));
 
     // Activate user
     await db

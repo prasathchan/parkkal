@@ -3,7 +3,7 @@ import { eq, and, gte, count } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
-import { sendSMSOTP } from "@/lib/sms";
+import { sendPhoneVerificationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -28,9 +28,8 @@ export async function POST(request: NextRequest) {
 
   const db = getDb();
 
-  // Fetch the user's phone number from the DB (don't trust the JWT)
   const [user] = await db
-    .select({ phone: users.phone, name: users.name })
+    .select({ phone: users.phone, email: users.email, name: users.name })
     .from(users)
     .where(eq(users.id, session.userId));
 
@@ -39,6 +38,10 @@ export async function POST(request: NextRequest) {
       { error: "No phone number on file. Update your profile first." },
       { status: 400 }
     );
+  }
+
+  if (!user.email) {
+    return NextResponse.json({ error: "No email address on file." }, { status: 400 });
   }
 
   // Rate-limit: max 3 OTPs per hour per userId
@@ -79,18 +82,16 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    await sendSMSOTP(user.phone, code);
+    await sendPhoneVerificationEmail(user.email, user.name, code);
   } catch (err) {
-    log.warn("SMS send failed for phone OTP", { error: String(err) });
-    // Token is stored; caller can retry. Don't expose SMS provider errors.
+    log.warn("Email send failed for phone OTP", { error: String(err) });
   }
 
-  // Return a masked phone for display only
-  const masked =
-    user.phone.length > 4
-      ? "*".repeat(user.phone.length - 4) + user.phone.slice(-4)
-      : user.phone;
+  const maskedEmail = (() => {
+    const [local, domain] = user.email.split("@");
+    return `${local.slice(0, 2)}${"*".repeat(Math.max(local.length - 2, 3))}@${domain}`;
+  })();
 
-  log.info("Phone OTP requested", { userId: session.userId });
-  return NextResponse.json({ sent: true, maskedPhone: masked });
+  log.info("Phone OTP sent via email", { userId: session.userId });
+  return NextResponse.json({ sent: true, maskedEmail });
 }

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import env from "@/lib/env";
 import { eq, and, gt } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { verificationTokens, users } from "@/db/schema";
 import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { sendPhoneVerificationEmail } from "@/lib/email";
 
 // Activation window: a STAFF_INVITE token must have been used within this many ms
 // for the userId to be considered "in activation flow" and allowed to set their phone.
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     //   Mode 1 — isActive=0 (not yet activated)
     //   Mode 3 — isActive=1, isVerified=0 (HR active, devices unverified)
     const [user] = await db
-      .select({ id: users.id, isActive: users.isActive, isVerified: users.isVerified })
+      .select({ id: users.id, email: users.email, name: users.name, isActive: users.isActive, isVerified: users.isVerified })
       .from(users)
       .where(eq(users.id, userId));
     if (!user) {
@@ -104,43 +104,14 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    const sid = env.TWILIO_ACCOUNT_SID;
-    const authToken = env.TWILIO_AUTH_TOKEN;
-    const from = env.TWILIO_PHONE_NUMBER;
-
-    if (!sid || !authToken || !from) {
-      if (process.env.NODE_ENV !== "production") {
-        log.warn("Twilio not configured — skipping SMS send in dev", { userId });
-      } else {
-        log.warn("Twilio not configured — skipping SMS send", {});
-      }
-      return NextResponse.json({ sent: true });
+    try {
+      await sendPhoneVerificationEmail(user.email, user.name ?? "there", otp);
+    } catch (emailErr) {
+      log.error("Email send failed for phone OTP", emailErr, { userId });
+      return NextResponse.json({ error: "Failed to send verification email. Please try again." }, { status: 500 });
     }
 
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
-    const credentials = Buffer.from(`${sid}:${authToken}`).toString("base64");
-    const smsBody = new URLSearchParams({
-      From: from,
-      To: e164,
-      Body: `Your verification code: ${otp}. Valid for 15 minutes. Do not share this.`,
-    });
-
-    const smsRes = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: smsBody.toString(),
-    });
-
-    if (!smsRes.ok) {
-      const err = await smsRes.text();
-      log.error("Twilio SMS send failed", new Error(err), { userId });
-      return NextResponse.json({ error: "Failed to send SMS. Please try again." }, { status: 500 });
-    }
-
-    log.info("Phone OTP sent via Twilio", { userId });
+    log.info("Phone OTP sent via email", { userId });
     return NextResponse.json({ sent: true });
   } catch (error) {
     log.error("Request phone OTP error", error);

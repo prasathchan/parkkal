@@ -5,8 +5,7 @@ import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { hashOTP } from "@/lib/otp";
-import { sendEmailOTP } from "@/lib/email";
-import { sendSMSOTP } from "@/lib/sms";
+import { sendEmailOTP, sendPhoneVerificationEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 
 const resendSchema = z.object({
@@ -104,14 +103,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
       }
     } else {
-      if (!user.phone) {
-        return NextResponse.json({ error: "No phone number on file" }, { status: 400 });
-      }
       try {
-        await sendSMSOTP(user.phone, code);
+        await sendPhoneVerificationEmail(user.email, user.name, code);
       } catch (sendErr) {
-        log.warn("SMS send failed for OTP resend", { userId, error: String(sendErr) });
-        return NextResponse.json({ error: "Failed to send SMS. Check your phone number or try again shortly." }, { status: 502 });
+        log.warn("Email send failed for phone OTP resend", { userId, error: String(sendErr) });
+        return NextResponse.json({ error: "Failed to send email. Please try again shortly." }, { status: 502 });
       }
     }
 

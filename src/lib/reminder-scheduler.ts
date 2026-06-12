@@ -18,19 +18,13 @@
  *
  *   Slots in the past are skipped silently (e.g. booking a same-day appointment).
  *
- * ─── CHANNELS (all three sent per slot when contact info is available) ────────
+ * ─── CHANNELS ────────────────────────────────────────────────────────────────
  *
- *   SMS       — sent if patient has a phone number
- *   WHATSAPP  — sent if patient has a phone number (Twilio trial: verified numbers only)
- *   EMAIL     — sent if patient has an email address (via Resend, no paid account needed)
+ *   EMAIL — sent if patient has an email address (via Resend)
  *
- *   If a patient has both phone and email, they receive all three channels per slot.
- *   If only phone → SMS + WhatsApp. If only email → EMAIL only.
- *   If neither → no reminders scheduled.
+ *   If a patient has no email → no reminders scheduled.
  *
- *   Delivery gracefully skips channels whose env vars are missing:
- *     - No TWILIO_*  → SMS/WhatsApp rows inserted but silently skipped at send time
- *     - No RESEND_API_KEY → EMAIL rows inserted but silently skipped at send time
+ *   Delivery gracefully skips if RESEND_API_KEY is missing.
  *
  * ─── DEDUPLICATION ON RESCHEDULE ─────────────────────────────────────────────
  *
@@ -86,8 +80,7 @@ function toUnixMs(date: string, time: string): number {
  * still in the future. Safe to call multiple times (e.g. after reschedule).
  *
  * Channels scheduled per patient:
- *   - Has phone  → SMS + WHATSAPP
- *   - Has email  → EMAIL
+ *   - Has email → EMAIL
  */
 export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): Promise<void> {
   const apptMs = toUnixMs(appt.appointmentDate, appt.appointmentTime);
@@ -99,8 +92,7 @@ export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): P
     .from(patients)
     .where(eq(patients.id, appt.patientId));
 
-  // Nothing to send if patient has neither phone nor email
-  if (!patient?.phone && !patient?.email) return;
+  if (!patient?.email) return;
 
   // ── Fetch clinic name ─────────────────────────────────────────────────────
   const [org] = await db
@@ -119,10 +111,6 @@ export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): P
 
   // ── Determine which channels apply for this patient ───────────────────────
   const channels: NotificationChannel[] = [];
-  if (patient.phone) {
-    channels.push("SMS");
-    channels.push("WHATSAPP");
-  }
   if (patient.email) {
     channels.push("EMAIL");
   }

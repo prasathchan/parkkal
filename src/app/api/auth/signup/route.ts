@@ -8,7 +8,6 @@ import { hashOTP } from "@/lib/otp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { createTrialSubscription } from "@/lib/subscription";
 import { sendEmailOTP } from "@/lib/email";
-import { sendSMSOTP } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 
 const signupSchema = z.object({
@@ -195,42 +194,23 @@ export async function POST(request: NextRequest) {
 
     await createTrialSubscription(db, orgId);
 
-    // Generate OTP codes and hash them before storage.
-    // Plaintext codes are only sent via email/SMS — never persisted.
     const emailCode = generateOTP();
-    const phoneCode = generateOTP();
-    const [emailHash, phoneHash] = await Promise.all([hashOTP(emailCode), hashOTP(phoneCode)]);
+    const emailHash = await hashOTP(emailCode);
     const expiresAt = now + 15 * 60 * 1000; // 15 minutes
 
     const emailTokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-    const phoneTokenId = `vt_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
-    await db.insert(verificationTokens).values([
-      {
-        id: emailTokenId,
-        userId,
-        type: "EMAIL",
-        code: emailHash,
-        expiresAt,
-        used: 0,
-        createdAt: now,
-      },
-      {
-        id: phoneTokenId,
-        userId,
-        type: "PHONE",
-        code: phoneHash,
-        expiresAt,
-        used: 0,
-        createdAt: now,
-      },
-    ]);
+    await db.insert(verificationTokens).values({
+      id: emailTokenId,
+      userId,
+      type: "EMAIL",
+      code: emailHash,
+      expiresAt,
+      used: 0,
+      createdAt: now,
+    });
 
-    // Send OTPs in parallel (don't fail signup if sends fail)
-    await Promise.allSettled([
-      sendEmailOTP(email, name, emailCode),
-      sendSMSOTP(phone, phoneCode),
-    ]);
+    await sendEmailOTP(email, name, emailCode).catch(() => {});
 
     log.info("Signup completed", { userId, orgId });
     return NextResponse.json({ userId });

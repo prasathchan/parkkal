@@ -105,7 +105,7 @@ function VerifyPhoneForm() {
           <>
             <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Verify your phone</h2>
             <p className="text-slate-500 text-sm text-center mb-6">
-              Enter your phone number to receive a one-time verification code.
+              Enter your phone number. A one-time verification code will be sent to your email.
             </p>
             <form onSubmit={handleSendOtp} className="space-y-5">
               <div>
@@ -142,7 +142,7 @@ function VerifyPhoneForm() {
           <>
             <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Enter verification code</h2>
             <p className="text-slate-500 text-sm text-center mb-6">
-              We sent a 6-digit code to <span className="font-medium text-slate-700">{phone}</span>. It expires in 15 minutes.
+              We sent a 6-digit code to your email address. It expires in 15 minutes.
             </p>
             <form onSubmit={handleVerifyOtp} className="space-y-5">
               <div>
