@@ -44,6 +44,9 @@ const envSchema = z.object({
   MSG91_SENDER_ID:       z.string().min(1).optional(),
   MSG91_OTP_TEMPLATE_ID: z.string().min(1).optional(),
   MSG91_SMS_FLOW_ID:     z.string().min(1).optional(),
+  // Set to "1" to use MSG91 sandbox — requests are accepted and logged but not
+  // delivered to carrier. Bypasses DLT requirement. Never set in production.
+  MSG91_SANDBOX:         z.enum(["1", "0"]).optional(),
 
   // ── Database (local dev only — D1 binding used in Workers) ───────────────
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL").optional(),

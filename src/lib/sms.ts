@@ -50,6 +50,11 @@ export async function sendSMSOTP(to: string, code: string): Promise<boolean> {
     return false;
   }
 
+  const sandbox = env.MSG91_SANDBOX === "1";
+  if (sandbox) {
+    console.warn("[SMS] MSG91 sandbox mode — OTP will not be delivered to phone:", code);
+  }
+
   try {
     const res = await fetch("https://api.msg91.com/api/v5/otp", {
       method: "POST",
@@ -62,6 +67,7 @@ export async function sendSMSOTP(to: string, code: string): Promise<boolean> {
         mobile:      toMsg91Mobile(to),
         otp:         code,
         sender:      senderId,
+        ...(sandbox ? { sandbox: "1" } : {}),
       }),
     });
 
