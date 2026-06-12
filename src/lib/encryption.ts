@@ -37,12 +37,12 @@ let _keyMissingWarned = false;
 async function importKey(): Promise<CryptoKey | null> {
   const hex = env.ENCRYPTION_KEY;
   if (!hex || hex.length !== 64) {
-    if (env.NODE_ENV === "production") {
-      throw new Error("ENCRYPTION_KEY is not set or invalid — cannot store PII in production");
+    if (env.NODE_ENV !== "test") {
+      throw new Error("ENCRYPTION_KEY is not set or invalid — refusing to store PII without encryption");
     }
     if (!_keyMissingWarned) {
       _keyMissingWarned = true;
-      console.error("[SECURITY] ENCRYPTION_KEY is not set or invalid. PAN/Aadhaar fields will be stored in plaintext.");
+      console.warn("[SECURITY] ENCRYPTION_KEY not set — PII encryption disabled (test mode only)");
     }
     return null;
   }

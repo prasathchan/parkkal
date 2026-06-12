@@ -21,7 +21,7 @@ const LIMIT = 50;
 
 export const GET = withRoute(
   { route: "GET /api/admin/app-logs", rateLimit: RATE_LIMITS.READ, adminOnly: true },
-  async (req, { db }) => {
+  async (req, { session, db }) => {
     const url    = new URL(req.url);
     const offset = Math.max(0, parseInt(url.searchParams.get("offset") ?? "0", 10) || 0);
     const level  = url.searchParams.get("level") ?? "";
@@ -31,7 +31,7 @@ export const GET = withRoute(
     const until  = url.searchParams.get("until")  ? parseInt(url.searchParams.get("until")!,  10) : null;
     const sortDir = url.searchParams.get("sort") === "asc" ? "asc" : "desc";
 
-    const conditions = [];
+    const conditions = [eq(appLogs.organizationId, session.orgId)];
     if (level)  conditions.push(eq(appLogs.level,   level));
     if (route)  conditions.push(like(appLogs.route,   `%${route}%`));
     if (search) conditions.push(like(appLogs.message, `%${search}%`));
