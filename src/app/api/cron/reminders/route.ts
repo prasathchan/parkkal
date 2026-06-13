@@ -6,12 +6,13 @@
  *
  * ─── TRIGGER ─────────────────────────────────────────────────────────────────
  *
- *   Configured in wrangler.jsonc:
+ *   Configured in wrangler.toml:
  *     [triggers]
  *     crons = ["*\/15 * * * *"]
  *
- *   Cloudflare delivers cron triggers as a GET request to this route
- *   with the header  x-cloudflare-cron: <cron-expression>
+ *   Cloudflare delivers the cron tick to the worker's scheduled() handler
+ *   (worker.ts), which dispatches a GET to this route with the header
+ *   x-cloudflare-cron: <cron-expression>
  *
  * ─── SECURITY ────────────────────────────────────────────────────────────────
  *

@@ -7,6 +7,13 @@ on:
     - cron: "*/30 * * * *"
   workflow_dispatch:
 
+# The production Worker's direct workers.dev hostname (no Cloudflare proxy/WAF).
+# We MUST hit this rather than the proxied custom domain: GitHub Actions runners
+# use datacenter IPs that the proxy/WAF blocks, which made every scheduled run
+# fail with a non-200. This mirrors the deploy smoke test (see deploy.yml).
+env:
+  WORKERS_URL: "https://parkkal-dental.chandran-aathi.workers.dev"
+
 jobs:
   ping:
     name: Production health ping
@@ -16,20 +23,9 @@ jobs:
       contents: none   # health check needs no repo access
 
     steps:
-      # Skip cleanly when APP_URL is not configured rather than failing.
-      # This keeps the workflow green in development forks that haven't deployed.
-      - name: Skip if APP_URL not configured
-        if: ${{ env.APP_URL == '' }}
-        run: |
-          echo "APP_URL secret not set — skipping health check."
-          echo "Configure APP_URL (Settings → Secrets → Actions) to enable monitoring."
-        env:
-          APP_URL: ${{ secrets.APP_URL }}
-
       - name: Ping /api/cron/health
-        if: ${{ env.APP_URL != '' }}
         run: |
-          URL="${APP_URL}/api/cron/health"
+          URL="${WORKERS_URL}/api/cron/health"
           echo "Pinging: $URL"
           STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" "$URL" || echo "000")
           echo "HTTP status: $STATUS"
@@ -39,14 +35,10 @@ jobs:
             exit 1
           fi
           echo "Health check passed."
-        env:
-          APP_URL: ${{ secrets.APP_URL }}
 
       - name: Health summary
-        if: ${{ env.APP_URL != '' && always() }}
+        if: always()
         run: |
           echo "### Health Check" >> $GITHUB_STEP_SUMMARY
-          echo "Checked: \`${APP_URL}/api/cron/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "Checked: \`${WORKERS_URL}/api/cron/health\`" >> $GITHUB_STEP_SUMMARY
           echo "Time: $(date -u)" >> $GITHUB_STEP_SUMMARY
-        env:
-          APP_URL: ${{ secrets.APP_URL }}

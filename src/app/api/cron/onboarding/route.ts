@@ -5,24 +5,23 @@
  * Runs daily at 02:00 UTC via Cloudflare Workers Cron Triggers.
  *
  * ─── SECURITY ─────────────────────────────────────────────────────────────────
- *   Requires  Authorization: Bearer <CRON_SECRET>
- *   OR Cloudflare cron delivery (x-cloudflare-cron header present).
+ *   Authenticated via verifyCronAuth (see src/lib/cron-auth.ts):
+ *     - Cloudflare's internal cron self-fetch (x-cloudflare-cron present AND
+ *       cf-connecting-ip absent), OR
+ *     - Authorization: Bearer <CRON_SECRET> for manual/ops invocation.
+ *   NOTE: x-cloudflare-cron alone is NOT trusted — it is spoofable by any public
+ *   client, so the cf-connecting-ip discriminator is required.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { processOnboardingEmails } from "@/lib/onboarding-emails";
-import env from "@/lib/env";
+import { verifyCronAuth } from "@/lib/cron-auth";
 
 export async function GET(request: NextRequest) {
-  const isCron = request.headers.has("x-cloudflare-cron");
-  if (!isCron) {
-    const auth = request.headers.get("authorization") ?? "";
-    if (!env.CRON_SECRET || auth !== `Bearer ${env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  }
+  const denied = verifyCronAuth(request);
+  if (denied) return denied;
 
   const log = logger.forRoute("GET /api/cron/onboarding");
   const db = getDb();
