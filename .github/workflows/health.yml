@@ -36,6 +36,41 @@ jobs:
           fi
           echo "Health check passed."
 
+      # Email a confirmation on success (GitHub already emails on failure).
+      # Requires two repo secrets; skips cleanly if either is unset so forks
+      # and unconfigured environments stay green:
+      #   RESEND_API_KEY     — a valid Resend API key (re_...)
+      #   HEALTH_NOTIFY_EMAIL — recipient address for the success email
+      # Sender uses the verified parkkal.com domain (same as the app).
+      - name: Notify on success
+        if: success()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          HEALTH_NOTIFY_EMAIL: ${{ secrets.HEALTH_NOTIFY_EMAIL }}
+        run: |
+          if [ -z "$RESEND_API_KEY" ] || [ -z "$HEALTH_NOTIFY_EMAIL" ]; then
+            echo "RESEND_API_KEY or HEALTH_NOTIFY_EMAIL not set — skipping success email."
+            exit 0
+          fi
+          NOW="$(date -u '+%Y-%m-%d %H:%M UTC')"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          HTML="<div style=\"font-family:system-ui,sans-serif;max-width:560px\"><h2 style=\"color:#0f766e\">Health Check: PASSED ✅</h2><p>Production health ping succeeded.</p><p style=\"font-size:14px;color:#555\">Endpoint: ${WORKERS_URL}/api/cron/health<br>Commit: ${GITHUB_SHA}<br>Time: ${NOW}<br><a href=\"${RUN_URL}\">View workflow run</a></p></div>"
+          # Build JSON safely with jq (escapes the HTML and address correctly).
+          BODY=$(jq -n \
+            --arg to "$HEALTH_NOTIFY_EMAIL" \
+            --arg html "$HTML" \
+            '{from:"Parkkal <noreply@parkkal.com>", to:[$to], subject:"✅ Health Check PASSED — parkkal production", html:$html}')
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://api.resend.com/emails" \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+          echo "Resend HTTP $STATUS"
+          if [ "$STATUS" -ge 300 ]; then
+            echo "::warning::Success email failed to send (Resend HTTP $STATUS) — health itself is OK."
+          else
+            echo "Success email sent to configured recipient."
+          fi
+
       - name: Health summary
         if: always()
         run: |
