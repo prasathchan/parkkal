@@ -285,7 +285,7 @@ const INDIA_DISTRICTS: Record<string, string[]> = {
 };
 
 const INPUT_CLASS =
-  "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "w-full px-3 py-2 border border-pk-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500";
 
 interface AddressFormProps {
   value: AddressValue;
@@ -367,7 +367,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
     <div className="space-y-3">
       {/* Row 1: Country */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Country</label>
+        <label className="block text-xs font-medium text-pk-text-secondary mb-1">Country</label>
         <select
           value={value.country}
           onChange={(e) => handleCountryChange(e.target.value)}
@@ -384,7 +384,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       {/* Row 2: Pincode + State — Pincode first so auto-fill populates State before user picks it */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Pincode / ZIP</label>
+          <label className="block text-xs font-medium text-pk-text-secondary mb-1">Pincode / ZIP</label>
           <div className="relative">
             <input
               type="text"
@@ -395,7 +395,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
               className={`${INPUT_CLASS} pr-8`}
             />
             {pincodeLoading && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 animate-spin text-xs">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-pk-text-muted animate-spin text-xs">
                 &#9696;
               </span>
             )}
@@ -408,7 +408,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
           )}
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">State</label>
+          <label className="block text-xs font-medium text-pk-text-secondary mb-1">State</label>
           {isIndia ? (
             <select
               value={value.state}
@@ -435,7 +435,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
       {/* Row 3: District + City */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">District</label>
+          <label className="block text-xs font-medium text-pk-text-secondary mb-1">District</label>
           <input
             type="text"
             list="district-options"
@@ -451,7 +451,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
           )}
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">City / Area</label>
+          <label className="block text-xs font-medium text-pk-text-secondary mb-1">City / Area</label>
           <input
             type="text"
             value={value.city}
@@ -464,13 +464,13 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
 
       {/* Row 4: Full address textarea */}
       <div>
-        <label className="block text-xs font-medium text-slate-700 mb-1">Street Address</label>
+        <label className="block text-xs font-medium text-pk-text-secondary mb-1">Street Address</label>
         <textarea
           value={value.fullAddress}
           onChange={(e) => update("fullAddress", e.target.value)}
           rows={2}
           placeholder="Door no., street, landmark..."
-          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3 py-2 border border-pk-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
         />
       </div>
     </div>

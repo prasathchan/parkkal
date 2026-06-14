@@ -111,12 +111,12 @@ export default function PatientDetailPage() {
     { key: "emergency", label: "Emergency" },
   ];
 
-  if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
   if (!patient) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
-        <p className="text-slate-500">Patient not found.</p>
-        <Link href="/dashboard/patients" className="text-blue-600 hover:underline text-sm">Back to Patients</Link>
+        <p className="text-pk-text-muted">Patient not found.</p>
+        <Link href="/dashboard/patients" className="text-pk-teal-600 hover:underline text-sm">Back to Patients</Link>
       </div>
     );
   }
@@ -127,23 +127,23 @@ export default function PatientDetailPage() {
 
       <main id="main-content" className="flex-1 p-6 space-y-6">
         {balance && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-xl border border-pk-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900">Financial Summary</h3>
-              <Link href={`/dashboard/visits/new?patientId=${patient.id}`} className="inline-flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-700 transition">
+              <h3 className="font-semibold text-pk-text">Financial Summary</h3>
+              <Link href={`/dashboard/visits/new?patientId=${patient.id}`} className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pk-teal-700 transition">
                 + New Visit
               </Link>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {[
-                { label: "Total Billed", value: formatCurrency(balance.totalBilled), color: "text-slate-900" },
+                { label: "Total Billed", value: formatCurrency(balance.totalBilled), color: "text-pk-text" },
                 { label: "Total Paid", value: formatCurrency(balance.totalPaid), color: "text-green-600" },
-                { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-red-600" : "text-slate-400" },
-                { label: "Total Visits", value: String(balance.visitCount), color: "text-slate-900" },
-                { label: "Last Visit", value: balance.lastVisit || "—", color: "text-slate-700", small: true },
+                { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-red-600" : "text-pk-text-muted" },
+                { label: "Total Visits", value: String(balance.visitCount), color: "text-pk-text" },
+                { label: "Last Visit", value: balance.lastVisit || "—", color: "text-pk-text-secondary", small: true },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <p className="text-xs text-slate-400 mb-1">{stat.label}</p>
+                  <p className="text-xs text-pk-text-muted mb-1">{stat.label}</p>
                   <p className={`${stat.small ? "text-sm" : "text-lg"} font-bold ${stat.color}`}>{stat.value}</p>
                 </div>
               ))}
@@ -154,10 +154,10 @@ export default function PatientDetailPage() {
         <PatientDetailsCard patient={patient} onErase={handleErase} />
 
         <Card>
-          <div className="border-b border-slate-100 px-6">
+          <div className="border-b border-pk-border px-6">
             <div className="flex gap-1">
               {tabs.map((t) => (
-                <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
+                <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>
                   {t.label}
                 </button>
               ))}

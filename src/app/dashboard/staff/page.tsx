@@ -25,11 +25,11 @@ const SLUG_TO_SYSTEM_ROLE: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: "bg-red-100 text-red-700",
-  DOCTOR: "bg-purple-100 text-purple-700",
+  DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
   NURSE: "bg-pink-100 text-pink-700",
-  RECEPTIONIST: "bg-blue-100 text-blue-700",
+  RECEPTIONIST: "bg-pk-teal-100 text-pk-teal-700",
   ATTENDANT: "bg-orange-100 text-orange-700",
-  HELPER: "bg-gray-100 text-gray-700",
+  HELPER: "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
 export default function StaffPage() {
@@ -179,19 +179,19 @@ export default function StaffPage() {
       <main id="main-content" className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Organization Members</h2>
-            <p className="text-sm text-slate-500">{members.length} total staff</p>
+            <h2 className="text-lg font-semibold text-pk-text">Organization Members</h2>
+            <p className="text-sm text-pk-text-muted">{members.length} total staff</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-pk-teal-600 hover:bg-pk-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
           >
             + Add Staff
           </button>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-slate-500">Loading staff...</div>
+          <div className="text-center py-12 text-pk-text-muted">Loading staff...</div>
         ) : members.length === 0 ? (
           <EmptyState
             title="No staff members yet"
@@ -199,26 +199,26 @@ export default function StaffPage() {
             action={{ label: "Add Staff", onClick: () => setShowModal(true) }}
           />
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Name</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Role</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Salary Type</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Salary Amount</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Joined</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Actions</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Role</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Salary Type</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Salary Amount</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Joined</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-pk-border">
                 {members.map((m) => (
-                  <tr key={m.memberId} className="hover:bg-slate-50">
+                  <tr key={m.memberId} className="hover:bg-pk-surface-raised">
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-slate-900">{m.name}</p>
-                        <p className="text-xs text-slate-500">{m.email}</p>
+                        <p className="font-medium text-pk-text">{m.name}</p>
+                        <p className="text-xs text-pk-text-muted">{m.email}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -230,26 +230,26 @@ export default function StaffPage() {
                           {m.orgRoleName}
                         </span>
                       ) : (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] || "bg-gray-100 text-gray-700"}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[m.role] || "bg-pk-surface-sunken text-pk-text-secondary"}`}>
                           {m.role}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{m.salaryType}</td>
-                    <td className="px-4 py-3 text-slate-700">
+                    <td className="px-4 py-3 text-pk-text-secondary">{m.salaryType}</td>
+                    <td className="px-4 py-3 text-pk-text-secondary">
                       {m.salaryType === "PER_APPOINTMENT"
                         ? `₹${(m.salaryAmount ?? 0).toLocaleString("en-IN")}/appt`
                         : `₹${(m.salaryAmount ?? 0).toLocaleString("en-IN")}/mo`}
                     </td>
-                    <td className="px-4 py-3 text-slate-500">{m.joinedAt || "—"}</td>
+                    <td className="px-4 py-3 text-pk-text-muted">{m.joinedAt || "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-green-100 text-green-700" : m.isVerified === 0 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-500"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-green-100 text-green-700" : m.isVerified === 0 ? "bg-yellow-100 text-yellow-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                         {m.isActive ? "Active" : m.isVerified === 0 ? "Pending Setup" : "Inactive"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Link href={`/dashboard/staff/${m.userId}`} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                        <Link href={`/dashboard/staff/${m.userId}`} className="text-pk-teal-600 hover:text-pk-teal-800 text-xs font-medium">
                           View
                         </Link>
                         {m.role === "ADMIN" && (
@@ -257,9 +257,9 @@ export default function StaffPage() {
                             type="button"
                             disabled={togglingDoctor === m.memberId}
                             onClick={() => toggleDoctor(m)}
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${m.isDoctor === 1 ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100" : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"}`}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border transition-colors disabled:opacity-50 ${m.isDoctor === 1 ? "bg-pk-teal-50 border-pk-teal-200 text-pk-teal-700 hover:bg-pk-teal-100" : "bg-pk-surface-raised border-pk-border text-pk-text-muted hover:bg-pk-surface-sunken"}`}
                           >
-                            <span className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${m.isDoctor === 1 ? "bg-blue-500" : "bg-slate-300"}`}>
+                            <span className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${m.isDoctor === 1 ? "bg-pk-teal-500" : "bg-pk-neutral-300"}`}>
                               <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${m.isDoctor === 1 ? "translate-x-3.5" : "translate-x-0.5"}`} />
                             </span>
                             {togglingDoctor === m.memberId ? "Saving…" : m.isDoctor === 1 ? "Acts as Doctor" : "Can act as Doctor?"}
@@ -279,9 +279,9 @@ export default function StaffPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-slate-900">Add Staff Member</h2>
-              <button onClick={() => setShowModal(false)} aria-label="Close modal" className="text-slate-400 hover:text-slate-600">
+            <div className="p-6 border-b border-pk-border flex justify-between items-center">
+              <h2 className="text-lg font-bold text-pk-text">Add Staff Member</h2>
+              <button onClick={() => setShowModal(false)} aria-label="Close modal" className="text-pk-text-muted hover:text-pk-text-secondary">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -290,7 +290,7 @@ export default function StaffPage() {
             <form onSubmit={handleAddStaff} className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Email *</label>
                   <input
                     type="text"
                     value={form.email}
@@ -298,48 +298,48 @@ export default function StaffPage() {
                     onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
                   {touched.email && fieldErrors.email && <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
-                  <p className="text-xs text-slate-500 mt-1">If user exists, their profile will be used. Otherwise fill the fields below.</p>
+                  <p className="text-xs text-pk-text-muted mt-1">If user exists, their profile will be used. Otherwise fill the fields below.</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Full Name</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={updateForm("name")}
                     placeholder="Dr. Rajan Kumar"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Phone</label>
                   <input
                     type="text"
                     value={form.phone}
                     onChange={updateForm("phone")}
                     onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
                   {touched.phone && fieldErrors.phone && <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Date of Birth</label>
                   <input
                     type="date"
                     value={form.dateOfBirth}
                     onChange={updateForm("dateOfBirth")}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Gender</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Gender</label>
                   <select
                     value={form.gender}
                     onChange={updateForm("gender")}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">Select</option>
                     <option value="MALE">Male</option>
@@ -348,19 +348,19 @@ export default function StaffPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Blood Group</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Blood Group</label>
                   <BloodGroupSelect
                     value={form.bloodGroup}
                     onChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Role *</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Role *</label>
                   <select
                     value={form.orgRoleId}
                     onChange={updateForm("orgRoleId")}
                     required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">— Select Role —</option>
                     {orgRoles.map(r => (
@@ -369,18 +369,18 @@ export default function StaffPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Salary Type</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Salary Type</label>
                   <select
                     value={form.salaryType}
                     onChange={updateForm("salaryType")}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="FIXED">Fixed Monthly</option>
                     <option value="PER_APPOINTMENT">Per Appointment</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                     {form.salaryType === "PER_APPOINTMENT" ? "Amount per Appointment (₹)" : "Monthly Salary (₹)"}
                   </label>
                   <input
@@ -389,23 +389,23 @@ export default function StaffPage() {
                     onChange={updateForm("salaryAmount")}
                     placeholder="0"
                     min="0"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Joined Date</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1">Joined Date</label>
                   <input
                     type="date"
                     value={form.joinedAt}
                     onChange={updateForm("joinedAt")}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
               </div>
 
               {/* Address */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Address</label>
                 <AddressForm value={staffAddress} onChange={setStaffAddress} />
               </div>
 
@@ -414,7 +414,7 @@ export default function StaffPage() {
                 <p className="text-sm font-medium text-yellow-800 mb-3">Documents (Optional)</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">PAN Number</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">PAN Number</label>
                     <input
                       type="text"
                       value={form.panNumber}
@@ -422,12 +422,12 @@ export default function StaffPage() {
                       onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.panNumber && fieldErrors.panNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.panNumber}</p>}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Aadhaar Number</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Aadhaar Number</label>
                     <input
                       type="text"
                       value={form.aadhaarNumber}
@@ -435,7 +435,7 @@ export default function StaffPage() {
                       onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>}
                   </div>
@@ -443,8 +443,8 @@ export default function StaffPage() {
               </div>
 
               {/* Activation Mode */}
-              <div className="border border-slate-200 rounded-lg p-4 space-y-3">
-                <p className="text-sm font-medium text-slate-900">Login &amp; Activation *</p>
+              <div className="border border-pk-border rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-pk-text">Login &amp; Activation *</p>
                 {[
                   {
                     value: "invite_link",
@@ -462,31 +462,31 @@ export default function StaffPage() {
                     desc: "The HR record is created as active (visible in staff, salary). A verification link is sent so the user can confirm their email and phone. Login remains disabled until you enable it.",
                   },
                 ].map((opt) => (
-                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${form.activationMode === opt.value ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${form.activationMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
                     <input
                       type="radio"
                       name="activationMode"
                       value={opt.value}
                       checked={form.activationMode === opt.value}
                       onChange={() => setForm(f => ({ ...f, activationMode: opt.value as typeof f.activationMode, password: "" }))}
-                      className="mt-0.5 accent-blue-600"
+                      className="mt-0.5 accent-pk-teal-600"
                     />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{opt.label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      <p className="text-sm font-medium text-pk-text">{opt.label}</p>
+                      <p className="text-xs text-pk-text-muted mt-0.5">{opt.desc}</p>
                     </div>
                   </label>
                 ))}
                 {form.activationMode === "set_password" && (
                   <div className="mt-2">
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Password *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Password *</label>
                     <input
                       type="password"
                       value={form.password}
                       onChange={updateForm("password")}
                       placeholder="Min. 8 characters"
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                     {form.password && form.password.length < 8 && (
                       <p className="text-xs text-red-600 mt-1">Password must be at least 8 characters</p>
@@ -496,28 +496,28 @@ export default function StaffPage() {
               </div>
 
               {/* Emergency Contact — mandatory for staff */}
-              <div className="border border-slate-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-slate-900 mb-1">Emergency Contact <span className="text-red-500">*</span></p>
-                <p className="text-xs text-slate-500 mb-3">Required before the staff record can be saved.</p>
+              <div className="border border-pk-border rounded-lg p-4">
+                <p className="text-sm font-medium text-pk-text mb-1">Emergency Contact <span className="text-red-500">*</span></p>
+                <p className="text-xs text-pk-text-muted mb-3">Required before the staff record can be saved.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Contact Name *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Contact Name *</label>
                     <input
                       type="text"
                       value={form.ecName}
                       onChange={updateForm("ecName")}
                       required
                       placeholder="Full name"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Relationship *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Relationship *</label>
                     <select
                       value={form.ecRelationship}
                       onChange={updateForm("ecRelationship")}
                       required
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="">Select</option>
                       <option value="Father">Father</option>
@@ -529,7 +529,7 @@ export default function StaffPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Phone *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Phone *</label>
                     <input
                       type="text"
                       value={form.ecPhone}
@@ -537,7 +537,7 @@ export default function StaffPage() {
                       onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-slate-300 focus:ring-blue-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.ecPhone && fieldErrors.ecPhone && <p className="text-xs text-red-600 mt-1">{fieldErrors.ecPhone}</p>}
                   </div>
@@ -551,7 +551,7 @@ export default function StaffPage() {
               )}
 
               {!staffCanSubmit && (
-                <p className="text-xs text-slate-400 pt-1">
+                <p className="text-xs text-pk-text-muted pt-1">
                   {staffHasErrors ? "Fix the errors above to continue." : "Fill in all required fields (*) to add staff."}
                 </p>
               )}
@@ -561,7 +561,7 @@ export default function StaffPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
+                    className="bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
                   >
                     {saving ? "Adding..." : "Add Staff"}
                   </button>
@@ -569,7 +569,7 @@ export default function StaffPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium px-6 py-2.5 rounded-lg transition text-sm"
+                  className="border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised font-medium px-6 py-2.5 rounded-lg transition text-sm"
                 >
                   Cancel
                 </button>

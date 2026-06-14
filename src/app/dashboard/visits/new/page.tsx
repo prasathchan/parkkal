@@ -233,7 +233,7 @@ function NewVisitForm() {
 
               {/* Step 1: Patient */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                   Patient <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -241,12 +241,12 @@ function NewVisitForm() {
                   placeholder="Search by name or code..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
                 <select
                   value={selectedPatient?.id || ""}
                   onChange={(e) => handlePatientSelect(e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   size={5}
                 >
                   <option value="">-- Select Patient --</option>
@@ -261,17 +261,17 @@ function NewVisitForm() {
               {/* Step 2: Appointment or Walk-in */}
               {selectedPatient && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-2">
                     Visit Source <span className="text-red-500">*</span>
                   </label>
 
                   {loadingAppointments ? (
-                    <p className="text-sm text-slate-400 py-2">Checking today&apos;s appointments...</p>
+                    <p className="text-sm text-pk-text-muted py-2">Checking today&apos;s appointments...</p>
                   ) : (
                     <div className="space-y-2">
                       {appointments.length > 0 ? (
                         <>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-pk-text-muted">
                             {appointments.length} scheduled appointment
                             {appointments.length > 1 ? "s" : ""} for today:
                           </p>
@@ -282,22 +282,22 @@ function NewVisitForm() {
                               onClick={() => selectAppointment(appt)}
                               className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                                 selectedAppointment?.id === appt.id
-                                  ? "border-blue-500 bg-blue-50"
-                                  : "border-slate-200 hover:border-blue-300 bg-white"
+                                  ? "border-pk-teal-500 bg-pk-teal-50"
+                                  : "border-pk-border hover:border-pk-teal-300 bg-white"
                               }`}
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-900">
+                                  <p className="text-sm font-semibold text-pk-text">
                                     📅 {appt.appointmentTime} —{" "}
                                     {appt.type.charAt(0) + appt.type.slice(1).toLowerCase()}
                                   </p>
                                   {appt.notes && (
-                                    <p className="text-xs text-slate-500 mt-0.5">{appt.notes}</p>
+                                    <p className="text-xs text-pk-text-muted mt-0.5">{appt.notes}</p>
                                   )}
                                 </div>
                                 {selectedAppointment?.id === appt.id && (
-                                  <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">
+                                  <span className="text-xs bg-pk-teal-500 text-white px-2 py-0.5 rounded-full">
                                     Selected
                                   </span>
                                 )}
@@ -306,7 +306,7 @@ function NewVisitForm() {
                           ))}
                         </>
                       ) : (
-                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">
+                        <div className="p-3 rounded-xl bg-pk-surface-raised border border-pk-border text-sm text-pk-text-muted">
                           No scheduled appointments for today.
                         </div>
                       )}
@@ -317,11 +317,11 @@ function NewVisitForm() {
                         className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                           visitSource === "walkin"
                             ? "border-amber-500 bg-amber-50"
-                            : "border-slate-200 hover:border-amber-300 bg-white"
+                            : "border-pk-border hover:border-amber-300 bg-white"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-slate-700">
+                          <span className="text-sm font-semibold text-pk-text-secondary">
                             🚶 Walk-in (no appointment)
                           </span>
                           {visitSource === "walkin" && (
@@ -341,20 +341,20 @@ function NewVisitForm() {
                 <>
                   {currentUserRole === "DOCTOR" ? (
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Doctor</label>
-                      <p className="text-sm px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700">
+                      <label className="block text-sm font-medium text-pk-text-secondary mb-1">Doctor</label>
+                      <p className="text-sm px-3 py-2 bg-pk-surface-raised border border-pk-border rounded-lg text-pk-text-secondary">
                         {formatDoctorName(doctors.find((d) => d.id === currentUserId)?.name ?? "")}
                       </p>
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                         Doctor <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={form.doctorId}
                         onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
-                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                       >
                         <option value="">-- Select Doctor --</option>
                         {doctors.map((d) => (
@@ -367,19 +367,19 @@ function NewVisitForm() {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                       Visit Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
                       value={form.visitDate}
                       onChange={(e) => setForm({ ...form, visitDate: e.target.value })}
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                       Chief Complaint
                     </label>
                     <textarea
@@ -387,12 +387,12 @@ function NewVisitForm() {
                       onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
                       rows={3}
                       placeholder="Patient symptoms / reason for visit..."
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1">
                       Doctor Notes
                     </label>
                     <textarea
@@ -400,7 +400,7 @@ function NewVisitForm() {
                       onChange={(e) => setForm({ ...form, doctorNotes: e.target.value })}
                       rows={3}
                       placeholder="Clinical observations..."
-                      className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                     />
                   </div>
                 </>
@@ -411,7 +411,7 @@ function NewVisitForm() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                    className="flex-1 bg-pk-teal-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
                   >
                     {submitting
                       ? "Creating..."
@@ -423,7 +423,7 @@ function NewVisitForm() {
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>

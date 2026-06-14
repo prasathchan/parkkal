@@ -53,28 +53,28 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+    <div className="rounded-xl border border-pk-border bg-white shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-medium text-slate-900 text-sm">Get your clinic ready</p>
-          <p className="text-xs text-slate-500 mt-0.5">{doneCount} of {total} steps done</p>
+          <p className="font-medium text-pk-text text-sm">Get your clinic ready</p>
+          <p className="text-xs text-pk-text-muted mt-0.5">{doneCount} of {total} steps done</p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="hidden sm:flex items-center gap-2">
-            <div className="h-1.5 w-24 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-1.5 w-24 rounded-full bg-pk-surface-sunken overflow-hidden">
               <div
                 className="h-full rounded-full bg-teal-500 transition-all duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-xs text-slate-400 w-8 text-right">{pct}%</span>
+            <span className="text-xs text-pk-text-muted w-8 text-right">{pct}%</span>
           </div>
           {canDismiss && (
             <button
               type="button"
               onClick={handleDismiss}
               disabled={isPending}
-              className="text-xs text-slate-400 hover:text-slate-600 border border-slate-200 rounded-md px-2.5 py-1 transition disabled:opacity-50"
+              className="text-xs text-pk-text-muted hover:text-pk-text-secondary border border-pk-border rounded-md px-2.5 py-1 transition disabled:opacity-50"
             >
               Dismiss
             </button>
@@ -82,13 +82,13 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
         </div>
       </div>
 
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-pk-border">
         {visibleSteps.map((step, idx) => {
           const isNext = step.id === nextStep?.id;
           return (
             <div
               key={step.id}
-              className={`flex items-center gap-4 px-5 py-3.5 transition ${isNext ? "bg-slate-50" : ""}`}
+              className={`flex items-center gap-4 px-5 py-3.5 transition ${isNext ? "bg-pk-surface-raised" : ""}`}
             >
               <div className="flex-shrink-0">
                 {step.done ? (
@@ -98,18 +98,18 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
                     </svg>
                   </div>
                 ) : (
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${isNext ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-400"}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${isNext ? "bg-pk-teal-100 text-pk-teal-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                     {idx + 1}
                   </div>
                 )}
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className={`text-sm ${step.done ? "line-through text-slate-400" : isNext ? "font-medium text-slate-900" : "text-slate-600"}`}>
+                <p className={`text-sm ${step.done ? "line-through text-pk-text-muted" : isNext ? "font-medium text-pk-text" : "text-pk-text-secondary"}`}>
                   {step.label}
                 </p>
                 {!step.done && (
-                  <p className="text-xs text-slate-400 mt-0.5 truncate">{step.description}</p>
+                  <p className="text-xs text-pk-text-muted mt-0.5 truncate">{step.description}</p>
                 )}
               </div>
 
@@ -118,8 +118,8 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
                   href={step.href}
                   className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-md border transition ${
                     isNext
-                      ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
-                      : "text-slate-500 border-slate-200 hover:bg-slate-50"
+                      ? "bg-pk-teal-600 text-white border-pk-teal-600 hover:bg-pk-teal-700"
+                      : "text-pk-text-muted border-pk-border hover:bg-pk-surface-raised"
                   }`}
                 >
                   {isNext ? "Start" : "Go"}

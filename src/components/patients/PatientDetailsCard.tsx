@@ -51,12 +51,12 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
           <div className="flex items-center justify-between">
             <CardTitle>Patient Details</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-mono bg-pk-teal-100 text-pk-teal-700 px-2.5 py-1 rounded-full">
                 {patient.patientCode}
               </span>
               <Link
                 href={`/dashboard/patients/${patient.id}/edit`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 hover:bg-slate-50 px-2.5 py-1 rounded-lg transition"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-pk-text-secondary border border-pk-border hover:bg-pk-surface-raised px-2.5 py-1 rounded-lg transition"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -69,55 +69,55 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-slate-500 text-xs mb-0.5">Phone</p>
+              <p className="text-pk-text-muted text-xs mb-0.5">Phone</p>
               <p className="font-medium">{patient.phone}</p>
             </div>
             {patient.email && (
               <div>
-                <p className="text-slate-500 text-xs mb-0.5">Email</p>
+                <p className="text-pk-text-muted text-xs mb-0.5">Email</p>
                 <p className="font-medium">{patient.email}</p>
               </div>
             )}
             {patient.dateOfBirth && (
               <div>
-                <p className="text-slate-500 text-xs mb-0.5">Age</p>
+                <p className="text-pk-text-muted text-xs mb-0.5">Age</p>
                 <p className="font-medium">{calculateAge(patient.dateOfBirth)} yrs ({patient.dateOfBirth})</p>
               </div>
             )}
             {patient.gender && (
               <div>
-                <p className="text-slate-500 text-xs mb-0.5">Gender</p>
+                <p className="text-pk-text-muted text-xs mb-0.5">Gender</p>
                 <p className="font-medium">{patient.gender}</p>
               </div>
             )}
             {patient.bloodGroup && (
               <div>
-                <p className="text-slate-500 text-xs mb-0.5">Blood Group</p>
+                <p className="text-pk-text-muted text-xs mb-0.5">Blood Group</p>
                 <p className="font-medium text-red-600">{patient.bloodGroup}</p>
               </div>
             )}
             <div>
-              <p className="text-slate-500 text-xs mb-0.5">Registered</p>
+              <p className="text-pk-text-muted text-xs mb-0.5">Registered</p>
               <p className="font-medium">{formatDate(patient.createdAt)}</p>
             </div>
           </div>
           {patient.address && (
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-slate-500 text-xs mb-0.5">Address</p>
+            <div className="mt-4 pt-4 border-t border-pk-border">
+              <p className="text-pk-text-muted text-xs mb-0.5">Address</p>
               <p className="text-sm">{formatAddressDisplay(parseAddress(patient.address))}</p>
             </div>
           )}
           {patient.medicalHistory && (
             <div className="mt-3">
-              <p className="text-slate-500 text-xs mb-0.5">Medical History</p>
-              <p className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3">{patient.medicalHistory}</p>
+              <p className="text-pk-text-muted text-xs mb-0.5">Medical History</p>
+              <p className="text-sm text-pk-text-secondary bg-pk-surface-raised rounded-lg p-3">{patient.medicalHistory}</p>
             </div>
           )}
           <div className="mt-4 pt-4 border-t border-red-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-red-700">Erase Patient Data</p>
-                <p className="text-xs text-slate-400 mt-0.5">Permanently delete all records for this patient (DPDP Act right to erasure). This cannot be undone.</p>
+                <p className="text-xs text-pk-text-muted mt-0.5">Permanently delete all records for this patient (DPDP Act right to erasure). This cannot be undone.</p>
               </div>
               <button
                 onClick={() => { setShowEraseModal(true); setConfirmText(""); setError(""); }}
@@ -134,17 +134,17 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-md w-full p-6">
             <h2 className="text-base font-bold text-red-700 mb-1">Permanently Erase Patient Data</h2>
-            <p className="text-sm text-slate-600 mb-4">
+            <p className="text-sm text-pk-text-secondary mb-4">
               This will permanently delete <strong>{patient.name}</strong> and all associated visits, prescriptions,
               invoices, appointments, and records. This action is irreversible and will be recorded in the audit log.
             </p>
-            <p className="text-xs text-slate-500 mb-2">Type <strong>ERASE</strong> to confirm:</p>
+            <p className="text-xs text-pk-text-muted mb-2">Type <strong>ERASE</strong> to confirm:</p>
             <input
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="ERASE"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-300"
             />
             {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
             <div className="flex gap-3">
@@ -157,7 +157,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               </button>
               <button
                 onClick={() => setShowEraseModal(false)}
-                className="flex-1 border border-slate-200 text-slate-700 rounded-xl py-2 text-sm font-medium hover:bg-slate-50 transition"
+                className="flex-1 border border-pk-border text-pk-text-secondary rounded-xl py-2 text-sm font-medium hover:bg-pk-surface-raised transition"
               >
                 Cancel
               </button>

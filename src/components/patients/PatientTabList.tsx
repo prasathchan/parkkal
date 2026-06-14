@@ -12,7 +12,7 @@ interface Props {
 
 export function PatientTabList({ tab, tabData }: Props) {
   if (tabData.length === 0) {
-    return <p className="text-center text-slate-400 text-sm py-6">No {tab} found for this patient.</p>;
+    return <p className="text-center text-pk-text-muted text-sm py-6">No {tab} found for this patient.</p>;
   }
 
   return (
@@ -22,13 +22,13 @@ export function PatientTabList({ tab, tabData }: Props) {
         if (tab === "visits") {
           const due = (row.totalAmount as number) - (row.paidAmount as number);
           return (
-            <a key={row.id as string} href={`/dashboard/visits/${row.id}`} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded px-1 transition">
+            <a key={row.id as string} href={`/dashboard/visits/${row.id}`} className="flex items-center justify-between py-2 border-b border-pk-border last:border-0 hover:bg-pk-surface-raised rounded px-1 transition">
               <div>
-                <p className="text-sm font-mono font-medium text-blue-700">{row.visitCode as string}</p>
-                <p className="text-xs text-slate-500">{row.visitDate as string} · {formatDoctorName(row.doctorName as string)}</p>
+                <p className="text-sm font-mono font-medium text-pk-teal-700">{row.visitCode as string}</p>
+                <p className="text-xs text-pk-text-muted">{row.visitDate as string} · {formatDoctorName(row.doctorName as string)}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-semibold text-slate-900">{formatCurrency(row.totalAmount as number)}</p>
+                <p className="text-sm font-semibold text-pk-text">{formatCurrency(row.totalAmount as number)}</p>
                 {due > 0 && <p className="text-xs text-red-500">Due {formatCurrency(due)}</p>}
                 <Badge variant={getStatusBadgeVariant(row.status as string)}>{row.status as string}</Badge>
               </div>
@@ -37,10 +37,10 @@ export function PatientTabList({ tab, tabData }: Props) {
         }
         if (tab === "appointments") {
           return (
-            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-pk-border last:border-0">
               <div>
                 <p className="text-sm font-medium">{row.appointmentDate as string} at {row.appointmentTime as string}</p>
-                <p className="text-xs text-slate-500">{row.type as string}</p>
+                <p className="text-xs text-pk-text-muted">{row.type as string}</p>
               </div>
               <Badge variant={getStatusBadgeVariant(row.status as string)}>{row.status as string}</Badge>
             </div>
@@ -48,25 +48,25 @@ export function PatientTabList({ tab, tabData }: Props) {
         }
         if (tab === "treatments") {
           return (
-            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-pk-border last:border-0">
               <div>
                 <p className="text-sm font-medium">{(row.itemName || row.description) as string}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {(row.category as string) && <span className="text-xs text-slate-400">{row.category as string}</span>}
-                  {((row.toothNumber || row.toothNumbers) as string) && <span className="text-xs text-slate-400">Tooth: {(row.toothNumber || row.toothNumbers) as string}</span>}
-                  {(row.visitDate as string) && <span className="text-xs text-slate-400">{row.visitDate as string}</span>}
+                  {(row.category as string) && <span className="text-xs text-pk-text-muted">{row.category as string}</span>}
+                  {((row.toothNumber || row.toothNumbers) as string) && <span className="text-xs text-pk-text-muted">Tooth: {(row.toothNumber || row.toothNumbers) as string}</span>}
+                  {(row.visitDate as string) && <span className="text-xs text-pk-text-muted">{row.visitDate as string}</span>}
                 </div>
               </div>
-              <p className="text-sm font-semibold text-slate-900">{formatCurrency((row.amount ?? row.cost ?? 0) as number)}</p>
+              <p className="text-sm font-semibold text-pk-text">{formatCurrency((row.amount ?? row.cost ?? 0) as number)}</p>
             </div>
           );
         }
         if (tab === "invoices") {
           return (
-            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+            <div key={row.id as string} className="flex items-center justify-between py-2 border-b border-pk-border last:border-0">
               <div>
                 <p className="text-sm font-medium">Invoice · {formatDate(row.createdAt as number)}</p>
-                <p className="text-xs text-slate-500">Paid: {formatCurrency(row.paidAmount as number)} / {formatCurrency(row.totalAmount as number)}</p>
+                <p className="text-xs text-pk-text-muted">Paid: {formatCurrency(row.paidAmount as number)} / {formatCurrency(row.totalAmount as number)}</p>
               </div>
               <Badge variant={getStatusBadgeVariant(row.status as string)}>{row.status as string}</Badge>
             </div>

@@ -157,7 +157,7 @@ export const POST = withRoute(
     }
 
     // Push to doctor's personal Google/Outlook calendar (fire-and-forget)
-    syncAppointmentToCalendar(db, newAppt.doctorId, {
+    syncAppointmentToCalendar(db, newAppt.doctorId, session.orgId, {
       appointmentId: newAppt.id,
       title:         `Dental Appointment`,
       date:          newAppt.appointmentDate,

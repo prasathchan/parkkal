@@ -146,13 +146,13 @@ function ActivateForm() {
 
   const Logo = () => (
     <div className="flex flex-col items-center mb-8">
-      <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+      <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-9 h-9">
           <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
         </svg>
       </div>
-      <h1 className="text-2xl font-bold text-slate-900">Parkkal</h1>
-      <p className="text-slate-500 text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
+      <h1 className="text-2xl font-bold text-pk-text">Parkkal</h1>
+      <p className="text-pk-text-muted text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
     </div>
   );
 
@@ -164,7 +164,7 @@ function ActivateForm() {
     return (
       <div className="flex items-center justify-center gap-2 mb-6">
         {steps.map((s, i) => (
-          <div key={s} className={`w-2 h-2 rounded-full transition-colors ${i <= currentIndex ? "bg-blue-600" : "bg-slate-200"}`} />
+          <div key={s} className={`w-2 h-2 rounded-full transition-colors ${i <= currentIndex ? "bg-pk-teal-600" : "bg-pk-surface-sunken"}`} />
         ))}
       </div>
     );
@@ -172,7 +172,7 @@ function ActivateForm() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
         <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
           <Logo />
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 text-center">
@@ -184,7 +184,7 @@ function ActivateForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
       <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
         <Logo />
         <StepDots />
@@ -192,22 +192,22 @@ function ActivateForm() {
         {/* Step 1: Set password (Mode 1 only) */}
         {step === "set-password" && (
           <>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Set your password</h2>
-            <p className="text-slate-500 text-sm text-center mb-6">Create a secure password to activate your account.</p>
+            <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">Set your password</h2>
+            <p className="text-pk-text-muted text-sm text-center mb-6">Create a secure password to activate your account.</p>
             <form onSubmit={handleSetPassword} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" placeholder="••••••••"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirm password</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Confirm password</label>
                 <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" placeholder="••••••••"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
               </div>
               {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                 {loading ? "Setting password..." : "Set password & continue"}
               </button>
             </form>
@@ -217,8 +217,8 @@ function ActivateForm() {
         {/* Step 2: Verify email OTP */}
         {step === "verify-email" && (
           <>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Verify your email</h2>
-            <p className="text-slate-500 text-sm text-center mb-6">
+            <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">Verify your email</h2>
+            <p className="text-pk-text-muted text-sm text-center mb-6">
               {loading && !userId
                 ? "Validating your link..."
                 : `We sent a 6-digit code to ${maskedEmail || "your email"}. It expires in 15 minutes.`}
@@ -226,17 +226,17 @@ function ActivateForm() {
             {userId && (
               <form onSubmit={handleVerifyEmail} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email verification code</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Email verification code</label>
                   <input type="text" inputMode="numeric" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} required maxLength={6} placeholder="000000"
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg font-mono" />
+                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
                 </div>
                 {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
                 <button type="submit" disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                  className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                   {loading ? "Verifying..." : "Verify email"}
                 </button>
                 <button type="button" onClick={() => { setError(""); sendEmailOtp(userId); }}
-                  className="w-full text-sm text-slate-500 hover:text-slate-700 transition">
+                  className="w-full text-sm text-pk-text-muted hover:text-pk-text-secondary transition">
                   Resend code
                 </button>
               </form>
@@ -250,40 +250,40 @@ function ActivateForm() {
           <>
             {phoneStep === "enter-phone" ? (
               <>
-                <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Verify your phone</h2>
-                <p className="text-slate-500 text-sm text-center mb-6">Enter your phone number to receive a one-time verification code.</p>
+                <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">Verify your phone</h2>
+                <p className="text-pk-text-muted text-sm text-center mb-6">Enter your phone number to receive a one-time verification code.</p>
                 <form onSubmit={handleSendPhoneOtp} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone number</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Phone number</label>
                     <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="+91 9876543210"
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
                   </div>
                   {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
                   <button type="submit" disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                     {loading ? "Sending OTP..." : "Send OTP"}
                   </button>
                 </form>
               </>
             ) : (
               <>
-                <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">Enter verification code</h2>
-                <p className="text-slate-500 text-sm text-center mb-6">
-                  We sent a 6-digit code to <span className="font-medium text-slate-700">{phone}</span>. It expires in 15 minutes.
+                <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">Enter verification code</h2>
+                <p className="text-pk-text-muted text-sm text-center mb-6">
+                  We sent a 6-digit code to <span className="font-medium text-pk-text-secondary">{phone}</span>. It expires in 15 minutes.
                 </p>
                 <form onSubmit={handleVerifyPhone} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone verification code</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Phone verification code</label>
                     <input type="text" inputMode="numeric" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} required maxLength={6} placeholder="000000"
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-center tracking-widest text-lg font-mono" />
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
                   </div>
                   {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
                   <button type="submit" disabled={loading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                     {loading ? "Verifying..." : isVerifyOnly ? "Verify & complete" : "Verify & activate account"}
                   </button>
                   <button type="button" onClick={() => { setPhoneStep("enter-phone"); setPhoneOtp(""); setError(""); }}
-                    className="w-full text-sm text-slate-500 hover:text-slate-700 transition">
+                    className="w-full text-sm text-pk-text-muted hover:text-pk-text-secondary transition">
                     Use a different phone number
                   </button>
                 </form>
@@ -300,12 +300,12 @@ function ActivateForm() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-slate-800">Devices verified!</h2>
-            <p className="text-slate-500 text-sm">Your email and phone have been verified. Your administrator will enable login access when ready.</p>
+            <h2 className="text-xl font-semibold text-pk-text">Devices verified!</h2>
+            <p className="text-pk-text-muted text-sm">Your email and phone have been verified. Your administrator will enable login access when ready.</p>
           </div>
         )}
 
-        <p className="text-center text-xs text-slate-400 mt-8">
+        <p className="text-center text-xs text-pk-text-muted mt-8">
           © {new Date().getFullYear()} Parkkal Clinic
         </p>
       </div>

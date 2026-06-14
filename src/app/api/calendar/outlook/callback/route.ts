@@ -8,6 +8,7 @@ import { calendarIntegrations } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { encryptField } from "@/lib/encryption";
 import { exchangeOutlookCode, generateId } from "@/lib/calendar-sync";
+import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -19,16 +20,27 @@ export async function GET(req: NextRequest) {
     return Response.redirect(new URL("/dashboard/settings/calendar?error=outlook_denied", req.url));
   }
 
+  const session = await getSession(req);
+  if (!session) {
+    return Response.redirect(new URL("/dashboard/settings/calendar?error=outlook_denied", req.url));
+  }
+
   try {
     const db = getDb();
 
-    const { userId, orgId } = JSON.parse(Buffer.from(state, "base64url").toString()) as { userId: string; orgId: string };
+    const { userId, orgId, nonce } = JSON.parse(Buffer.from(state, "base64url").toString()) as { userId: string; orgId: string; nonce?: string };
+    const storedNonce = req.cookies.get("cal_oauth_nonce")?.value;
+    if (!nonce || !storedNonce || storedNonce !== nonce || session.userId !== userId || session.orgId !== orgId) {
+      return Response.redirect(new URL("/dashboard/settings/calendar?error=outlook_denied", req.url));
+    }
+
     const tokens = await exchangeOutlookCode(code);
 
     const [encAccess, encRefresh] = await Promise.all([
       encryptField(tokens.accessToken),
       encryptField(tokens.refreshToken),
     ]);
+    if (!encAccess || !encRefresh) throw new Error("Token encryption failed");
 
     const [existing] = await db
       .select({ id: calendarIntegrations.id })
@@ -39,12 +51,12 @@ export async function GET(req: NextRequest) {
     if (existing) {
       await db
         .update(calendarIntegrations)
-        .set({ accessToken: encAccess ?? "", refreshToken: encRefresh ?? "", expiresAt: tokens.expiresAt, isActive: 1, updatedAt: now })
+        .set({ accessToken: encAccess, refreshToken: encRefresh, expiresAt: tokens.expiresAt, isActive: 1, updatedAt: now })
         .where(eq(calendarIntegrations.id, existing.id));
     } else {
       await db.insert(calendarIntegrations).values({
         id: generateId(), organizationId: orgId, userId, provider: "OUTLOOK",
-        accessToken: encAccess ?? "", refreshToken: encRefresh ?? "",
+        accessToken: encAccess, refreshToken: encRefresh,
         expiresAt: tokens.expiresAt, eventIdMap: "{}", isActive: 1, createdAt: now, updatedAt: now,
       });
     }

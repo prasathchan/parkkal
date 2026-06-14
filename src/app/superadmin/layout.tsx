@@ -24,8 +24,8 @@ export default async function SuperadminLayout({ children }: { children: React.R
   if (!user?.isSuperAdmin) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-pk-surface-raised">
+      <header className="bg-pk-neutral-900 text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-6">
           <span className="font-bold text-sm tracking-wide">Parkkal Superadmin</span>
           <nav className="flex gap-1">
@@ -35,13 +35,13 @@ export default async function SuperadminLayout({ children }: { children: React.R
               { href: "/superadmin/plans", label: "Plans & Pricing" },
               { href: "/superadmin/coupons", label: "Coupons" },
             ].map((item) => (
-              <Link key={item.href} href={item.href} className="px-3 py-1.5 rounded text-sm text-slate-300 hover:text-white hover:bg-slate-700 transition">
+              <Link key={item.href} href={item.href} className="px-3 py-1.5 rounded text-sm text-pk-text-muted hover:text-white hover:bg-pk-neutral-700 transition">
                 {item.label}
               </Link>
             ))}
           </nav>
         </div>
-        <Link href="/dashboard" className="text-xs text-slate-400 hover:text-white transition">
+        <Link href="/dashboard" className="text-xs text-pk-text-muted hover:text-white transition">
           ← Back to Dashboard
         </Link>
       </header>

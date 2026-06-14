@@ -35,7 +35,7 @@ const LIMIT = 50;
 
 const STATUS_CONFIG: Record<RecallStatus, { label: string; bg: string; text: string }> = {
   UNSCHEDULED: { label: "Not Booked", bg: "bg-amber-50",  text: "text-amber-700" },
-  SCHEDULED:   { label: "Booked",     bg: "bg-blue-50",   text: "text-blue-700"  },
+  SCHEDULED:   { label: "Booked",     bg: "bg-pk-teal-50",   text: "text-pk-teal-700"  },
   FULFILLED:   { label: "Attended",   bg: "bg-green-50",  text: "text-green-700" },
   LAPSED:      { label: "Lapsed",     bg: "bg-red-50",    text: "text-red-700"   },
 };
@@ -107,8 +107,8 @@ export default function RecallsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recalls</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Patients due for a follow-up visit</p>
+          <h1 className="text-2xl font-bold text-pk-text">Recalls</h1>
+          <p className="text-sm text-pk-text-muted mt-0.5">Patients due for a follow-up visit</p>
         </div>
         {actionableCount > 0 && (tab === "unscheduled" || tab === "lapsed") && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
@@ -119,7 +119,7 @@ export default function RecallsPage() {
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-1 rounded-lg bg-gray-100 p-1 w-fit flex-wrap">
+      <div className="flex gap-1 rounded-lg bg-pk-surface-sunken p-1 w-fit flex-wrap">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
@@ -127,8 +127,8 @@ export default function RecallsPage() {
             aria-pressed={tab === key}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === key
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
+                ? "bg-white text-pk-text shadow-sm"
+                : "text-pk-text-secondary hover:text-pk-text"
             }`}
           >
             {label}
@@ -142,7 +142,7 @@ export default function RecallsPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-lg border border-pk-border bg-white overflow-hidden">
         {loading ? (
           <div role="status" aria-label="Loading recalls…" className="p-4">
             <SkeletonTable rows={8} cols={7} />
@@ -160,35 +160,35 @@ export default function RecallsPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-pk-border">
+              <thead className="bg-pk-surface-raised">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recall Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Patient</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Recall Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Appointment</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Notes</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Doctor</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Visit</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
+              <tbody className="bg-white divide-y divide-pk-border">
                 {recalls.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={row.id} className="hover:bg-pk-surface-raised transition-colors">
 
                     {/* Patient */}
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 text-sm">
-                        <Link href={`/dashboard/patients/${row.patientId}`} className="hover:text-blue-600">
+                      <div className="font-medium text-pk-text text-sm">
+                        <Link href={`/dashboard/patients/${row.patientId}`} className="hover:text-pk-teal-600">
                           {row.patientName ?? "—"}
                         </Link>
                       </div>
-                      <div className="text-xs text-gray-400">{row.patientCode} · {row.patientPhone}</div>
+                      <div className="text-xs text-pk-text-muted">{row.patientCode} · {row.patientPhone}</div>
                     </td>
 
                     {/* Recall date */}
                     <td className="px-4 py-3">
-                      <div className="text-sm text-gray-900">{row.recallDate}</div>
+                      <div className="text-sm text-pk-text">{row.recallDate}</div>
                       <div className="mt-0.5"><DueBadge row={row} /></div>
                     </td>
 
@@ -201,20 +201,20 @@ export default function RecallsPage() {
                     <td className="px-4 py-3">
                       {row.recallAppointmentId ? (
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-pk-text">
                             {row.recallAppointmentDate}
                             {row.recallAppointmentTime && (
-                              <span className="text-gray-500"> · {row.recallAppointmentTime}</span>
+                              <span className="text-pk-text-muted"> · {row.recallAppointmentTime}</span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5 capitalize">
+                          <div className="text-xs text-pk-text-muted mt-0.5 capitalize">
                             {row.recallAppointmentStatus?.toLowerCase()}
                           </div>
                         </div>
                       ) : (
                         <Link
                           href={`/dashboard/appointments/new?patientId=${row.patientId}&recallVisitId=${row.id}&type=FOLLOWUP`}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-md bg-pk-teal-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-pk-teal-700 transition-colors"
                         >
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -225,18 +225,18 @@ export default function RecallsPage() {
                     </td>
 
                     {/* Notes */}
-                    <td className="px-4 py-3 text-sm text-gray-500 max-w-[180px] truncate">
+                    <td className="px-4 py-3 text-sm text-pk-text-muted max-w-[180px] truncate">
                       {row.recallNotes ?? "—"}
                     </td>
 
                     {/* Doctor */}
-                    <td className="px-4 py-3 text-sm text-gray-500">{row.doctorName ?? "—"}</td>
+                    <td className="px-4 py-3 text-sm text-pk-text-muted">{row.doctorName ?? "—"}</td>
 
                     {/* Original visit link */}
                     <td className="px-4 py-3">
                       <Link
                         href={`/dashboard/visits/${row.id}`}
-                        className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                        className="text-xs font-medium text-pk-teal-600 hover:text-pk-teal-800"
                       >
                         {row.visitCode}
                       </Link>
@@ -251,20 +251,20 @@ export default function RecallsPage() {
 
       {/* Pagination */}
       {total > LIMIT && (
-        <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="flex items-center justify-between text-sm text-pk-text-muted">
           <span>Showing {offset + 1}–{Math.min(offset + recalls.length, total)} of {total}</span>
           <div className="flex gap-2">
             <button
               onClick={() => setOffset(Math.max(0, offset - LIMIT))}
               disabled={offset === 0}
-              className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-40"
+              className="rounded-md border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
             >
               Previous
             </button>
             <button
               onClick={() => setOffset(offset + LIMIT)}
               disabled={offset + recalls.length >= total}
-              className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-40"
+              className="rounded-md border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
             >
               Next
             </button>

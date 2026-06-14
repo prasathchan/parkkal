@@ -177,7 +177,7 @@ function NewAppointmentForm() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Patient search */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                   Patient *
                 </label>
                 <input
@@ -185,12 +185,12 @@ function NewAppointmentForm() {
                   placeholder="Search patient by name or code..."
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 mb-2"
                 />
                 <select
                   value={form.patientId}
                   onChange={(e) => setForm((f) => ({ ...f, patientId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 >
                   <option value="">— Select Patient —</option>
                   {patients.map((p) => (
@@ -217,9 +217,9 @@ function NewAppointmentForm() {
                 </Select>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Doctor</label>
-                  <p className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
-                    {currentUserName ? formatDoctorName(currentUserName) : <span className="text-slate-400">Loading…</span>}
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Doctor</label>
+                  <p className="w-full px-4 py-2.5 border border-pk-border rounded-lg text-sm bg-pk-surface-raised text-pk-text-secondary">
+                    {currentUserName ? formatDoctorName(currentUserName) : <span className="text-pk-text-muted">Loading…</span>}
                   </p>
                 </div>
               )}
@@ -251,13 +251,13 @@ function NewAppointmentForm() {
               </Select>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Notes</label>
                 <textarea
                   value={form.notes}
                   onChange={update("notes")}
                   rows={3}
                   placeholder="Additional notes..."
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 

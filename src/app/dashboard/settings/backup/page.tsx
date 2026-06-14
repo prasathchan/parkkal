@@ -38,8 +38,8 @@ function StatusBadge({ status }: { status: OrgBackup["status"] }) {
 
 function TypeBadge({ type }: { type: OrgBackup["type"] }) {
   if (type === "auto")
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Auto</span>;
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Manual</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-surface-sunken text-pk-text-secondary">Auto</span>;
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-teal-100 text-pk-teal-700">Manual</span>;
 }
 
 // ── Restore confirmation modal ─────────────────────────────────────────────────
@@ -68,8 +68,8 @@ function RestoreModal({
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-slate-900">Restore from snapshot</p>
-            <p className="text-sm text-slate-500">{new Date(snapshot.createdAt).toLocaleString()}</p>
+            <p className="font-semibold text-pk-text">Restore from snapshot</p>
+            <p className="text-sm text-pk-text-muted">{new Date(snapshot.createdAt).toLocaleString()}</p>
           </div>
         </div>
 
@@ -78,18 +78,18 @@ function RestoreModal({
         </div>
 
         {snapshot.rowCounts && (
-          <p className="text-xs text-slate-500 mb-4">{formatRowCounts(snapshot.rowCounts)}</p>
+          <p className="text-xs text-pk-text-muted mb-4">{formatRowCounts(snapshot.rowCounts)}</p>
         )}
 
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Type <span className="font-mono bg-slate-100 px-1 rounded">RESTORE</span> to confirm
+        <label className="block text-sm font-medium text-pk-text-secondary mb-1">
+          Type <span className="font-mono bg-pk-surface-sunken px-1 rounded">RESTORE</span> to confirm
         </label>
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="RESTORE"
-          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+          className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
           autoFocus
         />
 
@@ -104,7 +104,7 @@ function RestoreModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-sm rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-lg border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised disabled:opacity-50"
           >
             Cancel
           </button>
@@ -176,9 +176,9 @@ export default function BackupPage() {
       <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {/* Info card */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+        <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-xl p-4 text-sm text-pk-teal-800">
           <p className="font-medium mb-1">How it works</p>
-          <ul className="space-y-0.5 text-blue-700 list-disc list-inside">
+          <ul className="space-y-0.5 text-pk-teal-700 list-disc list-inside">
             <li>A snapshot is taken automatically every night at 2 AM.</li>
             <li>Snapshots keep 30 daily + 1 per month for 12 months.</li>
             <li>Restoring replaces all current data with the selected snapshot.</li>
@@ -186,17 +186,17 @@ export default function BackupPage() {
         </div>
 
         {/* Take snapshot button */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <div className="bg-white rounded-xl border border-pk-border shadow-sm p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-slate-900">Take a snapshot now</p>
-              <p className="text-sm text-slate-500 mt-0.5">Creates a manual backup of all current data.</p>
+              <p className="font-medium text-pk-text">Take a snapshot now</p>
+              <p className="text-sm text-pk-text-muted mt-0.5">Creates a manual backup of all current data.</p>
             </div>
             <button
               type="button"
               onClick={handleSnapshot}
               disabled={snapshotting}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
             >
               {snapshotting ? (
                 <>
@@ -238,10 +238,10 @@ export default function BackupPage() {
         )}
 
         {/* Snapshot timeline */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <p className="font-medium text-slate-900">Snapshot history</p>
-            <p className="text-xs text-slate-400">{snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}</p>
+        <div className="bg-white rounded-xl border border-pk-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between">
+            <p className="font-medium text-pk-text">Snapshot history</p>
+            <p className="text-xs text-pk-text-muted">{snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}</p>
           </div>
 
           {error && <ErrorState message="Failed to load snapshots." onRetry={refetch} />}
@@ -254,24 +254,24 @@ export default function BackupPage() {
           )}
 
           {!error && (loading || snapshots.length > 0) && (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-pk-border">
               {loading && (
-                <div className="px-5 py-4 text-sm text-slate-400">Loading snapshots…</div>
+                <div className="px-5 py-4 text-sm text-pk-text-muted">Loading snapshots…</div>
               )}
               {snapshots.map((snap) => (
-                <div key={snap.id} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50 transition">
+                <div key={snap.id} className="px-5 py-4 flex items-center gap-4 hover:bg-pk-surface-raised transition">
                   {/* Timeline dot */}
-                  <div className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0 mt-0.5" />
+                  <div className="w-2 h-2 rounded-full bg-pk-neutral-300 flex-shrink-0 mt-0.5" />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-slate-900">
+                      <span className="text-sm font-medium text-pk-text">
                         {new Date(snap.createdAt).toLocaleString()}
                       </span>
                       <TypeBadge type={snap.type} />
                       <StatusBadge status={snap.status} />
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-400 flex-wrap">
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-pk-text-muted flex-wrap">
                       {snap.rowCounts && <span>{formatRowCounts(snap.rowCounts)}</span>}
                       <span>{formatBytes(snap.sizeBytes)}</span>
                     </div>
@@ -295,7 +295,7 @@ export default function BackupPage() {
           )}
         </div>
 
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-pk-text-muted">
           Snapshots are stored in Cloudflare R2 (<span className="font-mono">parkkal-backups</span>).
           Retention: 30 daily + 12 monthly. Contact support to download a raw copy.
         </p>

@@ -1,25 +1,30 @@
 import { cn } from "@/lib/utils";
 import { HTMLAttributes } from "react";
 
+/**
+ * Badge — status pill. Colour always pairs with a label (never colour-only).
+ * `info` is TEAL (no blue); the old `secondary` (purple) variant is removed —
+ * use `neutral` instead (Brand §3, §17).
+ */
 type BadgeVariant =
   | "default"
+  | "neutral"
   | "success"
   | "warning"
   | "danger"
-  | "info"
-  | "secondary";
+  | "info";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  default: "bg-slate-100 text-slate-700",
-  success: "bg-green-100 text-green-700",
-  warning: "bg-yellow-100 text-yellow-700",
-  danger: "bg-red-100 text-red-700",
-  info: "bg-blue-100 text-blue-700",
-  secondary: "bg-purple-100 text-purple-700",
+  default: "bg-pk-neutral-150 text-pk-neutral-700 border border-pk-neutral-300",
+  neutral: "bg-pk-neutral-150 text-pk-neutral-700 border border-pk-neutral-300",
+  success: "bg-pk-success-fill text-pk-success-text border border-pk-success-border",
+  warning: "bg-pk-warning-fill text-pk-warning-text border border-pk-warning-border",
+  danger: "bg-pk-danger-fill text-pk-danger-text border border-pk-danger-border",
+  info: "bg-pk-info-fill text-pk-info-text border border-pk-info-border",
 };
 
 export function Badge({
@@ -30,7 +35,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "inline-flex items-center gap-pk-1 px-2 py-0.5 rounded-pk-full text-pk-caption font-medium",
         variantClasses[variant],
         className
       )}

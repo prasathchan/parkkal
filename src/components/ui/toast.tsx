@@ -17,28 +17,28 @@ import { useToast, type Toast, type ToastType } from "@/context/toast-context";
 
 const STYLES: Record<ToastType, { bar: string; icon: string; text: string; close: string }> = {
   success: {
-    bar: "bg-green-500",
-    icon: "text-green-600",
-    text: "text-green-900",
-    close: "text-green-400 hover:text-green-600",
+    bar: "bg-pk-success",
+    icon: "text-pk-success-text",
+    text: "text-pk-text",
+    close: "text-pk-text-muted hover:text-pk-text",
   },
   error: {
-    bar: "bg-red-500",
-    icon: "text-red-600",
-    text: "text-red-900",
-    close: "text-red-400 hover:text-red-600",
+    bar: "bg-pk-danger",
+    icon: "text-pk-danger-text",
+    text: "text-pk-text",
+    close: "text-pk-text-muted hover:text-pk-text",
   },
   info: {
-    bar: "bg-blue-500",
-    icon: "text-blue-600",
-    text: "text-blue-900",
-    close: "text-blue-400 hover:text-blue-600",
+    bar: "bg-pk-info",
+    icon: "text-pk-info-text",
+    text: "text-pk-text",
+    close: "text-pk-text-muted hover:text-pk-text",
   },
   warning: {
-    bar: "bg-amber-500",
-    icon: "text-amber-600",
-    text: "text-amber-900",
-    close: "text-amber-400 hover:text-amber-600",
+    bar: "bg-pk-warning",
+    icon: "text-pk-warning-text",
+    text: "text-pk-text",
+    close: "text-pk-text-muted hover:text-pk-text",
   },
 };
 
@@ -71,7 +71,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     <div
       role="alert"
       aria-live="assertive"
-      className="flex items-start gap-3 rounded-lg bg-white shadow-lg ring-1 ring-black/5 overflow-hidden min-w-[280px] max-w-sm"
+      className="flex items-start gap-3 rounded-pk-md bg-pk-surface shadow-pk-e3 border border-pk-border overflow-hidden min-w-[280px] max-w-sm"
     >
       {/* Left colour bar */}
       <div className={`w-1 self-stretch flex-shrink-0 ${s.bar}`} />
@@ -106,7 +106,7 @@ export function ToastContainer() {
   return (
     <div
       aria-label="Notifications"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"
+      className="fixed bottom-5 right-5 z-pk-toast flex flex-col gap-2 pointer-events-none"
     >
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto animate-in slide-in-from-right-4 fade-in duration-200">

@@ -48,16 +48,16 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Add Payment</h3>
+        <h3 className="text-lg font-bold text-pk-text mb-4">Add Payment</h3>
         <form onSubmit={handleFormSubmit} className="space-y-4">
           {payError && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{payError}</div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1">
               Amount <span className="text-red-500">*</span>
-              <span className="ml-1 font-normal text-slate-400">(outstanding: {formatCurrency(due)})</span>
+              <span className="ml-1 font-normal text-pk-text-muted">(outstanding: {formatCurrency(due)})</span>
             </label>
             <input
               type="number"
@@ -67,7 +67,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
               value={payForm.amount}
               onChange={(e) => handleAmountChange(e.target.value)}
               className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
-                isOverpayment ? "border-amber-400 focus:ring-amber-400" : "border-slate-200 focus:ring-blue-500"
+                isOverpayment ? "border-amber-400 focus:ring-amber-400" : "border-pk-border focus:ring-pk-teal-500"
               }`}
               placeholder="0.00"
             />
@@ -103,32 +103,32 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1">Payment Method</label>
             <select
               value={payForm.paymentMethod}
               onChange={(e) => onChange({ ...payForm, paymentMethod: e.target.value })}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               {PAYMENT_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Reference Number</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1">Reference Number</label>
             <input
               value={payForm.referenceNumber}
               onChange={(e) => onChange({ ...payForm, referenceNumber: e.target.value })}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               placeholder="UPI ref / Card last 4..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1">Notes</label>
             <input
               value={payForm.notes}
               onChange={(e) => onChange({ ...payForm, notes: e.target.value })}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               placeholder="Optional..."
             />
           </div>
@@ -152,7 +152,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <button
               type="button"
               onClick={() => { onClose(); setConfirmOverpay(false); }}
-              className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Cancel
             </button>

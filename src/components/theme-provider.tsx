@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, type ReactNode } from "react";
-import { type OrgThemeConfig, DEFAULT_THEME, FONT_OPTIONS, getSidebarColors } from "@/lib/theme";
+import { type OrgThemeConfig, DEFAULT_THEME, FONT_OPTIONS, getSidebarColors, getAccentCssVars } from "@/lib/theme";
 
 const ThemeContext = createContext<OrgThemeConfig>(DEFAULT_THEME);
 
@@ -20,9 +20,10 @@ export function ThemeProvider({ config, children }: ThemeProviderProps) {
     const font = FONT_OPTIONS.find(f => f.value === config.fontFamily) ?? FONT_OPTIONS[0];
     const sidebar = getSidebarColors(config);
 
-    // Primary color
-    root.style.setProperty("--primary", config.primaryColor);
-    root.style.setProperty("--ring", config.primaryColor);
+    // Core (teal primary) is LOCKED in globals.css — never overridden per tenant.
+    // The tenant customizes only the accent, from the curated set.
+    const accentVars = getAccentCssVars(config.accentName);
+    for (const [k, v] of Object.entries(accentVars)) root.style.setProperty(k, v);
     root.style.setProperty("--font-body", font.stack);
 
     // Sidebar CSS vars

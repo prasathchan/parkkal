@@ -45,7 +45,7 @@ export default async function DashboardLayout({
 
   return (
     <ThemeProvider config={themeConfig}>
-      <div className="flex min-h-screen" style={{ background: "var(--background)" }}>
+      <div className="flex min-h-screen" style={{ background: "var(--pk-bg)" }}>
         <Sidebar
           user={{ name: session.name, role: session.role, orgName: session.orgName, orgTagline: org?.tagline ?? null }}
           logoUrl={org?.logoUrl ?? null}

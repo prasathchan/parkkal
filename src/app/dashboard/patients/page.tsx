@@ -95,22 +95,22 @@ export default function PatientsPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchPatients(search, offset)} />
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-xl border border-pk-border shadow-sm">
           {/* Search bar + New Patient button */}
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="px-6 py-4 border-b border-pk-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input
               type="search"
               aria-label="Search patients"
               placeholder="Search by name, phone, or patient code..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full sm:max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:max-w-sm px-4 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={exportPatients}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -157,7 +157,7 @@ export default function PatientsPage() {
                   <TableBody>
                     {patients.map((patient) => (
                       <TableRow key={patient.id}>
-                        <TableCell className="font-mono text-xs font-medium text-blue-700">
+                        <TableCell className="font-mono text-xs font-medium text-pk-teal-700">
                           {patient.patientCode}
                         </TableCell>
                         <TableCell className="font-medium">{patient.name}</TableCell>
@@ -166,13 +166,13 @@ export default function PatientsPage() {
                           {patient.dateOfBirth ? `${calculateAge(patient.dateOfBirth)} yrs` : "—"}
                           {patient.gender ? ` · ${patient.gender}` : ""}
                         </TableCell>
-                        <TableCell className="text-slate-500">
+                        <TableCell className="text-pk-text-muted">
                           {formatDate(patient.createdAt)}
                         </TableCell>
                         <TableCell>
                           <Link
                             href={`/dashboard/patients/${patient.id}`}
-                            className="text-blue-600 hover:underline text-xs font-medium"
+                            className="text-pk-teal-600 hover:underline text-xs font-medium"
                           >
                             View
                           </Link>
@@ -184,24 +184,24 @@ export default function PatientsPage() {
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-slate-100">
+              <div className="md:hidden divide-y divide-pk-border">
                 {patients.map((patient) => (
                   <Link
                     key={patient.id}
                     href={`/dashboard/patients/${patient.id}`}
-                    className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition"
+                    className="flex items-center justify-between px-4 py-3 hover:bg-pk-surface-raised transition"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-slate-900 truncate">{patient.name}</span>
-                        <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded flex-shrink-0">{patient.patientCode}</span>
+                        <span className="font-medium text-sm text-pk-text truncate">{patient.name}</span>
+                        <span className="text-[10px] font-mono text-pk-teal-600 bg-pk-teal-50 px-1.5 py-0.5 rounded flex-shrink-0">{patient.patientCode}</span>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">{patient.phone}</p>
+                      <p className="text-xs text-pk-text-muted mt-0.5">{patient.phone}</p>
                       {patient.dateOfBirth && (
-                        <p className="text-xs text-slate-400">{calculateAge(patient.dateOfBirth)} yrs{patient.gender ? ` · ${patient.gender}` : ""}</p>
+                        <p className="text-xs text-pk-text-muted">{calculateAge(patient.dateOfBirth)} yrs{patient.gender ? ` · ${patient.gender}` : ""}</p>
                       )}
                     </div>
-                    <svg className="w-4 h-4 text-slate-300 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </Link>
@@ -212,7 +212,7 @@ export default function PatientsPage() {
 
           {/* Pagination — only shown when there are more than PAGE_SIZE results */}
           {total > PAGE_SIZE && (
-            <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
+            <div className="px-6 py-3 border-t border-pk-border flex items-center justify-between text-sm text-pk-text-muted">
               <span>
                 {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total} patients
               </span>
@@ -220,14 +220,14 @@ export default function PatientsPage() {
                 <button
                   onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
                   disabled={offset === 0}
-                  className="px-3 py-1 rounded-md border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                  className="px-3 py-1 rounded-md border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setOffset(offset + PAGE_SIZE)}
                   disabled={offset + PAGE_SIZE >= total}
-                  className="px-3 py-1 rounded-md border border-slate-200 disabled:opacity-40 hover:bg-slate-50"
+                  className="px-3 py-1 rounded-md border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
                 >
                   Next
                 </button>

@@ -53,7 +53,7 @@ interface Summary {
 
 const STATUS_BADGE: Record<string, string> = {
   PLANNED: "bg-yellow-50 text-yellow-800 border-yellow-200",
-  IN_PROGRESS: "bg-blue-50 text-blue-800 border-blue-200",
+  IN_PROGRESS: "bg-pk-teal-50 text-pk-teal-800 border-pk-teal-200",
   COMPLETED: "bg-green-50 text-green-800 border-green-200",
 };
 
@@ -65,7 +65,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const CONSENT_BADGE: Record<string, string> = {
   PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  UPLOADED: "bg-blue-50 text-blue-700 border-blue-200",
+  UPLOADED: "bg-pk-teal-50 text-pk-teal-700 border-pk-teal-200",
   VERIFIED: "bg-green-50 text-green-700 border-green-200",
   REJECTED: "bg-red-50 text-red-700 border-red-200",
   EMERGENCY_OVERRIDE: "bg-orange-50 text-orange-700 border-orange-200",
@@ -80,7 +80,7 @@ const CONSENT_LABEL: Record<string, string> = {
 };
 
 const VISIT_STATUS_BADGE: Record<string, string> = {
-  OPEN: "bg-blue-50 text-blue-700",
+  OPEN: "bg-pk-teal-50 text-pk-teal-700",
   COMPLETED: "bg-green-50 text-green-700",
   CANCELLED: "bg-red-50 text-red-700",
 };
@@ -139,24 +139,24 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
   const payColors = summary ? getPaymentColors(summary.paidPercent) : null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-pk-surface-raised">
       <Header title={treatment?.description ?? "Treatment Plan"} />
       <main id="main-content" className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
         {/* Breadcrumb */}
-        <nav className="text-sm text-slate-500 flex items-center gap-1.5">
-          <Link href="/dashboard" className="hover:text-slate-700">Dashboard</Link>
+        <nav className="text-sm text-pk-text-muted flex items-center gap-1.5">
+          <Link href="/dashboard" className="hover:text-pk-text-secondary">Dashboard</Link>
           <span>/</span>
-          <Link href="/dashboard/treatments" className="hover:text-slate-700">Treatment Plans</Link>
+          <Link href="/dashboard/treatments" className="hover:text-pk-text-secondary">Treatment Plans</Link>
           <span>/</span>
-          <span className="text-slate-900 font-medium truncate max-w-xs">
+          <span className="text-pk-text font-medium truncate max-w-xs">
             {loading ? "Loading…" : (treatment?.description ?? "Treatment Plan")}
           </span>
         </nav>
 
         {/* Loading */}
         {loading && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
+          <div className="bg-white rounded-2xl border border-pk-border p-12 text-center text-pk-text-muted text-sm">
             Loading treatment details…
           </div>
         )}
@@ -171,23 +171,23 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
         {!loading && treatment && summary && payColors && (
           <>
             {/* ── Header card ── */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <div className="bg-white rounded-2xl border border-pk-border p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
-                    <h1 className="text-xl font-bold text-slate-900">{treatment.description}</h1>
+                    <h1 className="text-xl font-bold text-pk-text">{treatment.description}</h1>
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${STATUS_BADGE[treatment.status] ?? STATUS_BADGE.PLANNED}`}>
                       {STATUS_LABEL[treatment.status] ?? treatment.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap mt-1">
+                  <div className="flex items-center gap-4 text-sm text-pk-text-muted flex-wrap mt-1">
                     <Link
                       href={`/dashboard/patients/${treatment.patientId}`}
-                      className="hover:text-blue-600 font-medium text-slate-700"
+                      className="hover:text-pk-teal-600 font-medium text-pk-text-secondary"
                     >
                       {treatment.patientName ?? "Unknown Patient"}
                       {treatment.patientCode && (
-                        <span className="ml-1 text-slate-400 font-normal">({treatment.patientCode})</span>
+                        <span className="ml-1 text-pk-text-muted font-normal">({treatment.patientCode})</span>
                       )}
                     </Link>
                     {treatment.doctorName && <span>Dr. {treatment.doctorName}</span>}
@@ -198,16 +198,16 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
               {/* Treatment details */}
               {(treatment.procedure || toothList.length > 0) && (
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="mt-4 pt-4 border-t border-pk-border grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {treatment.procedure && (
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Procedure Notes</p>
-                      <p className="text-sm text-slate-700">{treatment.procedure}</p>
+                      <p className="text-xs text-pk-text-muted mb-1">Procedure Notes</p>
+                      <p className="text-sm text-pk-text-secondary">{treatment.procedure}</p>
                     </div>
                   )}
                   {toothList.length > 0 && (
                     <div>
-                      <p className="text-xs text-slate-500 mb-2">Tooth Selection</p>
+                      <p className="text-xs text-pk-text-muted mb-2">Tooth Selection</p>
                       <ToothChart value={toothList} readOnly compact />
                     </div>
                   )}
@@ -215,12 +215,12 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
               )}
 
               {/* Consent row */}
-              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+              <div className="mt-4 pt-4 border-t border-pk-border flex flex-wrap items-center gap-3">
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${CONSENT_BADGE[treatment.consentStatus] ?? CONSENT_BADGE.PENDING}`}>
                   {CONSENT_LABEL[treatment.consentStatus] ?? treatment.consentStatus}
                 </span>
                 {treatment.consentNotes && (
-                  <span className="text-xs text-slate-400 italic">{treatment.consentNotes}</span>
+                  <span className="text-xs text-pk-text-muted italic">{treatment.consentNotes}</span>
                 )}
                 {treatment.emergencyReason && (
                   <span className="text-xs text-orange-600">Reason: {treatment.emergencyReason}</span>
@@ -230,7 +230,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                     href={treatment.consentDocumentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-pk-teal-600 hover:underline"
                   >
                     View Consent Document ↗
                   </a>
@@ -239,7 +239,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                   href={`/api/treatments/${treatment.id}/consent-pdf`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition ml-auto"
+                  className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-lg hover:bg-pk-surface-raised transition ml-auto"
                 >
                   Download Consent Form PDF
                 </a>
@@ -250,9 +250,9 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
               {/* Box 1 — Treatment Cost (neutral) */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5 text-center">
-                <p className="text-xs text-slate-500 mb-1.5">Treatment Cost</p>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(summary.treatmentCost)}</p>
+              <div className="bg-white rounded-xl border border-pk-border p-5 text-center">
+                <p className="text-xs text-pk-text-muted mb-1.5">Treatment Cost</p>
+                <p className="text-2xl font-bold text-pk-text">{formatCurrency(summary.treatmentCost)}</p>
               </div>
 
               {/* Box 2 — Total Paid (colored + progress bar) */}
@@ -290,23 +290,23 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* ── Visit History ── */}
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100">
-                <h2 className="text-sm font-semibold text-slate-900">
+            <div className="bg-white rounded-2xl border border-pk-border overflow-hidden">
+              <div className="px-6 py-4 border-b border-pk-border">
+                <h2 className="text-sm font-semibold text-pk-text">
                   Visit History
-                  <span className="ml-2 text-slate-400 font-normal">
+                  <span className="ml-2 text-pk-text-muted font-normal">
                     ({summary.visitCount} {summary.visitCount === 1 ? "visit" : "visits"})
                   </span>
                 </h2>
               </div>
 
               {visits.length === 0 ? (
-                <div className="px-6 py-10 text-center text-sm text-slate-400">
+                <div className="px-6 py-10 text-center text-sm text-pk-text-muted">
                   This treatment plan has not been linked to any visit yet.
                 </div>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                  <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">
                     <tr>
                       <th className="px-5 py-3 text-left font-medium">Visit</th>
                       <th className="px-5 py-3 text-left font-medium">Date</th>
@@ -317,47 +317,47 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                       {/* Visit Paid = total payment for that visit (may cover other treatments too) */}
                       <th className="px-5 py-3 text-right font-medium">
                         Visit Paid
-                        <span className="block text-slate-400 normal-case font-normal text-[10px] leading-tight">incl. all treatments</span>
+                        <span className="block text-pk-text-muted normal-case font-normal text-[10px] leading-tight">incl. all treatments</span>
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-pk-border">
                     {visits.map((v) => (
-                      <tr key={v.visitId} className="hover:bg-slate-50 transition">
+                      <tr key={v.visitId} className="hover:bg-pk-surface-raised transition">
                         <td className="px-5 py-3.5">
                           <Link
                             href={`/dashboard/visits/${v.visitId}`}
-                            className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                            className="font-mono text-xs text-pk-teal-600 hover:text-pk-teal-800 hover:underline"
                           >
                             {v.visitCode}
                           </Link>
                         </td>
-                        <td className="px-5 py-3.5 text-slate-700">{v.visitDate}</td>
-                        <td className="px-5 py-3.5 text-slate-600">{v.doctorName ?? "—"}</td>
+                        <td className="px-5 py-3.5 text-pk-text-secondary">{v.visitDate}</td>
+                        <td className="px-5 py-3.5 text-pk-text-secondary">{v.doctorName ?? "—"}</td>
                         <td className="px-5 py-3.5">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${VISIT_STATUS_BADGE[v.visitStatus] ?? "bg-slate-50 text-slate-700"}`}>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${VISIT_STATUS_BADGE[v.visitStatus] ?? "bg-pk-surface-raised text-pk-text-secondary"}`}>
                             {v.visitStatus}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-right font-semibold text-slate-900">
+                        <td className="px-5 py-3.5 text-right font-semibold text-pk-text">
                           {v.treatmentBilledAmount > 0
                             ? formatCurrency(v.treatmentBilledAmount)
-                            : <span className="text-slate-300 font-normal">—</span>}
+                            : <span className="text-pk-text-muted font-normal">—</span>}
                         </td>
-                        <td className="px-5 py-3.5 text-right text-slate-600">
+                        <td className="px-5 py-3.5 text-right text-pk-text-secondary">
                           {formatCurrency(v.visitPaidAmount)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   {/* Footer totals row */}
-                  <tfoot className="bg-slate-50 border-t border-slate-200">
+                  <tfoot className="bg-pk-surface-raised border-t border-pk-border">
                     <tr>
-                      <td colSpan={4} className="px-5 py-3 text-xs text-slate-500 font-medium">Totals</td>
-                      <td className="px-5 py-3 text-right font-bold text-slate-900">
+                      <td colSpan={4} className="px-5 py-3 text-xs text-pk-text-muted font-medium">Totals</td>
+                      <td className="px-5 py-3 text-right font-bold text-pk-text">
                         {formatCurrency(summary.totalPaid)}
                       </td>
-                      <td className="px-5 py-3 text-right font-semibold text-slate-600">
+                      <td className="px-5 py-3 text-right font-semibold text-pk-text-secondary">
                         {formatCurrency(visits.reduce((acc, v) => acc + v.visitPaidAmount, 0))}
                       </td>
                     </tr>

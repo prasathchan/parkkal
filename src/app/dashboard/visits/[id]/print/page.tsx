@@ -87,7 +87,7 @@ export default function PrintPage() {
       .then((d) => { setData(d as PrintData); setLoading(false); });
   }, [id]);
 
-  if (loading) return <div className="p-10 text-center text-slate-400">Loading...</div>;
+  if (loading) return <div className="p-10 text-center text-pk-text-muted">Loading...</div>;
   if (!data) return <div className="p-10 text-center text-red-500">Failed to load visit data.</div>;
 
   const { visit, items, payments, prescriptions, clinic } = data;
@@ -109,13 +109,13 @@ export default function PrintPage() {
       <div className="no-print fixed top-4 right-4 flex gap-2">
         <button
           onClick={() => window.print()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-lg"
+          className="bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition shadow-lg"
         >
           Print / Save PDF
         </button>
         <button
           onClick={() => window.close()}
-          className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition shadow-lg"
+          className="bg-white border border-pk-border text-pk-text-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition shadow-lg"
         >
           Close
         </button>

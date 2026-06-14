@@ -122,7 +122,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <p className="text-sm text-slate-400 py-6 text-center">Loading chart…</p>;
+    return <p className="text-sm text-pk-text-muted py-6 text-center">Loading chart…</p>;
   }
 
   return (
@@ -130,8 +130,8 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">FDI Dental Chart</h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h3 className="text-sm font-semibold text-pk-text">FDI Dental Chart</h3>
+          <p className="text-xs text-pk-text-muted mt-0.5">
             {isOpen
               ? "Click any tooth to update its condition. Changes are saved to the patient's cumulative chart and recorded as a snapshot for this visit."
               : hasVisitSnapshot
@@ -140,7 +140,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
           </p>
         </div>
         <div className="text-right flex-shrink-0 min-w-[80px]">
-          {isOpen && saving && <p className="text-xs text-slate-400 animate-pulse">Saving…</p>}
+          {isOpen && saving && <p className="text-xs text-pk-text-muted animate-pulse">Saving…</p>}
           {isOpen && !saving && savedAt && (
             <p className="text-xs text-green-600">
               Saved {new Date(savedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
@@ -149,8 +149,8 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
           {!isOpen && (
             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
               hasVisitSnapshot
-                ? "bg-blue-50 text-blue-700"
-                : "bg-slate-100 text-slate-500"
+                ? "bg-pk-teal-50 text-pk-teal-700"
+                : "bg-pk-surface-sunken text-pk-text-muted"
             }`}>
               {hasVisitSnapshot ? "Visit snapshot" : "Cumulative ref"}
             </span>
@@ -176,11 +176,11 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
 
       {/* No-snapshot notice for completed visits */}
       {!isOpen && !hasVisitSnapshot && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
-          <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-pk-surface-raised border border-pk-border px-3 py-2">
+          <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-pk-text-muted">
             The chart was not updated during this visit. Showing the current cumulative chart for reference only.
           </p>
         </div>

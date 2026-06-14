@@ -258,7 +258,7 @@ export default function NewPatientPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                   Blood Group
                 </label>
                 <BloodGroupSelect
@@ -268,14 +268,14 @@ export default function NewPatientPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                   Address
                 </label>
                 <AddressForm value={addressData} onChange={setAddressData} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                   Medical History
                 </label>
                 <textarea
@@ -283,26 +283,26 @@ export default function NewPatientPage() {
                   onChange={update("medicalHistory")}
                   rows={3}
                   placeholder="Known allergies, conditions, medications..."
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  How did the patient find us? <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+                  How did the patient find us? <span className="text-pk-text-muted font-normal">(optional)</span>
                 </label>
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
                     onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); setExternalSourceOther(""); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-white text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     External Source
                   </button>
                   <button
                     type="button"
                     onClick={() => { setReferralType("patient"); setForm(f => ({ ...f, referralSource: "" })); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-white text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     Existing Patient
                   </button>
@@ -315,7 +315,7 @@ export default function NewPatientPage() {
                         setForm(f => ({ ...f, referralSource: e.target.value }));
                         if (e.target.value !== "Other") setExternalSourceOther("");
                       }}
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition bg-white"
                     >
                       <option value="">Select source…</option>
                       {EXTERNAL_SOURCES.map(s => (
@@ -329,7 +329,7 @@ export default function NewPatientPage() {
                         onChange={e => setExternalSourceOther(e.target.value)}
                         maxLength={100}
                         placeholder="Please specify…"
-                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                       />
                     )}
                   </div>
@@ -346,24 +346,24 @@ export default function NewPatientPage() {
                       }}
                       onFocus={() => setReferralDropdownOpen(true)}
                       placeholder="Search referring patient by name or code…"
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                     />
                     {referredByPatientId && (
                       <button
                         type="button"
                         onClick={() => { setReferredByPatientId(null); setSelectedReferralName(""); setReferralSearch(""); }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-lg leading-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
                       >
                         ×
                       </button>
                     )}
                     {referralDropdownOpen && referralPatients.length > 0 && (
-                      <ul className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <ul className="absolute z-20 mt-1 w-full bg-white border border-pk-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                         {referralPatients.map((p) => (
                           <li key={p.id}>
                             <button
                               type="button"
-                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition"
+                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-pk-teal-50 transition"
                               onClick={() => {
                                 setReferredByPatientId(p.id);
                                 setSelectedReferralName(`${p.patientCode} · ${p.name}`);
@@ -372,8 +372,8 @@ export default function NewPatientPage() {
                               }}
                             >
                               <span className="font-medium">{p.patientCode}</span>
-                              <span className="text-slate-500"> · {p.name}</span>
-                              <span className="text-slate-400 text-xs ml-1">({p.phone})</span>
+                              <span className="text-pk-text-muted"> · {p.name}</span>
+                              <span className="text-pk-text-muted text-xs ml-1">({p.phone})</span>
                             </button>
                           </li>
                         ))}
@@ -384,9 +384,9 @@ export default function NewPatientPage() {
               </div>
 
               {/* Emergency Contact */}
-              <div className="border border-slate-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-slate-900 mb-0.5">Emergency Contact</p>
-                <p className="text-xs text-slate-500 mb-3">Optional — recommended but not required to save.</p>
+              <div className="border border-pk-border rounded-lg p-4">
+                <p className="text-sm font-semibold text-pk-text mb-0.5">Emergency Contact</p>
+                <p className="text-xs text-pk-text-muted mb-3">Optional — recommended but not required to save.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
                     id="ec-name"
@@ -463,22 +463,22 @@ export default function NewPatientPage() {
               )}
 
               {/* Data processing consent — required by DPDP Act 2023 */}
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition">
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-pk-border bg-pk-surface-raised hover:bg-pk-surface-sunken transition">
                 <input
                   type="checkbox"
                   checked={dataConsent}
                   onChange={(e) => setDataConsent(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                  className="mt-0.5 h-4 w-4 rounded border-pk-border-strong text-pk-teal-600 focus:ring-pk-teal-500 shrink-0"
                 />
-                <span className="text-xs text-slate-600">
-                  <span className="font-semibold text-slate-800">Patient has given data processing consent</span>
+                <span className="text-xs text-pk-text-secondary">
+                  <span className="font-semibold text-pk-text">Patient has given data processing consent</span>
                   {" "}— The patient (or guardian) has been informed about how their personal data will be collected and used,
                   and has given consent as required under the Digital Personal Data Protection Act 2023.
                 </span>
               </label>
 
               {!canSubmit && (
-                <p className="text-xs text-slate-400 pt-1">
+                <p className="text-xs text-pk-text-muted pt-1">
                   {hasValidationErrors
                     ? "Fix the errors above to continue."
                     : !dataConsent

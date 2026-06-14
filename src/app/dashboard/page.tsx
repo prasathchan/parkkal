@@ -200,9 +200,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Total Patients"
             value={stats.totalPatients}
-            iconBg="bg-blue-100"
+            iconBg="bg-pk-teal-100"
             icon={
-              <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             }
@@ -230,9 +230,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Monthly Revenue"
             value={formatCurrency(stats.monthlyRevenue)}
-            iconBg="bg-purple-100"
+            iconBg="bg-pk-neutral-100"
             icon={
-              <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
@@ -263,29 +263,29 @@ export default async function DashboardPage() {
         {/* Recent Appointments + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Appointments */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-semibold text-slate-900">Today&apos;s Appointments</h2>
+          <div className="lg:col-span-2 bg-white rounded-xl border border-pk-border shadow-sm">
+            <div className="px-6 py-4 border-b border-pk-border flex items-center justify-between">
+              <h2 className="font-semibold text-pk-text">Today&apos;s Appointments</h2>
               <Link
                 href="/dashboard/appointments"
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-pk-teal-600 hover:underline"
               >
                 View all
               </Link>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-pk-border">
               {todayAppointments.length === 0 ? (
-                <p className="px-6 py-8 text-center text-slate-400 text-sm">
+                <p className="px-6 py-8 text-center text-pk-text-muted text-sm">
                   No appointments scheduled for today
                 </p>
               ) : (
                 todayAppointments.map((apt) => (
                   <div key={apt.id} className="px-6 py-3 flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">
+                      <p className="text-sm font-medium text-pk-text">
                         {apt.patientName || "Patient"}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-pk-text-muted">
                         {apt.appointmentTime} · {formatDoctorName(apt.doctorName)}
                       </p>
                     </div>
@@ -296,7 +296,7 @@ export default async function DashboardPage() {
                       {(apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS") && apt.patientId && (
                         <Link
                           href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId ?? ""}`}
-                          className="text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg transition"
+                          className="text-xs font-medium text-white bg-pk-teal-600 hover:bg-pk-teal-700 px-2.5 py-1 rounded-lg transition"
                         >
                           Start Visit
                         </Link>
@@ -309,44 +309,44 @@ export default async function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+          <div className="bg-white rounded-xl border border-pk-border shadow-sm">
+            <div className="px-6 py-4 border-b border-pk-border">
+              <h2 className="font-semibold text-pk-text">Quick Actions</h2>
             </div>
             <div className="p-6 space-y-3">
               <Link
                 href="/dashboard/visits/new"
-                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-pk-teal-50 hover:border-pk-teal-200 transition group"
               >
-                <div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition">
-                  <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 bg-pk-teal-100 rounded-lg flex items-center justify-center group-hover:bg-pk-teal-200 transition">
+                  <svg className="w-5 h-5 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">New Visit</p>
-                  <p className="text-xs text-slate-500">Start a walk-in or appointment visit</p>
+                  <p className="text-sm font-medium text-pk-text">New Visit</p>
+                  <p className="text-xs text-pk-text-muted">Start a walk-in or appointment visit</p>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/patients/new"
-                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-blue-50 hover:border-blue-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-pk-teal-50 hover:border-pk-teal-200 transition group"
               >
-                <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 bg-pk-teal-100 rounded-lg flex items-center justify-center group-hover:bg-pk-teal-200 transition">
+                  <svg className="w-5 h-5 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">New Patient</p>
-                  <p className="text-xs text-slate-500">Register a new patient</p>
+                  <p className="text-sm font-medium text-pk-text">New Patient</p>
+                  <p className="text-xs text-pk-text-muted">Register a new patient</p>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/appointments/new"
-                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-green-50 hover:border-green-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-green-50 hover:border-green-200 transition group"
               >
                 <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
                   <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -354,14 +354,14 @@ export default async function DashboardPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Book Appointment</p>
-                  <p className="text-xs text-slate-500">Schedule a new visit</p>
+                  <p className="text-sm font-medium text-pk-text">Book Appointment</p>
+                  <p className="text-xs text-pk-text-muted">Schedule a new visit</p>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/billing"
-                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-yellow-50 hover:border-yellow-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-yellow-50 hover:border-yellow-200 transition group"
               >
                 <div className="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center group-hover:bg-yellow-200 transition">
                   <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -369,8 +369,8 @@ export default async function DashboardPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Billing</p>
-                  <p className="text-xs text-slate-500">View & manage invoices</p>
+                  <p className="text-sm font-medium text-pk-text">Billing</p>
+                  <p className="text-xs text-pk-text-muted">View & manage invoices</p>
                 </div>
               </Link>
             </div>

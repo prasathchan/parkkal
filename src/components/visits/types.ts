@@ -123,10 +123,10 @@ export const DEFAULT_NEW_ITEM: NewItemState = {
 /**
  * Badge colors for visit status — used in the visit detail page header and history list.
  * NOTE: These use slightly different shades than VISIT_STATUS_BADGE in @/constants/ui
- * (e.g. text-blue-800 vs text-blue-700). Do NOT merge them.
+ * (e.g. text-pk-teal-800 vs text-pk-teal-700). Do NOT merge them.
  */
 export const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-blue-100 text-blue-800",
+  OPEN: "bg-pk-teal-100 text-pk-teal-800",
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-red-100 text-red-800",
 };

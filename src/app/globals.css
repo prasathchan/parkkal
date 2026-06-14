@@ -1,199 +1,426 @@
-/* Google Fonts — must be first before any other rules */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Nunito:wght@400;500;600;700&display=swap');
+/* Google Fonts — Poppins 500/600 · Inter 400/500/600 · Noto Sans Tamil 500/600 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+Tamil:wght@500;600&family=Poppins:wght@500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────
+   PARKKAL DESIGN TOKENS — globals.css
+   Source of truth for all --pk-* CSS custom properties.
+   Tailwind reads these via tailwind.config.ts.
+   Token spec: product/design/04_Parkkal_Tokens.md
+   Dark mode: .dark class on <html> (class strategy).
+   ───────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --ring: #2563eb;
-  --radius: 0.5rem;
-  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* ── Teal ramp — locked brand primary ─────────────────────────── */
+  --pk-teal-50:  #E9F5F3;
+  --pk-teal-100: #C7E6E2;
+  --pk-teal-200: #93CEC8;
+  --pk-teal-300: #5DB3AB;
+  --pk-teal-400: #2F9189;
+  --pk-teal-500: #137A72;
+  --pk-teal-600: #0B6E6E;
+  --pk-teal-700: #0B5654;
+  --pk-teal-800: #0A413F;
+  --pk-teal-900: #0D2B2B;
 
-  /* Sidebar defaults — overridden by ThemeProvider */
-  --sidebar-bg: #0f172a;
-  --sidebar-border: #1e293b;
-  --sidebar-text: #cbd5e1;
-  --sidebar-text-active: #ffffff;
-  --sidebar-active-bg: #2563eb;
-  --sidebar-hover-bg: #1e293b;
-  --sidebar-divider: #334155;
+  /* ── Gold ramp — default accent ────────────────────────────────── */
+  --pk-gold-50:  #FBF3E6;
+  --pk-gold-100: #F5E1C0;
+  --pk-gold-200: #EDC78A;
+  --pk-gold-300: #E0AB5C;
+  --pk-gold-400: #D2933F;
+  --pk-gold-500: #C8873A;
+  --pk-gold-600: #A86E2C;
+  --pk-gold-700: #855520;
+  --pk-gold-800: #5E3C16;
+  --pk-gold-900: #3D270E;
+
+  /* ── Neutral ramp — warm enamel, never cold slate ──────────────── */
+  --pk-neutral-0:   #FFFFFF;
+  --pk-neutral-50:  #FAF8F3;
+  --pk-neutral-100: #F7F5F0;
+  --pk-neutral-150: #EFEBE2;
+  --pk-neutral-200: #E5E0D8;
+  --pk-neutral-300: #D4CEC2;
+  --pk-neutral-400: #B0A99B;
+  --pk-neutral-500: #847D6E;
+  --pk-neutral-600: #645D50;
+  --pk-neutral-700: #4A4439;
+  --pk-neutral-800: #322E26;
+  --pk-neutral-900: #1C1A15;
+
+  /* ── Surfaces ───────────────────────────────────────────────────── */
+  --pk-bg:             var(--pk-neutral-100);
+  --pk-surface:        var(--pk-neutral-0);
+  --pk-surface-raised: var(--pk-neutral-50);
+  --pk-surface-sunken: var(--pk-neutral-150);
+
+  /* ── Text ───────────────────────────────────────────────────────── */
+  --pk-text:           var(--pk-neutral-900);
+  --pk-text-secondary: var(--pk-neutral-600);
+  --pk-text-muted:     var(--pk-neutral-500);
+
+  /* ── Borders ────────────────────────────────────────────────────── */
+  --pk-border:        var(--pk-neutral-200);
+  --pk-border-strong: var(--pk-neutral-300);
+
+  /* ── Brand action — locked, never tenant-customizable ───────────── */
+  --pk-primary:       var(--pk-teal-600);
+  --pk-primary-hover: var(--pk-teal-500);
+  --pk-primary-text:  #FFFFFF;
+
+  /* ── Accent — tenant-customizable from the Approved Accent Set only */
+  /* Default: Temple Gold. Override exactly these 5 vars per tenant.  */
+  --pk-accent:        var(--pk-gold-500);  /* identity fill / border / ring (dark text) */
+  --pk-accent-action: var(--pk-gold-600);  /* solid CTA surface (white text, 4.6:1 AA)  */
+  --pk-accent-hover:  var(--pk-gold-700);  /* pressed / hover on solid accent surface    */
+  --pk-accent-tint:   var(--pk-gold-50);   /* background wash                            */
+  --pk-accent-border: var(--pk-gold-100);  /* tint border                                */
+
+  /* ── Semantic: Success ──────────────────────────────────────────── */
+  --pk-success-text:   #1E6E4B;
+  --pk-success-fill:   #E3F1EA;
+  --pk-success-border: #A8D8C1;
+  --pk-success-solid:  #2E7D5B;
+
+  /* ── Semantic: Warning ──────────────────────────────────────────── */
+  --pk-warning-text:   #9A5B0A;
+  --pk-warning-fill:   #FCEFD6;
+  --pk-warning-border: #F2D08A;
+  --pk-warning-solid:  #B8770F;
+
+  /* ── Semantic: Danger ───────────────────────────────────────────── */
+  --pk-danger-text:   #A8311F;
+  --pk-danger-fill:   #FBEAE7;
+  --pk-danger-border: #F0B4AA;
+  --pk-danger-solid:  #C0392B;
+
+  /* ── Semantic: Info (borrows teal — no blue) ────────────────────── */
+  --pk-info-text:   var(--pk-teal-700);
+  --pk-info-fill:   var(--pk-teal-100);
+  --pk-info-border: var(--pk-teal-200);
+  --pk-info-solid:  var(--pk-teal-600);
+
+  /* ── Semantic: Neutral status ───────────────────────────────────── */
+  --pk-neutral-status-text:   var(--pk-neutral-700);
+  --pk-neutral-status-fill:   var(--pk-neutral-150);
+  --pk-neutral-status-border: var(--pk-neutral-300);
+  --pk-neutral-status-solid:  var(--pk-neutral-600);
+
+  /* ── Sidebar — locked, never tenant-customizable ────────────────── */
+  --pk-sidebar-bg:          var(--pk-teal-900);
+  --pk-sidebar-border:      #162626;
+  --pk-sidebar-text:        rgba(255,255,255,0.72);
+  --pk-sidebar-text-active: #FFFFFF;
+  --pk-sidebar-active-bg:   rgba(255,255,255,0.10);
+  --pk-sidebar-hover-bg:    rgba(255,255,255,0.06);
+  --pk-sidebar-divider:     rgba(255,255,255,0.10);
+
+  /* ── Elevation — warm-tinted shadows, never pure black ─────────── */
+  --e0:      none;
+  --e1:      0 1px 2px rgba(28,26,21,0.06);
+  --e2:      0 2px 8px rgba(28,26,21,0.08);
+  --e3:      0 8px 24px rgba(28,26,21,0.12);
+  --e-focus: 0 0 0 3px rgba(11,110,110,0.20);
+  --e-scrim: rgba(28,26,21,0.45);
+
+  /* ── Radius ─────────────────────────────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* ── Motion ─────────────────────────────────────────────────────── */
+  --motion-instant:    100ms;
+  --motion-fast:       150ms;
+  --motion-base:       200ms;
+  --motion-slow:       300ms;
+  --motion-deliberate: 400ms;
+  --ease-out:    cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:     cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-heading: "Poppins", -apple-system, "Segoe UI", sans-serif;
+  --font-body:    "Inter",   -apple-system, "Segoe UI", sans-serif;
+  --font-tamil:   "Noto Sans Tamil", "Hind Madurai", sans-serif;
 }
 
+/* ─── Dark mode overrides ──────────────────────────────────────────── */
 .dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --border: #334155;
-  --input: #334155;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f1f5f9;
+  /* Surfaces */
+  --pk-bg:             #14201F;
+  --pk-surface:        #1B2A28;
+  --pk-surface-raised: #223331;
+  --pk-surface-sunken: #0F1A19;
+
+  /* Text */
+  --pk-text:           #F2EFE8;
+  --pk-text-secondary: #AEB6B2;
+  --pk-text-muted:     #7A8480;
+
+  /* Borders */
+  --pk-border:        #2E403D;
+  --pk-border-strong: #3A524E;
+
+  /* Brand action — lifted for contrast on dark */
+  --pk-primary:      #3E9D89;
+  --pk-primary-hover:#4AB0A0;
+  --pk-primary-text: #06201E;
+
+  /* Accent — lifted gold for dark surfaces */
+  --pk-accent:        var(--pk-gold-300);         /* #E0AB5C */
+  --pk-accent-action: var(--pk-gold-500);         /* #C8873A */
+  --pk-accent-hover:  var(--pk-gold-400);         /* #D2933F */
+  --pk-accent-tint:   rgba(200,135,58,0.12);
+  --pk-accent-border: rgba(200,135,58,0.25);
+
+  /* Semantic: Success */
+  --pk-success-text:   #5DBE8C;
+  --pk-success-fill:   #0D2B1C;
+  --pk-success-border: #1A4733;
+  --pk-success-solid:  #2E7D5B;
+
+  /* Semantic: Warning */
+  --pk-warning-text:   #DEAB54;
+  --pk-warning-fill:   #2B1E06;
+  --pk-warning-border: #5C3C0D;
+  --pk-warning-solid:  #B8770F;
+
+  /* Semantic: Danger */
+  --pk-danger-text:   #F09080;
+  --pk-danger-fill:   #2B0D09;
+  --pk-danger-border: #5C1A12;
+  --pk-danger-solid:  #C0392B;
+
+  /* Semantic: Info */
+  --pk-info-text:   var(--pk-teal-300);
+  --pk-info-fill:   rgba(11,110,110,0.15);
+  --pk-info-border: rgba(11,110,110,0.30);
+  --pk-info-solid:  var(--pk-teal-400);
+
+  /* Semantic: Neutral status */
+  --pk-neutral-status-text:   #AEB6B2;
+  --pk-neutral-status-fill:   #1B2A28;
+  --pk-neutral-status-border: #2E403D;
+  --pk-neutral-status-solid:  #4A6260;
+
+  /* Sidebar stays warm deep teal */
+  --pk-sidebar-bg:     #0A1F1E;
+  --pk-sidebar-border: #122221;
+
+  /* Elevation — reduced opacity in dark (shadows read poorly on dark) */
+  --e1: 0 1px 2px rgba(0,0,0,0.20);
+  --e2: 0 2px 8px rgba(0,0,0,0.28);
+  --e3: 0 8px 24px rgba(0,0,0,0.36);
 }
 
+/* ─── Reduced motion — mandatory ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+  }
+}
+
+/* ─── Base ─────────────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--pk-bg);
+    color: var(--pk-text);
+    font-family: var(--font-body);
+    font-size: 0.875rem;     /* 14px — app default */
+    line-height: 1.5714286;  /* 22px */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition:
+      background-color var(--motion-base) var(--ease-out),
+      color            var(--motion-base) var(--ease-out);
+  }
+
+  /* Headings */
+  h1 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    line-height: 2.125rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1.375rem;
+    line-height: 1.75rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  h4 {
+    font-family: var(--font-heading);
+    font-size: 0.9375rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+  }
+
+  /* Focus — always visible, never outline:none without replacement */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--e-focus);
+  }
+
+  /* Tamil text — never below 14px */
+  :lang(ta),
+  .font-tamil {
+    font-family: var(--font-tamil);
+    font-size: max(0.875rem, 1em);
+    line-height: max(1.5, 1.6);
+  }
+
+  /* Skip link — accessibility */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .skip-link:focus {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 1rem;
+    background: var(--pk-primary);
+    color: var(--pk-primary-text);
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    z-index: 9999;
+    box-shadow: var(--e2);
+  }
+
+  /* Tabular / financial numerals */
+  .num,
+  [data-num] {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+}
+
+/* ─── Components ───────────────────────────────────────────────────── */
 @layer components {
+  /* Text input — shared base for all form fields */
   .field-input {
     width: 100%;
-    padding: 0.625rem 1rem;
-    border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--pk-border);
+    border-radius: var(--radius-sm);
     font-size: 0.875rem;
-    background: var(--card);
-    color: var(--foreground);
+    line-height: 1.375rem;
+    font-family: var(--font-body);
+    background: var(--pk-surface);
+    color: var(--pk-text);
     outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      box-shadow   var(--motion-fast) var(--ease-out);
+  }
+  .field-input::placeholder {
+    color: var(--pk-text-muted);
+  }
+  .field-input:hover {
+    border-color: var(--pk-border-strong);
   }
   .field-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+    border-color: var(--pk-primary);
+    box-shadow: var(--e-focus);
+  }
+  .field-input[aria-invalid="true"],
+  .field-input.field-error {
+    border-color: var(--pk-danger-solid);
+    box-shadow: 0 0 0 3px rgba(168,49,31,0.15);
+  }
+  .field-input:disabled {
+    background: var(--pk-neutral-150);
+    color: var(--pk-text-muted);
+    cursor: not-allowed;
+    border-color: var(--pk-neutral-200);
+  }
+
+  /* Presence dot — live user indicator */
+  .presence-dot {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--pk-success-solid);
+  }
+  .presence-dot--idle {
+    background: var(--pk-neutral-400);
+  }
+
+  /* Skeleton shimmer — warm palette, ≤1.2s */
+  .skeleton {
+    border-radius: var(--radius-sm);
+    background: linear-gradient(
+      90deg,
+      var(--pk-neutral-150) 25%,
+      var(--pk-neutral-50)  50%,
+      var(--pk-neutral-150) 75%
+    );
+    background-size: 200% 100%;
+    animation: pk-shimmer 1.2s ease-in-out infinite;
+  }
+
+  /* Live arrival wash — one-shot, fades to transparent */
+  .arrival-wash {
+    animation: pk-arrival var(--motion-slow) var(--ease-out) forwards;
   }
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+/* ─── Keyframes ────────────────────────────────────────────────────── */
+@keyframes pk-shimmer {
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body);
-  transition: background-color 0.2s, color 0.2s;
+@keyframes pk-arrival {
+  0%   { background-color: var(--pk-teal-50); }
+  100% { background-color: transparent; }
 }
 
+/* ─── Print ────────────────────────────────────────────────────────── */
 @media print {
-  [data-sidebar] { display: none !important; }
-  body { background: white !important; }
+  [data-sidebar]  { display: none !important; }
+  body {
+    background: white !important;
+    color: black !important;
+  }
   .no-print { display: none !important; }
 }
-
-/*
- * Dark mode overrides for hardcoded Tailwind colour classes.
- *
- * Most pages use concrete classes like `bg-white` or `text-slate-900` rather
- * than CSS-variable utilities.  Adding `darkMode:"class"` to Tailwind config
- * makes `dark:` prefixes work, but retrofitting every file is a large change.
- * These rules map the most-used light-palette classes to their dark equivalents
- * under the `.dark` selector so every existing page gets dark mode for free.
- */
-.dark .bg-white          { background-color: var(--card) !important; }
-.dark .bg-slate-50       { background-color: #1e293b !important; }
-.dark .bg-slate-100      { background-color: #1e293b !important; }
-.dark .bg-slate-200      { background-color: #334155 !important; }
-.dark .bg-gray-50        { background-color: #1e293b !important; }
-.dark .bg-gray-100       { background-color: #1e293b !important; }
-
-.dark .text-slate-900    { color: #f1f5f9 !important; }
-.dark .text-slate-800    { color: #e2e8f0 !important; }
-.dark .text-slate-700    { color: #cbd5e1 !important; }
-.dark .text-slate-600    { color: #94a3b8 !important; }
-.dark .text-slate-500    { color: #64748b !important; }
-.dark .text-slate-400    { color: #475569 !important; }
-.dark .text-gray-900     { color: #f1f5f9 !important; }
-.dark .text-gray-800     { color: #e2e8f0 !important; }
-.dark .text-gray-700     { color: #cbd5e1 !important; }
-.dark .text-gray-600     { color: #94a3b8 !important; }
-.dark .text-gray-500     { color: #64748b !important; }
-
-.dark .border-slate-200  { border-color: var(--border) !important; }
-.dark .border-slate-100  { border-color: #334155 !important; }
-.dark .border-gray-200   { border-color: var(--border) !important; }
-.dark .border-gray-100   { border-color: #334155 !important; }
-
-/* Divide utilities (table / list separators) */
-.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
-.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
-.dark .divide-y > :not([hidden]) ~ :not([hidden])          { border-color: var(--border) !important; }
-
-/* Hover variants */
-.dark .hover\:bg-slate-50:hover  { background-color: #1e293b !important; }
-.dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
-.dark .hover\:bg-gray-50:hover   { background-color: #1e293b !important; }
-
-/* Table header */
-.dark thead, .dark .bg-slate-50.text-xs { background-color: #1e293b !important; }
-
-/* Inputs / selects not using field-input */
-.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
-.dark select,
-.dark textarea {
-  background-color: var(--card);
-  color: var(--foreground);
-  border-color: var(--border);
-  color-scheme: dark;
-}
-
-/* Placeholder text */
-.dark ::placeholder { color: #475569; }
-
-/* ── Coloured tint backgrounds (appointment pills, badges, queue cards) ── */
-.dark .bg-blue-50      { background-color: #172554 !important; }
-.dark .bg-blue-100     { background-color: #1e3a5f !important; }
-.dark .bg-indigo-50    { background-color: #1e1b4b !important; }
-.dark .bg-indigo-100   { background-color: #312e81 !important; }
-.dark .bg-sky-50       { background-color: #0c2a3e !important; }
-.dark .bg-sky-100      { background-color: #0c4a6e !important; }
-.dark .bg-green-50     { background-color: #052e16 !important; }
-.dark .bg-green-100    { background-color: #14532d !important; }
-.dark .bg-purple-50    { background-color: #2e1065 !important; }
-.dark .bg-purple-100   { background-color: #3b0764 !important; }
-.dark .bg-orange-50    { background-color: #431407 !important; }
-.dark .bg-orange-100   { background-color: #7c2d12 !important; }
-.dark .bg-amber-50     { background-color: #451a03 !important; }
-.dark .bg-amber-100    { background-color: #78350f !important; }
-.dark .bg-red-50       { background-color: #450a0a !important; }
-.dark .bg-red-100      { background-color: #7f1d1d !important; }
-
-/* ── Coloured text — lighten for dark backgrounds ── */
-.dark .text-blue-900   { color: #bfdbfe !important; }
-.dark .text-blue-800   { color: #93c5fd !important; }
-.dark .text-blue-700   { color: #60a5fa !important; }
-.dark .text-blue-600   { color: #3b82f6 !important; }
-.dark .text-indigo-800 { color: #a5b4fc !important; }
-.dark .text-indigo-700 { color: #818cf8 !important; }
-.dark .text-sky-800    { color: #7dd3fc !important; }
-.dark .text-sky-700    { color: #38bdf8 !important; }
-.dark .text-green-800  { color: #86efac !important; }
-.dark .text-green-700  { color: #4ade80 !important; }
-.dark .text-purple-800 { color: #d8b4fe !important; }
-.dark .text-purple-700 { color: #c084fc !important; }
-.dark .text-orange-800 { color: #fdba74 !important; }
-.dark .text-orange-700 { color: #fb923c !important; }
-.dark .text-amber-900  { color: #fde68a !important; }
-.dark .text-amber-700  { color: #fbbf24 !important; }
-.dark .text-amber-600  { color: #f59e0b !important; }
-.dark .text-amber-500  { color: #d97706 !important; }
-.dark .text-red-800    { color: #fca5a5 !important; }
-.dark .text-red-700    { color: #f87171 !important; }
-.dark .text-red-600    { color: #ef4444 !important; }
-
-/* ── Coloured borders ── */
-.dark .border-blue-200   { border-color: #1e40af !important; }
-.dark .border-blue-400   { border-color: #3b82f6 !important; }
-.dark .border-indigo-200 { border-color: #3730a3 !important; }
-.dark .border-green-200  { border-color: #166534 !important; }
-.dark .border-green-400  { border-color: #22c55e !important; }
-.dark .border-purple-200 { border-color: #6b21a8 !important; }
-.dark .border-purple-400 { border-color: #a855f7 !important; }
-.dark .border-orange-200 { border-color: #9a3412 !important; }
-.dark .border-orange-400 { border-color: #f97316 !important; }
-.dark .border-amber-200  { border-color: #92400e !important; }
-.dark .border-red-200    { border-color: #991b1b !important; }
-.dark .border-red-100    { border-color: #7f1d1d !important; }

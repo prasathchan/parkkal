@@ -97,7 +97,7 @@ function ToothCell({
     <div ref={ref} className="relative flex flex-col items-center">
       {/* Tooth number label — above for upper, below for lower */}
       {isUpper && (
-        <span className="text-[9px] text-slate-400 mb-0.5 leading-none select-none">{number}</span>
+        <span className="text-[9px] text-pk-text-muted mb-0.5 leading-none select-none">{number}</span>
       )}
 
       {/* Tooth shape */}
@@ -110,13 +110,13 @@ function ToothCell({
         style={{ background: colors.bg, borderColor: colors.border }}
       >
         {condition === "MISSING" && (
-          <span className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">×</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-text-muted text-xs font-bold">×</span>
         )}
         {condition === "ROOT_CANAL" && (
-          <span className="absolute inset-0 flex items-center justify-center text-purple-400 text-[8px] font-bold">RC</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-neutral-400 text-[8px] font-bold">RC</span>
         )}
         {condition === "BRIDGE" && (
-          <span className="absolute inset-0 flex items-center justify-center text-cyan-500 text-[8px] font-bold">BR</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-teal-500 text-[8px] font-bold">BR</span>
         )}
         {condition === "IMPLANT" && (
           <span className="absolute inset-0 flex items-center justify-center text-green-600 text-[8px] font-bold">IM</span>
@@ -124,15 +124,15 @@ function ToothCell({
       </button>
 
       {!isUpper && (
-        <span className="text-[9px] text-slate-400 mt-0.5 leading-none select-none">{number}</span>
+        <span className="text-[9px] text-pk-text-muted mt-0.5 leading-none select-none">{number}</span>
       )}
 
       {/* Condition popover */}
       {open && (
         <div
-          className={`absolute z-50 w-52 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
+          className={`absolute z-50 w-52 bg-white rounded-xl shadow-2xl border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
         >
-          <p className="text-xs font-semibold text-slate-600 px-1 pb-1 border-b border-slate-100 mb-1">
+          <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}
           </p>
           <div className="grid grid-cols-2 gap-1 mb-2">
@@ -157,7 +157,7 @@ function ToothCell({
             onChange={(e) => setEditNotes(e.target.value)}
             onBlur={() => onConditionChange(number, condition, editNotes)}
             placeholder="Notes..."
-            className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="w-full text-xs border border-pk-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
           />
         </div>
       )}
@@ -178,7 +178,7 @@ function Legend() {
               className="w-3.5 h-3.5 rounded-sm border flex-shrink-0"
               style={{ background: col.bg, borderColor: col.border }}
             />
-            <span className="text-[10px] text-slate-500">{CONDITION_LABELS[c]}</span>
+            <span className="text-[10px] text-pk-text-muted">{CONDITION_LABELS[c]}</span>
           </div>
         );
       })}
@@ -211,13 +211,13 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
       <div className="overflow-x-auto pb-2">
         <div className="min-w-[520px]">
           {/* Legend row */}
-          <div className="flex justify-between text-[9px] text-slate-400 font-medium mb-1 px-1">
+          <div className="flex justify-between text-[9px] text-pk-text-muted font-medium mb-1 px-1">
             <span>Patient&apos;s Right (Q1/Q4)</span>
             <span>Patient&apos;s Left (Q2/Q3)</span>
           </div>
 
           {/* Upper arch */}
-          <div className="flex items-end gap-0.5 justify-center mb-1 pb-2 border-b border-dashed border-slate-200">
+          <div className="flex items-end gap-0.5 justify-center mb-1 pb-2 border-b border-dashed border-pk-border">
             {UPPER_TEETH.map((n, i) => (
               <>
                 {i === 8 && <div key="midline-upper" className="w-2 flex-shrink-0" />}
@@ -234,12 +234,12 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
           </div>
 
           {/* Midline label */}
-          <div className="text-center text-[9px] text-slate-300 py-0.5 select-none">
+          <div className="text-center text-[9px] text-pk-text-muted py-0.5 select-none">
             — occlusal plane —
           </div>
 
           {/* Lower arch */}
-          <div className="flex items-start gap-0.5 justify-center mt-1 pt-2 border-t border-dashed border-slate-200">
+          <div className="flex items-start gap-0.5 justify-center mt-1 pt-2 border-t border-dashed border-pk-border">
             {LOWER_TEETH.map((n, i) => (
               <>
                 {i === 8 && <div key="midline-lower" className="w-2 flex-shrink-0" />}

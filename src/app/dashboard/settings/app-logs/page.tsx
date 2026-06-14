@@ -124,11 +124,11 @@ export default function AppLogsPage() {
   // ── Forbidden guard ──────────────────────────────────────────────────────────
   if (forbidden) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-pk-surface-raised">
         <Header title="App Logs" />
         <main id="main-content" className="max-w-6xl mx-auto px-4 py-16 text-center">
-          <p className="text-slate-500 text-sm">Only administrators can view application logs.</p>
-          <Link href="/dashboard/settings" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
+          <p className="text-pk-text-muted text-sm">Only administrators can view application logs.</p>
+          <Link href="/dashboard/settings" className="mt-4 inline-block text-pk-teal-600 hover:underline text-sm">
             Back to Settings
           </Link>
         </main>
@@ -137,36 +137,36 @@ export default function AppLogsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-pk-surface-raised">
       <Header title="App Logs" />
       <main id="main-content" className="max-w-6xl mx-auto px-4 py-8 space-y-5">
 
         {/* Breadcrumb */}
-        <nav className="text-sm text-slate-500 flex items-center gap-1.5">
-          <Link href="/dashboard" className="hover:text-slate-700">Dashboard</Link>
+        <nav className="text-sm text-pk-text-muted flex items-center gap-1.5">
+          <Link href="/dashboard" className="hover:text-pk-text-secondary">Dashboard</Link>
           <span>/</span>
-          <Link href="/dashboard/settings" className="hover:text-slate-700">Settings</Link>
+          <Link href="/dashboard/settings" className="hover:text-pk-text-secondary">Settings</Link>
           <span>/</span>
-          <span className="text-slate-900 font-medium">App Logs</span>
+          <span className="text-pk-text font-medium">App Logs</span>
         </nav>
 
         {/* Page header */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Application Logs</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h1 className="text-lg font-bold text-pk-text">Application Logs</h1>
+            <p className="text-xs text-pk-text-muted mt-0.5">
               Errors, security events, and warnings captured by the API layer.
-              Info/debug logs are available via <code className="bg-slate-100 px-1 rounded">wrangler tail</code>.
+              Info/debug logs are available via <code className="bg-pk-surface-sunken px-1 rounded">wrangler tail</code>.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setOffset(0); fetchLogs(0, false); }}
-              className="text-xs px-3 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 transition"
+              className="text-xs px-3 py-1.5 border border-pk-border rounded-lg bg-white text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               ↺ Refresh
             </button>
-            <label className="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+            <label className="flex items-center gap-1.5 text-xs text-pk-text-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={autoRefresh}
@@ -179,13 +179,13 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Filter bar ── */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+        <div className="bg-white border border-pk-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
             {/* Level */}
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-white text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="">All levels</option>
               <option value="error">Error</option>
@@ -199,7 +199,7 @@ export default function AppLogsPage() {
               value={route}
               onChange={(e) => setRoute(e.target.value)}
               placeholder="Filter by route…"
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
             />
 
             {/* Message search */}
@@ -208,21 +208,21 @@ export default function AppLogsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search message…"
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
             />
 
             {/* Sort */}
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as "desc" | "asc")}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-white text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
             </select>
 
             {hasFilters && (
-              <button onClick={clearFilters} className="text-sm text-slate-500 hover:text-slate-700 underline">
+              <button onClick={clearFilters} className="text-sm text-pk-text-muted hover:text-pk-text-secondary underline">
                 Clear
               </button>
             )}
@@ -230,27 +230,27 @@ export default function AppLogsPage() {
 
           {/* Date range row */}
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-slate-500 font-medium">Date range:</span>
+            <span className="text-xs text-pk-text-muted font-medium">Date range:</span>
             <input
               type="datetime-local"
               value={since}
               onChange={(e) => setSince(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
-            <span className="text-xs text-slate-400">to</span>
+            <span className="text-xs text-pk-text-muted">to</span>
             <input
               type="datetime-local"
               value={until}
               onChange={(e) => setUntil(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
-            <button onClick={setLastHour} className="text-xs text-blue-600 hover:text-blue-800 underline">Last hour</button>
-            <button onClick={setLastDay}  className="text-xs text-blue-600 hover:text-blue-800 underline">Last 24 h</button>
+            <button onClick={setLastHour} className="text-xs text-pk-teal-600 hover:text-pk-teal-800 underline">Last hour</button>
+            <button onClick={setLastDay}  className="text-xs text-pk-teal-600 hover:text-pk-teal-800 underline">Last 24 h</button>
           </div>
         </div>
 
         {/* ── Legend ── */}
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-3 text-xs text-pk-text-muted">
           <span className="font-medium">Level:</span>
           {Object.entries(LEVEL_PILL).map(([l, cls]) => (
             <span key={l} className={`px-2 py-0.5 rounded-full ${cls}`}>{LEVEL_LABELS[l]}</span>
@@ -258,14 +258,14 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Table ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-pk-border overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-slate-400 text-sm">Loading logs…</div>
+            <div className="p-12 text-center text-pk-text-muted text-sm">Loading logs…</div>
           ) : logs.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm">No log entries found.</div>
+            <div className="p-12 text-center text-pk-text-muted text-sm">No log entries found.</div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100">
+              <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide border-b border-pk-border">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium w-44">When</th>
                   <th className="px-4 py-3 text-left font-medium w-24">Level</th>
@@ -275,7 +275,7 @@ export default function AppLogsPage() {
                   <th className="px-4 py-3 text-left font-medium w-16">Detail</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-pk-border">
                 {logs.map((entry) => {
                   const isExpanded = expandedId === entry.id;
                   const hasDetail  = !!(entry.data || entry.errorStack);
@@ -284,11 +284,11 @@ export default function AppLogsPage() {
                     <>
                       <tr
                         key={entry.id}
-                        className={`hover:bg-slate-50 transition ${hasDetail ? "cursor-pointer" : ""} ${LEVEL_ROW[entry.level] ?? ""}`}
+                        className={`hover:bg-pk-surface-raised transition ${hasDetail ? "cursor-pointer" : ""} ${LEVEL_ROW[entry.level] ?? ""}`}
                         onClick={() => hasDetail && setExpandedId(isExpanded ? null : entry.id)}
                       >
                         {/* When */}
-                        <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
+                        <td className="px-4 py-3 text-xs text-pk-text-muted whitespace-nowrap">
                           {fmt(entry.createdAt)}
                         </td>
 
@@ -300,40 +300,40 @@ export default function AppLogsPage() {
                         </td>
 
                         {/* Route */}
-                        <td className="px-4 py-3 text-xs font-mono text-slate-600 truncate max-w-[14rem]" title={entry.route ?? undefined}>
+                        <td className="px-4 py-3 text-xs font-mono text-pk-text-secondary truncate max-w-[14rem]" title={entry.route ?? undefined}>
                           {entry.route}
                         </td>
 
                         {/* Message */}
-                        <td className="px-4 py-3 text-slate-800 text-xs">
+                        <td className="px-4 py-3 text-pk-text text-xs">
                           <div className="truncate max-w-xs" title={entry.message}>{entry.message}</div>
                           {entry.errorName && (
-                            <div className="text-slate-400 mt-0.5">{entry.errorName}</div>
+                            <div className="text-pk-text-muted mt-0.5">{entry.errorName}</div>
                           )}
                         </td>
 
                         {/* User */}
-                        <td className="px-4 py-3 text-xs text-slate-500">
+                        <td className="px-4 py-3 text-xs text-pk-text-muted">
                           {entry.userId
-                            ? <>{entry.userId.slice(0, 8)}… <span className="text-slate-400">({entry.userRole})</span></>
-                            : <span className="text-slate-300">—</span>}
+                            ? <>{entry.userId.slice(0, 8)}… <span className="text-pk-text-muted">({entry.userRole})</span></>
+                            : <span className="text-pk-text-muted">—</span>}
                         </td>
 
                         {/* Expand toggle */}
                         <td className="px-4 py-3 text-center text-xs">
                           {hasDetail
-                            ? <span className="text-blue-500">{isExpanded ? "▲" : "▼"}</span>
-                            : <span className="text-slate-200">—</span>}
+                            ? <span className="text-pk-teal-500">{isExpanded ? "▲" : "▼"}</span>
+                            : <span className="text-pk-text-muted">—</span>}
                         </td>
                       </tr>
 
                       {/* Expanded detail row */}
                       {isExpanded && (
-                        <tr key={`${entry.id}-detail`} className="bg-slate-50">
+                        <tr key={`${entry.id}-detail`} className="bg-pk-surface-raised">
                           <td colSpan={6} className="px-4 py-3 space-y-3">
                             {entry.errorStack && (
                               <div>
-                                <p className="text-xs font-semibold text-slate-500 mb-1">Stack trace</p>
+                                <p className="text-xs font-semibold text-pk-text-muted mb-1">Stack trace</p>
                                 <pre className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-4 py-3 overflow-x-auto whitespace-pre-wrap">
                                   {entry.errorStack}
                                 </pre>
@@ -341,8 +341,8 @@ export default function AppLogsPage() {
                             )}
                             {entry.data && (
                               <div>
-                                <p className="text-xs font-semibold text-slate-500 mb-1">Context</p>
-                                <pre className="text-xs text-slate-700 bg-white border border-slate-200 rounded-lg px-4 py-3 overflow-x-auto">
+                                <p className="text-xs font-semibold text-pk-text-muted mb-1">Context</p>
+                                <pre className="text-xs text-pk-text-secondary bg-white border border-pk-border rounded-lg px-4 py-3 overflow-x-auto">
                                   {JSON.stringify(entry.data, null, 2)}
                                 </pre>
                               </div>
@@ -359,11 +359,11 @@ export default function AppLogsPage() {
 
           {/* Load more */}
           {!loading && hasMore && (
-            <div className="px-4 py-4 border-t border-slate-100 text-center">
+            <div className="px-4 py-4 border-t border-pk-border text-center">
               <button
                 onClick={() => fetchLogs(offset, true)}
                 disabled={loadingMore}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                className="text-sm text-pk-teal-600 hover:text-pk-teal-800 font-medium disabled:opacity-50"
               >
                 {loadingMore ? "Loading…" : "Load more"}
               </button>

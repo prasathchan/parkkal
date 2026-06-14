@@ -96,11 +96,11 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100 py-12 px-4">
       <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -110,14 +110,14 @@ export default function VerifyPage() {
               <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Parkkal</h1>
-          <p className="text-slate-500 text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
+          <h1 className="text-2xl font-bold text-pk-text">Parkkal</h1>
+          <p className="text-pk-text-muted text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
         </div>
 
-        <h2 className="text-xl font-semibold text-slate-800 mb-2 text-center">
+        <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">
           Verify your account
         </h2>
-        <p className="text-sm text-slate-500 text-center mb-6">
+        <p className="text-sm text-pk-text-muted text-center mb-6">
           We sent a verification code to your email. Enter it below to activate your account.
         </p>
 
@@ -127,7 +127,7 @@ export default function VerifyPage() {
             <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="emailCode"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-pk-text-secondary"
               >
                 Email verification code
               </label>
@@ -135,13 +135,13 @@ export default function VerifyPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={resendingEmail}
-                className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                className="text-xs text-pk-teal-600 hover:underline disabled:opacity-50"
               >
                 {resendingEmail ? "Sending..." : "Resend"}
               </button>
             </div>
             {maskedEmail && (
-              <p className="text-xs text-slate-400 mb-2">Sent to {maskedEmail}</p>
+              <p className="text-xs text-pk-text-muted mb-2">Sent to {maskedEmail}</p>
             )}
             <input
               id="emailCode"
@@ -152,7 +152,7 @@ export default function VerifyPage() {
               onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               required
               placeholder="123456"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-center tracking-[0.4em] font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm text-center tracking-[0.4em] font-mono focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
             <p className="text-xs text-amber-600 mt-1.5">
               Can&apos;t find it? Check your <strong>Junk</strong> or <strong>Spam</strong> folder.
@@ -174,13 +174,13 @@ export default function VerifyPage() {
           <button
             type="submit"
             disabled={loading || emailCode.length < 6}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
+            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
           >
             {loading ? "Verifying..." : "Verify & activate account"}
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-400 mt-8">
+        <p className="text-center text-xs text-pk-text-muted mt-8">
           © {new Date().getFullYear()} Parkkal Clinic · app.parkkal.com
         </p>
       </div>

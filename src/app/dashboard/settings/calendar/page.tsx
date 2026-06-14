@@ -87,18 +87,18 @@ function CalendarSettingsInner() {
         )}
 
         {/* Explanation */}
-        <div className="rounded-xl bg-blue-50 border border-blue-100 px-4 py-4 text-sm text-blue-700 space-y-1">
+        <div className="rounded-xl bg-pk-teal-50 border border-pk-teal-100 px-4 py-4 text-sm text-pk-teal-700 space-y-1">
           <p className="font-semibold">How it works</p>
           <p>When you connect your calendar, every appointment assigned to you is automatically added to your personal calendar. If an appointment is rescheduled or cancelled, your calendar updates instantly.</p>
-          <p className="text-blue-500 text-xs mt-1">Your calendar credentials are stored encrypted and only used to push appointment events. We never read your existing calendar events.</p>
+          <p className="text-pk-teal-500 text-xs mt-1">Your calendar credentials are stored encrypted and only used to push appointment events. We never read your existing calendar events.</p>
         </div>
 
         {/* Google Calendar */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-pk-border p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Google colour logo */}
-              <div className="h-10 w-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center shadow-sm">
+              <div className="h-10 w-10 rounded-lg bg-white border border-pk-border flex items-center justify-center shadow-sm">
                 <svg viewBox="0 0 24 24" className="h-6 w-6">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -107,13 +107,13 @@ function CalendarSettingsInner() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Google Calendar</p>
-                <p className="text-xs text-gray-500">Sync appointments to your Google account</p>
+                <p className="font-semibold text-pk-text">Google Calendar</p>
+                <p className="text-xs text-pk-text-muted">Sync appointments to your Google account</p>
               </div>
             </div>
 
             {loading ? (
-              <div className="h-8 w-24 rounded-lg bg-gray-100 animate-pulse" />
+              <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
             ) : status?.google ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
@@ -133,7 +133,7 @@ function CalendarSettingsInner() {
             ) : (
               <a
                 href="/api/calendar/google"
-                className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition"
+                className="inline-flex items-center gap-2 rounded-lg bg-white border border-pk-border-strong px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised shadow-sm transition"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -148,7 +148,7 @@ function CalendarSettingsInner() {
         </div>
 
         {/* Outlook Calendar */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white rounded-xl border border-pk-border p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-[#0078D4] flex items-center justify-center shadow-sm">
@@ -158,13 +158,13 @@ function CalendarSettingsInner() {
                 </svg>
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Outlook Calendar</p>
-                <p className="text-xs text-gray-500">Sync appointments to your Microsoft account</p>
+                <p className="font-semibold text-pk-text">Outlook Calendar</p>
+                <p className="text-xs text-pk-text-muted">Sync appointments to your Microsoft account</p>
               </div>
             </div>
 
             {loading ? (
-              <div className="h-8 w-24 rounded-lg bg-gray-100 animate-pulse" />
+              <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
             ) : status?.outlook ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
@@ -196,39 +196,39 @@ function CalendarSettingsInner() {
         </div>
 
         {/* Setup guide for admins */}
-        <details className="group rounded-xl border border-gray-200 bg-white">
-          <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <details className="group rounded-xl border border-pk-border bg-white">
+          <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised">
             <span>🔧 Admin setup guide (one-time)</span>
             <svg className="h-4 w-4 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </summary>
-          <div className="px-5 pb-5 text-sm text-gray-600 space-y-4 border-t border-gray-100 pt-4">
+          <div className="px-5 pb-5 text-sm text-pk-text-secondary space-y-4 border-t border-pk-border pt-4">
             <div>
-              <p className="font-semibold text-gray-800 mb-1">Google Calendar</p>
-              <ol className="list-decimal list-inside space-y-1 text-xs text-gray-500">
-                <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">console.cloud.google.com</a></li>
+              <p className="font-semibold text-pk-text mb-1">Google Calendar</p>
+              <ol className="list-decimal list-inside space-y-1 text-xs text-pk-text-muted">
+                <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-pk-teal-600 hover:underline">console.cloud.google.com</a></li>
                 <li>Create a project → APIs &amp; Services → Enable &quot;Google Calendar API&quot;</li>
                 <li>OAuth 2.0 Credentials → Web Application</li>
-                <li>Add redirect URI: <code className="bg-gray-100 px-1 rounded">{"{your-domain}"}/api/calendar/google/callback</code></li>
+                <li>Add redirect URI: <code className="bg-pk-surface-sunken px-1 rounded">{"{your-domain}"}/api/calendar/google/callback</code></li>
                 <li>Copy Client ID + Secret → add to environment variables</li>
               </ol>
-              <div className="mt-2 rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-500">
+              <div className="mt-2 rounded-lg bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
                 GOOGLE_CLIENT_ID=...<br/>
                 GOOGLE_CLIENT_SECRET=...<br/>
                 GOOGLE_REDIRECT_URI=https://yourdomain.com/api/calendar/google/callback
               </div>
             </div>
             <div>
-              <p className="font-semibold text-gray-800 mb-1">Outlook / Microsoft</p>
-              <ol className="list-decimal list-inside space-y-1 text-xs text-gray-500">
-                <li>Go to <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">portal.azure.com</a> → App registrations → New</li>
+              <p className="font-semibold text-pk-text mb-1">Outlook / Microsoft</p>
+              <ol className="list-decimal list-inside space-y-1 text-xs text-pk-text-muted">
+                <li>Go to <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-pk-teal-600 hover:underline">portal.azure.com</a> → App registrations → New</li>
                 <li>Accounts in any org directory + personal Microsoft accounts</li>
-                <li>Add redirect URI: <code className="bg-gray-100 px-1 rounded">{"{your-domain}"}/api/calendar/outlook/callback</code></li>
+                <li>Add redirect URI: <code className="bg-pk-surface-sunken px-1 rounded">{"{your-domain}"}/api/calendar/outlook/callback</code></li>
                 <li>Certificates &amp; secrets → New client secret</li>
                 <li>API permissions → Microsoft Graph → Calendars.ReadWrite (delegated)</li>
               </ol>
-              <div className="mt-2 rounded-lg bg-gray-50 px-3 py-2 font-mono text-xs text-gray-500">
+              <div className="mt-2 rounded-lg bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
                 MICROSOFT_CLIENT_ID=...<br/>
                 MICROSOFT_CLIENT_SECRET=...<br/>
                 MICROSOFT_REDIRECT_URI=https://yourdomain.com/api/calendar/outlook/callback

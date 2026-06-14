@@ -117,9 +117,10 @@ async function getValidToken(
       : await refreshOutlookToken(decryptedRefresh);
 
   const encryptedAccess = await encryptField(refreshed.accessToken);
+  if (!encryptedAccess) throw new Error("Token encryption failed during refresh");
   await db
     .update(calendarIntegrations)
-    .set({ accessToken: encryptedAccess ?? "", expiresAt: refreshed.expiresAt, updatedAt: Date.now() })
+    .set({ accessToken: encryptedAccess, expiresAt: refreshed.expiresAt, updatedAt: Date.now() })
     .where(eq(calendarIntegrations.id, integration.id));
 
   return refreshed.accessToken;
@@ -162,10 +163,11 @@ async function pushToGoogle(
 
 async function cancelGoogleEvent(accessToken: string, calendarId: string, eventId: string): Promise<void> {
   const calId = encodeURIComponent(calendarId);
-  await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${eventId}`, {
+  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calId}/events/${eventId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+  if (!res.ok && res.status !== 404) throw new Error(`Google Calendar DELETE error ${res.status}`);
 }
 
 // ─── Outlook Calendar API ─────────────────────────────────────────────────────
@@ -202,10 +204,11 @@ async function pushToOutlook(
 }
 
 async function cancelOutlookEvent(accessToken: string, eventId: string): Promise<void> {
-  await fetch(`https://graph.microsoft.com/v1.0/me/events/${eventId}`, {
+  const res = await fetch(`https://graph.microsoft.com/v1.0/me/events/${eventId}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+  if (!res.ok && res.status !== 404) throw new Error(`Outlook Calendar DELETE error ${res.status}`);
 }
 
 // ─── Main exported functions ──────────────────────────────────────────────────
@@ -218,12 +221,13 @@ async function cancelOutlookEvent(accessToken: string, eventId: string): Promise
 export async function syncAppointmentToCalendar(
   db: DrizzleDB,
   doctorId: string,
+  orgId: string,
   event: CalendarEvent,
 ): Promise<void> {
   const [integration] = await db
     .select()
     .from(calendarIntegrations)
-    .where(and(eq(calendarIntegrations.userId, doctorId), eq(calendarIntegrations.isActive, 1)));
+    .where(and(eq(calendarIntegrations.userId, doctorId), eq(calendarIntegrations.organizationId, orgId), eq(calendarIntegrations.isActive, 1)));
 
   if (!integration) return; // doctor hasn't connected a calendar
 
@@ -263,12 +267,13 @@ export async function syncAppointmentToCalendar(
 export async function removeAppointmentFromCalendar(
   db: DrizzleDB,
   doctorId: string,
+  orgId: string,
   appointmentId: string,
 ): Promise<void> {
   const [integration] = await db
     .select()
     .from(calendarIntegrations)
-    .where(and(eq(calendarIntegrations.userId, doctorId), eq(calendarIntegrations.isActive, 1)));
+    .where(and(eq(calendarIntegrations.userId, doctorId), eq(calendarIntegrations.organizationId, orgId), eq(calendarIntegrations.isActive, 1)));
 
   if (!integration) return;
 

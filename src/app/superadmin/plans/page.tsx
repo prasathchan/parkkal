@@ -66,12 +66,12 @@ export default function PlansPage() {
 
   const field = (key: keyof Plan, label: string, type = "text") => (
     <div>
-      <label className="block text-xs text-slate-500 mb-1">{label}</label>
+      <label className="block text-xs text-pk-text-muted mb-1">{label}</label>
       <input
         type={type}
         value={String(form[key] ?? "")}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
       />
     </div>
   );
@@ -79,15 +79,15 @@ export default function PlansPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Plans & Pricing</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Edit plan names, prices, and doctor limits. Changes take effect immediately for new subscriptions.</p>
+        <h1 className="text-xl font-bold text-pk-text">Plans & Pricing</h1>
+        <p className="text-sm text-pk-text-muted mt-0.5">Edit plan names, prices, and doctor limits. Changes take effect immediately for new subscriptions.</p>
       </div>
 
       {msg && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">{msg}</p>}
 
       <div className="space-y-4">
         {plans.map((plan) => (
-          <div key={plan.id} className="bg-white rounded-xl border border-slate-200 p-5">
+          <div key={plan.id} className="bg-white rounded-xl border border-pk-border p-5">
             {editing === plan.id ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -98,25 +98,25 @@ export default function PlansPage() {
                   {field("sortOrder", "Sort order", "number")}
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Description</label>
+                  <label className="block text-xs text-pk-text-muted mb-1">Description</label>
                   <input
                     type="text"
                     value={form.description ?? ""}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Features (comma-separated)</label>
+                  <label className="block text-xs text-pk-text-muted mb-1">Features (comma-separated)</label>
                   <input
                     type="text"
                     value={typeof form.features === "string" ? form.features : JSON.parse(form.features || "[]").join(", ")}
                     onChange={(e) => setForm((f) => ({ ...f, features: e.target.value }))}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <label className="flex items-center gap-2 text-sm text-pk-text-secondary cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.isActive === 1}
@@ -127,10 +127,10 @@ export default function PlansPage() {
                   </label>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={savePlan} disabled={saving} className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+                  <button onClick={savePlan} disabled={saving} className="bg-pk-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
                     {saving ? "Saving…" : "Save changes"}
                   </button>
-                  <button onClick={() => setEditing(null)} className="px-4 py-1.5 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+                  <button onClick={() => setEditing(null)} className="px-4 py-1.5 rounded-lg text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
                     Cancel
                   </button>
                 </div>
@@ -139,18 +139,18 @@ export default function PlansPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-slate-900">{plan.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${plan.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                    <h3 className="font-semibold text-pk-text">{plan.name}</h3>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${plan.isActive ? "bg-green-100 text-green-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                       {plan.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-500">{plan.description}</p>
-                  <div className="flex flex-wrap gap-3 mt-2 text-sm text-slate-700">
-                    <span className="font-bold text-lg text-blue-700">₹{plan.priceMonthly.toLocaleString("en-IN")}<span className="text-xs font-normal text-slate-400">/mo</span></span>
-                    <span className="text-xs text-slate-500 mt-1">· {plan.maxDoctors ?? "∞"} doctors · {plan.maxStaff ?? "∞"} staff</span>
+                  <p className="text-sm text-pk-text-muted">{plan.description}</p>
+                  <div className="flex flex-wrap gap-3 mt-2 text-sm text-pk-text-secondary">
+                    <span className="font-bold text-lg text-pk-teal-700">₹{plan.priceMonthly.toLocaleString("en-IN")}<span className="text-xs font-normal text-pk-text-muted">/mo</span></span>
+                    <span className="text-xs text-pk-text-muted mt-1">· {plan.maxDoctors ?? "∞"} doctors · {plan.maxStaff ?? "∞"} staff</span>
                   </div>
                 </div>
-                <button onClick={() => startEdit(plan)} className="text-sm text-blue-600 hover:underline">
+                <button onClick={() => startEdit(plan)} className="text-sm text-pk-teal-600 hover:underline">
                   Edit
                 </button>
               </div>

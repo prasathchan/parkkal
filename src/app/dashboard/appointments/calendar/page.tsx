@@ -49,11 +49,11 @@ const HOURS      = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_
 const DAYS       = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
-  SCHEDULED:   "bg-blue-100  text-blue-800  border-blue-200",
-  CONFIRMED:   "bg-indigo-100 text-indigo-800 border-indigo-200",
-  IN_PROGRESS: "bg-sky-100   text-sky-800   border-sky-200",
+  SCHEDULED:   "bg-pk-teal-100  text-pk-teal-800  border-pk-teal-200",
+  CONFIRMED:   "bg-pk-teal-100 text-pk-teal-800 border-pk-teal-200",
+  IN_PROGRESS: "bg-pk-teal-100   text-pk-teal-800   border-pk-teal-200",
   COMPLETED:   "bg-green-100 text-green-800 border-green-200",
-  CANCELLED:   "bg-gray-100  text-gray-500  border-gray-200",
+  CANCELLED:   "bg-pk-surface-sunken  text-pk-text-muted  border-pk-border",
   NO_SHOW:     "bg-red-100   text-red-800   border-red-200",
 };
 
@@ -181,25 +181,25 @@ export default function CalendarPage() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-pk-surface-raised">
       <Header title="Appointment Calendar" />
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3 px-6 py-3 bg-white border-b border-gray-200">
+      <div className="flex flex-wrap items-center gap-3 px-6 py-3 bg-white border-b border-pk-border">
         {/* Week navigation */}
         <button
           onClick={prevWeek}
-          className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+          className="p-1.5 rounded hover:bg-pk-surface-sunken text-pk-text-secondary"
           aria-label="Previous week"
         >
           ‹
         </button>
-        <span className="font-medium text-sm text-gray-700 min-w-[140px] text-center">
+        <span className="font-medium text-sm text-pk-text-secondary min-w-[140px] text-center">
           {formatMonth(weekStart)}
         </span>
         <button
           onClick={nextWeek}
-          className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+          className="p-1.5 rounded hover:bg-pk-surface-sunken text-pk-text-secondary"
           aria-label="Next week"
         >
           ›
@@ -210,7 +210,7 @@ export default function CalendarPage() {
         {/* Doctor filter */}
         {doctorOptions.length > 0 && (
           <select
-            className="ml-auto text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white"
+            className="ml-auto text-sm border border-pk-border-strong rounded-md px-3 py-1.5 bg-white"
             value={doctorFilter}
             onChange={(e) => setDoctorFilter(e.target.value)}
           >
@@ -237,7 +237,7 @@ export default function CalendarPage() {
       <div className="flex-1 overflow-auto px-4 pb-6">
         <div className="min-w-[800px]">
           {/* Day header row */}
-          <div className="grid grid-cols-[64px_repeat(7,1fr)] sticky top-0 z-10 bg-white border-b border-gray-200">
+          <div className="grid grid-cols-[64px_repeat(7,1fr)] sticky top-0 z-10 bg-white border-b border-pk-border">
             <div /> {/* time gutter */}
             {weekDays.map((d, i) => {
               const ds   = toDateStr(d);
@@ -245,14 +245,14 @@ export default function CalendarPage() {
               return (
                 <div
                   key={i}
-                  className={`py-2 text-center text-sm border-l border-gray-100 ${
-                    isToday ? "bg-blue-50" : ""
+                  className={`py-2 text-center text-sm border-l border-pk-border ${
+                    isToday ? "bg-pk-teal-50" : ""
                   }`}
                 >
-                  <div className={`text-xs font-medium ${isToday ? "text-blue-600" : "text-gray-500"}`}>
+                  <div className={`text-xs font-medium ${isToday ? "text-pk-teal-600" : "text-pk-text-muted"}`}>
                     {DAYS[i]}
                   </div>
-                  <div className={`text-base font-semibold ${isToday ? "text-blue-700" : "text-gray-800"}`}>
+                  <div className={`text-base font-semibold ${isToday ? "text-pk-teal-700" : "text-pk-text"}`}>
                     {formatDay(d)}
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function CalendarPage() {
 
           {/* Unscheduled strip — appointments with no time */}
           {weekDays.some((d) => (appointmentsByDate.get(toDateStr(d)) ?? []).some((a) => !a.appointmentTime)) && (
-            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-gray-200 bg-amber-50">
+            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-pk-border bg-amber-50">
               <div className="py-1 px-2 text-[10px] text-amber-600 font-medium self-center">
                 No time
               </div>
@@ -270,7 +270,7 @@ export default function CalendarPage() {
                 const unscheduled = (appointmentsByDate.get(toDateStr(d)) ?? [])
                   .filter((a) => !a.appointmentTime);
                 return (
-                  <div key={i} className="border-l border-gray-100 py-1 px-1 space-y-0.5 min-h-[28px]">
+                  <div key={i} className="border-l border-pk-border py-1 px-1 space-y-0.5 min-h-[28px]">
                     {unscheduled.map((appt) => (
                       <AppointmentChip
                         key={appt.id}
@@ -286,18 +286,18 @@ export default function CalendarPage() {
 
           {/* Time grid */}
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-64 text-pk-text-muted text-sm">
               Loading…
             </div>
           ) : (
             HOURS.map((hour) => (
               <div
                 key={hour}
-                className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-gray-100"
+                className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-pk-border"
                 style={{ height: 60 }}
               >
                 {/* Hour label */}
-                <div className="px-2 pt-1 text-[11px] text-gray-400 text-right leading-none">
+                <div className="px-2 pt-1 text-[11px] text-pk-text-muted text-right leading-none">
                   {hour === 12 ? "12 PM" : hour < 12 ? `${hour} AM` : `${hour - 12} PM`}
                 </div>
 
@@ -310,7 +310,7 @@ export default function CalendarPage() {
                   return (
                     <div
                       key={i}
-                      className={`relative border-l border-gray-100 ${isToday ? "bg-blue-50/30" : ""}`}
+                      className={`relative border-l border-pk-border ${isToday ? "bg-pk-teal-50/30" : ""}`}
                     >
                       {dayAppts.map((appt) => (
                         <div
@@ -347,7 +347,7 @@ function AppointmentChip({
   appt: Appointment;
   onClick: () => void;
 }) {
-  const colors = STATUS_COLORS[appt.status] ?? "bg-gray-100 text-gray-700 border-gray-200";
+  const colors = STATUS_COLORS[appt.status] ?? "bg-pk-surface-sunken text-pk-text-secondary border-pk-border";
   return (
     <button
       onClick={onClick}
@@ -378,7 +378,7 @@ function AppointmentDetail({
   appt: Appointment;
   onClose: () => void;
 }) {
-  const colors = STATUS_COLORS[appt.status] ?? "bg-gray-100 text-gray-700 border-gray-200";
+  const colors = STATUS_COLORS[appt.status] ?? "bg-pk-surface-sunken text-pk-text-secondary border-pk-border";
 
   return (
     <>
@@ -391,11 +391,11 @@ function AppointmentDetail({
 
       {/* Sheet */}
       <div className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-xl z-50 flex flex-col overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <h2 className="font-semibold text-gray-900">Appointment</h2>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-pk-border">
+          <h2 className="font-semibold text-pk-text">Appointment</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+            className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
             aria-label="Close"
           >
             ✕
@@ -410,43 +410,43 @@ function AppointmentDetail({
 
           {/* Patient */}
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Patient</p>
-            <p className="font-medium text-gray-900">{appt.patientName ?? appt.patientId}</p>
+            <p className="text-xs text-pk-text-muted mb-0.5">Patient</p>
+            <p className="font-medium text-pk-text">{appt.patientName ?? appt.patientId}</p>
             {appt.patientCode && (
-              <p className="text-xs text-gray-400">{appt.patientCode}</p>
+              <p className="text-xs text-pk-text-muted">{appt.patientCode}</p>
             )}
           </div>
 
           {/* Doctor */}
           {appt.doctorName && (
             <div>
-              <p className="text-xs text-gray-500 mb-0.5">Doctor</p>
-              <p className="font-medium text-gray-900">{appt.doctorName}</p>
+              <p className="text-xs text-pk-text-muted mb-0.5">Doctor</p>
+              <p className="font-medium text-pk-text">{appt.doctorName}</p>
             </div>
           )}
 
           {/* Date & Time */}
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Date & Time</p>
-            <p className="font-medium text-gray-900">
+            <p className="text-xs text-pk-text-muted mb-0.5">Date & Time</p>
+            <p className="font-medium text-pk-text">
               {new Date(`${appt.appointmentDate}T00:00`).toLocaleDateString("en-IN", {
                 weekday: "long", day: "numeric", month: "short", year: "numeric",
               })}
             </p>
-            <p className="text-sm text-gray-600">{appt.appointmentTime ?? "No time set"}</p>
+            <p className="text-sm text-pk-text-secondary">{appt.appointmentTime ?? "No time set"}</p>
           </div>
 
           {/* Type */}
           <div>
-            <p className="text-xs text-gray-500 mb-0.5">Type</p>
-            <p className="text-sm text-gray-900">{TYPE_LABELS[appt.type] ?? appt.type}</p>
+            <p className="text-xs text-pk-text-muted mb-0.5">Type</p>
+            <p className="text-sm text-pk-text">{TYPE_LABELS[appt.type] ?? appt.type}</p>
           </div>
 
           {/* Notes */}
           {appt.notes && (
             <div>
-              <p className="text-xs text-gray-500 mb-0.5">Notes</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{appt.notes}</p>
+              <p className="text-xs text-pk-text-muted mb-0.5">Notes</p>
+              <p className="text-sm text-pk-text-secondary whitespace-pre-wrap">{appt.notes}</p>
             </div>
           )}
 
@@ -454,7 +454,7 @@ function AppointmentDetail({
           <div className="pt-2 space-y-2">
             <Link
               href={`/dashboard/appointments?highlight=${appt.id}`}
-              className="block w-full text-center text-sm font-medium text-blue-600 hover:text-blue-700 py-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              className="block w-full text-center text-sm font-medium text-pk-teal-600 hover:text-pk-teal-700 py-2 border border-pk-teal-200 rounded-lg hover:bg-pk-teal-50 transition-colors"
               onClick={onClose}
             >
               View in List

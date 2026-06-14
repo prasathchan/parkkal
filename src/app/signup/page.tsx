@@ -63,11 +63,11 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100 py-12 px-4">
       <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+          <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -77,11 +77,11 @@ export default function SignupPage() {
               <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Parkkal</h1>
-          <p className="text-slate-500 text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
+          <h1 className="text-2xl font-bold text-pk-text">Parkkal</h1>
+          <p className="text-pk-text-muted text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
         </div>
 
-        <h2 className="text-xl font-semibold text-slate-800 mb-6 text-center">
+        <h2 className="text-xl font-semibold text-pk-text mb-6 text-center">
           Create your account
         </h2>
 
@@ -89,7 +89,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="name"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Full Name
             </label>
@@ -101,14 +101,14 @@ export default function SignupPage() {
               onChange={handleChange}
               required
               placeholder="Dr. Jane Smith"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Email Address
             </label>
@@ -121,19 +121,19 @@ export default function SignupPage() {
               required
               autoComplete="email"
               placeholder="jane@example.com"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           <div>
             <label
               htmlFor="phone"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Phone Number
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-3 py-2.5 border border-r-0 border-slate-300 rounded-l-lg bg-slate-50 text-slate-500 text-sm">
+              <span className="inline-flex items-center px-3 py-2.5 border border-r-0 border-pk-border-strong rounded-l-lg bg-pk-surface-raised text-pk-text-muted text-sm">
                 +91
               </span>
               <input
@@ -144,7 +144,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
                 placeholder="9876543210"
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                className="flex-1 px-4 py-2.5 border border-pk-border-strong rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -152,7 +152,7 @@ export default function SignupPage() {
           <div>
             <label
               htmlFor="clinicName"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Clinic Name
             </label>
@@ -164,14 +164,14 @@ export default function SignupPage() {
               onChange={handleChange}
               required
               placeholder="e.g. Smile Dental Clinic"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Password
             </label>
@@ -184,14 +184,14 @@ export default function SignupPage() {
               required
               autoComplete="new-password"
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
+              className="block text-sm font-medium text-pk-text-secondary mb-1.5"
             >
               Confirm Password
             </label>
@@ -204,7 +204,7 @@ export default function SignupPage() {
               required
               autoComplete="new-password"
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -217,26 +217,26 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
+            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="text-center text-sm text-pk-text-muted mt-6">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline font-medium">
+          <a href="/login" className="text-pk-teal-600 hover:underline font-medium">
             Sign in
           </a>
         </p>
 
-        <p className="text-center text-xs text-slate-400 mt-4">
+        <p className="text-center text-xs text-pk-text-muted mt-4">
           By signing up you agree to our{" "}
-          <a href="/legal/terms" className="underline hover:text-slate-600">Terms of Service</a>{" "}
+          <a href="/legal/terms" className="underline hover:text-pk-text-secondary">Terms of Service</a>{" "}
           and{" "}
-          <a href="/legal/privacy" className="underline hover:text-slate-600">Privacy Policy</a>.
+          <a href="/legal/privacy" className="underline hover:text-pk-text-secondary">Privacy Policy</a>.
         </p>
-        <p className="text-center text-xs text-slate-400 mt-2">
+        <p className="text-center text-xs text-pk-text-muted mt-2">
           © {new Date().getFullYear()} Parkkal Clinic · app.parkkal.com
         </p>
       </div>
