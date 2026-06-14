@@ -189,9 +189,9 @@ export default function VisitDetailPage() {
       <Header title={visit.visitCode} breadcrumb={[{ label: "Dashboard" }, { label: "Visits", href: "/dashboard/visits" }, { label: visit.visitCode }]} />
       <main id="main-content" className="flex-1 p-6 space-y-5">
         {pageError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center justify-between">
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text rounded-lg px-4 py-3 text-sm flex items-center justify-between">
             <span>{pageError}</span>
-            <button onClick={() => setPageError("")} aria-label="Dismiss error" className="ml-4 text-red-400 hover:text-red-600 font-bold leading-none">&times;</button>
+            <button onClick={() => setPageError("")} aria-label="Dismiss error" className="ml-4 text-pk-danger-text hover:text-pk-danger-text font-bold leading-none">&times;</button>
           </div>
         )}
 
@@ -206,7 +206,7 @@ export default function VisitDetailPage() {
           </div>
         )}
         {visit.appointmentId && (appointmentStatus === "COMPLETED" || visit.status === "COMPLETED") && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 flex items-center gap-2 text-sm text-green-800">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-xl px-5 py-3 flex items-center gap-2 text-sm text-pk-success-text">
             <span>✅</span><span>Appointment marked as completed.</span>
           </div>
         )}

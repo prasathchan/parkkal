@@ -136,12 +136,12 @@ export default function PatientEditPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3">
                   Patient updated successfully. Redirecting...
                 </div>
               )}

@@ -94,18 +94,18 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
 
         <div className="flex-1 px-6 py-5 space-y-5">
           {role && role.userCount > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2">
-              <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-pk-warning-fill border border-pk-warning-border rounded-lg px-4 py-3 flex items-start gap-2">
+              <svg className="w-4 h-4 text-pk-warning-text mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.07 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
-              <p className="text-sm text-amber-800">
+              <p className="text-sm text-pk-warning-text">
                 This will affect <strong>{role.userCount} member{role.userCount !== 1 ? "s" : ""}</strong> who have this role.
               </p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+            <div className="bg-pk-danger-fill border border-pk-danger-border rounded-lg px-4 py-3 text-sm text-pk-danger-text">
               {error}
             </div>
           )}
@@ -256,7 +256,7 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
         </div>
         <div className="px-6 py-5 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+            <div className="bg-pk-danger-fill border border-pk-danger-border rounded-lg px-4 py-3 text-sm text-pk-danger-text">
               {error}
             </div>
           )}
@@ -282,7 +282,7 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
                 <button
                   onClick={handleMigrateAndDelete}
                   disabled={loading || !targetRoleId}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition disabled:opacity-60"
+                  className="flex-1 bg-pk-danger hover:bg-pk-danger text-white text-sm font-medium px-4 py-2.5 rounded-lg transition disabled:opacity-60"
                 >
                   {loading ? "Migrating..." : `Migrate ${role.userCount} member${role.userCount !== 1 ? "s" : ""} & Delete`}
                 </button>
@@ -300,7 +300,7 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
                 <button
                   onClick={handleDelete}
                   disabled={loading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition disabled:opacity-60"
+                  className="flex-1 bg-pk-danger hover:bg-pk-danger text-white text-sm font-medium px-4 py-2.5 rounded-lg transition disabled:opacity-60"
                 >
                   {loading ? "Deleting..." : "Delete Role"}
                 </button>
@@ -510,7 +510,7 @@ function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
         ) : (
           <button
             onClick={onDelete}
-            className="flex items-center gap-1.5 text-xs text-pk-text-secondary hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition"
+            className="flex items-center gap-1.5 text-xs text-pk-text-secondary hover:text-pk-danger-text hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-lg transition"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

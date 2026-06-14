@@ -32,10 +32,10 @@ interface Plan {
 
 const STATUS_COPY: Record<string, { label: string; color: string }> = {
   trialing:  { label: "Free trial",          color: "text-pk-teal-700 bg-pk-teal-50 border-pk-teal-200" },
-  active:    { label: "Active",               color: "text-green-700 bg-green-50 border-green-200" },
-  past_due:  { label: "Payment overdue",      color: "text-yellow-700 bg-yellow-50 border-yellow-200" },
+  active:    { label: "Active",               color: "text-pk-success-text bg-pk-success-fill border-pk-success-border" },
+  past_due:  { label: "Payment overdue",      color: "text-pk-warning-text bg-pk-warning-fill border-pk-warning-border" },
   cancelled: { label: "Cancelled",            color: "text-pk-text-secondary bg-pk-surface-raised border-pk-border" },
-  expired:   { label: "Expired — read-only",  color: "text-red-700 bg-red-50 border-red-200" },
+  expired:   { label: "Expired — read-only",  color: "text-pk-danger-text bg-pk-danger-fill border-pk-danger-border" },
 };
 
 function BillingPageInner() {
@@ -100,7 +100,7 @@ function BillingPageInner() {
       <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {upgraded && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-xl px-4 py-3 text-sm text-pk-success-text flex items-center gap-2">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -108,7 +108,7 @@ function BillingPageInner() {
           </div>
         )}
         {cancelled && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+          <div className="bg-pk-warning-fill border border-pk-warning-border rounded-xl px-4 py-3 text-sm text-pk-warning-text">
             Checkout was cancelled. No changes were made to your subscription.
           </div>
         )}
@@ -146,12 +146,12 @@ function BillingPageInner() {
                   <p className="text-xs text-pk-text-muted mb-1">
                     {sub.status === "trialing" ? "Trial ends" : "Renews"}
                   </p>
-                  <p className={`font-bold text-lg ${sub.isReadOnly ? "text-red-700" : "text-pk-text"}`}>
+                  <p className={`font-bold text-lg ${sub.isReadOnly ? "text-pk-danger-text" : "text-pk-text"}`}>
                     {endDate
                       ? new Date(endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                       : "—"}
                     {sub.daysRemaining !== null && (
-                      <span className={`block text-xs font-normal mt-0.5 ${sub.daysRemaining < 0 ? "text-red-500" : sub.daysRemaining <= 7 ? "text-yellow-600" : "text-pk-text-muted"}`}>
+                      <span className={`block text-xs font-normal mt-0.5 ${sub.daysRemaining < 0 ? "text-pk-danger-text" : sub.daysRemaining <= 7 ? "text-pk-warning-text" : "text-pk-text-muted"}`}>
                         {sub.daysRemaining < 0
                           ? `Expired ${Math.abs(sub.daysRemaining)} days ago`
                           : sub.daysRemaining === 0
@@ -164,7 +164,7 @@ function BillingPageInner() {
               </div>
 
               {sub.isReadOnly && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div className="mt-4 p-4 bg-pk-danger-fill border border-pk-danger-border rounded-lg text-sm text-pk-danger-text">
                   Your subscription has expired. Your data is safe and visible, but you cannot create or edit records until you upgrade.
                 </div>
               )}
@@ -186,7 +186,7 @@ function BillingPageInner() {
 
             {/* Checkout error */}
             {checkoutError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+              <div className="rounded-xl border border-pk-danger-border bg-pk-danger-fill px-4 py-3 text-sm text-pk-danger-text flex items-start gap-2">
                 <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>

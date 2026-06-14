@@ -9,14 +9,14 @@ import type { AppLogEntry } from "@/api/admin";
 // ─── Styling maps ──────────────────────────────────────────────────────────────
 
 const LEVEL_PILL: Record<string, string> = {
-  error:    "bg-red-100 text-red-700 border border-red-200",
-  security: "bg-orange-100 text-orange-700 border border-orange-200",
-  warn:     "bg-yellow-100 text-yellow-700 border border-yellow-200",
+  error:    "bg-pk-danger-fill text-pk-danger-text border border-pk-danger-border",
+  security: "bg-pk-warning-fill text-pk-warning-text border border-pk-warning-border",
+  warn:     "bg-pk-warning-fill text-pk-warning-text border border-pk-warning-border",
 };
 const LEVEL_ROW: Record<string, string> = {
-  error:    "bg-red-50/30",
-  security: "bg-orange-50/20",
-  warn:     "bg-yellow-50/20",
+  error:    "bg-pk-danger-fill",
+  security: "bg-pk-warning-fill",
+  warn:     "bg-pk-warning-fill",
 };
 const LEVEL_LABELS: Record<string, string> = {
   error: "Error", security: "Security", warn: "Warning",
@@ -334,7 +334,7 @@ export default function AppLogsPage() {
                             {entry.errorStack && (
                               <div>
                                 <p className="text-xs font-semibold text-pk-text-muted mb-1">Stack trace</p>
-                                <pre className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-lg px-4 py-3 overflow-x-auto whitespace-pre-wrap">
+                                <pre className="text-xs text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-lg px-4 py-3 overflow-x-auto whitespace-pre-wrap">
                                   {entry.errorStack}
                                 </pre>
                               </div>

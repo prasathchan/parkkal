@@ -17,10 +17,10 @@ interface SubRow {
 
 const STATUS_BADGE: Record<string, string> = {
   trialing:  "bg-pk-teal-100 text-pk-teal-700",
-  active:    "bg-green-100 text-green-700",
-  past_due:  "bg-yellow-100 text-yellow-700",
+  active:    "bg-pk-success-fill text-pk-success-text",
+  past_due:  "bg-pk-warning-fill text-pk-warning-text",
   cancelled: "bg-pk-surface-sunken text-pk-text-secondary",
-  expired:   "bg-red-100 text-red-700",
+  expired:   "bg-pk-danger-fill text-pk-danger-text",
 };
 
 export default function SuperadminOverviewPage() {
@@ -94,7 +94,7 @@ export default function SuperadminOverviewPage() {
                     </td>
                     <td className="px-5 py-3 text-right text-pk-text-secondary">
                       {s.daysRemaining !== null ? (
-                        <span className={s.daysRemaining < 0 ? "text-red-600 font-medium" : s.daysRemaining <= 7 ? "text-yellow-600" : ""}>
+                        <span className={s.daysRemaining < 0 ? "text-pk-danger-text font-medium" : s.daysRemaining <= 7 ? "text-pk-warning-text" : ""}>
                           {s.daysRemaining < 0 ? `${Math.abs(s.daysRemaining)}d ago` : `${s.daysRemaining}d`}
                         </span>
                       ) : "—"}

@@ -93,7 +93,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
             {patient.bloodGroup && (
               <div>
                 <p className="text-pk-text-muted text-xs mb-0.5">Blood Group</p>
-                <p className="font-medium text-red-600">{patient.bloodGroup}</p>
+                <p className="font-medium text-pk-danger-text">{patient.bloodGroup}</p>
               </div>
             )}
             <div>
@@ -113,15 +113,15 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               <p className="text-sm text-pk-text-secondary bg-pk-surface-raised rounded-lg p-3">{patient.medicalHistory}</p>
             </div>
           )}
-          <div className="mt-4 pt-4 border-t border-red-100">
+          <div className="mt-4 pt-4 border-t border-pk-danger-border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-red-700">Erase Patient Data</p>
+                <p className="text-xs font-semibold text-pk-danger-text">Erase Patient Data</p>
                 <p className="text-xs text-pk-text-muted mt-0.5">Permanently delete all records for this patient (DPDP Act right to erasure). This cannot be undone.</p>
               </div>
               <button
                 onClick={() => { setShowEraseModal(true); setConfirmText(""); setError(""); }}
-                className="text-xs border border-red-200 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition font-medium shrink-0 ml-4"
+                className="text-xs border border-pk-danger-border text-pk-danger-text px-3 py-1.5 rounded-lg hover:bg-pk-danger-fill transition font-medium shrink-0 ml-4"
               >
                 Erase Data
               </button>
@@ -132,8 +132,8 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
 
       {showEraseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-red-200 shadow-xl max-w-md w-full p-6">
-            <h2 className="text-base font-bold text-red-700 mb-1">Permanently Erase Patient Data</h2>
+          <div className="bg-white rounded-2xl border border-pk-danger-border shadow-xl max-w-md w-full p-6">
+            <h2 className="text-base font-bold text-pk-danger-text mb-1">Permanently Erase Patient Data</h2>
             <p className="text-sm text-pk-text-secondary mb-4">
               This will permanently delete <strong>{patient.name}</strong> and all associated visits, prescriptions,
               invoices, appointments, and records. This action is irreversible and will be recorded in the audit log.
@@ -144,14 +144,14 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="ERASE"
-              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-300"
+              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pk-danger"
             />
-            {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+            {error && <p className="text-xs text-pk-danger-text mb-3">{error}</p>}
             <div className="flex gap-3">
               <button
                 onClick={handleErase}
                 disabled={confirmText !== "ERASE" || loading}
-                className="flex-1 bg-red-600 text-white rounded-xl py-2 text-sm font-semibold hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-pk-danger text-white rounded-xl py-2 text-sm font-semibold hover:bg-pk-danger transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Erasing…" : "Permanently Erase"}
               </button>

@@ -24,11 +24,11 @@ const SLUG_TO_SYSTEM_ROLE: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-red-100 text-red-700",
+  ADMIN: "bg-pk-danger-fill text-pk-danger-text",
   DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
   NURSE: "bg-pink-100 text-pink-700",
   RECEPTIONIST: "bg-pk-teal-100 text-pk-teal-700",
-  ATTENDANT: "bg-orange-100 text-orange-700",
+  ATTENDANT: "bg-pk-warning-fill text-pk-warning-text",
   HELPER: "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
@@ -243,7 +243,7 @@ export default function StaffPage() {
                     </td>
                     <td className="px-4 py-3 text-pk-text-muted">{m.joinedAt || "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-green-100 text-green-700" : m.isVerified === 0 ? "bg-yellow-100 text-yellow-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${m.isActive ? "bg-pk-success-fill text-pk-success-text" : m.isVerified === 0 ? "bg-pk-warning-fill text-pk-warning-text" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                         {m.isActive ? "Active" : m.isVerified === 0 ? "Pending Setup" : "Inactive"}
                       </span>
                     </td>
@@ -298,9 +298,9 @@ export default function StaffPage() {
                     onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
-                  {touched.email && fieldErrors.email && <p className="text-xs text-red-600 mt-1">{fieldErrors.email}</p>}
+                  {touched.email && fieldErrors.email && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.email}</p>}
                   <p className="text-xs text-pk-text-muted mt-1">If user exists, their profile will be used. Otherwise fill the fields below.</p>
                 </div>
                 <div>
@@ -321,9 +321,9 @@ export default function StaffPage() {
                     onChange={updateForm("phone")}
                     onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
-                  {touched.phone && fieldErrors.phone && <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p>}
+                  {touched.phone && fieldErrors.phone && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.phone}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-pk-text-secondary mb-1">Date of Birth</label>
@@ -410,8 +410,8 @@ export default function StaffPage() {
               </div>
 
               {/* Documents */}
-              <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
-                <p className="text-sm font-medium text-yellow-800 mb-3">Documents (Optional)</p>
+              <div className="border border-pk-warning-border rounded-lg p-4 bg-pk-warning-fill">
+                <p className="text-sm font-medium text-pk-warning-text mb-3">Documents (Optional)</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">PAN Number</label>
@@ -422,9 +422,9 @@ export default function StaffPage() {
                       onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
-                    {touched.panNumber && fieldErrors.panNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.panNumber}</p>}
+                    {touched.panNumber && fieldErrors.panNumber && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.panNumber}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Aadhaar Number</label>
@@ -435,9 +435,9 @@ export default function StaffPage() {
                       onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
-                    {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>}
+                    {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.aadhaarNumber}</p>}
                   </div>
                 </div>
               </div>
@@ -489,7 +489,7 @@ export default function StaffPage() {
                       className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                     {form.password && form.password.length < 8 && (
-                      <p className="text-xs text-red-600 mt-1">Password must be at least 8 characters</p>
+                      <p className="text-xs text-pk-danger-text mt-1">Password must be at least 8 characters</p>
                     )}
                   </div>
                 )}
@@ -497,7 +497,7 @@ export default function StaffPage() {
 
               {/* Emergency Contact — mandatory for staff */}
               <div className="border border-pk-border rounded-lg p-4">
-                <p className="text-sm font-medium text-pk-text mb-1">Emergency Contact <span className="text-red-500">*</span></p>
+                <p className="text-sm font-medium text-pk-text mb-1">Emergency Contact <span className="text-pk-danger-text">*</span></p>
                 <p className="text-xs text-pk-text-muted mb-3">Required before the staff record can be saved.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -537,15 +537,15 @@ export default function StaffPage() {
                       onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-red-400 focus:ring-red-400" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
-                    {touched.ecPhone && fieldErrors.ecPhone && <p className="text-xs text-red-600 mt-1">{fieldErrors.ecPhone}</p>}
+                    {touched.ecPhone && fieldErrors.ecPhone && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.ecPhone}</p>}
                   </div>
                 </div>
               </div>
 
               {formError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                   {formError}
                 </div>
               )}

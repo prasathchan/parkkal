@@ -30,11 +30,11 @@ type SalaryRecord = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-red-100 text-red-700",
+  ADMIN: "bg-pk-danger-fill text-pk-danger-text",
   DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
   NURSE: "bg-pink-100 text-pink-700",
   RECEPTIONIST: "bg-pk-teal-100 text-pk-teal-700",
-  ATTENDANT: "bg-orange-100 text-orange-700",
+  ATTENDANT: "bg-pk-warning-fill text-pk-warning-text",
   HELPER: "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
@@ -273,7 +273,7 @@ export default function StaffDetailPage() {
                     {member.role}
                   </span>
                   {!member.isActive && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Inactive</span>
+                    <span className="text-xs bg-pk-danger-fill text-pk-danger-text px-2 py-0.5 rounded-full">Inactive</span>
                   )}
                 </div>
                 <p className="text-sm text-pk-text-muted">{member.email}</p>
@@ -333,10 +333,10 @@ export default function StaffDetailPage() {
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => { setEditForm((f) => ({ ...f, phone: e.target.value })); setPhoneError(""); }}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 ${phoneError ? "border-red-400" : "border-pk-border-strong"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 ${phoneError ? "border-pk-danger-border" : "border-pk-border-strong"}`}
                       placeholder="+91 98765 43210"
                     />
-                    {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                    {phoneError && <p className="text-xs text-pk-danger-text mt-1">{phoneError}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Date of Birth</label>
@@ -369,7 +369,7 @@ export default function StaffDetailPage() {
                 <p className="text-sm font-semibold text-pk-text-secondary pt-2">Edit Role &amp; Salary</p>
 
                 {saveError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                     {saveError}
                   </div>
                 )}
@@ -452,7 +452,7 @@ export default function StaffDetailPage() {
             )}
 
             {saveSuccess && (
-              <div className="mt-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+              <div className="mt-4 bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3">
                 Changes saved successfully.
               </div>
             )}
@@ -484,7 +484,7 @@ export default function StaffDetailPage() {
             ))}
             {addingEC && (
               <div className="mt-3 space-y-3 border-t border-pk-border pt-4">
-                {ecError && <p className="text-sm text-red-600">{ecError}</p>}
+                {ecError && <p className="text-sm text-pk-danger-text">{ecError}</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Name *</label>
@@ -524,13 +524,13 @@ export default function StaffDetailPage() {
           <CardHeader><CardTitle>Account Access</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2 text-sm">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isActive ? "bg-green-100 text-green-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isActive ? "bg-pk-success-fill text-pk-success-text" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                 {member.isActive ? "HR Active" : "HR Inactive"}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.portalAccess ? "bg-pk-teal-100 text-pk-teal-700" : "bg-yellow-100 text-yellow-700"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.portalAccess ? "bg-pk-teal-100 text-pk-teal-700" : "bg-pk-warning-fill text-pk-warning-text"}`}>
                 {member.portalAccess ? "Login Enabled" : "Login Disabled"}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isVerified ? "bg-teal-100 text-teal-700" : "bg-orange-100 text-orange-700"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isVerified ? "bg-teal-100 text-teal-700" : "bg-pk-warning-fill text-pk-warning-text"}`}>
                 {member.isVerified ? "Devices Verified" : "Unverified"}
               </span>
             </div>
@@ -553,8 +553,8 @@ export default function StaffDetailPage() {
                   </label>
                 ))}
               </div>
-              {linkError && <p className="text-sm text-red-600">{linkError}</p>}
-              {linkSent && <p className="text-sm text-green-600">Link sent to {member.email}</p>}
+              {linkError && <p className="text-sm text-pk-danger-text">{linkError}</p>}
+              {linkSent && <p className="text-sm text-pk-success-text">Link sent to {member.email}</p>}
               <Button size="sm" onClick={handleSendLink} disabled={sendingLink}>
                 {sendingLink ? "Sending..." : "Send link"}
               </Button>
@@ -567,7 +567,7 @@ export default function StaffDetailPage() {
                   Send a one-time code to <span className="font-mono">{member.phone}</span> via SMS and email. Use this to test SMS delivery or manually re-verify a phone number.
                 </p>
                 {phoneOtpResult && (
-                  <p className={`text-sm ${phoneOtpResult.ok ? "text-green-600" : "text-red-600"}`}>
+                  <p className={`text-sm ${phoneOtpResult.ok ? "text-pk-success-text" : "text-pk-danger-text"}`}>
                     {phoneOtpResult.msg}
                   </p>
                 )}
@@ -603,8 +603,8 @@ export default function StaffDetailPage() {
                       <td className="py-2 text-pk-text-muted">{r.appointmentCount || "—"}</td>
                       <td className="py-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          r.status === "PAID" ? "bg-green-100 text-green-700"
-                          : r.status === "PARTIAL" ? "bg-yellow-100 text-yellow-700"
+                          r.status === "PAID" ? "bg-pk-success-fill text-pk-success-text"
+                          : r.status === "PARTIAL" ? "bg-pk-warning-fill text-pk-warning-text"
                           : "bg-pk-surface-sunken text-pk-text-secondary"
                         }`}>
                           {r.status}

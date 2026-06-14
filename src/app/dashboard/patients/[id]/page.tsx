@@ -137,8 +137,8 @@ export default function PatientDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               {[
                 { label: "Total Billed", value: formatCurrency(balance.totalBilled), color: "text-pk-text" },
-                { label: "Total Paid", value: formatCurrency(balance.totalPaid), color: "text-green-600" },
-                { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-red-600" : "text-pk-text-muted" },
+                { label: "Total Paid", value: formatCurrency(balance.totalPaid), color: "text-pk-success-text" },
+                { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-pk-danger-text" : "text-pk-text-muted" },
                 { label: "Total Visits", value: String(balance.visitCount), color: "text-pk-text" },
                 { label: "Last Visit", value: balance.lastVisit || "—", color: "text-pk-text-secondary", small: true },
               ].map((stat) => (

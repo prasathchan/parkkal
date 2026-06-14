@@ -226,7 +226,7 @@ function NewVisitForm() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                   {error}
                 </div>
               )}
@@ -234,7 +234,7 @@ function NewVisitForm() {
               {/* Step 1: Patient */}
               <div>
                 <label className="block text-sm font-medium text-pk-text-secondary mb-1">
-                  Patient <span className="text-red-500">*</span>
+                  Patient <span className="text-pk-danger-text">*</span>
                 </label>
                 <input
                   type="text"
@@ -262,7 +262,7 @@ function NewVisitForm() {
               {selectedPatient && (
                 <div>
                   <label className="block text-sm font-medium text-pk-text-secondary mb-2">
-                    Visit Source <span className="text-red-500">*</span>
+                    Visit Source <span className="text-pk-danger-text">*</span>
                   </label>
 
                   {loadingAppointments ? (
@@ -316,8 +316,8 @@ function NewVisitForm() {
                         onClick={selectWalkIn}
                         className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                           visitSource === "walkin"
-                            ? "border-amber-500 bg-amber-50"
-                            : "border-pk-border hover:border-amber-300 bg-white"
+                            ? "border-pk-warning-border bg-pk-warning-fill"
+                            : "border-pk-border hover:border-pk-warning-border bg-white"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -325,7 +325,7 @@ function NewVisitForm() {
                             🚶 Walk-in (no appointment)
                           </span>
                           {visitSource === "walkin" && (
-                            <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">
+                            <span className="text-xs bg-pk-warning text-white px-2 py-0.5 rounded-full">
                               Selected
                             </span>
                           )}
@@ -349,7 +349,7 @@ function NewVisitForm() {
                   ) : (
                     <div>
                       <label className="block text-sm font-medium text-pk-text-secondary mb-1">
-                        Doctor <span className="text-red-500">*</span>
+                        Doctor <span className="text-pk-danger-text">*</span>
                       </label>
                       <select
                         value={form.doctorId}
@@ -368,7 +368,7 @@ function NewVisitForm() {
 
                   <div>
                     <label className="block text-sm font-medium text-pk-text-secondary mb-1">
-                      Visit Date <span className="text-red-500">*</span>
+                      Visit Date <span className="text-pk-danger-text">*</span>
                     </label>
                     <input
                       type="date"

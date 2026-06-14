@@ -70,7 +70,7 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
               <input type="file" className="hidden" onChange={handleUpload} />
             </label>
           </div>
-          {uploadError && <p className="text-red-500 text-xs mt-2">{uploadError}</p>}
+          {uploadError && <p className="text-pk-danger-text text-xs mt-2">{uploadError}</p>}
         </div>
       )}
 
@@ -99,7 +99,7 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
                 <button
                   onClick={() => handleDeleteAttachment(att.id)}
                   aria-label={`Delete attachment ${att.originalName}`}
-                  className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center justify-center w-6 h-6 bg-red-100 text-red-600 rounded-full text-xs hover:bg-red-200 transition"
+                  className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center justify-center w-6 h-6 bg-pk-danger-fill text-pk-danger-text rounded-full text-xs hover:bg-pk-danger-fill transition"
                 >
                   ×
                 </button>

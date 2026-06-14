@@ -154,19 +154,19 @@ export default function VerifyPage() {
               placeholder="123456"
               className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm text-center tracking-[0.4em] font-mono focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
-            <p className="text-xs text-amber-600 mt-1.5">
+            <p className="text-xs text-pk-warning-text mt-1.5">
               Can&apos;t find it? Check your <strong>Junk</strong> or <strong>Spam</strong> folder.
             </p>
           </div>
 
           {resendMsg && (
-            <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3">
               {resendMsg}
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}

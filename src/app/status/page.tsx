@@ -22,8 +22,8 @@ export default function StatusPage() {
         </div>
 
         {/* Overall status banner */}
-        <div className="bg-white rounded-2xl shadow-sm border border-emerald-100 p-6 mb-6 flex items-center gap-4">
-          <div className="w-4 h-4 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+        <div className="bg-white rounded-2xl shadow-sm border border-pk-success-border p-6 mb-6 flex items-center gap-4">
+          <div className="w-4 h-4 rounded-full bg-pk-success shrink-0 animate-pulse" />
           <div>
             <p className="font-semibold text-pk-text text-lg">All systems operational</p>
             <p className="text-sm text-pk-text-muted">Last checked: {new Date().toUTCString()}</p>
@@ -44,8 +44,8 @@ export default function StatusPage() {
                 <p className="text-sm font-medium text-pk-text">{c.name}</p>
                 <p className="text-xs text-pk-text-muted">{c.note}</p>
               </div>
-              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              <span className="flex items-center gap-1.5 text-xs font-medium text-pk-success-text bg-pk-success-fill px-3 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-pk-success inline-block" />
                 Operational
               </span>
             </div>

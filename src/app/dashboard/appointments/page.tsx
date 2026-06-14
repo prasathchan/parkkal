@@ -30,9 +30,9 @@ const TOTAL_HOURS = HOUR_END - HOUR_START;
 // Appointment type colours
 const TYPE_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
   CONSULTATION: { bg: "bg-pk-teal-50",   border: "border-pk-teal-400",  text: "text-pk-teal-800",  dot: "bg-pk-teal-400"  },
-  CHECKUP:      { bg: "bg-green-50",  border: "border-green-400", text: "text-green-800", dot: "bg-green-400" },
+  CHECKUP:      { bg: "bg-pk-success-fill",  border: "border-pk-success-border", text: "text-pk-success-text", dot: "bg-pk-success" },
   TREATMENT:    { bg: "bg-pk-neutral-50", border: "border-pk-neutral-400",text: "text-pk-neutral-800",dot: "bg-pk-neutral-400"},
-  FOLLOWUP:     { bg: "bg-orange-50", border: "border-orange-400",text: "text-orange-800",dot: "bg-orange-400"},
+  FOLLOWUP:     { bg: "bg-pk-warning-fill", border: "border-pk-warning-border",text: "text-pk-warning-text",dot: "bg-pk-warning"},
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -254,8 +254,8 @@ function DayView({
                 className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                 style={{ top: nowY }}
               >
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-1.5 flex-shrink-0" />
-                <div className="h-px flex-1 bg-red-400" />
+                <div className="h-2.5 w-2.5 rounded-full bg-pk-danger -ml-1.5 flex-shrink-0" />
+                <div className="h-px flex-1 bg-pk-danger" />
               </div>
             )}
 
@@ -406,14 +406,14 @@ function TodaysQueue({
 
       {/* Next up */}
       {nextUp && nextUp.id !== inProgress?.id && (
-        <div className="mx-3 mt-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
+        <div className="mx-3 mt-2 rounded-xl bg-pk-warning-fill border border-pk-warning-border p-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Up Next</span>
+            <span className="h-2 w-2 rounded-full bg-pk-warning" />
+            <span className="text-xs font-semibold text-pk-warning-text uppercase tracking-wide">Up Next</span>
           </div>
-          <p className="text-sm font-bold text-amber-900">{nextUp.patientName}</p>
-          <p className="text-xs text-amber-600">{nextUp.appointmentTime} · {TYPE_LABELS[nextUp.type]}</p>
-          <p className="text-xs text-amber-500 mt-0.5">{nextUp.doctorName}</p>
+          <p className="text-sm font-bold text-pk-warning-text">{nextUp.patientName}</p>
+          <p className="text-xs text-pk-warning-text">{nextUp.appointmentTime} · {TYPE_LABELS[nextUp.type]}</p>
+          <p className="text-xs text-pk-warning-text mt-0.5">{nextUp.doctorName}</p>
         </div>
       )}
 
@@ -430,10 +430,10 @@ function TodaysQueue({
               className={`
                 w-full text-left rounded-lg p-2.5 transition border
                 ${isNow   ? "bg-pk-teal-50 border-pk-teal-200"   :
-                  isNext  ? "bg-amber-50 border-amber-200"  :
+                  isNext  ? "bg-pk-warning-fill border-pk-warning-border"  :
                   apt.status === "COMPLETED"  ? "bg-white border-pk-border opacity-50" :
                   apt.status === "CANCELLED"  ? "bg-white border-pk-border opacity-30" :
-                  apt.status === "NO_SHOW"    ? "bg-red-50 border-red-100 opacity-40" :
+                  apt.status === "NO_SHOW"    ? "bg-pk-danger-fill border-pk-danger-border opacity-40" :
                   "bg-white border-pk-border hover:border-pk-border hover:bg-pk-surface-raised"}
               `}
             >
@@ -448,8 +448,8 @@ function TodaysQueue({
                     inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium mt-0.5
                     ${apt.status === "SCHEDULED"   ? "bg-pk-surface-sunken text-pk-text-secondary"   :
                       apt.status === "IN_PROGRESS" ? "bg-pk-teal-100 text-pk-teal-700"   :
-                      apt.status === "COMPLETED"   ? "bg-green-100 text-green-700" :
-                      apt.status === "CANCELLED"   ? "bg-red-100 text-red-600"     :
+                      apt.status === "COMPLETED"   ? "bg-pk-success-fill text-pk-success-text" :
+                      apt.status === "CANCELLED"   ? "bg-pk-danger-fill text-pk-danger-text"     :
                       "bg-pk-surface-sunken text-pk-text-muted"}
                   `}>
                     {apt.status === "IN_PROGRESS" ? "In Chair" :
@@ -549,8 +549,8 @@ function AppointmentModal({
                 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
                 ${apt.status === "SCHEDULED"   ? "bg-pk-surface-sunken text-pk-text-secondary"   :
                   apt.status === "IN_PROGRESS" ? "bg-pk-teal-100 text-pk-teal-700"   :
-                  apt.status === "COMPLETED"   ? "bg-green-100 text-green-700" :
-                  apt.status === "CANCELLED"   ? "bg-red-100 text-red-600"     :
+                  apt.status === "COMPLETED"   ? "bg-pk-success-fill text-pk-success-text" :
+                  apt.status === "CANCELLED"   ? "bg-pk-danger-fill text-pk-danger-text"     :
                   "bg-pk-surface-sunken text-pk-text-muted"}
               `}>
                 {apt.status.replace("_", " ")}
@@ -589,14 +589,14 @@ function AppointmentModal({
                 <button
                   onClick={() => handleStatus("NO_SHOW")}
                   disabled={updating}
-                  className="rounded-lg border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+                  className="rounded-lg border border-pk-warning-border px-3 py-2 text-sm font-medium text-pk-warning-text hover:bg-pk-warning-fill transition disabled:opacity-50"
                 >
                   No Show
                 </button>
                 <button
                   onClick={() => handleStatus("CANCELLED")}
                   disabled={updating}
-                  className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                  className="rounded-lg border border-pk-danger-border px-3 py-2 text-sm font-medium text-pk-danger-text hover:bg-pk-danger-fill transition disabled:opacity-50"
                 >
                   Cancel
                 </button>

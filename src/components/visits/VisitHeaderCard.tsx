@@ -146,7 +146,7 @@ export function VisitHeaderCard({
                   <button type="submit" disabled={savingRecall} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-pk-teal-700 disabled:opacity-50">{savingRecall ? "Saving..." : "Save"}</button>
                   <button type="button" onClick={onCancelRecall} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-md hover:bg-pk-surface-sunken">Cancel</button>
                   {visit.recallDate && (
-                    <button type="button" onClick={onClearRecall} disabled={savingRecall} className="text-xs text-red-500 hover:text-red-700 px-2 py-1.5 disabled:opacity-50">Clear recall</button>
+                    <button type="button" onClick={onClearRecall} disabled={savingRecall} className="text-xs text-pk-danger-text hover:text-pk-danger-text px-2 py-1.5 disabled:opacity-50">Clear recall</button>
                   )}
                 </div>
               </form>
@@ -164,11 +164,11 @@ export function VisitHeaderCard({
               </div>
               <div className="text-center">
                 <p className="text-xs text-pk-text-muted">Paid</p>
-                <p className="font-semibold text-green-600">{formatCurrency(visit.paidAmount)}</p>
+                <p className="font-semibold text-pk-success-text">{formatCurrency(visit.paidAmount)}</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-pk-text-muted">Due</p>
-                <p className={`font-semibold ${due > 0 ? "text-red-600" : "text-pk-text-muted"}`}>{formatCurrency(due)}</p>
+                <p className={`font-semibold ${due > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>{formatCurrency(due)}</p>
               </div>
             </div>
           </div>
@@ -188,7 +188,7 @@ export function VisitHeaderCard({
               Book Follow-up
             </button>
           )}
-          <button onClick={onAddPayment} disabled={visit.status === "CANCELLED" || due <= 0} className="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-40 transition">
+          <button onClick={onAddPayment} disabled={visit.status === "CANCELLED" || due <= 0} className="inline-flex items-center gap-2 bg-pk-success text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-40 transition">
             Add Payment
           </button>
         </div>

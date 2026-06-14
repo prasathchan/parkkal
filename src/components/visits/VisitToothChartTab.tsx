@@ -142,7 +142,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
         <div className="text-right flex-shrink-0 min-w-[80px]">
           {isOpen && saving && <p className="text-xs text-pk-text-muted animate-pulse">Saving…</p>}
           {isOpen && !saving && savedAt && (
-            <p className="text-xs text-green-600">
+            <p className="text-xs text-pk-success-text">
               Saved {new Date(savedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </p>
           )}
@@ -160,11 +160,11 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
 
       {/* Billed teeth hint */}
       {billedTeeth.length > 0 && isOpen && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-          <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-pk-warning-fill border border-pk-warning-border px-3 py-2">
+          <svg className="w-4 h-4 text-pk-warning-text flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-pk-warning-text">
             This visit&apos;s bill references{" "}
             <span className="font-semibold">
               {billedTeeth.length === 1 ? `tooth ${billedTeeth[0]}` : `teeth ${billedTeeth.join(", ")}`}
@@ -186,7 +186,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
+      {error && <p className="text-xs text-pk-danger-text mb-3">{error}</p>}
 
       <ToothChart
         data={chartData}

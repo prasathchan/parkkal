@@ -71,7 +71,7 @@ export default function AcceptDpaPage() {
         </label>
 
         {error && (
-          <p className="text-sm text-red-600 mb-4">{error}</p>
+          <p className="text-sm text-pk-danger-text mb-4">{error}</p>
         )}
 
         <button

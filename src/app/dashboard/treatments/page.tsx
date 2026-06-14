@@ -132,10 +132,10 @@ export default function TreatmentsPage() {
 
   function statusBadgeClass(status: TreatmentStatus): string {
     if (status === "COMPLETED")
-      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700";
+      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-success-fill text-pk-success-text";
     if (status === "IN_PROGRESS")
       return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-teal-100 text-pk-teal-700";
-    return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700";
+    return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-warning-fill text-pk-warning-text";
   }
 
   const hasMore = offset < total;

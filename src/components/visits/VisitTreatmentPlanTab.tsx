@@ -174,11 +174,11 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   }
 
   const consentBadge: Record<string, string> = {
-    PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    PENDING: "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border",
     UPLOADED: "bg-pk-teal-50 text-pk-teal-700 border-pk-teal-200",
-    VERIFIED: "bg-green-50 text-green-700 border-green-200",
-    REJECTED: "bg-red-50 text-red-700 border-red-200",
-    EMERGENCY_OVERRIDE: "bg-orange-50 text-orange-700 border-orange-200",
+    VERIFIED: "bg-pk-success-fill text-pk-success-text border-pk-success-border",
+    REJECTED: "bg-pk-danger-fill text-pk-danger-text border-pk-danger-border",
+    EMERGENCY_OVERRIDE: "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border",
   };
   const consentLabel: Record<string, string> = {
     PENDING: "⚠ Consent Pending",
@@ -254,7 +254,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 >
                   {txSubmitting ? "Adding..." : "Add"}
                 </button>
-                {txError && <p className="text-xs text-red-600">{txError}</p>}
+                {txError && <p className="text-xs text-pk-danger-text">{txError}</p>}
               </div>
             </div>
           </form>
@@ -285,12 +285,12 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         {tx.procedure && <p className="text-xs text-pk-text-muted mt-0.5">{tx.procedure}</p>}
                         <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                           <span className="text-sm font-medium text-pk-text-secondary">Cost: {formatCurrency(tx.cost)}</span>
-                          <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Paid: {formatCurrency(txPaid)}</span>
+                          <span className="text-xs text-pk-success-text bg-pk-success-fill px-2 py-0.5 rounded-full">Paid: {formatCurrency(txPaid)}</span>
                           {txOutstanding > 0 && (
-                            <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full">Due: {formatCurrency(txOutstanding)}</span>
+                            <span className="text-xs text-pk-danger-text bg-pk-danger-fill px-2 py-0.5 rounded-full">Due: {formatCurrency(txOutstanding)}</span>
                           )}
                           {txOutstanding === 0 && txPaid > 0 && (
-                            <span className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-medium">✓ Settled</span>
+                            <span className="text-xs text-pk-success-text bg-pk-success-fill px-2 py-0.5 rounded-full font-medium">✓ Settled</span>
                           )}
                         </div>
                       </div>
@@ -319,9 +319,9 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           disabled={txUpdating === tx.id}
                           onChange={(e) => handleTreatmentStatusChange(tx, e.target.value)}
                           className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-pk-teal-500 disabled:opacity-50 ${
-                            tx.status === "PLANNED" ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                            tx.status === "PLANNED" ? "bg-pk-warning-fill border-pk-warning-border text-pk-warning-text"
                             : tx.status === "IN_PROGRESS" ? "bg-pk-teal-50 border-pk-teal-200 text-pk-teal-800"
-                            : "bg-green-50 border-green-200 text-green-800"
+                            : "bg-pk-success-fill border-pk-success-border text-pk-success-text"
                           }`}
                         >
                           <option value="PLANNED">Planned</option>
@@ -331,7 +331,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         {visit.status !== "CANCELLED" && (
                           <button
                             onClick={() => handleUnlinkTreatment(tx.id)}
-                            className="text-xs text-pk-text-muted hover:text-red-600"
+                            className="text-xs text-pk-text-muted hover:text-pk-danger-text"
                             title="Unlink from this visit"
                           >
                             Unlink
@@ -379,13 +379,13 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         )}
                         <button
                           onClick={() => { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }}
-                          className="text-xs text-orange-600 hover:text-orange-800 font-medium"
+                          className="text-xs text-pk-warning-text hover:text-pk-warning-text font-medium"
                         >
                           Emergency Override
                         </button>
                       </div>
                       {consentUploadError[tx.id] && (
-                        <p className="w-full text-xs text-red-600 mt-1">{consentUploadError[tx.id]}</p>
+                        <p className="w-full text-xs text-pk-danger-text mt-1">{consentUploadError[tx.id]}</p>
                       )}
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
               </p>
             </div>
             {txPayError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">{txPayError}</div>
+              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-3 py-2">{txPayError}</div>
             )}
             <form onSubmit={handleAddTreatmentPayment} className="space-y-3">
               <div>
@@ -490,7 +490,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                       <p className="text-sm font-semibold text-pk-text">{plan.description}</p>
                       {plan.procedure && <p className="text-xs text-pk-text-muted mt-0.5">{plan.procedure}</p>}
                       <div className="flex items-center gap-3 mt-1.5">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-yellow-50 text-yellow-700" : plan.status === "IN_PROGRESS" ? "bg-pk-teal-50 text-pk-teal-700" : "bg-green-50 text-green-700"}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-pk-warning-fill text-pk-warning-text" : plan.status === "IN_PROGRESS" ? "bg-pk-teal-50 text-pk-teal-700" : "bg-pk-success-fill text-pk-success-text"}`}>
                           {plan.status === "IN_PROGRESS" ? "In Progress" : plan.status.charAt(0) + plan.status.slice(1).toLowerCase()}
                         </span>
                         <span className="text-xs text-pk-text-muted">{formatCurrency(plan.cost)}</span>
@@ -517,23 +517,23 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
             <h3 className="text-lg font-bold text-pk-text mb-1">Emergency Override</h3>
             <p className="text-sm text-pk-text-muted mb-4">Record a clinical reason to proceed without a signed consent form.</p>
             {overrideError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">{overrideError}</div>
+              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 mb-4">{overrideError}</div>
             )}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-pk-text-secondary mb-1">Reason <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-pk-text-secondary mb-1">Reason <span className="text-pk-danger-text">*</span></label>
               <textarea
                 value={overrideReason}
                 onChange={(e) => setOverrideReason(e.target.value)}
                 rows={3}
                 placeholder="Describe the clinical reason for proceeding without consent (min 5 characters)..."
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none"
+                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-warning resize-none"
               />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={handleEmergencyOverride}
                 disabled={overrideSubmitting || overrideReason.trim().length < 5}
-                className="flex-1 bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-50 transition"
+                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-warning disabled:opacity-50 transition"
               >
                 {overrideSubmitting ? "Saving..." : "Apply Override"}
               </button>
@@ -574,7 +574,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   if (tx) { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }
                   setPendingStatusChange(null);
                 }}
-                className="flex-1 bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-orange-700 transition"
+                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-warning transition"
               >
                 Emergency Override
               </button>

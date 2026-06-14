@@ -88,11 +88,11 @@ export default function SalaryPage() {
           </div>
           <div className="bg-white rounded-xl border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Total Paid</p>
-            <p className="text-2xl font-bold text-green-600">₹{totalPaid.toLocaleString("en-IN")}</p>
+            <p className="text-2xl font-bold text-pk-success-text">₹{totalPaid.toLocaleString("en-IN")}</p>
           </div>
           <div className="bg-white rounded-xl border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Outstanding</p>
-            <p className="text-2xl font-bold text-red-600">₹{outstanding.toLocaleString("en-IN")}</p>
+            <p className="text-2xl font-bold text-pk-danger-text">₹{outstanding.toLocaleString("en-IN")}</p>
           </div>
         </div>
 
@@ -129,7 +129,7 @@ export default function SalaryPage() {
                     <td className="px-4 py-3 font-medium text-pk-text">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3 text-pk-text-secondary">₹{r.paidAmount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-green-100 text-green-700" : r.status === "PARTIALLY_PAID" ? "bg-yellow-100 text-yellow-700" : "bg-pk-surface-sunken text-pk-text-secondary"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-pk-success-fill text-pk-success-text" : r.status === "PARTIALLY_PAID" ? "bg-pk-warning-fill text-pk-warning-text" : "bg-pk-surface-sunken text-pk-text-secondary"}`}>
                         {r.status}
                       </span>
                     </td>

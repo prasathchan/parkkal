@@ -73,7 +73,7 @@ function CalendarSettingsInner() {
 
         {/* Success / error banners */}
         {successMsg && (
-          <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+          <div className="rounded-xl bg-pk-success-fill border border-pk-success-border px-4 py-3 text-sm text-pk-success-text flex items-center gap-2">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -81,7 +81,7 @@ function CalendarSettingsInner() {
           </div>
         )}
         {errorMsg && (
-          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-pk-danger-fill border border-pk-danger-border px-4 py-3 text-sm text-pk-danger-text">
             {errorMsg}
           </div>
         )}
@@ -116,7 +116,7 @@ function CalendarSettingsInner() {
               <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
             ) : status?.google ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
+                <div className="flex items-center gap-1.5 text-pk-success-text text-sm font-medium">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
@@ -125,7 +125,7 @@ function CalendarSettingsInner() {
                 <button
                   onClick={() => disconnect("GOOGLE")}
                   disabled={disconnecting === "GOOGLE"}
-                  className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
                   {disconnecting === "GOOGLE" ? "Disconnecting…" : "Disconnect"}
                 </button>
@@ -167,7 +167,7 @@ function CalendarSettingsInner() {
               <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
             ) : status?.outlook ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
+                <div className="flex items-center gap-1.5 text-pk-success-text text-sm font-medium">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
@@ -176,7 +176,7 @@ function CalendarSettingsInner() {
                 <button
                   onClick={() => disconnect("OUTLOOK")}
                   disabled={disconnecting === "OUTLOOK"}
-                  className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
                 >
                   {disconnecting === "OUTLOOK" ? "Disconnecting…" : "Disconnect"}
                 </button>

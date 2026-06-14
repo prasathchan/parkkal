@@ -83,7 +83,7 @@ export default function PlansPage() {
         <p className="text-sm text-pk-text-muted mt-0.5">Edit plan names, prices, and doctor limits. Changes take effect immediately for new subscriptions.</p>
       </div>
 
-      {msg && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
 
       <div className="space-y-4">
         {plans.map((plan) => (
@@ -140,7 +140,7 @@ export default function PlansPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-pk-text">{plan.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${plan.isActive ? "bg-green-100 text-green-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${plan.isActive ? "bg-pk-success-fill text-pk-success-text" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                       {plan.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>

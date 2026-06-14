@@ -110,7 +110,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
       {visitStatus !== "CANCELLED" && (
         <form onSubmit={handleAddItem} className="bg-pk-surface-raised rounded-lg p-4">
           {visitStatus === "COMPLETED" && (
-            <p className="text-xs text-amber-600 mb-2">⚠️ Visit is completed — items added will update billing.</p>
+            <p className="text-xs text-pk-warning-text mb-2">⚠️ Visit is completed — items added will update billing.</p>
           )}
           <p className="text-sm font-semibold text-pk-text-secondary mb-3">Add Item</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -144,7 +144,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               <div className="col-span-full">
                 <label className="block text-xs text-pk-text-muted mb-1">Select Treatment Plan *</label>
                 {treatments.length === 0 ? (
-                  <p className="text-xs text-amber-600 mt-1">No treatment plans linked to this visit. Add one in the Treatment Plan tab first.</p>
+                  <p className="text-xs text-pk-warning-text mt-1">No treatment plans linked to this visit. Add one in the Treatment Plan tab first.</p>
                 ) : (
                   <select
                     value={newItem.linkedTreatmentId}
@@ -250,7 +250,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                 {addingItem ? "Adding..." : "Add"}
               </button>
               {addItemError && (
-                <p className="text-xs text-red-600">{addItemError}</p>
+                <p className="text-xs text-pk-danger-text">{addItemError}</p>
               )}
             </div>
           </div>
@@ -387,7 +387,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                           {!hasPayments && (
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                              className="text-pk-danger-text hover:text-pk-danger-text text-xs font-medium"
                             >
                               Delete
                             </button>

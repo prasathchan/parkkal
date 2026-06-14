@@ -71,7 +71,7 @@ function LoginForm() {
         </h2>
 
         {message && (
-          <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3 mb-4">
             {decodeURIComponent(message)}
           </div>
         )}
@@ -116,7 +116,7 @@ function LoginForm() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}

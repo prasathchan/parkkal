@@ -29,7 +29,7 @@ export function PatientTabList({ tab, tabData }: Props) {
               </div>
               <div className="text-right">
                 <p className="text-sm font-semibold text-pk-text">{formatCurrency(row.totalAmount as number)}</p>
-                {due > 0 && <p className="text-xs text-red-500">Due {formatCurrency(due)}</p>}
+                {due > 0 && <p className="text-xs text-pk-danger-text">Due {formatCurrency(due)}</p>}
                 <Badge variant={getStatusBadgeVariant(row.status as string)}>{row.status as string}</Badge>
               </div>
             </a>

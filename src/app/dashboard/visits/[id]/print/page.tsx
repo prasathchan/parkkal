@@ -88,7 +88,7 @@ export default function PrintPage() {
   }, [id]);
 
   if (loading) return <div className="p-10 text-center text-pk-text-muted">Loading...</div>;
-  if (!data) return <div className="p-10 text-center text-red-500">Failed to load visit data.</div>;
+  if (!data) return <div className="p-10 text-center text-pk-danger-text">Failed to load visit data.</div>;
 
   const { visit, items, payments, prescriptions, clinic } = data;
   const due = visit.totalAmount - visit.paidAmount;

@@ -37,7 +37,7 @@ export function BillingPaymentModal({ visit, due, payMethod, onMethodChange, onC
           </select>
         </div>
         <div className="flex gap-3 pt-2">
-          <button onClick={onConfirm} className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+          <button onClick={onConfirm} className="flex-1 bg-pk-success text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-success transition">
             Confirm Payment
           </button>
           <button onClick={onClose} className="px-4 py-2 border border-pk-border-strong rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition">

@@ -61,8 +61,8 @@ export function PatientPrescriptionsTab({ prescriptions }: Props) {
             </div>
           </div>
           {rx.instructions && (
-            <div className="px-5 py-3 border-t border-pk-border bg-amber-50">
-              <p className="text-xs text-amber-700"><span className="font-semibold">Instructions: </span>{rx.instructions}</p>
+            <div className="px-5 py-3 border-t border-pk-border bg-pk-warning-fill">
+              <p className="text-xs text-pk-warning-text"><span className="font-semibold">Instructions: </span>{rx.instructions}</p>
             </div>
           )}
         </div>

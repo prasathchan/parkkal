@@ -13,8 +13,8 @@ import type { Visit } from "@/types";
 
 const STATUS_COLORS: Record<string, string> = {
   OPEN:      "bg-pk-teal-100 text-pk-teal-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  COMPLETED: "bg-pk-success-fill text-pk-success-text",
+  CANCELLED: "bg-pk-danger-fill text-pk-danger-text",
 };
 
 const LIMIT = 50;
@@ -177,8 +177,8 @@ export default function VisitsPage() {
                           <td className="px-4 py-3 text-pk-text-secondary">{v.doctorName}</td>
                           <td className="px-4 py-3 text-pk-text-secondary">{v.visitDate}</td>
                           <td className="px-4 py-3 text-right text-pk-text">{formatCurrency(v.totalAmount)}</td>
-                          <td className="px-4 py-3 text-right text-green-700">{formatCurrency(v.paidAmount)}</td>
-                          <td className={`px-4 py-3 text-right font-medium ${due > 0 ? "text-red-600" : "text-pk-text-muted"}`}>
+                          <td className="px-4 py-3 text-right text-pk-success-text">{formatCurrency(v.paidAmount)}</td>
+                          <td className={`px-4 py-3 text-right font-medium ${due > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>
                             {formatCurrency(due)}
                           </td>
                           <td className="px-4 py-3 text-center">
@@ -212,7 +212,7 @@ export default function VisitsPage() {
                       </div>
                       <div className="text-right flex-shrink-0 ml-3">
                         <p className="text-sm font-semibold text-pk-text">{formatCurrency(v.totalAmount)}</p>
-                        {due > 0 && <p className="text-xs text-red-500">Due {formatCurrency(due)}</p>}
+                        {due > 0 && <p className="text-xs text-pk-danger-text">Due {formatCurrency(due)}</p>}
                       </div>
                     </Link>
                   );

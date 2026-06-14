@@ -52,9 +52,9 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   SCHEDULED:   "bg-pk-teal-100  text-pk-teal-800  border-pk-teal-200",
   CONFIRMED:   "bg-pk-teal-100 text-pk-teal-800 border-pk-teal-200",
   IN_PROGRESS: "bg-pk-teal-100   text-pk-teal-800   border-pk-teal-200",
-  COMPLETED:   "bg-green-100 text-green-800 border-green-200",
+  COMPLETED:   "bg-pk-success-fill text-pk-success-text border-pk-success-border",
   CANCELLED:   "bg-pk-surface-sunken  text-pk-text-muted  border-pk-border",
-  NO_SHOW:     "bg-red-100   text-red-800   border-red-200",
+  NO_SHOW:     "bg-pk-danger-fill   text-pk-danger-text   border-pk-danger-border",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ export default function CalendarPage() {
 
       {/* ── Error ──────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="mx-6 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="mx-6 mt-3 p-3 bg-pk-danger-fill border border-pk-danger-border rounded-lg text-pk-danger-text text-sm">
           {error}
         </div>
       )}
@@ -262,8 +262,8 @@ export default function CalendarPage() {
 
           {/* Unscheduled strip — appointments with no time */}
           {weekDays.some((d) => (appointmentsByDate.get(toDateStr(d)) ?? []).some((a) => !a.appointmentTime)) && (
-            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-pk-border bg-amber-50">
-              <div className="py-1 px-2 text-[10px] text-amber-600 font-medium self-center">
+            <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-pk-border bg-pk-warning-fill">
+              <div className="py-1 px-2 text-[10px] text-pk-warning-text font-medium self-center">
                 No time
               </div>
               {weekDays.map((d, i) => {

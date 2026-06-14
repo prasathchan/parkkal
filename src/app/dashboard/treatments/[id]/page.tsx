@@ -52,9 +52,9 @@ interface Summary {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const STATUS_BADGE: Record<string, string> = {
-  PLANNED: "bg-yellow-50 text-yellow-800 border-yellow-200",
+  PLANNED: "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border",
   IN_PROGRESS: "bg-pk-teal-50 text-pk-teal-800 border-pk-teal-200",
-  COMPLETED: "bg-green-50 text-green-800 border-green-200",
+  COMPLETED: "bg-pk-success-fill text-pk-success-text border-pk-success-border",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -64,11 +64,11 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const CONSENT_BADGE: Record<string, string> = {
-  PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  PENDING: "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border",
   UPLOADED: "bg-pk-teal-50 text-pk-teal-700 border-pk-teal-200",
-  VERIFIED: "bg-green-50 text-green-700 border-green-200",
-  REJECTED: "bg-red-50 text-red-700 border-red-200",
-  EMERGENCY_OVERRIDE: "bg-orange-50 text-orange-700 border-orange-200",
+  VERIFIED: "bg-pk-success-fill text-pk-success-text border-pk-success-border",
+  REJECTED: "bg-pk-danger-fill text-pk-danger-text border-pk-danger-border",
+  EMERGENCY_OVERRIDE: "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border",
 };
 
 const CONSENT_LABEL: Record<string, string> = {
@@ -81,8 +81,8 @@ const CONSENT_LABEL: Record<string, string> = {
 
 const VISIT_STATUS_BADGE: Record<string, string> = {
   OPEN: "bg-pk-teal-50 text-pk-teal-700",
-  COMPLETED: "bg-green-50 text-green-700",
-  CANCELLED: "bg-red-50 text-red-700",
+  COMPLETED: "bg-pk-success-fill text-pk-success-text",
+  CANCELLED: "bg-pk-danger-fill text-pk-danger-text",
 };
 
 /**
@@ -96,10 +96,10 @@ function getPaymentColors(pct: number): {
   text: string;
   label: string;
 } {
-  if (pct >= 100) return { bar: "bg-green-500",  cardBg: "bg-green-50",  cardBorder: "border-green-200", text: "text-green-700",  label: "text-green-600" };
-  if (pct >= 50)  return { bar: "bg-yellow-400", cardBg: "bg-yellow-50", cardBorder: "border-yellow-200", text: "text-yellow-700", label: "text-yellow-600" };
-  if (pct >= 25)  return { bar: "bg-orange-400", cardBg: "bg-orange-50", cardBorder: "border-orange-200", text: "text-orange-700", label: "text-orange-600" };
-  return             { bar: "bg-red-500",    cardBg: "bg-red-50",    cardBorder: "border-red-200",    text: "text-red-700",    label: "text-red-600" };
+  if (pct >= 100) return { bar: "bg-pk-success",  cardBg: "bg-pk-success-fill",  cardBorder: "border-pk-success-border", text: "text-pk-success-text",  label: "text-pk-success-text" };
+  if (pct >= 50)  return { bar: "bg-pk-warning", cardBg: "bg-pk-warning-fill", cardBorder: "border-pk-warning-border", text: "text-pk-warning-text", label: "text-pk-warning-text" };
+  if (pct >= 25)  return { bar: "bg-pk-warning", cardBg: "bg-pk-warning-fill", cardBorder: "border-pk-warning-border", text: "text-pk-warning-text", label: "text-pk-warning-text" };
+  return             { bar: "bg-pk-danger",    cardBg: "bg-pk-danger-fill",    cardBorder: "border-pk-danger-border",    text: "text-pk-danger-text",    label: "text-pk-danger-text" };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Error */}
         {!loading && error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-red-600 text-sm">
+          <div className="bg-pk-danger-fill border border-pk-danger-border rounded-2xl p-6 text-center text-pk-danger-text text-sm">
             {error}
           </div>
         )}
@@ -223,7 +223,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                   <span className="text-xs text-pk-text-muted italic">{treatment.consentNotes}</span>
                 )}
                 {treatment.emergencyReason && (
-                  <span className="text-xs text-orange-600">Reason: {treatment.emergencyReason}</span>
+                  <span className="text-xs text-pk-warning-text">Reason: {treatment.emergencyReason}</span>
                 )}
                 {treatment.consentDocumentUrl && (
                   <a
@@ -275,16 +275,16 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
               {/* Box 3 — Balance */}
               {summary.outstanding > 0 ? (
-                <div className="bg-red-50 rounded-xl border border-red-200 p-5 text-center">
-                  <p className="text-xs text-red-500 mb-1.5">Outstanding</p>
-                  <p className="text-2xl font-bold text-red-700">{formatCurrency(summary.outstanding)}</p>
-                  <p className="text-xs text-red-400 mt-1.5">Not yet charged</p>
+                <div className="bg-pk-danger-fill rounded-xl border border-pk-danger-border p-5 text-center">
+                  <p className="text-xs text-pk-danger-text mb-1.5">Outstanding</p>
+                  <p className="text-2xl font-bold text-pk-danger-text">{formatCurrency(summary.outstanding)}</p>
+                  <p className="text-xs text-pk-danger-text mt-1.5">Not yet charged</p>
                 </div>
               ) : (
-                <div className="bg-green-50 rounded-xl border border-green-200 p-5 text-center flex flex-col items-center justify-center">
+                <div className="bg-pk-success-fill rounded-xl border border-pk-success-border p-5 text-center flex flex-col items-center justify-center">
                   <span className="text-2xl mb-1">✓</span>
-                  <p className="text-sm font-semibold text-green-700">Fully Settled</p>
-                  <p className="text-xs text-green-500 mt-0.5">No balance remaining</p>
+                  <p className="text-sm font-semibold text-pk-success-text">Fully Settled</p>
+                  <p className="text-xs text-pk-success-text mt-0.5">No balance remaining</p>
                 </div>
               )}
             </div>

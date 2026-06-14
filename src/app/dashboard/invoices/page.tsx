@@ -18,9 +18,9 @@ import {
 } from "@/components/ui/table";
 
 const STATUS_COLORS: Record<string, string> = {
-  PAID:             "bg-green-100 text-green-700",
+  PAID:             "bg-pk-success-fill text-pk-success-text",
   PARTIALLY_PAID:   "bg-pk-teal-100 text-pk-teal-700",
-  PENDING:          "bg-yellow-100 text-yellow-700",
+  PENDING:          "bg-pk-warning-fill text-pk-warning-text",
   DRAFT:            "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
@@ -172,9 +172,9 @@ export default function InvoicesPage() {
               <p className="text-xs text-pk-text-muted mt-0.5">Manage standalone invoices for patients</p>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">{pending} Pending</span>
+              <span className="bg-pk-warning-fill text-pk-warning-text px-2 py-1 rounded-full">{pending} Pending</span>
               <span className="bg-pk-teal-100 text-pk-teal-700 px-2 py-1 rounded-full">{partial} Partial</span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">{paid} Paid</span>
+              <span className="bg-pk-success-fill text-pk-success-text px-2 py-1 rounded-full">{paid} Paid</span>
             </div>
           </div>
 
@@ -218,8 +218,8 @@ export default function InvoicesPage() {
                         {inv.patientName ?? inv.patientId}
                       </TableCell>
                       <TableCell className="font-semibold">{formatCurrency(inv.totalAmount)}</TableCell>
-                      <TableCell className="text-green-700">{formatCurrency(inv.paidAmount)}</TableCell>
-                      <TableCell className={`font-medium ${balance > 0 ? "text-red-600" : "text-pk-text-muted"}`}>
+                      <TableCell className="text-pk-success-text">{formatCurrency(inv.paidAmount)}</TableCell>
+                      <TableCell className={`font-medium ${balance > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>
                         {formatCurrency(balance)}
                       </TableCell>
                       <TableCell>
@@ -235,7 +235,7 @@ export default function InvoicesPage() {
                           {inv.status !== "PAID" && (
                             <button
                               onClick={() => openPayModal(inv)}
-                              className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition"
+                              className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-lg hover:bg-pk-success transition"
                             >
                               Record Payment
                             </button>
@@ -276,7 +276,7 @@ export default function InvoicesPage() {
             <form onSubmit={handleSubmit} className="flex-1 px-6 py-5 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
-                  Patient <span className="text-red-500">*</span>
+                  Patient <span className="text-pk-danger-text">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -310,7 +310,7 @@ export default function InvoicesPage() {
                     </div>
                   )}
                 </div>
-                {form.patientId && <p className="text-xs text-green-600 mt-1">Patient selected</p>}
+                {form.patientId && <p className="text-xs text-pk-success-text mt-1">Patient selected</p>}
               </div>
 
               <div>
@@ -325,7 +325,7 @@ export default function InvoicesPage() {
               </div>
 
               {submitError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                   {submitError}
                 </div>
               )}
@@ -366,19 +366,19 @@ export default function InvoicesPage() {
                   <p className="text-xs text-pk-text-muted mb-0.5">Total</p>
                   <p className="font-semibold">{formatCurrency(payModal.invoice.totalAmount)}</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3">
+                <div className="bg-pk-success-fill rounded-lg p-3">
                   <p className="text-xs text-pk-text-muted mb-0.5">Paid</p>
-                  <p className="font-semibold text-green-700">{formatCurrency(payModal.invoice.paidAmount)}</p>
+                  <p className="font-semibold text-pk-success-text">{formatCurrency(payModal.invoice.paidAmount)}</p>
                 </div>
-                <div className="bg-red-50 rounded-lg p-3">
+                <div className="bg-pk-danger-fill rounded-lg p-3">
                   <p className="text-xs text-pk-text-muted mb-0.5">Balance</p>
-                  <p className="font-semibold text-red-600">{formatCurrency(payModal.invoice.totalAmount - payModal.invoice.paidAmount)}</p>
+                  <p className="font-semibold text-pk-danger-text">{formatCurrency(payModal.invoice.totalAmount - payModal.invoice.paidAmount)}</p>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
-                  Amount to Pay (₹) <span className="text-red-500">*</span>
+                  Amount to Pay (₹) <span className="text-pk-danger-text">*</span>
                 </label>
                 <input
                   type="number"
@@ -393,14 +393,14 @@ export default function InvoicesPage() {
               </div>
 
               {payError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{payError}</div>
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{payError}</div>
               )}
 
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
                   disabled={paySubmitting}
-                  className="flex-1 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition"
+                  className="flex-1 bg-pk-success text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition"
                 >
                   {paySubmitting ? "Processing..." : "Pay"}
                 </button>

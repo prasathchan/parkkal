@@ -45,14 +45,14 @@ const ACTION_META: Record<string, { label: string; severity: Severity }> = {
 };
 
 const SEVERITY_PILL: Record<Severity, string> = {
-  critical: "bg-red-100 text-red-700 border border-red-200",
-  warning:  "bg-orange-100 text-orange-700 border border-orange-200",
+  critical: "bg-pk-danger-fill text-pk-danger-text border border-pk-danger-border",
+  warning:  "bg-pk-warning-fill text-pk-warning-text border border-pk-warning-border",
   info:     "bg-pk-surface-sunken text-pk-text-secondary border border-pk-border",
 };
 
 const SEVERITY_ROW: Record<Severity, string> = {
-  critical: "bg-red-50/40",
-  warning:  "bg-orange-50/30",
+  critical: "bg-pk-danger-fill",
+  warning:  "bg-pk-warning-fill",
   info:     "",
 };
 

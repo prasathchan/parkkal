@@ -295,7 +295,7 @@ export function VisitPrescriptionsTab({
                     <button
                       type="button"
                       onClick={() => removeMedicineRow(idx)}
-                      className="text-red-500 hover:text-red-700 text-xs"
+                      className="text-pk-danger-text hover:text-pk-danger-text text-xs"
                     >
                       Remove
                     </button>
@@ -399,7 +399,7 @@ export function VisitPrescriptionsTab({
             />
           </div>
 
-          {formError && <p className="text-red-500 text-xs">{formError}</p>}
+          {formError && <p className="text-pk-danger-text text-xs">{formError}</p>}
 
           <div className="flex gap-2 justify-end">
             <button
@@ -454,7 +454,7 @@ export function VisitPrescriptionsTab({
                       onClick={() => handleDelete(rx.id)}
                       disabled={deletingId === rx.id}
                       aria-label="Delete prescription"
-                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition disabled:opacity-50"
+                      className="flex items-center gap-1 text-xs text-pk-danger-text hover:text-pk-danger-text px-2 py-1 rounded hover:bg-pk-danger-fill transition disabled:opacity-50"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -493,8 +493,8 @@ export function VisitPrescriptionsTab({
 
               {/* Instructions */}
               {rx.instructions && (
-                <div className="px-5 py-3 border-t border-pk-border bg-amber-50">
-                  <p className="text-xs text-amber-700">
+                <div className="px-5 py-3 border-t border-pk-border bg-pk-warning-fill">
+                  <p className="text-xs text-pk-warning-text">
                     <span className="font-semibold">Instructions: </span>{rx.instructions}
                   </p>
                 </div>

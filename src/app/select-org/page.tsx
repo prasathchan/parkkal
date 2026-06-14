@@ -13,11 +13,11 @@ interface OrgOption {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-red-100 text-red-700",
+  ADMIN: "bg-pk-danger-fill text-pk-danger-text",
   DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
   NURSE: "bg-pink-100 text-pink-700",
   RECEPTIONIST: "bg-pk-teal-100 text-pk-teal-700",
-  ATTENDANT: "bg-orange-100 text-orange-700",
+  ATTENDANT: "bg-pk-warning-fill text-pk-warning-text",
   HELPER: "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
@@ -94,7 +94,7 @@ function SelectOrgInner() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 mb-4">
             {error}
           </div>
         )}

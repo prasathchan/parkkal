@@ -15,12 +15,22 @@ vi.mock("@/lib/address", () => ({
   serializeAddress: vi.fn(() => ""),
   EMPTY_ADDRESS:    { line1: "", city: "", state: "", pincode: "", country: "India" },
 }));
-vi.mock("@/lib/theme", () => ({
-  DEFAULT_THEME:    { primaryColor: "#2563eb", font: "Inter", borderRadius: "md" },
-  COLOR_PRESETS:    [],
-  FONT_OPTIONS:     [],
-  parseThemeConfig: vi.fn(() => ({ primaryColor: "#2563eb", font: "Inter", borderRadius: "md" })),
-}));
+vi.mock("@/lib/theme", () => {
+  const DEFAULT_THEME = { accentName: "Temple Gold", fontFamily: "inter", darkMode: "light", primaryColor: "#0B6E6E", sidebarStyle: "dark" };
+  const PARKKAL_ACCENT_SET = [
+    { name: "Temple Gold", value: "#C8873A", action: "#A86E2C" },
+    { name: "Clay Rose", value: "#B55D63", action: "#994B50" },
+  ];
+  return {
+    DEFAULT_THEME,
+    PARKKAL_ACCENT_SET,
+    COLOR_PRESETS:    PARKKAL_ACCENT_SET.map((a) => ({ name: a.name, value: a.value })),
+    FONT_OPTIONS:     [],
+    getAccent:        (name: string) => PARKKAL_ACCENT_SET.find((a) => a.name === name) ?? PARKKAL_ACCENT_SET[0],
+    getAccentCssVars: vi.fn(() => ({})),
+    parseThemeConfig: vi.fn(() => DEFAULT_THEME),
+  };
+});
 vi.mock("@/api", () => ({
   orgApi:  {
     getProfile:    vi.fn(),

@@ -128,7 +128,7 @@ export function NewTreatmentModal({
           {/* Patient */}
           <div>
             <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
-              Patient <span className="text-red-500">*</span>
+              Patient <span className="text-pk-danger-text">*</span>
             </label>
             <div className="relative">
               <input
@@ -161,13 +161,13 @@ export function NewTreatmentModal({
                 </div>
               )}
             </div>
-            {form.patientId && <p className="text-xs text-green-600 mt-1">Patient selected</p>}
+            {form.patientId && <p className="text-xs text-pk-success-text mt-1">Patient selected</p>}
           </div>
 
           {/* Doctor */}
           <div>
             <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
-              Doctor {currentUserRole !== "DOCTOR" && <span className="text-red-500">*</span>}
+              Doctor {currentUserRole !== "DOCTOR" && <span className="text-pk-danger-text">*</span>}
             </label>
             {currentUserRole === "DOCTOR" ? (
               <p className="w-full px-3 py-2 border border-pk-border rounded-lg text-sm bg-pk-surface-raised text-pk-text-secondary">
@@ -191,7 +191,7 @@ export function NewTreatmentModal({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
-              Description <span className="text-red-500">*</span>
+              Description <span className="text-pk-danger-text">*</span>
             </label>
             <textarea
               value={form.description}
@@ -240,7 +240,7 @@ export function NewTreatmentModal({
           </div>
 
           {submitError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
               {submitError}
             </div>
           )}

@@ -127,8 +127,8 @@ export const DEFAULT_NEW_ITEM: NewItemState = {
  */
 export const STATUS_COLORS: Record<string, string> = {
   OPEN: "bg-pk-teal-100 text-pk-teal-800",
-  COMPLETED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  COMPLETED: "bg-pk-success-fill text-pk-success-text",
+  CANCELLED: "bg-pk-danger-fill text-pk-danger-text",
 };
 
 /**

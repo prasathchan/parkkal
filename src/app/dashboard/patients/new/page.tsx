@@ -208,7 +208,7 @@ export default function NewPatientPage() {
                     required
                     placeholder="e.g. Rajan Kumar"
                   />
-                  {apiFieldErrors.name && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.name}</p>}
+                  {apiFieldErrors.name && <p className="mt-1 text-xs text-pk-danger-text" role="alert">{apiFieldErrors.name}</p>}
                 </div>
                 <div>
                   <Input
@@ -220,7 +220,7 @@ export default function NewPatientPage() {
                     placeholder="+91 98765 43210"
                     error={touched.phone ? fieldErrors.phone : ""}
                   />
-                  {apiFieldErrors.phone && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.phone}</p>}
+                  {apiFieldErrors.phone && <p className="mt-1 text-xs text-pk-danger-text" role="alert">{apiFieldErrors.phone}</p>}
                 </div>
               </div>
 
@@ -233,7 +233,7 @@ export default function NewPatientPage() {
                   placeholder="patient@example.com"
                   error={touched.email ? fieldErrors.email : ""}
                 />
-                {apiFieldErrors.email && <p className="mt-1 text-xs text-red-600" role="alert">{apiFieldErrors.email}</p>}
+                {apiFieldErrors.email && <p className="mt-1 text-xs text-pk-danger-text" role="alert">{apiFieldErrors.email}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -429,9 +429,9 @@ export default function NewPatientPage() {
               </div>
 
               {/* Documents */}
-              <div className="border border-yellow-300 rounded-lg p-4 bg-yellow-50">
-                <p className="text-sm font-semibold text-yellow-900 mb-1">Documents</p>
-                <p className="text-xs text-yellow-700 mb-3">
+              <div className="border border-pk-warning-border rounded-lg p-4 bg-pk-warning-fill">
+                <p className="text-sm font-semibold text-pk-warning-text mb-1">Documents</p>
+                <p className="text-xs text-pk-warning-text mb-3">
                   Adding PAN and Aadhaar helps with government compliance and identity verification.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -457,7 +457,7 @@ export default function NewPatientPage() {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
                   {error}
                 </div>
               )}

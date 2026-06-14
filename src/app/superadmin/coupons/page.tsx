@@ -84,7 +84,7 @@ export default function CouponsPage() {
         </button>
       </div>
 
-      {msg && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
 
       {showNew && (
         <div className="bg-white rounded-xl border border-pk-teal-200 p-5 space-y-4">
@@ -180,7 +180,7 @@ export default function CouponsPage() {
                     {c.validUntil ? new Date(c.validUntil).toLocaleDateString("en-IN") : "—"}
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.isActive ? "bg-green-100 text-green-700" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.isActive ? "bg-pk-success-fill text-pk-success-text" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                       {c.isActive ? "Active" : "Disabled"}
                     </span>
                   </td>

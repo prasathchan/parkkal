@@ -80,7 +80,7 @@ function ForgotPasswordForm() {
                   className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                 />
               </div>
-              {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
                 className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                 {loading ? "Sending…" : "Send reset code"}
@@ -121,7 +121,7 @@ function ForgotPasswordForm() {
                   className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
                 />
               </div>
-              {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
                 className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
                 {loading ? "Resetting…" : "Reset password"}
@@ -136,8 +136,8 @@ function ForgotPasswordForm() {
 
         {mode === "done" && (
           <div className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="w-16 h-16 bg-pk-success-fill rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-pk-success-text" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>

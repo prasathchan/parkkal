@@ -135,9 +135,9 @@ export default function BillingPage() {
               <p className="text-xs text-pk-text-muted mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">{pending} Pending</span>
+              <span className="bg-pk-warning-fill text-pk-warning-text px-2 py-1 rounded-full text-xs">{pending} Pending</span>
               <span className="bg-pk-teal-100 text-pk-teal-700 px-2 py-1 rounded-full text-xs">{partial} Partial</span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{paid} Paid</span>
+              <span className="bg-pk-success-fill text-pk-success-text px-2 py-1 rounded-full text-xs">{paid} Paid</span>
             </div>
           </div>
 
@@ -214,8 +214,8 @@ export default function BillingPage() {
                       <TableCell className="text-pk-text-secondary">{formatDoctorName(v.doctorName)}</TableCell>
                       <TableCell className="text-pk-text-muted">{v.visitDate}</TableCell>
                       <TableCell className="font-semibold">{formatCurrency(v.totalAmount)}</TableCell>
-                      <TableCell className="text-green-700">{formatCurrency(v.paidAmount)}</TableCell>
-                      <TableCell className={`font-medium ${due > 0 ? "text-red-600" : "text-pk-text-muted"}`}>
+                      <TableCell className="text-pk-success-text">{formatCurrency(v.paidAmount)}</TableCell>
+                      <TableCell className={`font-medium ${due > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>
                         {formatCurrency(due)}
                       </TableCell>
                       <TableCell>
@@ -228,7 +228,7 @@ export default function BillingPage() {
                           <button
                             onClick={() => handleMarkPaid(v)}
                             disabled={markingPaid === v.id}
-                            className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                            className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-lg hover:bg-pk-success disabled:opacity-50 transition"
                           >
                             {markingPaid === v.id ? "…" : "Mark Paid"}
                           </button>

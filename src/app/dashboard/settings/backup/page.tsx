@@ -30,10 +30,10 @@ function formatRowCounts(json: string | null): string {
 
 function StatusBadge({ status }: { status: OrgBackup["status"] }) {
   if (status === "completed")
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Completed</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-success-fill text-pk-success-text">Completed</span>;
   if (status === "pending")
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Pending…</span>;
-  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Failed</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-warning-fill text-pk-warning-text">Pending…</span>;
+  return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-danger-fill text-pk-danger-text">Failed</span>;
 }
 
 function TypeBadge({ type }: { type: OrgBackup["type"] }) {
@@ -62,8 +62,8 @@ function RestoreModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 h-10 rounded-full bg-pk-danger-fill flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
           </div>
@@ -73,7 +73,7 @@ function RestoreModal({
           </div>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm text-amber-800">
+        <div className="bg-pk-warning-fill border border-pk-warning-border rounded-lg p-3 mb-4 text-sm text-pk-warning-text">
           This will <strong>permanently overwrite</strong> all current patient, visit, treatment, billing, and appointment data with the snapshot. This cannot be undone.
         </div>
 
@@ -89,12 +89,12 @@ function RestoreModal({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="RESTORE"
-          className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+          className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger mb-4"
           autoFocus
         />
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div className="mb-4 rounded-lg border border-pk-danger-border bg-pk-danger-fill px-3 py-2 text-sm text-pk-danger-text">
             {error}
           </div>
         )}
@@ -112,7 +112,7 @@ function RestoreModal({
             type="button"
             onClick={onConfirm}
             disabled={input !== "RESTORE" || loading}
-            className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded-lg bg-pk-danger text-white font-medium hover:bg-pk-danger disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? "Restoring…" : "Restore"}
           </button>
@@ -217,12 +217,12 @@ export default function BackupPage() {
             </button>
           </div>
           {snapshotError && (
-            <p className="mt-3 text-sm text-red-600">{snapshotError}</p>
+            <p className="mt-3 text-sm text-pk-danger-text">{snapshotError}</p>
           )}
         </div>
 
         {restoreSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 flex items-start justify-between gap-4">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-xl p-4 text-sm text-pk-success-text flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold">Restore completed</p>
               <p className="mt-0.5">All data has been replaced with the selected snapshot. Reload the page to see the restored data.</p>
@@ -230,7 +230,7 @@ export default function BackupPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-green-700 text-white text-xs font-medium hover:bg-green-800 transition"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-pk-success text-white text-xs font-medium hover:bg-pk-success transition"
             >
               Reload now
             </button>
@@ -276,7 +276,7 @@ export default function BackupPage() {
                       <span>{formatBytes(snap.sizeBytes)}</span>
                     </div>
                     {snap.status === "failed" && snap.errorMessage && (
-                      <p className="text-xs text-red-600 mt-0.5">{snap.errorMessage}</p>
+                      <p className="text-xs text-pk-danger-text mt-0.5">{snap.errorMessage}</p>
                     )}
                   </div>
 
@@ -284,7 +284,7 @@ export default function BackupPage() {
                     <button
                       type="button"
                       onClick={() => { setRestoreTarget(snap); setRestoreError(""); setRestoreSuccess(false); }}
-                      className="text-xs text-red-600 hover:text-red-800 font-medium flex-shrink-0 border border-red-200 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"
+                      className="text-xs text-pk-danger-text hover:text-pk-danger-text font-medium flex-shrink-0 border border-pk-danger-border px-2.5 py-1 rounded-lg hover:bg-pk-danger-fill transition"
                     >
                       Restore
                     </button>

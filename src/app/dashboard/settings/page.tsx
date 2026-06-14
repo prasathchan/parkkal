@@ -6,7 +6,7 @@ import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import Link from "next/link";
-import { type OrgThemeConfig, DEFAULT_THEME, COLOR_PRESETS, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
+import { type OrgThemeConfig, DEFAULT_THEME, PARKKAL_ACCENT_SET, getAccent, getAccentCssVars, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { orgApi, authApi, ApiError } from "@/api";
 import type { OrgProfile, StaffMember } from "@/types";
@@ -29,7 +29,6 @@ export default function SettingsPage() {
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
   const [theme, setTheme] = useState<OrgThemeConfig>(DEFAULT_THEME);
-  const [customColor, setCustomColor] = useState("#2563eb");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -56,7 +55,6 @@ export default function SettingsPage() {
         setAddressData(parseAddress(o.address ?? null));
         const t = parseThemeConfig(o.themeConfig ?? null);
         setTheme(t);
-        setCustomColor(t.primaryColor);
         setLogoPreview(o.logoUrl ?? null);
         const orgAny = o as unknown as Record<string, unknown>;
         setGstForm({
@@ -116,8 +114,9 @@ export default function SettingsPage() {
       await orgApi.updateProfile({ themeConfig: theme });
       toast.success("Appearance saved");
       setMessage("Appearance saved. Refresh to see all changes.");
-      // Apply immediately
-      document.documentElement.style.setProperty("--primary", theme.primaryColor);
+      // Apply immediately — accent is the only customizable colour; teal core stays locked.
+      const accentVars = getAccentCssVars(theme.accentName);
+      for (const [k, v] of Object.entries(accentVars)) document.documentElement.style.setProperty(k, v);
       const fontOpt = FONT_OPTIONS.find(f => f.value === theme.fontFamily);
       if (fontOpt) document.documentElement.style.setProperty("--font-body", fontOpt.stack);
       if (theme.darkMode === "dark") document.documentElement.classList.add("dark");
@@ -328,7 +327,7 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-pk-border p-4 space-y-3">
                 <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Data & Privacy (DPDP Act 2023)</h3>
                 <div className="flex items-center gap-3">
-                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${dpaStatus.acceptedAt ? "bg-green-50 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
+                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${dpaStatus.acceptedAt ? "bg-pk-success-fill text-pk-success-text border-pk-success-border" : "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border"}`}>
                     {dpaStatus.acceptedAt
                       ? `DPA accepted (${dpaStatus.version}) on ${new Date(dpaStatus.acceptedAt).toLocaleDateString("en-IN")}`
                       : "DPA not yet accepted"}
@@ -395,31 +394,24 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            {/* Primary Color */}
-            <Section title="Brand Color" subtitle="Used for buttons, active nav items, and accents">
+            {/* Accent colour — the one customizable colour, from the curated set */}
+            <Section title="Accent colour" subtitle="Your highlight colour, used sparingly on key actions — chosen from Parkkal's curated set">
               <div className="flex flex-wrap gap-2 mb-3">
-                {COLOR_PRESETS.map(c => (
-                  <button key={c.value} title={c.name} onClick={() => { setTheme(t => ({ ...t, primaryColor: c.value })); setCustomColor(c.value); }}
-                    className="w-9 h-9 rounded-lg transition-all border-2"
-                    style={{ background: c.value, borderColor: theme.primaryColor === c.value ? "var(--pk-text)" : "transparent", outline: theme.primaryColor === c.value ? `3px solid ${c.value}30` : "none", outlineOffset: "2px" }}
+                {PARKKAL_ACCENT_SET.map(a => (
+                  <button key={a.name} title={a.name} aria-label={a.name} aria-pressed={theme.accentName === a.name}
+                    onClick={() => setTheme(t => ({ ...t, accentName: a.name }))}
+                    className="w-9 h-9 rounded-pk-md transition-all border-2"
+                    style={{ background: a.value, borderColor: theme.accentName === a.name ? "var(--pk-text)" : "transparent", outline: theme.accentName === a.name ? `3px solid ${a.value}30` : "none", outlineOffset: "2px" }}
                   />
                 ))}
-                {/* Custom color */}
-                <label className="w-9 h-9 rounded-lg border-2 cursor-pointer overflow-hidden relative" title="Custom color"
-                  style={{ borderColor: !COLOR_PRESETS.find(c => c.value === theme.primaryColor) ? "var(--pk-text)" : "var(--pk-border)" }}>
-                  <input type="color" value={customColor} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={e => { setCustomColor(e.target.value); setTheme(t => ({ ...t, primaryColor: e.target.value })); }} />
-                  <div className="w-full h-full flex items-center justify-center" style={{ background: customColor }}>
-                    <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </div>
-                </label>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded" style={{ background: theme.primaryColor }} />
-                <code className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{theme.primaryColor}</code>
+                <div className="w-6 h-6 rounded-pk-sm" style={{ background: getAccent(theme.accentName).value }} />
+                <code className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{theme.accentName} · {getAccent(theme.accentName).value}</code>
               </div>
+              <p className="text-xs mt-2" style={{ color: "var(--pk-text-muted)" }}>
+                The teal core and sidebar are part of Parkkal&apos;s identity and aren&apos;t customizable.
+              </p>
             </Section>
 
             {/* Font */}
@@ -427,37 +419,18 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 {FONT_OPTIONS.map(f => (
                   <label key={f.value} className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
-                    style={{ borderColor: theme.fontFamily === f.value ? theme.primaryColor : "var(--pk-border)", background: theme.fontFamily === f.value ? `${theme.primaryColor}08` : "var(--pk-surface)" }}>
+                    style={{ borderColor: theme.fontFamily === f.value ? "var(--pk-primary)" : "var(--pk-border)", background: theme.fontFamily === f.value ? "var(--pk-teal-50)" : "var(--pk-surface)" }}>
                     <input type="radio" name="font" value={f.value} checked={theme.fontFamily === f.value}
                       onChange={() => setTheme(t => ({ ...t, fontFamily: f.value as OrgThemeConfig["fontFamily"] }))} className="sr-only" />
                     <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                      style={{ borderColor: theme.fontFamily === f.value ? theme.primaryColor : "var(--pk-border)" }}>
-                      {theme.fontFamily === f.value && <div className="w-2 h-2 rounded-full" style={{ background: theme.primaryColor }} />}
+                      style={{ borderColor: theme.fontFamily === f.value ? "var(--pk-primary)" : "var(--pk-border)" }}>
+                      {theme.fontFamily === f.value && <div className="w-2 h-2 rounded-full" style={{ background: "var(--pk-primary)" }} />}
                     </div>
                     <div className="flex-1">
                       <span className="text-sm font-medium" style={{ fontFamily: f.stack, color: "var(--pk-text)" }}>{f.label}</span>
                       <span className="ml-2 text-xs" style={{ fontFamily: f.stack, color: "var(--pk-text-muted)" }}>The quick brown fox jumps</span>
                     </div>
                   </label>
-                ))}
-              </div>
-            </Section>
-
-            {/* Sidebar Style */}
-            <Section title="Sidebar Style" subtitle="Background style for the navigation sidebar">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {([
-                  { value: "dark", label: "Dark", desc: "Classic dark sidebar", preview: "#0f172a" },
-                  { value: "light", label: "Light", desc: "Clean white sidebar", preview: "#ffffff" },
-                  { value: "colored", label: "Colored", desc: "Your brand color", preview: theme.primaryColor },
-                ] as { value: OrgThemeConfig["sidebarStyle"]; label: string; desc: string; preview: string }[]).map(s => (
-                  <button key={s.value} onClick={() => setTheme(t => ({ ...t, sidebarStyle: s.value }))}
-                    className="p-3 rounded-xl border-2 text-left transition-all"
-                    style={{ borderColor: theme.sidebarStyle === s.value ? theme.primaryColor : "var(--pk-border)", background: "var(--pk-surface)" }}>
-                    <div className="w-full h-10 rounded-lg mb-2 border" style={{ background: s.preview, borderColor: "var(--pk-border)" }} />
-                    <p className="text-sm font-medium" style={{ color: "var(--pk-text)" }}>{s.label}</p>
-                    <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{s.desc}</p>
-                  </button>
                 ))}
               </div>
             </Section>
@@ -472,7 +445,7 @@ export default function SettingsPage() {
                 ] as { value: OrgThemeConfig["darkMode"]; label: string; icon: string }[]).map(m => (
                   <button key={m.value} onClick={() => setTheme(t => ({ ...t, darkMode: m.value }))}
                     className="flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-sm font-medium transition-all"
-                    style={{ borderColor: theme.darkMode === m.value ? theme.primaryColor : "var(--pk-border)", background: theme.darkMode === m.value ? `${theme.primaryColor}10` : "var(--pk-surface)", color: theme.darkMode === m.value ? theme.primaryColor : "var(--pk-text-muted)" }}>
+                    style={{ borderColor: theme.darkMode === m.value ? "var(--pk-primary)" : "var(--pk-border)", background: theme.darkMode === m.value ? "var(--pk-teal-50)" : "var(--pk-surface)", color: theme.darkMode === m.value ? "var(--pk-primary)" : "var(--pk-text-muted)" }}>
                     <span className="text-xl">{m.icon}</span>
                     {m.label}
                   </button>
@@ -480,19 +453,19 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            {/* Live Preview */}
-            <Section title="Preview" subtitle="How your sidebar will look">
+            {/* Live Preview — the locked teal core with your chosen accent */}
+            <Section title="Preview" subtitle="The locked teal core with your chosen accent">
               <div className="rounded-xl overflow-hidden border" style={{ borderColor: "var(--pk-border)" }}>
                 <div className="flex h-28">
-                  <div className="w-40 flex flex-col p-3 gap-1.5" style={{ background: theme.sidebarStyle === "dark" ? "#0f172a" : theme.sidebarStyle === "light" ? "#ffffff" : theme.primaryColor, borderRight: `1px solid ${theme.sidebarStyle === "light" ? "#e2e8f0" : "rgba(255,255,255,0.1)"}` }}>
+                  <div className="w-40 flex flex-col p-3 gap-1.5" style={{ background: "#0D2B2B", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-5 h-5 rounded" style={{ background: theme.sidebarStyle === "colored" ? "rgba(255,255,255,0.2)" : theme.primaryColor }} />
-                      <div className="h-2 rounded flex-1" style={{ background: theme.sidebarStyle === "dark" ? "#475569" : theme.sidebarStyle === "light" ? "#94a3b8" : "rgba(255,255,255,0.5)" }} />
+                      <div className="w-5 h-5 rounded" style={{ background: "rgba(255,255,255,0.14)" }} />
+                      <div className="h-2 rounded flex-1" style={{ background: "rgba(255,255,255,0.4)" }} />
                     </div>
                     {[true, false, false].map((active, i) => (
-                      <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-md">
-                        <div className="w-3 h-3 rounded-sm" style={{ background: active ? (theme.sidebarStyle === "dark" ? theme.primaryColor : theme.sidebarStyle === "light" ? theme.primaryColor : "rgba(255,255,255,0.9)") : (theme.sidebarStyle === "dark" ? "#475569" : theme.sidebarStyle === "light" ? "#94a3b8" : "rgba(255,255,255,0.4)") }} />
-                        <div className="h-2 flex-1 rounded" style={{ background: active ? (theme.sidebarStyle === "dark" ? theme.primaryColor : theme.sidebarStyle === "light" ? theme.primaryColor : "rgba(255,255,255,0.9)") : (theme.sidebarStyle === "dark" ? "#334155" : theme.sidebarStyle === "light" ? "#e2e8f0" : "rgba(255,255,255,0.3)") }} />
+                      <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-md" style={{ background: active ? "rgba(255,255,255,0.10)" : "transparent", borderLeft: active ? "2px solid var(--pk-primary)" : "2px solid transparent" }}>
+                        <div className="w-3 h-3 rounded-sm" style={{ background: active ? "#ffffff" : "rgba(255,255,255,0.4)" }} />
+                        <div className="h-2 flex-1 rounded" style={{ background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)" }} />
                       </div>
                     ))}
                   </div>
@@ -500,7 +473,7 @@ export default function SettingsPage() {
                     <div className="h-4 w-24 rounded mb-2" style={{ background: "var(--pk-border)" }} />
                     <div className="grid grid-cols-3 gap-2">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="h-10 rounded-lg" style={{ background: i === 1 ? `${theme.primaryColor}20` : "var(--pk-surface)" }} />
+                        <div key={i} className="h-10 rounded-lg" style={{ background: i === 1 ? getAccent(theme.accentName).value : "var(--pk-surface)" }} />
                       ))}
                     </div>
                   </div>
@@ -511,8 +484,8 @@ export default function SettingsPage() {
             {message && <StatusMessage message={message} />}
 
             <button onClick={handleSaveAppearance} disabled={saving}
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
-              style={{ background: saving ? "var(--pk-text-muted)" : theme.primaryColor }}>
+              className="px-6 py-2.5 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              style={{ background: saving ? "var(--pk-text-muted)" : "var(--pk-primary)" }}>
               {saving ? "Saving..." : "Save Appearance"}
             </button>
           </div>
@@ -545,8 +518,8 @@ export default function SettingsPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-10 h-10 rounded-full bg-pk-danger-fill flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
@@ -569,12 +542,12 @@ export default function SettingsPage() {
                   value={deleteConfirmName}
                   onChange={e => setDeleteConfirmName(e.target.value)}
                   placeholder={org.name}
-                  className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger"
                 />
               </div>
 
               {deleteError && (
-                <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <div className="mb-4 text-sm text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-lg px-3 py-2">
                   {deleteError}
                 </div>
               )}

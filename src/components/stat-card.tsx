@@ -32,7 +32,7 @@ export function StatCard({
           <p
             className={cn(
               "text-xs mt-1",
-              trend.value >= 0 ? "text-green-600" : "text-red-600"
+              trend.value >= 0 ? "text-pk-success-text" : "text-pk-danger-text"
             )}
           >
             {trend.value >= 0 ? "↑" : "↓"} {Math.abs(trend.value)}% {trend.label}

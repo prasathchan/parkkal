@@ -210,9 +210,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Today's Appointments"
             value={stats.todayAppointments}
-            iconBg="bg-green-100"
+            iconBg="bg-pk-success-fill"
             icon={
-              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-success-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             }
@@ -220,9 +220,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Open Visits"
             value={stats.pendingVisits}
-            iconBg="bg-yellow-100"
+            iconBg="bg-pk-warning-fill"
             icon={
-              <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-warning-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
               </svg>
             }
@@ -240,9 +240,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Today's Revenue"
             value={formatCurrency(stats.todayRevenue)}
-            iconBg="bg-green-100"
+            iconBg="bg-pk-success-fill"
             icon={
-              <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-success-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
@@ -250,9 +250,9 @@ export default async function DashboardPage() {
           <StatCard
             label="Outstanding Dues"
             value={formatCurrency(stats.outstandingDues)}
-            iconBg="bg-red-100"
+            iconBg="bg-pk-danger-fill"
             icon={
-              <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
@@ -346,10 +346,10 @@ export default async function DashboardPage() {
 
               <Link
                 href="/dashboard/appointments/new"
-                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-green-50 hover:border-green-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-pk-success-fill hover:border-pk-success-border transition group"
               >
-                <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition">
-                  <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 bg-pk-success-fill rounded-lg flex items-center justify-center group-hover:bg-pk-success-fill transition">
+                  <svg className="w-5 h-5 text-pk-success-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -361,10 +361,10 @@ export default async function DashboardPage() {
 
               <Link
                 href="/dashboard/billing"
-                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-yellow-50 hover:border-yellow-200 transition group"
+                className="flex items-center gap-3 p-3 rounded-lg border border-pk-border hover:bg-pk-warning-fill hover:border-pk-warning-border transition group"
               >
-                <div className="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center group-hover:bg-yellow-200 transition">
-                  <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-9 h-9 bg-pk-warning-fill rounded-lg flex items-center justify-center group-hover:bg-pk-warning-fill transition">
+                  <svg className="w-5 h-5 text-pk-warning-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
                   </svg>
                 </div>

@@ -34,10 +34,10 @@ const LIMIT = 50;
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<RecallStatus, { label: string; bg: string; text: string }> = {
-  UNSCHEDULED: { label: "Not Booked", bg: "bg-amber-50",  text: "text-amber-700" },
+  UNSCHEDULED: { label: "Not Booked", bg: "bg-pk-warning-fill",  text: "text-pk-warning-text" },
   SCHEDULED:   { label: "Booked",     bg: "bg-pk-teal-50",   text: "text-pk-teal-700"  },
-  FULFILLED:   { label: "Attended",   bg: "bg-green-50",  text: "text-green-700" },
-  LAPSED:      { label: "Lapsed",     bg: "bg-red-50",    text: "text-red-700"   },
+  FULFILLED:   { label: "Attended",   bg: "bg-pk-success-fill",  text: "text-pk-success-text" },
+  LAPSED:      { label: "Lapsed",     bg: "bg-pk-danger-fill",    text: "text-pk-danger-text"   },
 };
 
 function RecallStatusBadge({ status }: { status: RecallStatus }) {
@@ -55,16 +55,16 @@ function DueBadge({ row }: { row: RecallVisit }) {
   if (row.isOverdue) {
     const days = Math.abs(row.daysUntilRecall ?? 0);
     return (
-      <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+      <span className="inline-flex items-center rounded-full bg-pk-danger-fill px-2 py-0.5 text-xs font-medium text-pk-danger-text">
         {days}d overdue
       </span>
     );
   }
   const days = row.daysUntilRecall ?? 0;
   if (days === 0)
-    return <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">Today</span>;
+    return <span className="inline-flex items-center rounded-full bg-pk-warning-fill px-2 py-0.5 text-xs font-medium text-pk-warning-text">Today</span>;
   return (
-    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+    <span className="inline-flex items-center rounded-full bg-pk-success-fill px-2 py-0.5 text-xs font-medium text-pk-success-text">
       in {days}d
     </span>
   );
@@ -111,8 +111,8 @@ export default function RecallsPage() {
           <p className="text-sm text-pk-text-muted mt-0.5">Patients due for a follow-up visit</p>
         </div>
         {actionableCount > 0 && (tab === "unscheduled" || tab === "lapsed") && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
-            <span className="h-2 w-2 rounded-full bg-amber-500" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-pk-warning-fill px-3 py-1 text-sm font-medium text-pk-warning-text">
+            <span className="h-2 w-2 rounded-full bg-pk-warning" />
             {actionableCount} need booking
           </span>
         )}

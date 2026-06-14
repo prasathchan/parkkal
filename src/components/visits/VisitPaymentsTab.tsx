@@ -19,13 +19,13 @@ export function VisitPaymentsTab({ visit, payments, due, onOpenPayModal }: Props
           <p className="text-xs text-pk-text-muted mb-1">Total Bill</p>
           <p className="text-lg font-bold text-pk-text">{formatCurrency(visit.totalAmount)}</p>
         </div>
-        <div className="bg-green-50 rounded-lg p-4 text-center">
+        <div className="bg-pk-success-fill rounded-lg p-4 text-center">
           <p className="text-xs text-pk-text-muted mb-1">Total Paid</p>
-          <p className="text-lg font-bold text-green-700">{formatCurrency(visit.paidAmount)}</p>
+          <p className="text-lg font-bold text-pk-success-text">{formatCurrency(visit.paidAmount)}</p>
         </div>
-        <div className={`rounded-lg p-4 text-center ${due > 0 ? "bg-red-50" : "bg-pk-surface-raised"}`}>
+        <div className={`rounded-lg p-4 text-center ${due > 0 ? "bg-pk-danger-fill" : "bg-pk-surface-raised"}`}>
           <p className="text-xs text-pk-text-muted mb-1">Balance Due</p>
-          <p className={`text-lg font-bold ${due > 0 ? "text-red-600" : "text-pk-text-muted"}`}>{formatCurrency(due)}</p>
+          <p className={`text-lg font-bold ${due > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>{formatCurrency(due)}</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ export function VisitPaymentsTab({ visit, payments, due, onOpenPayModal }: Props
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-green-700">{formatCurrency(p.amount)}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-pk-success-text">{formatCurrency(p.amount)}</td>
                   <td className="px-3 py-2.5">
                     <span className="text-xs bg-pk-teal-100 text-pk-teal-700 px-2 py-0.5 rounded-full">{p.paymentMethod}</span>
                   </td>
@@ -78,7 +78,7 @@ export function VisitPaymentsTab({ visit, payments, due, onOpenPayModal }: Props
       {visit.status === "OPEN" && due > 0 && (
         <button
           onClick={onOpenPayModal}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition"
+          className="bg-pk-success text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-success transition"
         >
           + Add Payment
         </button>

@@ -18,10 +18,10 @@ interface SubRow {
 
 const STATUS_BADGE: Record<string, string> = {
   trialing:  "bg-pk-teal-100 text-pk-teal-700",
-  active:    "bg-green-100 text-green-700",
-  past_due:  "bg-yellow-100 text-yellow-700",
+  active:    "bg-pk-success-fill text-pk-success-text",
+  past_due:  "bg-pk-warning-fill text-pk-warning-text",
   cancelled: "bg-pk-surface-sunken text-pk-text-secondary",
-  expired:   "bg-red-100 text-red-700",
+  expired:   "bg-pk-danger-fill text-pk-danger-text",
 };
 
 const PLANS = ["solo", "clinic", "enterprise"];
@@ -72,7 +72,7 @@ export default function SubscriptionsPage() {
         <p className="text-sm text-pk-text-muted mt-0.5">View all organisations. Manually activate cash-paying clinics here.</p>
       </div>
 
-      {msg && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
 
       {activeForm && (
         <div className="bg-white rounded-xl border border-pk-teal-200 p-5 space-y-4">
@@ -100,7 +100,7 @@ export default function SubscriptionsPage() {
           </div>
           <div className="flex gap-2">
             <button onClick={activate} disabled={!!activating}
-              className="bg-green-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition">
+              className="bg-pk-success text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition">
               {activating ? "Activating…" : "Activate"}
             </button>
             <button onClick={() => setActiveForm(null)}
@@ -142,7 +142,7 @@ export default function SubscriptionsPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       {s.daysRemaining !== null ? (
-                        <span className={s.daysRemaining < 0 ? "text-red-600 font-medium" : s.daysRemaining <= 7 ? "text-yellow-600" : "text-pk-text-secondary"}>
+                        <span className={s.daysRemaining < 0 ? "text-pk-danger-text font-medium" : s.daysRemaining <= 7 ? "text-pk-warning-text" : "text-pk-text-secondary"}>
                           {s.daysRemaining < 0 ? `${Math.abs(s.daysRemaining)}d overdue` : `${s.daysRemaining}d`}
                         </span>
                       ) : "—"}
@@ -151,7 +151,7 @@ export default function SubscriptionsPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => setActiveForm({ id: s.id, planSlug: s.planSlug === "trial" ? "solo" : s.planSlug, months: 1, notes: "" })}
-                        className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-lg hover:bg-green-100 transition"
+                        className="text-xs bg-pk-success-fill text-pk-success-text border border-pk-success-border px-2.5 py-1 rounded-lg hover:bg-pk-success-fill transition"
                       >
                         Activate
                       </button>

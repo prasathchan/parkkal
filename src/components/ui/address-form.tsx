@@ -400,11 +400,11 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
               </span>
             )}
             {pincodeSuccess && !pincodeLoading && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500 text-xs">&#10003;</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-pk-success-text text-xs">&#10003;</span>
             )}
           </div>
           {pincodeError && (
-            <p className="text-xs text-red-500 mt-0.5">{pincodeError}</p>
+            <p className="text-xs text-pk-danger-text mt-0.5">{pincodeError}</p>
           )}
         </div>
         <div>

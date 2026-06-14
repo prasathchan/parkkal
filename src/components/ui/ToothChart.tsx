@@ -119,7 +119,7 @@ function ToothCell({
           <span className="absolute inset-0 flex items-center justify-center text-pk-teal-500 text-[8px] font-bold">BR</span>
         )}
         {condition === "IMPLANT" && (
-          <span className="absolute inset-0 flex items-center justify-center text-green-600 text-[8px] font-bold">IM</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-success-text text-[8px] font-bold">IM</span>
         )}
       </button>
 

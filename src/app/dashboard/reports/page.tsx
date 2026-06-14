@@ -102,12 +102,12 @@ function _Stat({ label, value, sub, color = "text-pk-text" }: {
 // ─── Status breakdown bar ──────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED:   "bg-green-500",
+  COMPLETED:   "bg-pk-success",
   OPEN:        "bg-pk-teal-500",
-  PLANNED:     "bg-yellow-400",
+  PLANNED:     "bg-pk-warning",
   IN_PROGRESS: "bg-pk-teal-400",
   CANCELLED:   "bg-pk-neutral-300",
-  NO_SHOW:     "bg-red-400",
+  NO_SHOW:     "bg-pk-danger",
   SCHEDULED:   "bg-pk-teal-400",
 };
 
@@ -146,7 +146,7 @@ function StatWithChange({ label, value, sub, prevValue, color = "text-pk-text", 
       <p className="text-xs text-pk-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${color}`}>{value}</p>
       {pct !== null && (
-        <p className={`text-xs mt-0.5 ${up ? (isRate ? "text-red-500" : "text-green-600") : (isRate ? "text-green-600" : "text-red-500")}`}>
+        <p className={`text-xs mt-0.5 ${up ? (isRate ? "text-pk-danger-text" : "text-pk-success-text") : (isRate ? "text-pk-success-text" : "text-pk-danger-text")}`}>
           {up ? "▲" : "▼"} {Math.abs(pct)}% vs prior period
         </p>
       )}
@@ -176,7 +176,7 @@ function AgingTable({ buckets }: { buckets: AgingBucket[] }) {
             <tr key={b.label} className="hover:bg-pk-surface-raised">
               <td className="px-5 py-3 font-medium text-pk-text">{b.label}</td>
               <td className="px-5 py-3 text-right text-pk-text-secondary">{b.count}</td>
-              <td className="px-5 py-3 text-right font-semibold text-red-700">{formatCurrency(b.amount)}</td>
+              <td className="px-5 py-3 text-right font-semibold text-pk-danger-text">{formatCurrency(b.amount)}</td>
               <td className="px-5 py-3 text-right text-pk-text-muted">{Math.round((b.amount / total) * 100)}%</td>
             </tr>
           ))}
@@ -185,7 +185,7 @@ function AgingTable({ buckets }: { buckets: AgingBucket[] }) {
           <tr>
             <td className="px-5 py-3 font-semibold text-pk-text">Total</td>
             <td className="px-5 py-3 text-right font-semibold">{buckets.reduce((s, b) => s + b.count, 0)}</td>
-            <td className="px-5 py-3 text-right font-bold text-red-700">{formatCurrency(total)}</td>
+            <td className="px-5 py-3 text-right font-bold text-pk-danger-text">{formatCurrency(total)}</td>
             <td />
           </tr>
         </tfoot>
@@ -215,7 +215,7 @@ function FunnelChart({ funnel }: { funnel: PatientFunnel }) {
             <div className="flex items-center justify-between mb-1 text-xs text-pk-text-secondary">
               <span className="font-medium">{step.label}</span>
               <span className="text-pk-text-muted">{step.value.toLocaleString("en-IN")}
-                {i > 0 && dropPct > 0 && <span className="text-red-400 ml-1">−{dropPct}%</span>}
+                {i > 0 && dropPct > 0 && <span className="text-pk-danger-text ml-1">−{dropPct}%</span>}
               </span>
             </div>
             <div className="h-5 bg-pk-surface-sunken rounded-full overflow-hidden">
@@ -396,7 +396,7 @@ export default function ReportsPage() {
         </div>
 
         {error && !forbidden && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>
         )}
 
         {loading && (
@@ -426,19 +426,19 @@ export default function ReportsPage() {
                 label="Collected"
                 value={formatCurrency(data.summary.totalCollected)}
                 prevValue={data.prevSummary?.totalCollected}
-                color={data.summary.collectionRate >= 80 ? "text-green-700" : "text-orange-700"}
+                color={data.summary.collectionRate >= 80 ? "text-pk-success-text" : "text-pk-warning-text"}
               />
               <StatWithChange
                 label="Outstanding"
                 value={formatCurrency(data.summary.outstanding)}
-                color={data.summary.outstanding > 0 ? "text-red-700" : "text-green-700"}
+                color={data.summary.outstanding > 0 ? "text-pk-danger-text" : "text-pk-success-text"}
               />
               <StatWithChange
                 label="Collection Rate"
                 value={`${data.summary.collectionRate}%`}
                 prevValue={data.prevSummary?.collectionRate}
                 isRate
-                color={data.summary.collectionRate >= 90 ? "text-green-700" : data.summary.collectionRate >= 70 ? "text-yellow-700" : "text-red-700"}
+                color={data.summary.collectionRate >= 90 ? "text-pk-success-text" : data.summary.collectionRate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}
               />
             </div>
 
@@ -515,7 +515,7 @@ export default function ReportsPage() {
                           <td className="px-5 py-3 text-right text-pk-text-secondary">{d.visits}</td>
                           <td className="px-5 py-3 text-right text-pk-text-secondary">{formatCurrency(d.billed)}</td>
                           <td className="px-5 py-3 text-right text-pk-text-secondary">{formatCurrency(d.collected)}</td>
-                          <td className={`px-5 py-3 text-right font-medium ${rate >= 90 ? "text-green-700" : rate >= 70 ? "text-yellow-700" : "text-red-700"}`}>
+                          <td className={`px-5 py-3 text-right font-medium ${rate >= 90 ? "text-pk-success-text" : rate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}`}>
                             {rate}%
                           </td>
                         </tr>
