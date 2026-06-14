@@ -126,7 +126,7 @@ export const DELETE = withRoute<{ id: string }>(
       return apiError("Forbidden", 403);
     }
 
-    const [appt] = await db.select({ id: appointments.id }).from(appointments)
+    const [appt] = await db.select({ id: appointments.id, doctorId: appointments.doctorId }).from(appointments)
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     if (!appt) return apiError("Not found", 404);
 
@@ -138,6 +138,8 @@ export const DELETE = withRoute<{ id: string }>(
     await db.delete(appointments).where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     // Cancel any pending reminders so the cron job doesn't attempt delivery
     await cancelReminders(db, id);
+    // Remove from doctor's personal calendar (fire-and-forget)
+    removeAppointmentFromCalendar(db, appt.doctorId, id).catch(() => {});
     log.info("Appointment deleted", { appointmentId: id });
     return apiOk({ success: true });
   }
