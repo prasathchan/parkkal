@@ -123,8 +123,7 @@ export default function VisitDetailPage() {
     setSavingRecall(false);
   }
 
-  async function handleAddPayment(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleAddPayment(allowOverpayment = false) {
     if (!visit) return;
     setPayError("");
     setPaySubmitting(true);
@@ -134,6 +133,7 @@ export default function VisitDetailPage() {
         paymentMethod: payForm.paymentMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER",
         referenceNumber: payForm.referenceNumber || undefined,
         notes: payForm.notes || undefined,
+        allowOverpayment,
       });
       setShowPayModal(false);
       setPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });

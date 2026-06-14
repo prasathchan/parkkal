@@ -3,11 +3,17 @@ import { toothChartHistory, organizationPatients, visits, users } from "@/db/sch
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS } from "@/lib/permissions";
 
-/** GET /api/patients/[id]/tooth-chart/history */
+/**
+ * GET /api/patients/[id]/tooth-chart/history
+ *
+ * Returns chart history for a patient, newest first.
+ * Pass ?visitId=xxx to get only the snapshots recorded during a specific visit.
+ */
 export const GET = withRoute(
   { route: "GET /api/patients/[id]/tooth-chart/history", permission: PERMISSIONS.PATIENTS_VIEW, rateLimit: RATE_LIMITS.READ },
-  async (_req, { session, db }, params) => {
+  async (req, { session, db }, params) => {
     const patientId = (params as Record<string, string>).id;
+    const filterVisitId = req.nextUrl.searchParams.get("visitId") ?? null;
 
     const [link] = await db.select({ id: organizationPatients.id })
       .from(organizationPatients)
@@ -15,26 +21,29 @@ export const GET = withRoute(
       .limit(1);
     if (!link) return apiError("Patient not found", 404);
 
+    const conditions = [
+      eq(toothChartHistory.organizationId, session.orgId),
+      eq(toothChartHistory.patientId, patientId),
+      ...(filterVisitId ? [eq(toothChartHistory.visitId, filterVisitId)] : []),
+    ];
+
     const rows = await db
       .select({
-        id:           toothChartHistory.id,
-        visitId:      toothChartHistory.visitId,
-        visitCode:    visits.visitCode,
-        toothData:    toothChartHistory.toothData,
-        changedTeeth: toothChartHistory.changedTeeth,
-        recordedBy:   toothChartHistory.recordedBy,
+        id:             toothChartHistory.id,
+        visitId:        toothChartHistory.visitId,
+        visitCode:      visits.visitCode,
+        toothData:      toothChartHistory.toothData,
+        changedTeeth:   toothChartHistory.changedTeeth,
+        recordedBy:     toothChartHistory.recordedBy,
         recordedByName: users.name,
-        recordedAt:   toothChartHistory.recordedAt,
+        recordedAt:     toothChartHistory.recordedAt,
       })
       .from(toothChartHistory)
       .leftJoin(visits, eq(toothChartHistory.visitId, visits.id))
       .leftJoin(users, eq(toothChartHistory.recordedBy, users.id))
-      .where(and(
-        eq(toothChartHistory.organizationId, session.orgId),
-        eq(toothChartHistory.patientId, patientId),
-      ))
+      .where(and(...conditions))
       .orderBy(desc(toothChartHistory.recordedAt))
-      .limit(50);
+      .limit(filterVisitId ? 10 : 50);
 
     const history = rows.map((r: typeof rows[number]) => ({
       id:             r.id,

@@ -219,6 +219,40 @@ export function dismissOnboarding(): Promise<{ success: true }> {
   return apiFetch<{ success: true }>("/api/org/onboarding/dismiss", { method: "POST" });
 }
 
+// ─── Drug formulary ───────────────────────────────────────────────────────────
+
+export interface OrgDrug {
+  id: string;
+  organizationId: string;
+  name: string;
+  defaultDosage: string | null;
+  defaultFrequency: string | null;
+  defaultDuration: string | null;
+  createdAt: number;
+}
+
+export interface AddOrgDrugPayload {
+  name: string;
+  defaultDosage?: string;
+  defaultFrequency?: string;
+  defaultDuration?: string;
+}
+
+export function listOrgDrugs(): Promise<{ drugs: OrgDrug[] }> {
+  return apiFetch<{ drugs: OrgDrug[] }>("/api/org/drugs");
+}
+
+export function addOrgDrug(data: AddOrgDrugPayload): Promise<{ drug: OrgDrug }> {
+  return apiFetch<{ drug: OrgDrug }>("/api/org/drugs", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteOrgDrug(id: string): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/org/drugs/${id}`, { method: "DELETE" });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const orgApi = {
@@ -248,6 +282,11 @@ export const orgApi = {
   delete:            deleteOrg,
   dismissOnboarding: dismissOnboarding,
   acceptDpa:         acceptDpa,
+  drugs: {
+    list:   listOrgDrugs,
+    add:    addOrgDrug,
+    delete: deleteOrgDrug,
+  },
 };
 
 async function acceptDpa(): Promise<{ accepted: boolean; version: string }> {

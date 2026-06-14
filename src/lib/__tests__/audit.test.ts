@@ -7,9 +7,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// vi.mock must be at the top level (Vitest hoists it before imports).
+// The factory closes over `mockValues` so individual tests can swap the impl.
+const mockValues = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("@/lib/db", () => ({
   getDb: () => ({
-    insert: () => ({ values: vi.fn().mockResolvedValue(undefined) }),
+    insert: () => ({ values: mockValues }),
   }),
 }));
 
@@ -21,6 +25,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 describe("writeAuditLog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockValues.mockResolvedValue(undefined); // reset to success for each test
   });
 
   it("returns synchronously without throwing when DB insert succeeds", async () => {
@@ -38,13 +43,7 @@ describe("writeAuditLog", () => {
   });
 
   it("does not throw even when DB insert fails (fire-and-forget)", async () => {
-    vi.mock("@/lib/db", () => ({
-      getDb: () => ({
-        insert: () => ({
-          values: vi.fn().mockRejectedValue(new Error("D1 error")),
-        }),
-      }),
-    }));
+    mockValues.mockRejectedValue(new Error("D1 error"));
 
     expect(() =>
       writeAuditLog({

@@ -43,13 +43,16 @@ function BillingPageInner() {
   const upgraded        = searchParams.get("upgraded") === "1";
   const cancelled       = searchParams.get("cancelled") === "1";
 
-  const [sub,        setSub]        = useState<Subscription | null>(null);
-  const [plans,      setPlans]      = useState<Plan[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [upgrading,  setUpgrading]  = useState<string | null>(null);
+  const [sub,           setSub]          = useState<Subscription | null>(null);
+  const [plans,         setPlans]         = useState<Plan[]>([]);
+  const [plansError,    setPlansError]    = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [upgrading,     setUpgrading]     = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState("");
 
   const startCheckout = useCallback(async (planId: string) => {
     setUpgrading(planId);
+    setCheckoutError("");
     try {
       const res  = await fetch("/api/stripe/create-checkout", {
         method: "POST",
@@ -58,12 +61,12 @@ function BillingPageInner() {
       });
       const data = await res.json() as { url?: string; error?: string };
       if (!res.ok || !data.url) {
-        alert(data.error ?? "Could not start checkout. Please try again.");
+        setCheckoutError(data.error ?? "Could not start checkout. Please try again.");
         return;
       }
       window.location.href = data.url;
     } catch {
-      alert("Something went wrong. Please try again.");
+      setCheckoutError("Something went wrong. Please try again.");
     } finally {
       setUpgrading(null);
     }
@@ -79,7 +82,7 @@ function BillingPageInner() {
     fetch("/api/plans")
       .then((r) => r.json() as Promise<{ plans: Plan[] }>)
       .then((d) => setPlans(d.plans ?? []))
-      .catch(() => {});
+      .catch(() => setPlansError(true));
   }, []);
 
   const statusInfo = sub ? (STATUS_COPY[sub.status] ?? STATUS_COPY["expired"]) : null;
@@ -181,8 +184,24 @@ function BillingPageInner() {
               </a>
             </div>
 
+            {/* Checkout error */}
+            {checkoutError && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+                <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <span>{checkoutError}</span>
+              </div>
+            )}
+
             {/* Available plans */}
-            {plans.length > 0 && (
+            {plansError && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                Could not load available plans. Please refresh the page or{" "}
+                <a href="mailto:support@parkkal.com" className="underline">contact support</a>.
+              </div>
+            )}
+            {!plansError && plans.length > 0 && (
               <div className="space-y-3">
                 <h2 className="font-semibold text-slate-900 text-sm">Available plans</h2>
                 {plans.filter((p) => p.isActive && p.slug !== "trial").map((plan) => {

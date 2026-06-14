@@ -37,8 +37,8 @@ interface ExecutionCtx {
 // Map each declared cron expression (wrangler.toml [triggers]) to the routes it
 // should invoke. Keep this in sync with wrangler.toml `crons`.
 const CRON_ROUTES: Record<string, string[]> = {
-  // Every 15 minutes — appointment reminders (also self-handles the 02:00 backup).
-  "*/15 * * * *": ["/api/cron/reminders"],
+  // Every 15 minutes — appointment reminders + error-spike alerting.
+  "*/15 * * * *": ["/api/cron/reminders", "/api/cron/alert"],
   // Daily at 02:00 UTC — data-retention purge and onboarding emails.
   "0 2 * * *": ["/api/cron/retention", "/api/cron/onboarding"],
 };

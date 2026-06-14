@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { visitsApi, ApiError } from "@/api";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { visitsApi, orgApi, ApiError, type OrgDrug } from "@/api";
 import type { Prescription, Medicine } from "@/types";
-import { searchDrugs, type DrugSuggestion } from "@/constants";
+import { DENTAL_DRUGS, type DrugSuggestion } from "@/constants";
 
 interface Props {
   visitId: string;
@@ -16,26 +16,63 @@ interface Props {
 const EMPTY_MEDICINE: Medicine = { name: "", dosage: "", frequency: "", duration: "", notes: "" };
 const FREQ_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "SOS", "BD", "TDS", "OD"];
 
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+
+interface SuggestionGroup {
+  label: string;
+  items: DrugSuggestion[];
+}
+
+function buildGroups(query: string, orgDrugs: OrgDrug[]): SuggestionGroup[] {
+  if (!query.trim()) return [];
+  const q = query.toLowerCase();
+
+  const orgMatches = orgDrugs
+    .filter((d) => d.name.toLowerCase().includes(q))
+    .slice(0, 5)
+    .map((d) => ({
+      name: d.name,
+      defaultDosage:    d.defaultDosage    ?? undefined,
+      defaultFrequency: d.defaultFrequency ?? undefined,
+      defaultDuration:  d.defaultDuration  ?? undefined,
+    }));
+
+  const orgNames = new Set(orgMatches.map((d) => d.name.toLowerCase()));
+  const stdMatches = DENTAL_DRUGS
+    .filter((d) => d.name.toLowerCase().includes(q) && !orgNames.has(d.name.toLowerCase()))
+    .slice(0, 6);
+
+  const groups: SuggestionGroup[] = [];
+  if (orgMatches.length > 0) groups.push({ label: "Your Drugs", items: orgMatches });
+  if (stdMatches.length > 0) groups.push({ label: "Common Drugs", items: stdMatches });
+  return groups;
+}
+
 function DrugAutocomplete({
   value,
+  orgDrugs,
   onChange,
   onSelect,
 }: {
   value: string;
+  orgDrugs: OrgDrug[];
   onChange: (val: string) => void;
   onSelect: (drug: DrugSuggestion) => void;
 }) {
-  const [suggestions, setSuggestions] = useState<DrugSuggestion[]>([]);
+  const [groups, setGroups] = useState<SuggestionGroup[]>([]);
   const [open, setOpen] = useState(false);
-  const [activeIdx, setActiveIdx] = useState(-1);
+  const [activeIdx, setActiveIdx] = useState(-1); // flat index across all groups
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Flatten groups for keyboard nav
+  const flatItems = groups.flatMap((g) => g.items);
+
   useEffect(() => {
-    const results = searchDrugs(value);
-    setSuggestions(results);
-    setOpen(results.length > 0 && value.trim().length > 0);
+    const next = buildGroups(value, orgDrugs);
+    setGroups(next);
+    setOpen(next.length > 0 && value.trim().length > 0);
     setActiveIdx(-1);
-  }, [value]);
+  }, [value, orgDrugs]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -51,18 +88,20 @@ function DrugAutocomplete({
     if (!open) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIdx((i) => Math.min(i + 1, suggestions.length - 1));
+      setActiveIdx((i) => Math.min(i + 1, flatItems.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIdx((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter" && activeIdx >= 0) {
       e.preventDefault();
-      onSelect(suggestions[activeIdx]);
+      onSelect(flatItems[activeIdx]);
       setOpen(false);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
   }
+
+  let flatCounter = 0;
 
   return (
     <div ref={containerRef} className="relative">
@@ -71,20 +110,43 @@ function DrugAutocomplete({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={() => { if (suggestions.length > 0 && value.trim()) setOpen(true); }}
+        onFocus={() => { if (groups.length > 0 && value.trim()) setOpen(true); }}
         placeholder="e.g. Amoxicillin 500mg"
         autoComplete="off"
         className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       {open && (
-        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
-          {suggestions.map((drug, i) => (
-            <li
-              key={drug.name}
-              onMouseDown={(e) => { e.preventDefault(); onSelect(drug); setOpen(false); }}
-              className={`px-3 py-2 text-sm cursor-pointer transition ${i === activeIdx ? "bg-blue-50 text-blue-700" : "hover:bg-slate-50 text-slate-700"}`}
-            >
-              {drug.name}
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+          {groups.map((group) => (
+            <li key={group.label}>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 select-none">
+                {group.label}
+              </div>
+              <ul>
+                {group.items.map((drug) => {
+                  const idx = flatCounter++;
+                  const isActive = idx === activeIdx;
+                  return (
+                    <li
+                      key={drug.name}
+                      onMouseDown={(e) => { e.preventDefault(); onSelect(drug); setOpen(false); }}
+                      onMouseEnter={() => setActiveIdx(idx)}
+                      className={`px-3 py-2 text-sm cursor-pointer transition ${
+                        isActive ? "bg-blue-50 text-blue-700" : "hover:bg-slate-50 text-slate-700"
+                      }`}
+                    >
+                      <span className="font-medium">{drug.name}</span>
+                      {(drug.defaultDosage || drug.defaultFrequency) && (
+                        <span className="ml-2 text-xs text-slate-400">
+                          {[drug.defaultDosage, drug.defaultFrequency, drug.defaultDuration]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             </li>
           ))}
         </ul>
@@ -92,6 +154,8 @@ function DrugAutocomplete({
     </div>
   );
 }
+
+// ── Main tab ──────────────────────────────────────────────────────────────────
 
 export function VisitPrescriptionsTab({
   visitId,
@@ -106,6 +170,21 @@ export function VisitPrescriptionsTab({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [orgDrugs, setOrgDrugs] = useState<OrgDrug[]>([]);
+
+  // Fetch org drugs once when the prescription form is shown
+  const fetchOrgDrugs = useCallback(async () => {
+    try {
+      const { drugs } = await orgApi.drugs.list();
+      setOrgDrugs(drugs);
+    } catch {
+      // silently degrade — built-in list still works
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showForm && orgDrugs.length === 0) fetchOrgDrugs();
+  }, [showForm, orgDrugs.length, fetchOrgDrugs]);
 
   function addMedicineRow() {
     setMedicines((prev) => [...prev, { ...EMPTY_MEDICINE }]);
@@ -138,11 +217,11 @@ export function VisitPrescriptionsTab({
     try {
       await visitsApi.prescriptions.add(visitId, {
         medicines: medicines.map((m) => ({
-          name: m.name.trim(),
-          dosage: m.dosage.trim(),
+          name:      m.name.trim(),
+          dosage:    m.dosage.trim(),
           frequency: m.frequency.trim(),
-          duration: m.duration.trim(),
-          notes: m.notes?.trim() || undefined,
+          duration:  m.duration.trim(),
+          notes:     m.notes?.trim() || undefined,
         })),
         instructions: instructions.trim() || undefined,
       });
@@ -194,7 +273,17 @@ export function VisitPrescriptionsTab({
       {/* Form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="border border-slate-200 rounded-xl p-5 space-y-4 bg-slate-50">
-          <h3 className="text-sm font-semibold text-slate-700">New Prescription</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700">New Prescription</h3>
+            <a
+              href="/dashboard/settings/drugs"
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Manage formulary →
+            </a>
+          </div>
 
           {/* Medicine rows */}
           <div className="space-y-3">
@@ -217,6 +306,7 @@ export function VisitPrescriptionsTab({
                     <label className="block text-xs text-slate-500 mb-1">Drug name *</label>
                     <DrugAutocomplete
                       value={med.name}
+                      orgDrugs={orgDrugs}
                       onChange={(val) => updateMedicine(idx, "name", val)}
                       onSelect={(drug) => {
                         setMedicines((prev) =>
@@ -224,10 +314,10 @@ export function VisitPrescriptionsTab({
                             i === idx
                               ? {
                                   ...m,
-                                  name: drug.name,
-                                  dosage: drug.defaultDosage ?? m.dosage,
+                                  name:      drug.name,
+                                  dosage:    drug.defaultDosage    ?? m.dosage,
                                   frequency: drug.defaultFrequency ?? m.frequency,
-                                  duration: drug.defaultDuration ?? m.duration,
+                                  duration:  drug.defaultDuration  ?? m.duration,
                                 }
                               : m
                           )

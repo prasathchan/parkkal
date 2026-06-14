@@ -529,6 +529,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   treatments:   many(treatments),
   invoices:     many(invoices),
   salaryRecords: many(salaryRecords),
+  drugs:        many(orgDrugs),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -731,6 +732,22 @@ export const couponRedemptionsRelations = relations(couponRedemptions, ({ one })
   coupon:       one(coupons,       { fields: [couponRedemptions.couponId],       references: [coupons.id] }),
   organization: one(organizations, { fields: [couponRedemptions.organizationId], references: [organizations.id] }),
   subscription: one(subscriptions, { fields: [couponRedemptions.subscriptionId], references: [subscriptions.id] }),
+}));
+
+// ─── Clinic drug formulary ────────────────────────────────────────────────────
+// Per-org curated list that surfaces first in prescription autocomplete.
+export const orgDrugs = sqliteTable("org_drugs", {
+  id:               text("id").primaryKey(),
+  organizationId:   text("organization_id").notNull().references(() => organizations.id),
+  name:             text("name").notNull(),
+  defaultDosage:    text("default_dosage"),
+  defaultFrequency: text("default_frequency"),
+  defaultDuration:  text("default_duration"),
+  createdAt:        integer("created_at").notNull(),
+});
+
+export const orgDrugsRelations = relations(orgDrugs, ({ one }) => ({
+  organization: one(organizations, { fields: [orgDrugs.organizationId], references: [organizations.id] }),
 }));
 
 // ─── Onboarding email sequence ───────────────────────────────────────────────

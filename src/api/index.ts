@@ -71,7 +71,7 @@ export { visitsApi } from "./visits";
 export { treatmentsApi } from "./treatments";
 export { appointmentsApi } from "./appointments";
 export { invoicesApi } from "./invoices";
-export { orgApi } from "./org";
+export { orgApi, type OrgDrug, type AddOrgDrugPayload } from "./org";
 export { authApi } from "./auth";
 export { recallsApi } from "./recalls";
 export { reportsApi } from "./reports";

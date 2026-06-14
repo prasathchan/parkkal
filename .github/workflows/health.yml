@@ -27,13 +27,25 @@ jobs:
         run: |
           URL="${WORKERS_URL}/api/cron/health"
           echo "Pinging: $URL"
-          STATUS=$(curl -sf --max-time 10 -o /dev/null -w "%{http_code}" "$URL" || echo "000")
+          # Capture both status code and body so we can surface recentErrors
+          BODY=$(curl -s --max-time 10 -w "\n%{http_code}" "$URL" || echo -e "\n000")
+          STATUS=$(echo "$BODY" | tail -1)
+          JSON=$(echo "$BODY" | head -n -1)
           echo "HTTP status: $STATUS"
+          echo "Response: $JSON"
           if [ "$STATUS" != "200" ]; then
             echo "::error::Production health check FAILED (HTTP $STATUS) — $URL"
             echo "Check Cloudflare dashboard and recent deployments."
             exit 1
           fi
+          # Surface recent error count as a warning so it shows in the Actions UI
+          # without failing the check (errors in a 5-min window could be transient).
+          RECENT_ERRORS=$(echo "$JSON" | jq -r '.recentErrors // 0' 2>/dev/null || echo "0")
+          echo "Recent errors (last 5 min): $RECENT_ERRORS"
+          if [ "$RECENT_ERRORS" -gt 0 ]; then
+            echo "::warning::Health check passed but $RECENT_ERRORS error/security event(s) logged in the last 5 minutes — check admin app logs."
+          fi
+          echo "RECENT_ERRORS=$RECENT_ERRORS" >> "$GITHUB_ENV"
           echo "Health check passed."
 
       # Email a confirmation on success (GitHub already emails on failure).
@@ -54,7 +66,11 @@ jobs:
           fi
           NOW="$(date -u '+%Y-%m-%d %H:%M UTC')"
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          HTML="<div style=\"font-family:system-ui,sans-serif;max-width:560px\"><h2 style=\"color:#0f766e\">Health Check: PASSED ✅</h2><p>Production health ping succeeded.</p><p style=\"font-size:14px;color:#555\">Endpoint: ${WORKERS_URL}/api/cron/health<br>Commit: ${GITHUB_SHA}<br>Time: ${NOW}<br><a href=\"${RUN_URL}\">View workflow run</a></p></div>"
+          ERRORS_NOTE=""
+          if [ "${RECENT_ERRORS:-0}" -gt 0 ]; then
+            ERRORS_NOTE="<p style=\"color:#b45309\">⚠️ Note: ${RECENT_ERRORS} error/security event(s) were logged in the last 5 minutes. Check the <a href=\"${WORKERS_URL}/dashboard/settings\">admin app logs</a>.</p>"
+          fi
+          HTML="<div style=\"font-family:system-ui,sans-serif;max-width:560px\"><h2 style=\"color:#0f766e\">Health Check: PASSED ✅</h2><p>Production health ping succeeded.</p>${ERRORS_NOTE}<p style=\"font-size:14px;color:#555\">Endpoint: ${WORKERS_URL}/api/cron/health<br>Commit: ${GITHUB_SHA}<br>Time: ${NOW}<br><a href=\"${RUN_URL}\">View workflow run</a></p></div>"
           # Build JSON safely with jq (escapes the HTML and address correctly).
           BODY=$(jq -n \
             --arg to "$HEALTH_NOTIFY_EMAIL" \
@@ -77,3 +93,4 @@ jobs:
           echo "### Health Check" >> $GITHUB_STEP_SUMMARY
           echo "Checked: \`${WORKERS_URL}/api/cron/health\`" >> $GITHUB_STEP_SUMMARY
           echo "Time: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "Recent errors (last 5 min): \`${RECENT_ERRORS:-n/a}\`" >> $GITHUB_STEP_SUMMARY

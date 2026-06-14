@@ -179,6 +179,7 @@ export interface AddPaymentPayload {
   referenceNumber?: string | null;
   notes?: string | null;
   treatmentId?: string | null;
+  allowOverpayment?: boolean;
 }
 
 export function addPayment(

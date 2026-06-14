@@ -3,6 +3,7 @@ import { organizations, organizationMembers, users } from "@/db/schema";
 import { writeAuditLog } from "@/lib/audit";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { createOrgToken } from "@/lib/auth";
+import { getCached, invalidateCache, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { z } from "zod";
 import env from "@/lib/env";
 
@@ -33,7 +34,14 @@ const updateOrgSchema = z.object({
 export const GET = withRoute(
   { route: "GET /api/org/profile", rateLimit: RATE_LIMITS.READ },
   async (_req, { session, db }) => {
-    const [org] = await db.select().from(organizations).where(eq(organizations.id, session.orgId));
+    const org = await getCached(
+      CACHE_KEYS.orgProfile(session.orgId),
+      CACHE_TTL.ORG_PROFILE,
+      async () => {
+        const [row] = await db.select().from(organizations).where(eq(organizations.id, session.orgId));
+        return row ?? null;
+      }
+    );
     if (!org) return apiError("Organization not found", 404);
     return apiOk({ organization: org });
   }
@@ -76,6 +84,7 @@ export const PATCH = withRoute(
       }
     }
 
+    await invalidateCache(CACHE_KEYS.orgProfile(session.orgId));
     writeAuditLog({ organizationId: session.orgId, actorId: session.userId, actorRole: session.role, action: "ORG_PROFILE_UPDATED", targetType: "organization", targetId: session.orgId });
     log.info("Org profile updated");
 

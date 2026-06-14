@@ -132,8 +132,12 @@ export interface ToothChartHistoryEntry {
   recordedAt: number;
 }
 
-export function getToothChartHistory(patientId: string): Promise<{ history: ToothChartHistoryEntry[] }> {
-  return apiFetch<{ history: ToothChartHistoryEntry[] }>(`/api/patients/${patientId}/tooth-chart/history`);
+export function getToothChartHistory(
+  patientId: string,
+  visitId?: string,
+): Promise<{ history: ToothChartHistoryEntry[] }> {
+  const qs = visitId ? `?visitId=${encodeURIComponent(visitId)}` : "";
+  return apiFetch<{ history: ToothChartHistoryEntry[] }>(`/api/patients/${patientId}/tooth-chart/history${qs}`);
 }
 
 // ─── Prescriptions ────────────────────────────────────────────────────────────

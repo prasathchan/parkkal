@@ -23,6 +23,7 @@ const createPaymentSchema = z.object({
   referenceNumber: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
   treatmentId: z.string().optional().nullable(),
+  allowOverpayment: z.boolean().optional().default(false),
 });
 
 export const GET = withRoute<{ id: string }>(
@@ -62,7 +63,7 @@ export const POST = withRoute<{ id: string }>(
     const parsed = createPaymentSchema.safeParse(await req.json());
     if (!parsed.success) return apiError("Invalid input", 400);
 
-    const { amount, paymentMethod, referenceNumber, notes, treatmentId } = parsed.data;
+    const { amount, paymentMethod, referenceNumber, notes, treatmentId, allowOverpayment } = parsed.data;
 
     const [visit] = await db
       .select()
@@ -75,7 +76,7 @@ export const POST = withRoute<{ id: string }>(
     const due = visit.totalAmount - visit.paidAmount;
     if (due <= 0.001) return apiError("Visit is already fully paid", 400);
 
-    if (amount > due + 0.001) {
+    if (amount > due + 0.001 && !allowOverpayment) {
       return apiError(`Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}`, 400);
     }
 
