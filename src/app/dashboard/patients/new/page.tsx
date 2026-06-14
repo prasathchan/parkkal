@@ -15,6 +15,18 @@ import { patientsApi, ApiError } from "@/api";
 
 interface PatientOption { id: string; patientCode: string; name: string; phone: string; }
 
+const EXTERNAL_SOURCES = [
+  "Walk-In",
+  "Google / Search",
+  "Facebook",
+  "Instagram",
+  "Friend / Family",
+  "Doctor Referral",
+  "Hospital Referral",
+  "Newspaper / Print Ad",
+  "Other",
+] as const;
+
 function validatePhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
   if (!digits) return "";
@@ -71,6 +83,7 @@ export default function NewPatientPage() {
   const [referredByPatientId, setReferredByPatientId] = useState<string | null>(null);
   const [referralDropdownOpen, setReferralDropdownOpen] = useState(false);
   const [selectedReferralName, setSelectedReferralName] = useState("");
+  const [externalSourceOther, setExternalSourceOther] = useState("");
   const referralRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,10 +147,12 @@ export default function NewPatientPage() {
       bloodGroup: form.bloodGroup || undefined,
       address: addressString || undefined,
       medicalHistory: form.medicalHistory,
-      referralSource: referralType === "external" ? (form.referralSource || undefined) : undefined,
+      referralSource: referralType === "external"
+        ? (form.referralSource === "Other" ? (externalSourceOther || undefined) : (form.referralSource || undefined))
+        : undefined,
       referredByPatientId: referralType === "patient" ? referredByPatientId : null,
-      panNumber: form.panNumber,
-      aadhaarNumber: form.aadhaarNumber,
+      panNumber: form.panNumber || undefined,
+      aadhaarNumber: form.aadhaarNumber || undefined,
       emergencyContact: form.ecName && form.ecRelationship && form.ecPhone
         ? { name: form.ecName, relationship: form.ecRelationship, phone: form.ecPhone, email: form.ecEmail }
         : undefined,
@@ -279,7 +294,7 @@ export default function NewPatientPage() {
                 <div className="flex gap-2 mb-2">
                   <button
                     type="button"
-                    onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); }}
+                    onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); setExternalSourceOther(""); }}
                     className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 border-slate-300 hover:border-blue-400"}`}
                   >
                     External Source
@@ -293,14 +308,31 @@ export default function NewPatientPage() {
                   </button>
                 </div>
                 {referralType === "external" ? (
-                  <input
-                    type="text"
-                    value={form.referralSource}
-                    onChange={update("referralSource")}
-                    maxLength={100}
-                    placeholder="e.g. Google, Facebook, walk-in…"
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  />
+                  <div className="space-y-2">
+                    <select
+                      value={form.referralSource}
+                      onChange={(e) => {
+                        setForm(f => ({ ...f, referralSource: e.target.value }));
+                        if (e.target.value !== "Other") setExternalSourceOther("");
+                      }}
+                      className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white"
+                    >
+                      <option value="">Select source…</option>
+                      {EXTERNAL_SOURCES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                    {form.referralSource === "Other" && (
+                      <input
+                        type="text"
+                        value={externalSourceOther}
+                        onChange={e => setExternalSourceOther(e.target.value)}
+                        maxLength={100}
+                        placeholder="Please specify…"
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                      />
+                    )}
+                  </div>
                 ) : (
                   <div className="relative" ref={referralRef}>
                     <input
