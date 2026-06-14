@@ -23,7 +23,7 @@ import type { Appointment } from "@/types";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const HOUR_START = 8;    // 8 AM
-const HOUR_END   = 20;   // 8 PM
+const HOUR_END   = 23;   // 11 PM — covers late evening appointments
 const PX_PER_HOUR = 80;  // pixels per hour in the grid
 const TOTAL_HOURS = HOUR_END - HOUR_START;
 
@@ -786,7 +786,16 @@ export default function AppointmentsPage() {
       <div className="flex-1 flex overflow-hidden">
 
         {/* Calendar grid */}
-        <div className="flex-1 overflow-auto bg-white">
+        <div
+          className="flex-1 overflow-auto bg-white"
+          ref={(el) => {
+            if (el && viewMode === "day") {
+              const now = new Date();
+              const top = ((now.getHours() - HOUR_START) + now.getMinutes() / 60) * PX_PER_HOUR;
+              el.scrollTop = Math.max(0, top - PX_PER_HOUR * 1.5);
+            }
+          }}
+        >
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="flex items-center gap-3 text-gray-400">

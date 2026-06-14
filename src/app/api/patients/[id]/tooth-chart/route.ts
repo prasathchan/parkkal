@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { toothChart, toothChartHistory, organizationPatients } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { runCascade } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
 import { z } from "zod";
 import { randomUUID } from "crypto";
@@ -79,15 +80,13 @@ export const PUT = withRoute(
       if (oldCond !== newCond) changedTeeth.push(tooth);
     }
 
-    // Both writes must succeed together — a partial write would leave the
-    // cumulative chart updated but the audit trail incomplete (or vice versa).
-    await db.transaction(async (tx: typeof db) => {
-      if (existing) {
-        await tx.update(toothChart)
+    // Both writes must succeed together. D1 does not support db.transaction()
+    // with async callbacks — use runCascade() (D1 batch) instead.
+    const chartWrite = existing
+      ? db.update(toothChart)
           .set({ toothData: JSON.stringify(newData), updatedAt: now, updatedBy: session.userId })
-          .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)));
-      } else {
-        await tx.insert(toothChart).values({
+          .where(and(eq(toothChart.organizationId, session.orgId), eq(toothChart.patientId, patientId)))
+      : db.insert(toothChart).values({
           id: randomUUID(),
           organizationId: session.orgId,
           patientId,
@@ -95,19 +94,19 @@ export const PUT = withRoute(
           updatedAt: now,
           updatedBy: session.userId,
         });
-      }
 
-      await tx.insert(toothChartHistory).values({
-        id:             randomUUID(),
-        organizationId: session.orgId,
-        patientId,
-        visitId,
-        toothData:      JSON.stringify(newData),
-        changedTeeth:   JSON.stringify(changedTeeth),
-        recordedBy:     session.userId,
-        recordedAt:     now,
-      });
+    const historyWrite = db.insert(toothChartHistory).values({
+      id:             randomUUID(),
+      organizationId: session.orgId,
+      patientId,
+      visitId,
+      toothData:      JSON.stringify(newData),
+      changedTeeth:   JSON.stringify(changedTeeth),
+      recordedBy:     session.userId,
+      recordedAt:     now,
     });
+
+    await runCascade(db, [chartWrite, historyWrite]);
 
     return apiOk({ success: true, changedTeeth });
   }
