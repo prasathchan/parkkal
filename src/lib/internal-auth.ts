@@ -1,6 +1,6 @@
 /**
  * Auth for /api/internal/* — server-to-server endpoints used exclusively by
- * the Parkkal Pricing Console (pricing.parkkal.com).
+ * the Parkkal Admin Console (admin.parkkal.com / admin.stg.parkkal.com).
  *
  * Security model:
  *   - A single long random bearer key per environment (INTERNAL_API_KEY).
