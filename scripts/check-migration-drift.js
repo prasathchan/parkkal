@@ -32,8 +32,10 @@ const path          = require("path");
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "drizzle", "migrations");
 const REMOTE_FLAG    = process.argv.includes("--remote");
-const DB_NAME        = "parkkal-db";
-const ENV_FLAG       = REMOTE_FLAG ? "--env=prod --remote" : "--local";
+const ENV_ARG        = process.argv.find((a) => a.startsWith("--env="));
+const ENV_NAME       = ENV_ARG ? ENV_ARG.replace("--env=", "") : "prod";
+const DB_NAME        = REMOTE_FLAG && ENV_NAME === "staging" ? "parkkal-db-staging" : "parkkal-db";
+const ENV_FLAG       = REMOTE_FLAG ? `--env=${ENV_NAME} --remote` : "--local";
 
 // ── 1. Collect migration files from the repo ──────────────────────────────────
 const sqlFiles = fs

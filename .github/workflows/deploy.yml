@@ -2,18 +2,112 @@ name: Deploy to Cloudflare
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging]
 
-# Prevent two production deploys running concurrently.
-# cancel-in-progress: false — if a deploy is in-flight, queue rather than cancel,
-# so we never leave production in a half-deployed state.
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
+  deploy-staging:
+    name: Build & deploy → staging
+    if: github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (OpenNext for Cloudflare)
+        run: npm run cf:build
+        env:
+          NODE_ENV: production
+          JWT_SECRET: "build-time-placeholder-not-used-at-runtime-xxxxxxxxxxxxxxxx"
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          RESEND_API_KEY: "re_build_placeholder_key"
+
+      - name: Apply D1 migrations (staging)
+        run: |
+          npx wrangler d1 migrations apply parkkal-db-staging \
+            --env=staging \
+            --remote
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Check migration drift (staging)
+        run: node scripts/check-migration-drift.js --remote --env=staging
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy worker (staging)
+        id: deploy
+        run: |
+          npx wrangler deploy --env=staging 2>&1 | tee /tmp/deploy-output.txt
+          WRANGLER_EXIT=${PIPESTATUS[0]}
+
+          if [ "$WRANGLER_EXIT" -ne 0 ]; then
+            if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
+              echo "::warning::Cron schedule registration failed. Worker code deployed successfully."
+            else
+              echo "::error::Staging worker deploy failed — see output above."
+              exit 1
+            fi
+          fi
+
+          echo "deployed_url=https://parkkal-dental-staging.chandran-aathi.workers.dev" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke test — health endpoint (staging)
+        run: |
+          WORKERS_URL="${{ steps.deploy.outputs.deployed_url }}"
+
+          if [[ -z "$WORKERS_URL" || "$WORKERS_URL" != https://* ]]; then
+            echo "::warning::No workers.dev URL — skipping smoke test."
+            exit 0
+          fi
+
+          echo "Waiting 15 s for worker cold start..."
+          sleep 15
+          HEALTH="${WORKERS_URL}/api/cron/health"
+          STATUS=$(curl -sf --max-time 15 -o /dev/null -w "%{http_code}" "$HEALTH" || echo "000")
+          echo "Health check HTTP $STATUS — $HEALTH"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Smoke test failed (HTTP $STATUS) — $HEALTH"
+            exit 1
+          fi
+          echo "Smoke test passed."
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Deploy to staging" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL | ${{ steps.deploy.outputs.deployed_url }} |" >> $GITHUB_STEP_SUMMARY
+
   deploy:
     name: Build & deploy → production
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
