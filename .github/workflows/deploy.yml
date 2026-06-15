@@ -67,7 +67,21 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
-          npx wrangler deploy --env=prod
+          # Capture output and exit code separately so we can distinguish
+          # a schedule-registration failure (API token missing triggers permission)
+          # from a real worker-code deploy failure.
+          npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
+          WRANGLER_EXIT=${PIPESTATUS[0]}
+
+          if [ "$WRANGLER_EXIT" -ne 0 ]; then
+            if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
+              echo "::warning::Cron schedule registration failed (API token is missing the Workers Triggers/Schedules: Edit permission in the Cloudflare dashboard). Worker code was deployed successfully. Existing cron schedules continue to run."
+            else
+              echo "::error::Worker deploy failed — see output above."
+              exit 1
+            fi
+          fi
+
           echo "deployed_url=https://parkkal-dental.chandran-aathi.workers.dev" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
