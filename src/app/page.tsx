@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
   title: "Parkkal — One Platform. Every Clinic. Zero Compromises",
@@ -70,10 +71,8 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-pk-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-pk-teal-600 rounded-lg flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-5 h-5">
-                <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-              </svg>
+            <div className="w-8 h-8 bg-pk-teal-900 rounded-lg flex items-center justify-center">
+              <Image src="/parkkal-mark-white.svg" alt="" width={20} height={20} className="w-5 h-5" />
             </div>
             <span className="font-bold text-lg text-pk-text">Parkkal</span>
           </div>
@@ -188,7 +187,7 @@ export default function LandingPage() {
                   </a>
                 ) : (
                   <Link href="/signup"
-                    className={`block text-center font-semibold py-3 rounded-xl text-sm transition ${p.highlight ? "bg-pk-teal-600 text-white hover:bg-pk-teal-700" : "bg-pk-neutral-900 text-white hover:bg-pk-neutral-800"}`}>
+                    className={`block text-center font-semibold py-3 rounded-xl text-sm transition ${p.highlight ? "bg-pk-teal-600 text-white hover:bg-pk-teal-700" : "bg-pk-teal-900 text-white hover:bg-pk-teal-800"}`}>
                     Start free trial
                   </Link>
                 )}
@@ -199,7 +198,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-pk-neutral-900 text-white">
+      <section className="py-20 px-6 bg-pk-teal-900 text-white">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to modernise your clinic?</h2>
           <p className="text-pk-text-muted text-lg mb-8">Join dental clinics across India who trust Parkkal to run their practice.</p>
@@ -214,13 +213,11 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-pk-neutral-900 text-pk-text-muted py-10 px-6">
+      <footer className="bg-pk-teal-900 text-pk-text-muted py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-pk-teal-600 rounded flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-              </svg>
+            <div className="w-6 h-6 bg-pk-teal-900 rounded flex items-center justify-center">
+              <Image src="/parkkal-mark-white.svg" alt="" width={16} height={16} className="w-4 h-4" />
             </div>
             <span className="font-semibold text-pk-text-muted">Parkkal</span>
           </div>
