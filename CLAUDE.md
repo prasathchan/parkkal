@@ -387,36 +387,48 @@ npm run test:watch              # watch mode for TDD
 
 | Branch | Purpose |
 |--------|---------|
-| `staging` | Pre-production validation — every change lands here first |
+| `develop` | Local development — where all work begins |
+| `staging` | Pre-production validation — deployed automatically to `parkkal-dental-staging` |
 | `main` | Production — only receives changes confirmed green on staging |
 
 ### Mandatory push sequence — NO EXCEPTIONS
 
 **Every code change must follow this exact order:**
 
-1. **Push to `staging` first**
+1. **Commit on `develop`** (your local working branch)
    ```bash
-   git push origin main:staging
+   git add <files>
+   git commit -m "..."
    ```
-2. **Wait for the staging CI run to complete** — check GitHub Actions for a green ✅ on the `staging` branch (`CI` workflow + Cloudflare Pages build)
-3. **Only after staging is confirmed green**, push to `main` (production):
+
+2. **Push to `staging` to test**
    ```bash
-   git push origin main
+   git push origin develop:staging
+   ```
+   This automatically builds and deploys to `parkkal-dental-staging`. Wait for a green ✅:
+   ```bash
+   gh run list --branch staging --limit 3
+   ```
+
+3. **Only after staging is confirmed green**, promote to `main` (production):
+   ```bash
+   git push origin develop:main
+   ```
+   Then bring your local `develop` up to date:
+   ```bash
+   git fetch origin
+   git merge --ff-only origin/main
    ```
 
 > **Never push directly to `main` without a confirmed staging success.**
-> If staging fails, fix the issue on `staging` first — do not skip ahead to production.
+> If staging fails, fix it on `develop` and repeat from step 2.
 
-When Claude Code makes changes, the standard commit-and-push sequence is:
-```bash
-git add <files>
-git commit -m "..."
-git push origin main        # triggers Cloudflare Pages build on main
-git push origin main:staging  # keep staging in sync
-```
+### What each push triggers
 
-Wait for `gh run list --branch staging --limit 3` to show `completed success` before
-considering the work done.
+| Push | CI | Deploy |
+|------|----|--------|
+| `develop:staging` | ✅ lint · types · tests | ✅ `parkkal-dental-staging` worker + migrations |
+| `develop:main` | ✅ lint · types · tests | ✅ `parkkal-dental` (prod) worker + migrations |
 
 ---
 
