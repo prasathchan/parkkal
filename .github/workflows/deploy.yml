@@ -67,15 +67,17 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
-          # Capture output and exit code separately so we can distinguish
-          # a schedule-registration failure (API token missing triggers permission)
-          # from a real worker-code deploy failure.
           npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
           WRANGLER_EXIT=${PIPESTATUS[0]}
 
+          # Dump wrangler debug log so we can see the exact HTTP response from Cloudflare
+          echo "--- wrangler debug log ---"
+          cat /home/runner/.config/.wrangler/logs/wrangler-*.log 2>/dev/null || echo "(no wrangler log found)"
+          echo "--- end wrangler debug log ---"
+
           if [ "$WRANGLER_EXIT" -ne 0 ]; then
             if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
-              echo "::warning::Cron schedule registration failed (API token is missing the Workers Triggers/Schedules: Edit permission in the Cloudflare dashboard). Worker code was deployed successfully. Existing cron schedules continue to run."
+              echo "::warning::Cron schedule registration failed. Worker code was deployed successfully. Existing cron schedules continue to run."
             else
               echo "::error::Worker deploy failed — see output above."
               exit 1
