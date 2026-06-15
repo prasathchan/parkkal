@@ -22,9 +22,9 @@ jobs:
       deployments: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -67,7 +67,7 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
-          npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
+          npx wrangler deploy --env=prod
           echo "deployed_url=https://parkkal-dental.chandran-aathi.workers.dev" >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
