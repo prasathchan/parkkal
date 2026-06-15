@@ -86,8 +86,10 @@ jobs:
 
           echo "deployed_url=https://parkkal-dental.chandran-aathi.workers.dev" >> "$GITHUB_OUTPUT"
         env:
-          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_LOG:            debug
+          WRANGLER_LOG_SANITIZE:   "false"
 
       # Post-deploy smoke test.
       # Always uses the workers.dev URL (direct Worker, no Cloudflare proxy/WAF)
