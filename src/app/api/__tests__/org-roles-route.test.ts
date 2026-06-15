@@ -176,12 +176,12 @@ describe("POST /api/org/roles", () => {
     expect(( await responseJson(res) ).error).toMatch(/already exists/i);
   });
 
-  it("defaults color to #3B82F6 when not provided", async () => {
+  it("defaults color to teal #0B6E6E when not provided", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([[], undefined]) as never);
     const { POST } = await import("@/app/api/org/roles/route");
     const res = await POST(makeReq({ name: "NewRole" }), NO_PARAMS);
     expect(res.status).toBe(201);
-    expect(( await responseJson(res) ).role.color).toBe("#3B82F6");
+    expect(( await responseJson(res) ).role.color).toBe("#0B6E6E");
   });
 
   it("returns 403 for non-ADMIN", async () => {

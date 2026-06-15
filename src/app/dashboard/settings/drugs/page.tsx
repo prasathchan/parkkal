@@ -164,7 +164,7 @@ export default function DrugFormularyPage() {
               </div>
             </div>
 
-            {error && <p className="text-xs" style={{ color: "#dc2626" }}>{error}</p>}
+            {error && <p className="text-xs" style={{ color: "#A8311F" }}>{error}</p>}
 
             <div className="flex gap-2 justify-end">
               <button
@@ -228,7 +228,7 @@ export default function DrugFormularyPage() {
                       disabled={deletingId === drug.id}
                       aria-label={`Remove ${drug.name}`}
                       className="flex items-center justify-center w-7 h-7 rounded-lg transition disabled:opacity-40"
-                      style={{ color: "#dc2626" }}
+                      style={{ color: "#A8311F" }}
                     >
                       {deletingId === drug.id ? (
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

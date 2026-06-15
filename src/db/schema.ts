@@ -101,7 +101,7 @@ export const orgRoles = sqliteTable("org_roles", {
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   description: text("description"),
-  color: text("color").notNull().default("#3B82F6"),
+  color: text("color").notNull().default("#0B6E6E"),
   isSystem: integer("is_system").notNull().default(0),
   permissions: text("permissions").notNull().default("[]"),
   createdAt: integer("created_at"),

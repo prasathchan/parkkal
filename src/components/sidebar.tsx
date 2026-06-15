@@ -290,7 +290,7 @@ function LogoutButton({
       aria-label="Sign out"
       className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
       style={{
-        color: hovered ? "#ef4444" : colors.text,
+        color: hovered ? "#C0392B" : colors.text,
         background: hovered ? colors.hoverBg : "transparent",
       }}
       onMouseEnter={() => setHovered(true)}

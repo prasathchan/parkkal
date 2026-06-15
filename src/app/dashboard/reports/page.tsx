@@ -16,8 +16,8 @@ function SvgBarChart({
   data,
   barKey,
   secondKey,
-  color = "#3b82f6",
-  secondColor = "#22c55e",
+  color = "#0B6E6E",
+  secondColor = "#2E7D5B",
   label,
   secondLabel,
   formatValue = (v: number) => String(v),
@@ -451,7 +451,7 @@ export default function ReportsPage() {
                 barKey="billed"
                 secondKey="collected"
                 color="#93c5fd"
-                secondColor="#22c55e"
+                secondColor="#2E7D5B"
                 label="Billed"
                 secondLabel="Collected"
                 formatValue={formatCurrency}

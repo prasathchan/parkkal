@@ -17,17 +17,19 @@ export type ChartData = Partial<Record<string, ToothData>>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Brand odontogram palette (Brand System §3.1) — warm family only, no blue/purple.
+// Solid fills carry white glyph text; light statuses carry dark text.
 const CONDITION_COLORS: Record<ToothCondition, { bg: string; border: string; text: string }> = {
-  HEALTHY:    { bg: "#ffffff", border: "#cbd5e1", text: "#64748b" },
-  CARIES:     { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" },
-  FILLING:    { bg: "#eff6ff", border: "#3b82f6", text: "#2563eb" },
-  CROWN:      { bg: "#fefce8", border: "#eab308", text: "#ca8a04" },
-  MISSING:    { bg: "#f1f5f9", border: "#94a3b8", text: "#64748b" },
-  ROOT_CANAL: { bg: "#faf5ff", border: "#8b5cf6", text: "#7c3aed" },
-  BRIDGE:     { bg: "#ecfeff", border: "#06b6d4", text: "#0891b2" },
-  IMPLANT:    { bg: "#f0fdf4", border: "#22c55e", text: "#16a34a" },
-  FRACTURED:  { bg: "#fff7ed", border: "#f97316", text: "#ea580c" },
-  WATCH:      { bg: "#fffbeb", border: "#fbbf24", text: "#d97706" },
+  HEALTHY:    { bg: "#FFFFFF", border: "#B0A99B", text: "#847D6E" }, // neutral outline
+  CARIES:     { bg: "#C0392B", border: "#C0392B", text: "#FFFFFF" }, // danger red
+  FILLING:    { bg: "#0B6E6E", border: "#0B6E6E", text: "#FFFFFF" }, // teal
+  CROWN:      { bg: "#C8873A", border: "#C8873A", text: "#FFFFFF" }, // gold ◆
+  MISSING:    { bg: "#C4BDB0", border: "#B0A99B", text: "#4A4439" }, // light warm grey ✕
+  ROOT_CANAL: { bg: "#6B4A2F", border: "#6B4A2F", text: "#FFFFFF" }, // umber ▽
+  BRIDGE:     { bg: "#0B5654", border: "#0B5654", text: "#FFFFFF" }, // deep teal
+  IMPLANT:    { bg: "#6E7B7E", border: "#6E7B7E", text: "#FFFFFF" }, // steel grey
+  FRACTURED:  { bg: "#B35B43", border: "#B35B43", text: "#FFFFFF" }, // terracotta
+  WATCH:      { bg: "#FCEFD6", border: "#B8770F", text: "#9A5B0A" }, // warning attention
 };
 
 const CONDITION_LABELS: Record<ToothCondition, string> = {
@@ -109,17 +111,21 @@ function ToothCell({
         className={`w-7 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-default" : "hover:scale-110 hover:z-10 cursor-pointer"}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
+        {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
         {condition === "MISSING" && (
-          <span className="absolute inset-0 flex items-center justify-center text-pk-text-muted text-xs font-bold">×</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-neutral-700 text-xs font-bold">✕</span>
+        )}
+        {condition === "CROWN" && (
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">◆</span>
         )}
         {condition === "ROOT_CANAL" && (
-          <span className="absolute inset-0 flex items-center justify-center text-pk-neutral-400 text-[8px] font-bold">RC</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">▽</span>
         )}
         {condition === "BRIDGE" && (
-          <span className="absolute inset-0 flex items-center justify-center text-pk-teal-500 text-[8px] font-bold">BR</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">BR</span>
         )}
         {condition === "IMPLANT" && (
-          <span className="absolute inset-0 flex items-center justify-center text-pk-success-text text-[8px] font-bold">IM</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">IM</span>
         )}
       </button>
 
@@ -143,7 +149,7 @@ function ToothCell({
                   key={c}
                   type="button"
                   onClick={() => { onConditionChange(number, c, editNotes); setOpen(false); }}
-                  className={`text-left text-xs px-2 py-1 rounded-lg border transition-all ${condition === c ? "ring-2 ring-offset-1" : "hover:opacity-80"}`}
+                  className={`text-left text-xs px-2 py-1 rounded-lg border transition-all ${condition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
                   style={{ background: col.bg, borderColor: col.border, color: col.text }}
                 >
                   {CONDITION_LABELS[c]}

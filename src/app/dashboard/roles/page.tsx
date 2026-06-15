@@ -19,10 +19,10 @@ const ALL_PERMISSIONS = [
 ];
 
 const PRESET_COLORS = [
-  { label: "Red", value: "#EF4444" },
-  { label: "Purple", value: "#8B5CF6" },
+  { label: "Red", value: "#C0392B" },
+  { label: "Purple", value: "#645D50" },
   { label: "Pink", value: "#EC4899" },
-  { label: "Blue", value: "#3B82F6" },
+  { label: "Blue", value: "#0B6E6E" },
   { label: "Amber", value: "#F59E0B" },
   { label: "Gray", value: "#6B7280" },
 ];
@@ -45,7 +45,7 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
   const { toast } = useToast();
   const [name, setName] = useState(role?.name ?? "");
   const [description, setDescription] = useState(role?.description ?? "");
-  const [color, setColor] = useState(role?.color ?? "#3B82F6");
+  const [color, setColor] = useState(role?.color ?? "#0B6E6E");
   const [permissions, setPermissions] = useState<string[]>(role?.permissions ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -143,8 +143,8 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
                   className="w-8 h-8 rounded-full border-2 transition-all"
                   style={{
                     backgroundColor: c.value,
-                    borderColor: color === c.value ? "#1e40af" : "transparent",
-                    boxShadow: color === c.value ? "0 0 0 2px white, 0 0 0 4px #1e40af" : "none",
+                    borderColor: color === c.value ? "#0A413F" : "transparent",
+                    boxShadow: color === c.value ? "0 0 0 2px white, 0 0 0 4px #0A413F" : "none",
                   }}
                 />
               ))}

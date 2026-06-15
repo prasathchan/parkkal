@@ -385,7 +385,7 @@ export default function SettingsPage() {
                     {logoUploading ? "Uploading..." : "Upload Logo"}
                   </button>
                   {logoPreview && (
-                    <button onClick={handleRemoveLogo} className="block px-4 py-2 text-sm rounded-lg transition-colors" style={{ color: "#ef4444" }}>
+                    <button onClick={handleRemoveLogo} className="block px-4 py-2 text-sm rounded-lg transition-colors" style={{ color: "#C0392B" }}>
                       Remove
                     </button>
                   )}
@@ -498,13 +498,13 @@ export default function SettingsPage() {
               <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Slug: <code style={{ color: "var(--pk-text)" }}>{org.slug}</code></p>
             </div>
             <div className="border-t pt-3" style={{ borderColor: "var(--pk-border)" }}>
-              <p className="text-xs font-medium mb-2" style={{ color: "#dc2626" }}>Danger Zone</p>
+              <p className="text-xs font-medium mb-2" style={{ color: "#A8311F" }}>Danger Zone</p>
               <div className="flex items-center justify-between gap-4">
                 <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>Permanently delete this organization and all its data. This cannot be undone.</p>
                 <button
                   onClick={() => { setShowDeleteDialog(true); setDeleteConfirmName(""); setDeleteError(""); }}
                   className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
-                  style={{ background: "#dc2626" }}
+                  style={{ background: "#A8311F" }}
                 >
                   Delete Organization
                 </button>
@@ -564,7 +564,7 @@ export default function SettingsPage() {
                   onClick={handleDeleteOrg}
                   disabled={deleteSubmitting || deleteConfirmName !== org.name}
                   className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
-                  style={{ background: "#dc2626" }}
+                  style={{ background: "#A8311F" }}
                 >
                   {deleteSubmitting ? "Deleting..." : "Delete Organization"}
                 </button>
@@ -606,7 +606,7 @@ export default function SettingsPage() {
                   <div className="text-sm rounded-lg px-4 py-3 border"
                     style={pwMessage.type === "success"
                       ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
-                      : { background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626" }}>
+                      : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
                     {pwMessage.text}
                   </div>
                 )}
@@ -690,7 +690,7 @@ function StatusMessage({ message }: { message: string }) {
   return (
     <div className="text-sm rounded-lg px-4 py-3 border" style={isSuccess
       ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
-      : { background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626" }}>
+      : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
       {message}
     </div>
   );

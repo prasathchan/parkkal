@@ -67,8 +67,8 @@ function Tooth({ number, selected, onToggle, readOnly, upper }: ToothProps) {
       >
         <path
           d={crown.path}
-          fill={selected ? "#3B82F6" : "#F8FAFC"}
-          stroke={selected ? "#1D4ED8" : "#94A3B8"}
+          fill={selected ? "#0B6E6E" : "#FAF8F3"}
+          stroke={selected ? "#0B5654" : "#B0A99B"}
           strokeWidth="1.5"
           className="transition-colors duration-150"
         />

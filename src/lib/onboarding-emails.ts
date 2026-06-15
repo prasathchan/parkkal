@@ -124,7 +124,7 @@ export async function processOnboardingEmails(db: DbInstance): Promise<{ sent: n
 
 function buildEmail(step: number, name: string, clinicName: string): { subject: string; html: string } {
   const header = (title: string) => `
-    <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 32px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #0B6E6E, #0B5654); padding: 32px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Parkkal</h1>
       <p style="color: #bfdbfe; margin: 8px 0 0; font-size: 13px;">${title}</p>
     </div>`;
@@ -148,7 +148,7 @@ function buildEmail(step: number, name: string, clinicName: string): { subject: 
     </body></html>`;
 
   const btn = (href: string, label: string) =>
-    `<a href="${href}" style="display:inline-block;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">${label}</a>`;
+    `<a href="${href}" style="display:inline-block;background:linear-gradient(135deg,#0B6E6E,#0B5654);color:#fff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:10px;">${label}</a>`;
 
   const p = (text: string) => `<p style="color:#6b7280;font-size:14px;margin:0 0 16px;line-height:1.6;">${text}</p>`;
 

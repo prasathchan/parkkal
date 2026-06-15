@@ -53,7 +53,7 @@ export default function ConsentFormPage() {
         </span>
         <button
           onClick={() => window.print()}
-          style={{ background: "#2563eb", color: "white", border: "none", padding: "8px 20px", borderRadius: "8px", fontSize: "14px", cursor: "pointer", fontFamily: "system-ui" }}
+          style={{ background: "#0B6E6E", color: "white", border: "none", padding: "8px 20px", borderRadius: "8px", fontSize: "14px", cursor: "pointer", fontFamily: "system-ui" }}
         >
           Print / Save as PDF
         </button>
