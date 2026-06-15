@@ -33,7 +33,7 @@ describe("PatientsPage", () => {
     mockList.mockReturnValue(new Promise(() => {}));
     render(<PatientsPage />);
     await waitFor(() =>
-      expect(document.querySelector(".animate-pulse")).toBeTruthy(), T
+      expect(document.querySelector(".skeleton")).toBeTruthy(), T
     );
   });
 

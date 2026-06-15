@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const [org, setOrg] = useState<OrgProfile | null>(null);
-  const initialTab = (searchParams.get("tab") as Tab | null);
+  const initialTab = (searchParams?.get("tab") as Tab | null);
   const [tab, setTab] = useState<Tab>(initialTab && ["profile", "appearance", "security"].includes(initialTab) ? initialTab : "profile");
   const [form, setForm] = useState({ name: "", tagline: "", phone: "", email: "" });
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
