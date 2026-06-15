@@ -161,31 +161,11 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
-          echo "--- direct PUT to schedules API ---"
-          curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '[{"cron":"*/15 * * * *"},{"cron":"0 2 * * *"}]' || true
-          echo ""
-          echo "--- end PUT ---"
-
-          npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
-          WRANGLER_EXIT=${PIPESTATUS[0]}
-
-          if [ "$WRANGLER_EXIT" -ne 0 ]; then
-            if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
-              echo "::warning::Cron schedule registration failed. Worker code was deployed successfully. Existing cron schedules continue to run."
-            else
-              echo "::error::Worker deploy failed — see output above."
-              exit 1
-            fi
-          fi
-
+          npx wrangler deploy --env=prod
           echo "deployed_url=https://parkkal-dental.chandran-aathi.workers.dev" >> "$GITHUB_OUTPUT"
         env:
-          CLOUDFLARE_API_TOKEN:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Post-deploy smoke test.
       # Always uses the workers.dev URL (direct Worker, no Cloudflare proxy/WAF)

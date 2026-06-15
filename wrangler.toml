@@ -92,6 +92,6 @@ bucket_name = "parkkal-backups-staging"
 binding = "CACHE"
 id = "444cde84c40f4c749ae90ebbaa8fff6f"
 
-[env.staging.triggers]
-crons = ["*/15 * * * *", "0 2 * * *"]
+# No cron triggers on staging — the account free plan has a 5-trigger limit
+# across all workers. Keeping triggers on prod only avoids exhausting the quota.
 
