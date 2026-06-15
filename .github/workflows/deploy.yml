@@ -67,23 +67,25 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
+          echo "--- pre-deploy schedules GET ---"
+          curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" || true
+          echo ""
+          echo "--- end pre-deploy schedules GET ---"
+
           npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
           WRANGLER_EXIT=${PIPESTATUS[0]}
-
-          # Dump wrangler debug log so we can see the exact HTTP response from Cloudflare
-          echo "--- wrangler debug log ---"
-          cat /home/runner/.config/.wrangler/logs/wrangler-*.log 2>/dev/null || echo "(no wrangler log found)"
-          echo "--- end wrangler debug log ---"
 
           if [ "$WRANGLER_EXIT" -ne 0 ]; then
             if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
               echo "::warning::Cron schedule registration failed. Worker code was deployed successfully. Existing cron schedules continue to run."
-              echo "--- schedules API diagnostic ---"
+              echo "--- post-deploy schedules GET ---"
               curl -s -w "\nHTTP_STATUS:%{http_code}" \
                 "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
-                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-                -H "Content-Type: application/json" || true
-              echo "--- end diagnostic ---"
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" || true
+              echo ""
+              echo "--- end post-deploy schedules GET ---"
             else
               echo "::error::Worker deploy failed — see output above."
               exit 1
@@ -94,8 +96,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          WRANGLER_LOG:            debug
-          WRANGLER_LOG_SANITIZE:   "false"
 
       # Post-deploy smoke test.
       # Always uses the workers.dev URL (direct Worker, no Cloudflare proxy/WAF)
