@@ -20,6 +20,12 @@
 
 import env from "@/lib/env";
 
+function fromAddress(): string {
+  return env.RESEND_FROM_EMAIL
+    ? `Parkkal <${env.RESEND_FROM_EMAIL}>`
+    : "Parkkal <noreply@parkkal.com>";
+}
+
 export async function sendStaffInviteEmail(
   to: string,
   name: string,
@@ -78,7 +84,7 @@ export async function sendStaffInviteEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal <noreply@parkkal.com>",
+      from: fromAddress(),
       to: [to],
       subject: `You've been added to ${orgName} — Set up your account`,
       html,
@@ -139,7 +145,7 @@ export async function sendEmailOTP(to: string, name: string, code: string): Prom
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal <noreply@parkkal.com>",
+      from: fromAddress(),
       to: [to],
       subject: "Your Parkkal verification code",
       html,
@@ -200,7 +206,7 @@ export async function sendPhoneVerificationEmail(to: string, name: string, code:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Parkkal <noreply@parkkal.com>",
+      from: fromAddress(),
       to: [to],
       subject: "Your Parkkal phone verification code",
       html,
@@ -251,7 +257,7 @@ export async function sendPasswordResetEmail(to: string, name: string, code: str
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: "Parkkal <noreply@parkkal.com>",
+      from: fromAddress(),
       to: [to],
       subject: "Reset your Parkkal password",
       html,
