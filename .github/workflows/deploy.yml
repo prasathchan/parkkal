@@ -67,12 +67,14 @@ jobs:
       - name: Deploy worker
         id: deploy
         run: |
-          echo "--- pre-deploy schedules GET ---"
-          curl -s -w "\nHTTP_STATUS:%{http_code}" \
+          echo "--- direct PUT to schedules API ---"
+          curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT \
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" || true
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '[{"cron":"*/15 * * * *"},{"cron":"0 2 * * *"}]' || true
           echo ""
-          echo "--- end pre-deploy schedules GET ---"
+          echo "--- end PUT ---"
 
           npx wrangler deploy --env=prod 2>&1 | tee /tmp/deploy-output.txt
           WRANGLER_EXIT=${PIPESTATUS[0]}
@@ -80,12 +82,6 @@ jobs:
           if [ "$WRANGLER_EXIT" -ne 0 ]; then
             if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
               echo "::warning::Cron schedule registration failed. Worker code was deployed successfully. Existing cron schedules continue to run."
-              echo "--- post-deploy schedules GET ---"
-              curl -s -w "\nHTTP_STATUS:%{http_code}" \
-                "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
-                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" || true
-              echo ""
-              echo "--- end post-deploy schedules GET ---"
             else
               echo "::error::Worker deploy failed — see output above."
               exit 1
