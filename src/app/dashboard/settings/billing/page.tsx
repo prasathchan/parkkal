@@ -114,11 +114,11 @@ function BillingPageInner() {
         )}
 
         {loading ? (
-          <div className="bg-white rounded-xl border border-pk-border p-8 text-center text-pk-text-muted text-sm">Loading…</div>
+          <div className="bg-pk-surface rounded-xl border border-pk-border p-8 text-center text-pk-text-muted text-sm">Loading…</div>
         ) : sub ? (
           <>
             {/* Current plan card */}
-            <div className="bg-white rounded-xl border border-pk-border p-5">
+            <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="font-semibold text-pk-text">Current plan</h2>
@@ -171,7 +171,7 @@ function BillingPageInner() {
             </div>
 
             {/* Upgrade / contact section */}
-            <div className="bg-white rounded-xl border border-pk-border p-5">
+            <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
               <h2 className="font-semibold text-pk-text mb-1">Upgrade or renew</h2>
               <p className="text-sm text-pk-text-muted mb-4">
                 Select a plan below to upgrade online, or contact us if you need a custom quote or want to pay via bank transfer.
@@ -208,7 +208,7 @@ function BillingPageInner() {
                   const features = (() => { try { return JSON.parse(plan.features) as string[]; } catch { return []; } })();
                   const isCurrent = plan.slug === sub.planSlug;
                   return (
-                    <div key={plan.id} className={`bg-white rounded-xl border p-5 ${isCurrent ? "border-pk-teal-400 ring-1 ring-pk-teal-400" : "border-pk-border"}`}>
+                    <div key={plan.id} className={`bg-pk-surface rounded-xl border p-5 ${isCurrent ? "border-pk-teal-400 ring-1 ring-pk-teal-400" : "border-pk-border"}`}>
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ function BillingPageInner() {
             )}
           </>
         ) : (
-          <div className="bg-white rounded-xl border border-pk-border p-8 text-center">
+          <div className="bg-pk-surface rounded-xl border border-pk-border p-8 text-center">
             <p className="text-pk-text-muted text-sm">No subscription found. Please contact support.</p>
           </div>
         )}

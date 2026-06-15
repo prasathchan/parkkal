@@ -90,7 +90,7 @@ function VerifyPhoneForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
+      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-9 h-9">

@@ -47,7 +47,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+      <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-pk-text mb-4">Add Payment</h3>
         <form onSubmit={handleFormSubmit} className="space-y-4">
           {payError && (

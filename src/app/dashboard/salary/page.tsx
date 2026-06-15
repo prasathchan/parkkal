@@ -82,15 +82,15 @@ export default function SalaryPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Total Payroll</p>
             <p className="text-2xl font-bold text-pk-text">₹{totalPayroll.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-white rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Total Paid</p>
             <p className="text-2xl font-bold text-pk-success-text">₹{totalPaid.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-white rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Outstanding</p>
             <p className="text-2xl font-bold text-pk-danger-text">₹{outstanding.toLocaleString("en-IN")}</p>
           </div>
@@ -104,7 +104,7 @@ export default function SalaryPage() {
             <p className="text-sm mt-1">Click &ldquo;Generate Records&rdquo; to create them.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+          <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>

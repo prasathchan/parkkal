@@ -185,7 +185,7 @@ export default function CalendarPage() {
       <Header title="Appointment Calendar" />
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3 px-6 py-3 bg-white border-b border-pk-border">
+      <div className="flex flex-wrap items-center gap-3 px-6 py-3 bg-pk-surface border-b border-pk-border">
         {/* Week navigation */}
         <button
           onClick={prevWeek}
@@ -210,7 +210,7 @@ export default function CalendarPage() {
         {/* Doctor filter */}
         {doctorOptions.length > 0 && (
           <select
-            className="ml-auto text-sm border border-pk-border-strong rounded-md px-3 py-1.5 bg-white"
+            className="ml-auto text-sm border border-pk-border-strong rounded-md px-3 py-1.5 bg-pk-surface"
             value={doctorFilter}
             onChange={(e) => setDoctorFilter(e.target.value)}
           >
@@ -237,7 +237,7 @@ export default function CalendarPage() {
       <div className="flex-1 overflow-auto px-4 pb-6">
         <div className="min-w-[800px]">
           {/* Day header row */}
-          <div className="grid grid-cols-[64px_repeat(7,1fr)] sticky top-0 z-10 bg-white border-b border-pk-border">
+          <div className="grid grid-cols-[64px_repeat(7,1fr)] sticky top-0 z-10 bg-pk-surface border-b border-pk-border">
             <div /> {/* time gutter */}
             {weekDays.map((d, i) => {
               const ds   = toDateStr(d);
@@ -390,7 +390,7 @@ function AppointmentDetail({
       />
 
       {/* Sheet */}
-      <div className="fixed right-0 top-0 bottom-0 w-80 bg-white shadow-xl z-50 flex flex-col overflow-y-auto">
+      <div className="fixed right-0 top-0 bottom-0 w-80 bg-pk-surface shadow-xl z-50 flex flex-col overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-pk-border">
           <h2 className="font-semibold text-pk-text">Appointment</h2>
           <button

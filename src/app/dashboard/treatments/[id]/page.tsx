@@ -156,7 +156,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Loading */}
         {loading && (
-          <div className="bg-white rounded-2xl border border-pk-border p-12 text-center text-pk-text-muted text-sm">
+          <div className="bg-pk-surface rounded-2xl border border-pk-border p-12 text-center text-pk-text-muted text-sm">
             Loading treatment details…
           </div>
         )}
@@ -171,7 +171,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
         {!loading && treatment && summary && payColors && (
           <>
             {/* ── Header card ── */}
-            <div className="bg-white rounded-2xl border border-pk-border p-6">
+            <div className="bg-pk-surface rounded-2xl border border-pk-border p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -250,7 +250,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
               {/* Box 1 — Treatment Cost (neutral) */}
-              <div className="bg-white rounded-xl border border-pk-border p-5 text-center">
+              <div className="bg-pk-surface rounded-xl border border-pk-border p-5 text-center">
                 <p className="text-xs text-pk-text-muted mb-1.5">Treatment Cost</p>
                 <p className="text-2xl font-bold text-pk-text">{formatCurrency(summary.treatmentCost)}</p>
               </div>
@@ -290,7 +290,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* ── Visit History ── */}
-            <div className="bg-white rounded-2xl border border-pk-border overflow-hidden">
+            <div className="bg-pk-surface rounded-2xl border border-pk-border overflow-hidden">
               <div className="px-6 py-4 border-b border-pk-border">
                 <h2 className="text-sm font-semibold text-pk-text">
                   Visit History

@@ -170,7 +170,7 @@ export default function TreatmentsPage() {
               className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-52"
             />
             {showFilterDropdown && filterPatients.length > 0 && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-pk-border rounded-lg shadow-lg z-10 w-64">
+              <div className="absolute top-full left-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg z-10 w-64">
                 {filterPatients.map((p) => (
                   <button
                     key={p.id}
@@ -238,7 +238,7 @@ export default function TreatmentsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-pk-surface-raised border-b border-pk-border">

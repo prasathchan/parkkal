@@ -173,7 +173,7 @@ function ActivateForm() {
   if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-        <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
+        <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
           <Logo />
           <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 text-center">
             Invalid or expired link
@@ -185,7 +185,7 @@ function ActivateForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-      <div className="bg-white rounded-2xl shadow-xl p-10 w-full max-w-md">
+      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
         <Logo />
         <StepDots />
 

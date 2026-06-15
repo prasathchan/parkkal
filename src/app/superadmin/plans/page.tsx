@@ -87,7 +87,7 @@ export default function PlansPage() {
 
       <div className="space-y-4">
         {plans.map((plan) => (
-          <div key={plan.id} className="bg-white rounded-xl border border-pk-border p-5">
+          <div key={plan.id} className="bg-pk-surface rounded-xl border border-pk-border p-5">
             {editing === plan.id ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

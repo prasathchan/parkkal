@@ -80,7 +80,7 @@ function SlideoverForm({ role, onClose, onSave }: SlideoverFormProps) {
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-black/40" onClick={onClose} />
-      <div className="w-full max-w-md bg-white shadow-xl flex flex-col overflow-y-auto">
+      <div className="w-full max-w-md bg-pk-surface shadow-xl flex flex-col overflow-y-auto">
         <div className="px-6 py-5 border-b border-pk-border flex items-center justify-between">
           <h2 className="text-lg font-semibold text-pk-text">
             {role ? "Edit Role" : "New Role"}
@@ -248,7 +248,7 @@ function DeleteModal({ role, allRoles, onClose, onDeleted }: DeleteModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="relative bg-pk-surface rounded-xl shadow-xl w-full max-w-md">
         <div className="px-6 py-5 border-b border-pk-border">
           <h2 className="text-lg font-semibold text-pk-text">
             {role.userCount > 0 ? "Cannot Delete Role" : "Delete Role"}
@@ -375,7 +375,7 @@ export default function RolesPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1,2,3,4,5,6].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-pk-border p-5 animate-pulse h-48" />
+              <div key={i} className="bg-pk-surface rounded-xl border border-pk-border p-5 animate-pulse h-48" />
             ))}
           </div>
         ) : roles.length === 0 ? (
@@ -439,7 +439,7 @@ function RoleCard({ role, onEdit, onDelete }: RoleCardProps) {
   const extraCount = role.permissions.length - 4;
 
   return (
-    <div className="bg-white rounded-xl border border-pk-border shadow-sm hover:shadow-md transition p-5 flex flex-col gap-4">
+    <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm hover:shadow-md transition p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div

@@ -135,7 +135,7 @@ export default function VisitsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
           {loading ? (
             <div role="status" aria-label="Loading visits..." className="p-4">
               <SkeletonTable rows={8} cols={6} />

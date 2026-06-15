@@ -116,7 +116,7 @@ function DrugAutocomplete({
         className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
       />
       {open && (
-        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-pk-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
           {groups.map((group) => (
             <li key={group.label}>
               <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-pk-text-muted select-none">
@@ -288,7 +288,7 @@ export function VisitPrescriptionsTab({
           {/* Medicine rows */}
           <div className="space-y-3">
             {medicines.map((med, idx) => (
-              <div key={idx} className="bg-white border border-pk-border rounded-lg p-4 space-y-3">
+              <div key={idx} className="bg-pk-surface border border-pk-border rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-pk-text-muted">Medicine {idx + 1}</span>
                   {medicines.length > 1 && (

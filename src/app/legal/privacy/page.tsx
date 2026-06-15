@@ -7,7 +7,7 @@ const EFFECTIVE_DATE = "12 June 2025";
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-pk-surface">
       <div className="max-w-3xl mx-auto px-6 py-12">
         <nav className="text-sm text-pk-text-muted mb-8">
           <Link href="/" className="hover:text-pk-text-secondary">Parkkal</Link>

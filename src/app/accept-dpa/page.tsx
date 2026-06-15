@@ -26,7 +26,7 @@ export default function AcceptDpaPage() {
 
   return (
     <div className="min-h-screen bg-pk-surface-raised flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-pk-border shadow-sm max-w-lg w-full p-8">
+      <div className="bg-pk-surface rounded-2xl border border-pk-border shadow-sm max-w-lg w-full p-8">
         <div className="mb-6">
           <div className="w-12 h-12 rounded-xl bg-pk-teal-50 border border-pk-teal-100 flex items-center justify-center mb-4">
             <svg className="w-6 h-6 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

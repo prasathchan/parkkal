@@ -210,7 +210,7 @@ function DayView({
   return (
     <div className="flex overflow-x-auto">
       {/* Time labels */}
-      <div className="sticky left-0 z-10 bg-white border-r border-pk-border">
+      <div className="sticky left-0 z-10 bg-pk-surface border-r border-pk-border">
         <div className="h-10" /> {/* doctor header spacer */}
         <TimeColumn />
       </div>
@@ -386,7 +386,7 @@ function TodaysQueue({
 
   return (
     <div className="w-72 flex-shrink-0 border-l border-pk-border flex flex-col bg-pk-surface-raised">
-      <div className="px-4 py-3 border-b border-pk-border bg-white">
+      <div className="px-4 py-3 border-b border-pk-border bg-pk-surface">
         <h2 className="text-sm font-semibold text-pk-text">Today&apos;s Queue</h2>
         <p className="text-xs text-pk-text-muted mt-0.5">{sorted.length} appointment{sorted.length !== 1 ? "s" : ""}</p>
       </div>
@@ -431,10 +431,10 @@ function TodaysQueue({
                 w-full text-left rounded-lg p-2.5 transition border
                 ${isNow   ? "bg-pk-teal-50 border-pk-teal-200"   :
                   isNext  ? "bg-pk-warning-fill border-pk-warning-border"  :
-                  apt.status === "COMPLETED"  ? "bg-white border-pk-border opacity-50" :
-                  apt.status === "CANCELLED"  ? "bg-white border-pk-border opacity-30" :
+                  apt.status === "COMPLETED"  ? "bg-pk-surface border-pk-border opacity-50" :
+                  apt.status === "CANCELLED"  ? "bg-pk-surface border-pk-border opacity-30" :
                   apt.status === "NO_SHOW"    ? "bg-pk-danger-fill border-pk-danger-border opacity-40" :
-                  "bg-white border-pk-border hover:border-pk-border hover:bg-pk-surface-raised"}
+                  "bg-pk-surface border-pk-border hover:border-pk-border hover:bg-pk-surface-raised"}
               `}
             >
               <div className="flex items-start justify-between gap-2">
@@ -467,7 +467,7 @@ function TodaysQueue({
       </div>
 
       {/* Legend */}
-      <div className="border-t border-pk-border bg-white px-4 py-3">
+      <div className="border-t border-pk-border bg-pk-surface px-4 py-3">
         <p className="text-xs font-medium text-pk-text-muted mb-2">Appointment types</p>
         <div className="grid grid-cols-2 gap-1">
           {Object.entries(TYPE_COLORS).map(([type, c]) => (
@@ -505,7 +505,7 @@ function AppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header strip */}
         <div className={`h-2 ${colors.dot}`} />
         <div className="p-6">
@@ -710,7 +710,7 @@ export default function AppointmentsPage() {
     <div className="flex-1 flex flex-col h-full overflow-hidden">
 
       {/* ── Calendar toolbar ── */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-pk-border bg-white flex-wrap">
+      <div className="flex items-center gap-3 px-6 py-3 border-b border-pk-border bg-pk-surface flex-wrap">
         {/* Navigation */}
         <div className="flex items-center gap-1">
           <button
@@ -751,7 +751,7 @@ export default function AppointmentsPage() {
               className={`px-3 py-1.5 text-sm font-medium transition ${
                 viewMode === v
                   ? "bg-pk-teal-600 text-white"
-                  : "bg-white text-pk-text-secondary hover:bg-pk-surface-raised"
+                  : "bg-pk-surface text-pk-text-secondary hover:bg-pk-surface-raised"
               }`}
             >
               {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -787,7 +787,7 @@ export default function AppointmentsPage() {
 
         {/* Calendar grid */}
         <div
-          className="flex-1 overflow-auto bg-white"
+          className="flex-1 overflow-auto bg-pk-surface"
           ref={(el) => {
             if (el && viewMode === "day") {
               const now = new Date();

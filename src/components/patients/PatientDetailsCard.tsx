@@ -132,7 +132,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
 
       {showEraseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-pk-danger-border shadow-xl max-w-md w-full p-6">
+          <div className="bg-pk-surface rounded-2xl border border-pk-danger-border shadow-xl max-w-md w-full p-6">
             <h2 className="text-base font-bold text-pk-danger-text mb-1">Permanently Erase Patient Data</h2>
             <p className="text-sm text-pk-text-secondary mb-4">
               This will permanently delete <strong>{patient.name}</strong> and all associated visits, prescriptions,

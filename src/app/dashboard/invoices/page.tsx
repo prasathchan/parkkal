@@ -165,7 +165,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Table card */}
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
           <div className="px-6 py-4 border-b border-pk-border flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-pk-text">Invoice List</h2>
@@ -263,7 +263,7 @@ export default function InvoicesPage() {
       {showSlideover && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/30" onClick={() => setShowSlideover(false)} />
-          <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full overflow-y-auto">
+          <div className="w-full max-w-md bg-pk-surface shadow-xl flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border">
               <h2 className="text-base font-semibold text-pk-text">New Invoice</h2>
               <button onClick={() => setShowSlideover(false)} aria-label="Close panel" className="text-pk-text-muted hover:text-pk-text-secondary transition">
@@ -291,7 +291,7 @@ export default function InvoicesPage() {
                     className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                   {showFormPatientDropdown && formPatients.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-pk-border rounded-lg shadow-lg z-10">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg z-10">
                       {formPatients.map((p) => (
                         <button
                           key={p.id}
@@ -354,7 +354,7 @@ export default function InvoicesPage() {
       {/* Record Payment Modal */}
       {payModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-pk-text mb-1">Record Payment</h3>
             <p className="text-sm text-pk-text-muted mb-4">
               Invoice <span className="font-mono">{payModal.invoice.id.slice(0, 8)}</span>

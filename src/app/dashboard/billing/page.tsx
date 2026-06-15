@@ -128,7 +128,7 @@ export default function BillingPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchData(page, search)} />
         )}
 
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
           <div className="px-6 py-4 border-b border-pk-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-pk-text">Visit Billing Summary</h2>

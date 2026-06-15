@@ -16,11 +16,11 @@ export function Header({ title, breadcrumb, user }: HeaderProps) {
     <>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:border focus:border-pk-teal-500 focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium focus:text-pk-teal-700 focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-pk-surface focus:border focus:border-pk-teal-500 focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium focus:text-pk-teal-700 focus:shadow-lg"
       >
         Skip to main content
       </a>
-    <header className="bg-white border-b border-pk-border px-4 sm:px-6 py-4 flex items-center gap-3 justify-between">
+    <header className="bg-pk-surface border-b border-pk-border px-4 sm:px-6 py-4 flex items-center gap-3 justify-between">
       <div className="flex items-center gap-3 min-w-0">
         {/* Hamburger — only visible on mobile */}
         <button

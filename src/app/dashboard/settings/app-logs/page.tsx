@@ -162,7 +162,7 @@ export default function AppLogsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setOffset(0); fetchLogs(0, false); }}
-              className="text-xs px-3 py-1.5 border border-pk-border rounded-lg bg-white text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="text-xs px-3 py-1.5 border border-pk-border rounded-lg bg-pk-surface text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               ↺ Refresh
             </button>
@@ -179,13 +179,13 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Filter bar ── */}
-        <div className="bg-white border border-pk-border rounded-xl p-4 space-y-3">
+        <div className="bg-pk-surface border border-pk-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
             {/* Level */}
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-white text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="">All levels</option>
               <option value="error">Error</option>
@@ -215,7 +215,7 @@ export default function AppLogsPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as "desc" | "asc")}
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-white text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
@@ -258,7 +258,7 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Table ── */}
-        <div className="bg-white rounded-2xl border border-pk-border overflow-hidden">
+        <div className="bg-pk-surface rounded-2xl border border-pk-border overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-pk-text-muted text-sm">Loading logs…</div>
           ) : logs.length === 0 ? (
@@ -342,7 +342,7 @@ export default function AppLogsPage() {
                             {entry.data && (
                               <div>
                                 <p className="text-xs font-semibold text-pk-text-muted mb-1">Context</p>
-                                <pre className="text-xs text-pk-text-secondary bg-white border border-pk-border rounded-lg px-4 py-3 overflow-x-auto">
+                                <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-lg px-4 py-3 overflow-x-auto">
                                   {JSON.stringify(entry.data, null, 2)}
                                 </pre>
                               </div>

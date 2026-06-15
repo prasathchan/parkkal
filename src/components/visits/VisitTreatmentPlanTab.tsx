@@ -269,7 +269,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 const txPaid = tx.billedAmount ?? 0;
                 const txOutstanding = Math.max(0, tx.cost - txPaid);
                 return (
-                  <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-pk-surface-raised border-pk-border opacity-75" : "bg-white border-pk-border"}`}>
+                  <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-pk-surface-raised border-pk-border opacity-75" : "bg-pk-surface border-pk-border"}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -407,7 +407,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Treatment Payment Modal */}
       {txPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
             <div>
               <h3 className="text-base font-bold text-pk-text">Record Treatment Payment</h3>
               <p className="text-sm text-pk-text-muted mt-0.5">
@@ -473,7 +473,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Link Existing Plan Modal */}
       {showLinkModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-pk-border">
               <h3 className="text-base font-semibold text-pk-text">Link Existing Treatment Plan</h3>
               <button onClick={() => setShowLinkModal(false)} aria-label="Close modal" className="text-pk-text-muted hover:text-pk-text-secondary text-xl leading-none">&times;</button>
@@ -513,7 +513,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Emergency Override Modal */}
       {showOverrideModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-pk-text mb-1">Emergency Override</h3>
             <p className="text-sm text-pk-text-muted mb-4">Record a clinical reason to proceed without a signed consent form.</p>
             {overrideError && (
@@ -552,7 +552,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* IN_PROGRESS without consent warning */}
       {pendingStatusChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-pk-text mb-2">⚠️ Consent Not Verified</h3>
             <p className="text-sm text-pk-text-secondary mb-4">
               This treatment does not have a verified consent form. Starting treatment without consent may have legal and clinical implications.

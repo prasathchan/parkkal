@@ -230,7 +230,7 @@ export default function VisitDetailPage() {
           onAddPayment={() => setShowPayModal(true)}
         />
 
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
           <div className="border-b border-pk-border px-6 flex gap-1 overflow-x-auto">
             {(["items", "payments", "attachments", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${tab === t ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>

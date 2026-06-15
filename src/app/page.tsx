@@ -64,7 +64,7 @@ const plans = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-pk-text">
+    <div className="min-h-screen bg-pk-surface text-pk-text">
 
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-pk-border">
@@ -105,7 +105,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup"
-              className="inline-flex items-center justify-center gap-2 bg-white text-pk-teal-700 font-bold text-base px-8 py-3.5 rounded-xl hover:bg-pk-teal-50 transition shadow-lg">
+              className="inline-flex items-center justify-center gap-2 bg-pk-surface text-pk-teal-700 font-bold text-base px-8 py-3.5 rounded-xl hover:bg-pk-teal-50 transition shadow-lg">
               Start 14-day free trial
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -129,7 +129,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
-              <div key={f.title} className="bg-white rounded-2xl border border-pk-border p-6 hover:shadow-md transition">
+              <div key={f.title} className="bg-pk-surface rounded-2xl border border-pk-border p-6 hover:shadow-md transition">
                 <div className="text-3xl mb-4">{f.icon}</div>
                 <h3 className="font-bold text-pk-text text-lg mb-2">{f.title}</h3>
                 <p className="text-pk-text-muted text-sm leading-relaxed">{f.desc}</p>
@@ -153,7 +153,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 px-6 bg-white">
+      <section id="pricing" className="py-20 px-6 bg-pk-surface">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-pk-text mb-3">Simple, honest pricing</h2>

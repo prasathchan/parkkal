@@ -82,7 +82,7 @@ function SelectOrgInner() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100 p-4">
-      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
+      <div className="bg-pk-surface rounded-2xl shadow-xl p-8 w-full max-w-lg">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg viewBox="0 0 24 24" fill="white" className="w-8 h-8">

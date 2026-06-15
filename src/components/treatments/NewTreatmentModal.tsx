@@ -113,7 +113,7 @@ export function NewTreatmentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-pk-surface rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border flex-shrink-0">
           <h2 className="text-base font-semibold text-pk-text">New Treatment Plan</h2>
@@ -142,7 +142,7 @@ export function NewTreatmentModal({
                 className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
               {showPatientDropdown && patients.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-pk-border rounded-lg shadow-lg z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg z-10">
                   {patients.map((p) => (
                     <button
                       key={p.id}

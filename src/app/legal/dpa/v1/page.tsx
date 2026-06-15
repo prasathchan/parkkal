@@ -4,7 +4,7 @@ export const metadata = { title: "Data Processing Agreement v1 — Parkkal" };
 
 export default function DpaV1Page() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-pk-surface">
       <div className="max-w-3xl mx-auto px-6 py-12">
         <nav className="text-sm text-pk-text-muted mb-8">
           <Link href="/dashboard" className="hover:text-pk-text-secondary">Dashboard</Link>

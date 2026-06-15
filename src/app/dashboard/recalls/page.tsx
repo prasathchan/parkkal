@@ -127,7 +127,7 @@ export default function RecallsPage() {
             aria-pressed={tab === key}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === key
-                ? "bg-white text-pk-text shadow-sm"
+                ? "bg-pk-surface text-pk-text shadow-sm"
                 : "text-pk-text-secondary hover:text-pk-text"
             }`}
           >
@@ -142,7 +142,7 @@ export default function RecallsPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-pk-border bg-white overflow-hidden">
+      <div className="rounded-lg border border-pk-border bg-pk-surface overflow-hidden">
         {loading ? (
           <div role="status" aria-label="Loading recalls…" className="p-4">
             <SkeletonTable rows={8} cols={7} />
@@ -172,7 +172,7 @@ export default function RecallsPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Visit</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-pk-border">
+              <tbody className="bg-pk-surface divide-y divide-pk-border">
                 {recalls.map((row) => (
                   <tr key={row.id} className="hover:bg-pk-surface-raised transition-colors">
 

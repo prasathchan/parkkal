@@ -53,7 +53,7 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
   }
 
   return (
-    <div className="rounded-xl border border-pk-border bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-pk-border bg-pk-surface shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="font-medium text-pk-text text-sm">Get your clinic ready</p>

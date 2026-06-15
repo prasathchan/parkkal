@@ -283,7 +283,7 @@ function NewVisitForm() {
                               className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                                 selectedAppointment?.id === appt.id
                                   ? "border-pk-teal-500 bg-pk-teal-50"
-                                  : "border-pk-border hover:border-pk-teal-300 bg-white"
+                                  : "border-pk-border hover:border-pk-teal-300 bg-pk-surface"
                               }`}
                             >
                               <div className="flex items-center justify-between">
@@ -317,7 +317,7 @@ function NewVisitForm() {
                         className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
                           visitSource === "walkin"
                             ? "border-pk-warning-border bg-pk-warning-fill"
-                            : "border-pk-border hover:border-pk-warning-border bg-white"
+                            : "border-pk-border hover:border-pk-warning-border bg-pk-surface"
                         }`}
                       >
                         <div className="flex items-center justify-between">

@@ -15,7 +15,7 @@ export default function Error({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-pk-surface-raised">
-      <div className="bg-white rounded-xl border border-pk-border shadow-sm p-8 max-w-md w-full text-center">
+      <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm p-8 max-w-md w-full text-center">
         <div className="w-12 h-12 bg-pk-danger-fill rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-6 h-6 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

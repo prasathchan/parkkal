@@ -409,7 +409,7 @@ export default function StaffDetailPage() {
                         onClick={() => setEditForm((f) => ({ ...f, isDoctor: !f.isDoctor }))}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isDoctor ? "bg-pk-teal-600" : "bg-pk-surface-sunken"}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${editForm.isDoctor ? "translate-x-6" : "translate-x-1"}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-pk-surface shadow transition-transform ${editForm.isDoctor ? "translate-x-6" : "translate-x-1"}`} />
                       </button>
                     </div>
                   )}

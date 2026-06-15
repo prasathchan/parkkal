@@ -75,7 +75,7 @@ export default function SubscriptionsPage() {
       {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
 
       {activeForm && (
-        <div className="bg-white rounded-xl border border-pk-teal-200 p-5 space-y-4">
+        <div className="bg-pk-surface rounded-xl border border-pk-teal-200 p-5 space-y-4">
           <h2 className="font-semibold text-pk-text text-sm">Manually activate subscription</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -111,7 +111,7 @@ export default function SubscriptionsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+      <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
         {loading ? (
           <p className="px-5 py-8 text-center text-pk-text-muted text-sm">Loading…</p>
         ) : (

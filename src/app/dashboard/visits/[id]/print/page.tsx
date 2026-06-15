@@ -115,7 +115,7 @@ export default function PrintPage() {
         </button>
         <button
           onClick={() => window.close()}
-          className="bg-white border border-pk-border text-pk-text-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition shadow-lg"
+          className="bg-pk-surface border border-pk-border text-pk-text-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition shadow-lg"
         >
           Close
         </button>

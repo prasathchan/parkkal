@@ -136,7 +136,7 @@ function ToothCell({
       {/* Condition popover */}
       {open && (
         <div
-          className={`absolute z-50 w-52 bg-white rounded-xl shadow-2xl border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
+          className={`absolute z-50 w-52 bg-pk-surface rounded-xl shadow-2xl border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
         >
           <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}

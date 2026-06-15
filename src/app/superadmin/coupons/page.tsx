@@ -87,7 +87,7 @@ export default function CouponsPage() {
       {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
 
       {showNew && (
-        <div className="bg-white rounded-xl border border-pk-teal-200 p-5 space-y-4">
+        <div className="bg-pk-surface rounded-xl border border-pk-teal-200 p-5 space-y-4">
           <h2 className="font-semibold text-pk-text text-sm">New coupon</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -147,7 +147,7 @@ export default function CouponsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+      <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">

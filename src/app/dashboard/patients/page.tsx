@@ -95,7 +95,7 @@ export default function PatientsPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchPatients(search, offset)} />
         )}
 
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
           {/* Search bar + New Patient button */}
           <div className="px-6 py-4 border-b border-pk-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input

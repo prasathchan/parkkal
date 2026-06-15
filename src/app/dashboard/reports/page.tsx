@@ -91,7 +91,7 @@ function _Stat({ label, value, sub, color = "text-pk-text" }: {
   label: string; value: string; sub?: string; color?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-pk-border p-4">
+    <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
       <p className="text-xs text-pk-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${color}`}>{value}</p>
       {sub && <p className="text-xs text-pk-text-muted mt-0.5">{sub}</p>}
@@ -142,7 +142,7 @@ function StatWithChange({ label, value, sub, prevValue, color = "text-pk-text", 
   const pct = hasChange ? Math.round(((current - prevValue) / Math.abs(prevValue)) * 100) : null;
   const up = pct !== null && pct > 0;
   return (
-    <div className="bg-white rounded-xl border border-pk-border p-4">
+    <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
       <p className="text-xs text-pk-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${color}`}>{value}</p>
       {pct !== null && (
@@ -339,7 +339,7 @@ export default function ReportsPage() {
             {data && (
               <button
                 onClick={() => exportCsv(data, data.period.label)}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 ↓ Export CSV
               </button>
@@ -352,7 +352,7 @@ export default function ReportsPage() {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                   !useCustom && period === p
                     ? "bg-pk-teal-600 text-white"
-                    : "bg-white border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
+                    : "bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
                 }`}
               >
                 {PRESET_LABELS[p]}
@@ -365,7 +365,7 @@ export default function ReportsPage() {
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                 useCustom
                   ? "bg-pk-teal-600 text-white"
-                  : "bg-white border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
+                  : "bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
               }`}
             >
               Custom
@@ -379,7 +379,7 @@ export default function ReportsPage() {
                   value={fromDate}
                   max={toDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="border border-pk-border rounded-lg px-2 py-1.5 text-sm text-pk-text-secondary bg-white focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="border border-pk-border rounded-lg px-2 py-1.5 text-sm text-pk-text-secondary bg-pk-surface focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
                 <span className="text-pk-text-muted text-sm">–</span>
                 <input
@@ -388,7 +388,7 @@ export default function ReportsPage() {
                   min={fromDate}
                   max={today()}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="border border-pk-border rounded-lg px-2 py-1.5 text-sm text-pk-text-secondary bg-white focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="border border-pk-border rounded-lg px-2 py-1.5 text-sm text-pk-text-secondary bg-pk-surface focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
               </div>
             )}
@@ -402,7 +402,7 @@ export default function ReportsPage() {
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1,2,3,4].map((n) => (
-              <div key={n} className="bg-white rounded-xl border border-pk-border p-4 animate-pulse h-20" />
+              <div key={n} className="bg-pk-surface rounded-xl border border-pk-border p-4 animate-pulse h-20" />
             ))}
           </div>
         )}
@@ -443,7 +443,7 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Revenue chart ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-pk-border p-5">
+            <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
               <h2 className="text-sm font-semibold text-pk-text mb-1">Revenue — {data.period.label}</h2>
               <p className="text-xs text-pk-text-muted mb-4">Daily billed vs. collected.</p>
               <SvgBarChart
@@ -464,7 +464,7 @@ export default function ReportsPage() {
 
             {/* ── Two-column: New Patients + Status distributions ────────────── */}
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-pk-border p-5">
+              <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
                 <h2 className="text-sm font-semibold text-pk-text mb-1">New Patient Registrations</h2>
                 <p className="text-xs text-pk-text-muted mb-4">Patients registered per day.</p>
                 <SvgBarChart
@@ -475,15 +475,15 @@ export default function ReportsPage() {
                   formatValue={(v) => `${v} patient${v !== 1 ? "s" : ""}`}
                 />
               </div>
-              <div className="bg-white rounded-xl border border-pk-border p-5">
+              <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
                 <h2 className="text-sm font-semibold text-pk-text mb-4">Visit Status Breakdown</h2>
                 <StatusBreakdown data={data.visitsByStatus} />
               </div>
-              <div className="bg-white rounded-xl border border-pk-border p-5">
+              <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
                 <h2 className="text-sm font-semibold text-pk-text mb-4">Appointment Status Breakdown</h2>
                 <StatusBreakdown data={data.apptByStatus} />
               </div>
-              <div className="bg-white rounded-xl border border-pk-border p-5">
+              <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
                 <h2 className="text-sm font-semibold text-pk-text mb-4">Treatment Plan Status</h2>
                 <StatusBreakdown data={data.treatmentByStatus} />
               </div>
@@ -491,7 +491,7 @@ export default function ReportsPage() {
 
             {/* ── Per-doctor breakdown ──────────────────────────────────────── */}
             {data.doctorBreakdown.length > 0 && (
-              <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+              <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
                 <div className="px-5 py-4 border-b border-pk-border">
                   <h2 className="text-sm font-semibold text-pk-text">Doctor Performance</h2>
                   <p className="text-xs text-pk-text-muted mt-0.5">Visits, billing, and collection per doctor this period.</p>
@@ -527,7 +527,7 @@ export default function ReportsPage() {
             )}
 
             {/* ── Top procedures table ──────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+            <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
               <div className="px-5 py-4 border-b border-pk-border">
                 <h2 className="text-sm font-semibold text-pk-text">Top Procedures</h2>
                 <p className="text-xs text-pk-text-muted mt-0.5">By number of treatment plans created this period.</p>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Outstanding balance aging ──────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-pk-border overflow-hidden">
+            <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
               <div className="px-5 py-4 border-b border-pk-border">
                 <h2 className="text-sm font-semibold text-pk-text">Outstanding Balance Aging</h2>
                 <p className="text-xs text-pk-text-muted mt-0.5">Open visits bucketed by days since creation.</p>
@@ -568,7 +568,7 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Patient funnel ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-pk-border p-5">
+            <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
               <h2 className="text-sm font-semibold text-pk-text mb-1">Patient Funnel</h2>
               <p className="text-xs text-pk-text-muted mb-4">Conversion from registration through payment (all-time).</p>
               <FunnelChart funnel={data.patientFunnel} />

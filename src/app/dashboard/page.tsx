@@ -263,7 +263,7 @@ export default async function DashboardPage() {
         {/* Recent Appointments + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Appointments */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-pk-border shadow-sm">
+          <div className="lg:col-span-2 bg-pk-surface rounded-xl border border-pk-border shadow-sm">
             <div className="px-6 py-4 border-b border-pk-border flex items-center justify-between">
               <h2 className="font-semibold text-pk-text">Today&apos;s Appointments</h2>
               <Link
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-xl border border-pk-border shadow-sm">
+          <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
             <div className="px-6 py-4 border-b border-pk-border">
               <h2 className="font-semibold text-pk-text">Quick Actions</h2>
             </div>

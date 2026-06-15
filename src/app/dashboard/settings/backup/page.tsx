@@ -60,7 +60,7 @@ function RestoreModal({
   const [input, setInput] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="bg-pk-surface rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-pk-danger-fill flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,7 +186,7 @@ export default function BackupPage() {
         </div>
 
         {/* Take snapshot button */}
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm p-5">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-pk-text">Take a snapshot now</p>
@@ -238,7 +238,7 @@ export default function BackupPage() {
         )}
 
         {/* Snapshot timeline */}
-        <div className="bg-white rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between">
             <p className="font-medium text-pk-text">Snapshot history</p>
             <p className="text-xs text-pk-text-muted">{snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}</p>

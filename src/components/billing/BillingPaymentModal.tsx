@@ -17,7 +17,7 @@ interface Props {
 export function BillingPaymentModal({ visit, due, payMethod, onMethodChange, onConfirm, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+      <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <h3 className="text-base font-bold text-pk-text">Record Payment</h3>
         <p className="text-sm text-pk-text-secondary">
           Visit <span className="font-mono font-medium text-pk-teal-700">{visit.visitCode}</span> —{" "}

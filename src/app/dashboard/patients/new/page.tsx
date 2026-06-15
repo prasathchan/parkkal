@@ -295,14 +295,14 @@ export default function NewPatientPage() {
                   <button
                     type="button"
                     onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); setExternalSourceOther(""); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-white text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     External Source
                   </button>
                   <button
                     type="button"
                     onClick={() => { setReferralType("patient"); setForm(f => ({ ...f, referralSource: "" })); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-white text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     Existing Patient
                   </button>
@@ -315,7 +315,7 @@ export default function NewPatientPage() {
                         setForm(f => ({ ...f, referralSource: e.target.value }));
                         if (e.target.value !== "Other") setExternalSourceOther("");
                       }}
-                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition bg-white"
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition bg-pk-surface"
                     >
                       <option value="">Select source…</option>
                       {EXTERNAL_SOURCES.map(s => (
@@ -358,7 +358,7 @@ export default function NewPatientPage() {
                       </button>
                     )}
                     {referralDropdownOpen && referralPatients.length > 0 && (
-                      <ul className="absolute z-20 mt-1 w-full bg-white border border-pk-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <ul className="absolute z-20 mt-1 w-full bg-pk-surface border border-pk-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                         {referralPatients.map((p) => (
                           <li key={p.id}>
                             <button
