@@ -69,6 +69,6 @@
     "typescript": "^5",
     "vitest": "^4.1.8",
     "wait-on": "^9.0.10",
-    "wrangler": "^4.98.0"
+    "wrangler": "^4.100.0"
   }
 }
