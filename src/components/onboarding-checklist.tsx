@@ -53,7 +53,7 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
   }
 
   return (
-    <div className="rounded-xl border border-pk-border bg-pk-surface shadow-sm overflow-hidden">
+    <div className="rounded-pk-lg border border-pk-border bg-pk-surface shadow-pk-e1 overflow-hidden">
       <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="font-medium text-pk-text text-sm">Get your clinic ready</p>
@@ -74,7 +74,7 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
               type="button"
               onClick={handleDismiss}
               disabled={isPending}
-              className="text-xs text-pk-text-muted hover:text-pk-text-secondary border border-pk-border rounded-md px-2.5 py-1 transition disabled:opacity-50"
+              className="text-xs text-pk-text-muted hover:text-pk-text-secondary border border-pk-border rounded-pk-sm px-2.5 py-1 transition disabled:opacity-50"
             >
               Dismiss
             </button>
@@ -116,7 +116,7 @@ export function OnboardingChecklist({ steps, role, dismissed, canDismiss }: Onbo
               {!step.done && (
                 <Link
                   href={step.href}
-                  className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-md border transition ${
+                  className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-pk-sm border transition ${
                     isNext
                       ? "bg-pk-teal-600 text-white border-pk-teal-600 hover:bg-pk-teal-700"
                       : "text-pk-text-muted border-pk-border hover:bg-pk-surface-raised"

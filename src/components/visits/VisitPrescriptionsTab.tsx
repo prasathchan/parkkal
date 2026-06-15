@@ -113,10 +113,10 @@ function DrugAutocomplete({
         onFocus={() => { if (groups.length > 0 && value.trim()) setOpen(true); }}
         placeholder="e.g. Amoxicillin 500mg"
         autoComplete="off"
-        className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+        className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
       />
       {open && (
-        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 max-h-64 overflow-y-auto">
           {groups.map((group) => (
             <li key={group.label}>
               <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-pk-text-muted select-none">
@@ -260,7 +260,7 @@ export function VisitPrescriptionsTab({
         <div className="flex justify-end">
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition"
+            className="flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -272,7 +272,7 @@ export function VisitPrescriptionsTab({
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="border border-pk-border rounded-xl p-5 space-y-4 bg-pk-surface-raised">
+        <form onSubmit={handleSubmit} className="border border-pk-border rounded-pk-lg p-5 space-y-4 bg-pk-surface-raised">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-pk-text-secondary">New Prescription</h3>
             <a
@@ -288,7 +288,7 @@ export function VisitPrescriptionsTab({
           {/* Medicine rows */}
           <div className="space-y-3">
             {medicines.map((med, idx) => (
-              <div key={idx} className="bg-pk-surface border border-pk-border rounded-lg p-4 space-y-3">
+              <div key={idx} className="bg-pk-surface border border-pk-border rounded-pk-sm p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-pk-text-muted">Medicine {idx + 1}</span>
                   {medicines.length > 1 && (
@@ -332,7 +332,7 @@ export function VisitPrescriptionsTab({
                       value={med.dosage}
                       onChange={(e) => updateMedicine(idx, "dosage", e.target.value)}
                       placeholder="e.g. 1 tablet"
-                      className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
@@ -343,12 +343,12 @@ export function VisitPrescriptionsTab({
                         value={med.frequency}
                         onChange={(e) => updateMedicine(idx, "frequency", e.target.value)}
                         placeholder="e.g. 1-0-1"
-                        className="flex-1 text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                        className="flex-1 text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                       />
                       <select
                         value=""
                         onChange={(e) => { if (e.target.value) updateMedicine(idx, "frequency", e.target.value); }}
-                        className="text-xs border border-pk-border rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-pk-text-muted"
+                        className="text-xs border border-pk-border rounded-pk-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-pk-text-muted"
                       >
                         <option value="">Preset</option>
                         {FREQ_PRESETS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -362,7 +362,7 @@ export function VisitPrescriptionsTab({
                       value={med.duration}
                       onChange={(e) => updateMedicine(idx, "duration", e.target.value)}
                       placeholder="e.g. 5 days"
-                      className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
@@ -372,7 +372,7 @@ export function VisitPrescriptionsTab({
                       value={med.notes ?? ""}
                       onChange={(e) => updateMedicine(idx, "notes", e.target.value)}
                       placeholder="e.g. After food"
-                      className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export function VisitPrescriptionsTab({
               onChange={(e) => setInstructions(e.target.value)}
               rows={2}
               placeholder="e.g. Avoid hot food for 24 hours"
-              className="w-full text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+              className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
             />
           </div>
 
@@ -405,14 +405,14 @@ export function VisitPrescriptionsTab({
             <button
               type="button"
               onClick={resetForm}
-              className="px-4 py-2 text-sm border border-pk-border rounded-lg text-pk-text-secondary hover:bg-pk-surface-sunken transition"
+              className="px-4 py-2 text-sm border border-pk-border rounded-pk-sm text-pk-text-secondary hover:bg-pk-surface-sunken transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 text-sm bg-pk-teal-600 text-white rounded-lg font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+              className="px-4 py-2 text-sm bg-pk-teal-600 text-white rounded-pk-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
             >
               {submitting ? "Saving…" : "Save Prescription"}
             </button>
@@ -426,7 +426,7 @@ export function VisitPrescriptionsTab({
       ) : (
         <div className="space-y-4">
           {prescriptions.map((rx) => (
-            <div key={rx.id} className="border border-pk-border rounded-xl overflow-hidden">
+            <div key={rx.id} className="border border-pk-border rounded-pk-lg overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-3 bg-pk-surface-raised border-b border-pk-border">
                 <div className="flex items-center gap-3">

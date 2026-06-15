@@ -324,7 +324,7 @@ export default function StaffDetailPage() {
                       type="text"
                       value={editForm.name}
                       onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
@@ -333,7 +333,7 @@ export default function StaffDetailPage() {
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => { setEditForm((f) => ({ ...f, phone: e.target.value })); setPhoneError(""); }}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 ${phoneError ? "border-pk-danger-border" : "border-pk-border-strong"}`}
+                      className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 ${phoneError ? "border-pk-danger-border" : "border-pk-border-strong"}`}
                       placeholder="+91 98765 43210"
                     />
                     {phoneError && <p className="text-xs text-pk-danger-text mt-1">{phoneError}</p>}
@@ -344,7 +344,7 @@ export default function StaffDetailPage() {
                       type="date"
                       value={editForm.dateOfBirth}
                       onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
@@ -352,7 +352,7 @@ export default function StaffDetailPage() {
                     <select
                       value={editForm.gender}
                       onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="">— Select —</option>
                       <option value="MALE">Male</option>
@@ -369,7 +369,7 @@ export default function StaffDetailPage() {
                 <p className="text-sm font-semibold text-pk-text-secondary pt-2">Edit Role &amp; Salary</p>
 
                 {saveError && (
-                  <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                  <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                     {saveError}
                   </div>
                 )}
@@ -380,7 +380,7 @@ export default function StaffDetailPage() {
                     <select
                       value={editForm.role}
                       onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -391,7 +391,7 @@ export default function StaffDetailPage() {
                     <select
                       value={editForm.isActive ? "active" : "inactive"}
                       onChange={(e) => setEditForm((f) => ({ ...f, isActive: e.target.value === "active" }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -399,7 +399,7 @@ export default function StaffDetailPage() {
                   </div>
 
                   {editForm.role === "ADMIN" && (
-                    <div className="flex items-center justify-between py-2 px-3 border border-pk-border rounded-lg">
+                    <div className="flex items-center justify-between py-2 px-3 border border-pk-border rounded-pk-sm">
                       <div>
                         <p className="text-sm font-medium text-pk-text-secondary">Can act as Doctor</p>
                         <p className="text-xs text-pk-text-muted">Appears in the doctor dropdown for appointments</p>
@@ -419,7 +419,7 @@ export default function StaffDetailPage() {
                     <select
                       value={editForm.salaryType}
                       onChange={(e) => setEditForm((f) => ({ ...f, salaryType: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="FIXED">Fixed Monthly</option>
                       <option value="PER_APPOINTMENT">Per Appointment</option>
@@ -435,7 +435,7 @@ export default function StaffDetailPage() {
                       min="0"
                       value={editForm.salaryAmount}
                       onChange={(e) => setEditForm((f) => ({ ...f, salaryAmount: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                 </div>
@@ -452,7 +452,7 @@ export default function StaffDetailPage() {
             )}
 
             {saveSuccess && (
-              <div className="mt-4 bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3">
+              <div className="mt-4 bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-pk-sm px-4 py-3">
                 Changes saved successfully.
               </div>
             )}
@@ -489,23 +489,23 @@ export default function StaffDetailPage() {
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Name *</label>
                     <input type="text" value={ecForm.name} onChange={(e) => setEcForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Relationship *</label>
                     <input type="text" value={ecForm.relationship} onChange={(e) => setEcForm((f) => ({ ...f, relationship: e.target.value }))}
                       placeholder="Spouse, Parent, Sibling…"
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Phone *</label>
                     <input type="tel" value={ecForm.phone} onChange={(e) => setEcForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Email</label>
                     <input type="email" value={ecForm.email} onChange={(e) => setEcForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -542,7 +542,7 @@ export default function StaffDetailPage() {
                   { value: "invite_link" as const, label: "Activation link (enable login)", desc: "User sets their own password and verifies email + phone. Login is enabled after." },
                   { value: "no_login_verify" as const, label: "Verification link (no login)", desc: "User verifies their email and phone. Login access remains disabled." },
                 ].map(opt => (
-                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${linkMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-pk-sm border cursor-pointer transition ${linkMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
                     <input type="radio" name="linkMode" value={opt.value} checked={linkMode === opt.value}
                       onChange={() => { setLinkMode(opt.value); setLinkSent(false); setLinkError(""); }}
                       className="mt-0.5 accent-pk-teal-600" />

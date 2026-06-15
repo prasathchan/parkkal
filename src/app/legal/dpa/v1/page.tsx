@@ -107,7 +107,7 @@ export default function DpaV1Page() {
           <p className="text-xs text-pk-text-muted">Parkkal DPA v1 &mdash; Last updated June 2025</p>
           <Link
             href="/accept-dpa"
-            className="text-sm bg-pk-teal-600 text-white px-4 py-2 rounded-lg hover:bg-pk-teal-700 transition font-medium"
+            className="text-sm bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium"
           >
             Accept &amp; Continue
           </Link>

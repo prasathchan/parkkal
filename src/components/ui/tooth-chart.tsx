@@ -138,7 +138,7 @@ export function ToothChart({ value = [], onChange, readOnly = false, compact = f
         {!readOnly && <span className="ml-auto">Click to select/deselect</span>}
       </div>
 
-      <div className="border border-pk-border rounded-xl bg-pk-surface-raised p-3 inline-block">
+      <div className="border border-pk-border rounded-pk-lg bg-pk-surface-raised p-3 inline-block">
         {/* Upper jaw */}
         <div className="flex items-end gap-px mb-1">
           {/* Q1 */}

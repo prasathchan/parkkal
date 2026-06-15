@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Service Status — Parkkal" };
 
 export default function StatusPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pk-neutral-50 to-pk-teal-50 flex items-start justify-center py-16 px-4">
+    <div className="min-h-screen bg-pk-bg flex items-start justify-center py-16 px-4">
       <div className="w-full max-w-2xl">
 
         {/* Header */}
@@ -22,7 +22,7 @@ export default function StatusPage() {
         </div>
 
         {/* Overall status banner */}
-        <div className="bg-pk-surface rounded-2xl shadow-sm border border-pk-success-border p-6 mb-6 flex items-center gap-4">
+        <div className="bg-pk-surface rounded-pk-xl shadow-pk-e1 border border-pk-success-border p-6 mb-6 flex items-center gap-4">
           <div className="w-4 h-4 rounded-full bg-pk-success shrink-0 animate-pulse" />
           <div>
             <p className="font-semibold text-pk-text text-lg">All systems operational</p>
@@ -31,7 +31,7 @@ export default function StatusPage() {
         </div>
 
         {/* Component list */}
-        <div className="bg-pk-surface rounded-2xl shadow-sm border border-pk-border divide-y divide-pk-border mb-6">
+        <div className="bg-pk-surface rounded-pk-xl shadow-pk-e1 border border-pk-border divide-y divide-pk-border mb-6">
           {[
             { name: "App (app.parkkal.com)", note: "Hosted on Cloudflare Pages / Workers" },
             { name: "Database (Cloudflare D1)", note: "Patient records, appointments, billing" },
@@ -53,7 +53,7 @@ export default function StatusPage() {
         </div>
 
         {/* SLA commitment */}
-        <div className="bg-pk-surface rounded-2xl shadow-sm border border-pk-border p-6 mb-6">
+        <div className="bg-pk-surface rounded-pk-xl shadow-pk-e1 border border-pk-border p-6 mb-6">
           <h2 className="text-sm font-semibold text-pk-text mb-3">Uptime commitment</h2>
           <p className="text-sm text-pk-text-secondary">
             We target <strong>99.5% monthly uptime</strong> for the Parkkal application, excluding scheduled
@@ -71,7 +71,7 @@ export default function StatusPage() {
         </div>
 
         {/* Incident contact */}
-        <div className="bg-pk-surface rounded-2xl shadow-sm border border-pk-border p-6">
+        <div className="bg-pk-surface rounded-pk-xl shadow-pk-e1 border border-pk-border p-6">
           <h2 className="text-sm font-semibold text-pk-text mb-2">Report an incident</h2>
           <p className="text-sm text-pk-text-secondary">
             If you are experiencing an issue, email{" "}

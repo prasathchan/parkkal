@@ -51,7 +51,7 @@ export function VisitHeaderCard({
   onCompleteVisit, onBookFollowup, onAddPayment,
 }: Props) {
   return (
-    <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm p-6">
+    <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
@@ -88,22 +88,22 @@ export function VisitHeaderCard({
               {visit.doctorNotes && <p className="text-sm text-pk-text-muted">Notes: {visit.doctorNotes}</p>}
             </div>
           ) : (
-            <form onSubmit={onSaveNotes} className="mt-2 space-y-2 bg-pk-surface-raised rounded-lg p-3 border border-pk-border">
+            <form onSubmit={onSaveNotes} className="mt-2 space-y-2 bg-pk-surface-raised rounded-pk-sm p-3 border border-pk-border">
               <div>
                 <label className="block text-xs font-medium text-pk-text-secondary mb-1">Chief Complaint</label>
-                <input type="text" value={notesForm.chiefComplaint} onChange={e => onNotesChange({ ...notesForm, chiefComplaint: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                <input type="text" value={notesForm.chiefComplaint} onChange={e => onNotesChange({ ...notesForm, chiefComplaint: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-pk-text-secondary mb-1">Diagnosis</label>
-                <input type="text" value={notesForm.diagnosis} onChange={e => onNotesChange({ ...notesForm, diagnosis: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" placeholder="Enter diagnosis..." />
+                <input type="text" value={notesForm.diagnosis} onChange={e => onNotesChange({ ...notesForm, diagnosis: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" placeholder="Enter diagnosis..." />
               </div>
               <div>
                 <label className="block text-xs font-medium text-pk-text-secondary mb-1">Doctor Notes</label>
-                <textarea value={notesForm.doctorNotes} onChange={e => onNotesChange({ ...notesForm, doctorNotes: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none" />
+                <textarea value={notesForm.doctorNotes} onChange={e => onNotesChange({ ...notesForm, doctorNotes: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none" />
               </div>
               <div className="flex gap-2">
-                <button type="submit" disabled={savingNotes} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-pk-teal-700 disabled:opacity-50">{savingNotes ? "Saving..." : "Save"}</button>
-                <button type="button" onClick={onCancelNotes} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-md hover:bg-pk-surface-sunken">Cancel</button>
+                <button type="submit" disabled={savingNotes} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 disabled:opacity-50">{savingNotes ? "Saving..." : "Save"}</button>
+                <button type="button" onClick={onCancelNotes} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-sunken">Cancel</button>
               </div>
             </form>
           )}
@@ -131,20 +131,20 @@ export function VisitHeaderCard({
                 <p className="text-sm text-pk-text-muted italic">No recall scheduled</p>
               )
             ) : (
-              <form onSubmit={onSaveRecall} className="space-y-2 bg-pk-surface-raised rounded-lg p-3 border border-pk-border">
+              <form onSubmit={onSaveRecall} className="space-y-2 bg-pk-surface-raised rounded-pk-sm p-3 border border-pk-border">
                 <div className="flex gap-3 flex-wrap">
                   <div className="flex-1 min-w-36">
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Recall Date</label>
-                    <input type="date" value={recallForm.recallDate} onChange={e => onRecallChange({ ...recallForm, recallDate: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                    <input type="date" value={recallForm.recallDate} onChange={e => onRecallChange({ ...recallForm, recallDate: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div className="flex-[2] min-w-48">
                     <label className="block text-xs font-medium text-pk-text-secondary mb-1">Notes (optional)</label>
-                    <input type="text" value={recallForm.recallNotes} onChange={e => onRecallChange({ ...recallForm, recallNotes: e.target.value })} placeholder="e.g. 6-month checkup" className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                    <input type="text" value={recallForm.recallNotes} onChange={e => onRecallChange({ ...recallForm, recallNotes: e.target.value })} placeholder="e.g. 6-month checkup" className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button type="submit" disabled={savingRecall} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-md hover:bg-pk-teal-700 disabled:opacity-50">{savingRecall ? "Saving..." : "Save"}</button>
-                  <button type="button" onClick={onCancelRecall} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-md hover:bg-pk-surface-sunken">Cancel</button>
+                  <button type="submit" disabled={savingRecall} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 disabled:opacity-50">{savingRecall ? "Saving..." : "Save"}</button>
+                  <button type="button" onClick={onCancelRecall} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-sunken">Cancel</button>
                   {visit.recallDate && (
                     <button type="button" onClick={onClearRecall} disabled={savingRecall} className="text-xs text-pk-danger-text hover:text-pk-danger-text px-2 py-1.5 disabled:opacity-50">Clear recall</button>
                   )}
@@ -172,23 +172,23 @@ export function VisitHeaderCard({
               </div>
             </div>
           </div>
-          <Link href={`/dashboard/visits/${visitId}/print`} target="_blank" className="inline-flex items-center gap-2 border border-pk-border px-3 py-2 rounded-lg text-sm hover:bg-pk-surface-raised transition">
+          <Link href={`/dashboard/visits/${visitId}/print`} target="_blank" className="inline-flex items-center gap-2 border border-pk-border px-3 py-2 rounded-pk-sm text-sm hover:bg-pk-surface-raised transition">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
             Print
           </Link>
           {visit.status === "OPEN" && (
-            <button onClick={onCompleteVisit} disabled={completingVisit} className="inline-flex items-center gap-2 bg-pk-neutral-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-pk-neutral-700 disabled:opacity-40 transition">
+            <button onClick={onCompleteVisit} disabled={completingVisit} className="inline-flex items-center gap-2 bg-pk-neutral-600 text-white px-3 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-neutral-700 disabled:opacity-40 transition">
               {completingVisit ? "Completing..." : "Complete Visit"}
             </button>
           )}
           {visit.status !== "CANCELLED" && (
-            <button onClick={onBookFollowup} className="inline-flex items-center gap-2 border border-pk-border text-pk-text-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition">
+            <button onClick={onBookFollowup} className="inline-flex items-center gap-2 border border-pk-border text-pk-text-secondary px-3 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition">
               Book Follow-up
             </button>
           )}
-          <button onClick={onAddPayment} disabled={visit.status === "CANCELLED" || due <= 0} className="inline-flex items-center gap-2 bg-pk-success text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-40 transition">
+          <button onClick={onAddPayment} disabled={visit.status === "CANCELLED" || due <= 0} className="inline-flex items-center gap-2 bg-pk-success text-white px-3 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-success disabled:opacity-40 transition">
             Add Payment
           </button>
         </div>

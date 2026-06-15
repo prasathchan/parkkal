@@ -20,11 +20,11 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "bg-pk-surface rounded-xl border border-pk-border shadow-sm p-6 flex items-start gap-4",
+        "bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-6 flex items-start gap-4",
         className
       )}
     >
-      <div className={cn("p-3 rounded-lg flex-shrink-0", iconBg)}>{icon}</div>
+      <div className={cn("p-3 rounded-pk-sm flex-shrink-0", iconBg)}>{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-pk-text-muted mb-1">{label}</p>
         <p className="text-2xl font-bold text-pk-text">{value}</p>

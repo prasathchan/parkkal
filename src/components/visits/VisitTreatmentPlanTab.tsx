@@ -192,7 +192,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     <>
       <div className="space-y-5">
         {visit.status !== "CANCELLED" && (
-          <form onSubmit={handleAddTreatment} className="bg-pk-surface-raised rounded-xl p-4 space-y-3 border border-pk-border">
+          <form onSubmit={handleAddTreatment} className="bg-pk-surface-raised rounded-pk-lg p-4 space-y-3 border border-pk-border">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-pk-text-secondary">Add Treatment Item</p>
               <button
@@ -212,7 +212,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   value={txForm.description}
                   onChange={(e) => setTxForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="e.g. Root Canal Treatment"
-                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
               </div>
               <div>
@@ -223,7 +223,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   step="0.01"
                   value={txForm.cost}
                   onChange={(e) => setTxForm(f => ({ ...f, cost: e.target.value }))}
-                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
               </div>
             </div>
@@ -243,14 +243,14 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   value={txForm.procedure}
                   onChange={(e) => setTxForm(f => ({ ...f, procedure: e.target.value }))}
                   placeholder="Optional procedure details..."
-                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
               </div>
               <div className="pt-5 flex items-center gap-2">
                 <button
                   type="submit"
                   disabled={txSubmitting}
-                  className="bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+                  className="bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
                 >
                   {txSubmitting ? "Adding..." : "Add"}
                 </button>
@@ -269,7 +269,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 const txPaid = tx.billedAmount ?? 0;
                 const txOutstanding = Math.max(0, tx.cost - txPaid);
                 return (
-                  <div key={tx.id} className={`border rounded-xl p-4 transition ${tx.status === "COMPLETED" ? "bg-pk-surface-raised border-pk-border opacity-75" : "bg-pk-surface border-pk-border"}`}>
+                  <div key={tx.id} className={`border rounded-pk-lg p-4 transition ${tx.status === "COMPLETED" ? "bg-pk-surface-raised border-pk-border opacity-75" : "bg-pk-surface border-pk-border"}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -309,7 +309,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                                 linkedTreatmentId: tx.id,
                               });
                             }}
-                            className="text-xs bg-pk-neutral-600 text-white px-2.5 py-1.5 rounded-lg hover:bg-pk-neutral-700 transition font-medium"
+                            className="text-xs bg-pk-neutral-600 text-white px-2.5 py-1.5 rounded-pk-sm hover:bg-pk-neutral-700 transition font-medium"
                           >
                             Add to Bill
                           </button>
@@ -318,7 +318,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           value={tx.status}
                           disabled={txUpdating === tx.id}
                           onChange={(e) => handleTreatmentStatusChange(tx, e.target.value)}
-                          className={`text-xs border rounded-lg px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-pk-teal-500 disabled:opacity-50 ${
+                          className={`text-xs border rounded-pk-sm px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-pk-teal-500 disabled:opacity-50 ${
                             tx.status === "PLANNED" ? "bg-pk-warning-fill border-pk-warning-border text-pk-warning-text"
                             : tx.status === "IN_PROGRESS" ? "bg-pk-teal-50 border-pk-teal-200 text-pk-teal-800"
                             : "bg-pk-success-fill border-pk-success-border text-pk-success-text"
@@ -362,7 +362,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           Print Form
                         </a>
                         {tx.consentStatus !== "VERIFIED" && tx.consentStatus !== "EMERGENCY_OVERRIDE" && (
-                          <label className={`text-xs px-2 py-1 rounded-lg font-medium cursor-pointer transition ${consentUploading === tx.id ? "bg-pk-surface-sunken text-pk-text-muted" : "bg-pk-teal-50 text-pk-teal-700 hover:bg-pk-teal-100"}`}>
+                          <label className={`text-xs px-2 py-1 rounded-pk-sm font-medium cursor-pointer transition ${consentUploading === tx.id ? "bg-pk-surface-sunken text-pk-text-muted" : "bg-pk-teal-50 text-pk-teal-700 hover:bg-pk-teal-100"}`}>
                             {consentUploading === tx.id ? "Uploading..." : "Upload Consent"}
                             <input
                               type="file"
@@ -407,7 +407,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Treatment Payment Modal */}
       {txPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+          <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-sm p-6 space-y-4">
             <div>
               <h3 className="text-base font-bold text-pk-text">Record Treatment Payment</h3>
               <p className="text-sm text-pk-text-muted mt-0.5">
@@ -415,7 +415,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
               </p>
             </div>
             {txPayError && (
-              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-3 py-2">{txPayError}</div>
+              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-3 py-2">{txPayError}</div>
             )}
             <form onSubmit={handleAddTreatmentPayment} className="space-y-3">
               <div>
@@ -427,7 +427,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   required
                   value={txPayForm.amount}
                   onChange={(e) => setTxPayForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
+                  className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
                 />
               </div>
               <div>
@@ -435,7 +435,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 <select
                   value={txPayForm.paymentMethod}
                   onChange={(e) => setTxPayForm(f => ({ ...f, paymentMethod: e.target.value }))}
-                  className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
+                  className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
                 >
                   {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
                 </select>
@@ -446,21 +446,21 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   value={txPayForm.referenceNumber}
                   onChange={(e) => setTxPayForm(f => ({ ...f, referenceNumber: e.target.value }))}
                   placeholder="Optional"
-                  className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
+                  className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-neutral-500"
                 />
               </div>
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
                   disabled={txPaySubmitting}
-                  className="flex-1 bg-pk-neutral-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-neutral-700 disabled:opacity-50 transition"
+                  className="flex-1 bg-pk-neutral-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-neutral-700 disabled:opacity-50 transition"
                 >
                   {txPaySubmitting ? "Saving..." : "Confirm Payment"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setTxPayModal(null)}
-                  className="px-4 py-2 border border-pk-border-strong rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                  className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>
@@ -473,7 +473,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Link Existing Plan Modal */}
       {showLinkModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+          <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b border-pk-border">
               <h3 className="text-base font-semibold text-pk-text">Link Existing Treatment Plan</h3>
               <button onClick={() => setShowLinkModal(false)} aria-label="Close modal" className="text-pk-text-muted hover:text-pk-text-secondary text-xl leading-none">&times;</button>
@@ -485,7 +485,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 <p className="text-sm text-pk-text-muted text-center py-6">No treatment plans found for this patient. Create one from the Treatment Plans page first.</p>
               ) : (
                 linkablePlans.map(plan => (
-                  <div key={plan.id} className="border border-pk-border rounded-xl p-4 flex items-start justify-between gap-3">
+                  <div key={plan.id} className="border border-pk-border rounded-pk-lg p-4 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-pk-text">{plan.description}</p>
                       {plan.procedure && <p className="text-xs text-pk-text-muted mt-0.5">{plan.procedure}</p>}
@@ -498,7 +498,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                     </div>
                     <button
                       onClick={() => handleLinkPlan(plan.id)}
-                      className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-pk-teal-700 transition font-medium flex-shrink-0"
+                      className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium flex-shrink-0"
                     >
                       Link
                     </button>
@@ -513,11 +513,11 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* Emergency Override Modal */}
       {showOverrideModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-pk-text mb-1">Emergency Override</h3>
             <p className="text-sm text-pk-text-muted mb-4">Record a clinical reason to proceed without a signed consent form.</p>
             {overrideError && (
-              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 mb-4">{overrideError}</div>
+              <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3 mb-4">{overrideError}</div>
             )}
             <div className="mb-4">
               <label className="block text-sm font-medium text-pk-text-secondary mb-1">Reason <span className="text-pk-danger-text">*</span></label>
@@ -526,21 +526,21 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 onChange={(e) => setOverrideReason(e.target.value)}
                 rows={3}
                 placeholder="Describe the clinical reason for proceeding without consent (min 5 characters)..."
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-warning resize-none"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-warning resize-none"
               />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={handleEmergencyOverride}
                 disabled={overrideSubmitting || overrideReason.trim().length < 5}
-                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-warning disabled:opacity-50 transition"
+                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-warning disabled:opacity-50 transition"
               >
                 {overrideSubmitting ? "Saving..." : "Apply Override"}
               </button>
               <button
                 type="button"
                 onClick={() => setShowOverrideModal(false)}
-                className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                className="px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 Cancel
               </button>
@@ -552,7 +552,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       {/* IN_PROGRESS without consent warning */}
       {pendingStatusChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-pk-text mb-2">⚠️ Consent Not Verified</h3>
             <p className="text-sm text-pk-text-secondary mb-4">
               This treatment does not have a verified consent form. Starting treatment without consent may have legal and clinical implications.
@@ -564,7 +564,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   handleUpdateTreatmentStatus(pendingStatusChange.txId, pendingStatusChange.status);
                   setPendingStatusChange(null);
                 }}
-                className="flex-1 bg-pk-neutral-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-neutral-800 transition"
+                className="flex-1 bg-pk-neutral-700 text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-neutral-800 transition"
               >
                 Proceed Anyway
               </button>
@@ -574,13 +574,13 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                   if (tx) { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }
                   setPendingStatusChange(null);
                 }}
-                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-warning transition"
+                className="flex-1 bg-pk-warning text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-warning transition"
               >
                 Emergency Override
               </button>
               <button
                 onClick={() => setPendingStatusChange(null)}
-                className="w-full border border-pk-border rounded-lg px-4 py-2.5 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                className="w-full border border-pk-border rounded-pk-sm px-4 py-2.5 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 Cancel
               </button>

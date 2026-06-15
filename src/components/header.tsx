@@ -16,7 +16,7 @@ export function Header({ title, breadcrumb, user }: HeaderProps) {
     <>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-pk-surface focus:border focus:border-pk-teal-500 focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-medium focus:text-pk-teal-700 focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-pk-surface focus:border focus:border-pk-teal-500 focus:px-4 focus:py-2 focus:rounded-pk-sm focus:text-sm focus:font-medium focus:text-pk-teal-700 focus:shadow-pk-e2"
       >
         Skip to main content
       </a>
@@ -26,7 +26,7 @@ export function Header({ title, breadcrumb, user }: HeaderProps) {
         <button
           type="button"
           onClick={toggle}
-          className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-pk-text-muted hover:bg-pk-surface-sunken transition"
+          className="md:hidden flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-pk-sm text-pk-text-muted hover:bg-pk-surface-sunken transition"
           aria-label="Open menu"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

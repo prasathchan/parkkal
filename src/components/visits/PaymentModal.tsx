@@ -47,11 +47,11 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-md p-6">
+      <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-md p-6">
         <h3 className="text-lg font-bold text-pk-text mb-4">Add Payment</h3>
         <form onSubmit={handleFormSubmit} className="space-y-4">
           {payError && (
-            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{payError}</div>
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{payError}</div>
           )}
 
           <div>
@@ -66,7 +66,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
               step="0.01"
               value={payForm.amount}
               onChange={(e) => handleAmountChange(e.target.value)}
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+              className={`w-full border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
                 isOverpayment ? "border-pk-warning-border focus:ring-pk-warning" : "border-pk-border focus:ring-pk-teal-500"
               }`}
               placeholder="0.00"
@@ -75,7 +75,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
 
           {/* Overpayment warning */}
           {isOverpayment && (
-            <div className={`rounded-lg border px-4 py-3 text-sm ${
+            <div className={`rounded-pk-sm border px-4 py-3 text-sm ${
               confirmOverpay
                 ? "bg-pk-warning-fill border-pk-warning-border"
                 : "bg-pk-warning-fill border-pk-warning-border"
@@ -107,7 +107,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <select
               value={payForm.paymentMethod}
               onChange={(e) => onChange({ ...payForm, paymentMethod: e.target.value })}
-              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               {PAYMENT_METHODS.map((m) => <option key={m}>{m}</option>)}
             </select>
@@ -118,7 +118,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <input
               value={payForm.referenceNumber}
               onChange={(e) => onChange({ ...payForm, referenceNumber: e.target.value })}
-              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               placeholder="UPI ref / Card last 4..."
             />
           </div>
@@ -128,7 +128,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <input
               value={payForm.notes}
               onChange={(e) => onChange({ ...payForm, notes: e.target.value })}
-              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               placeholder="Optional..."
             />
           </div>
@@ -137,7 +137,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <button
               type="submit"
               disabled={paySubmitting}
-              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition ${
+              className={`flex-1 px-4 py-2.5 rounded-pk-sm text-sm font-medium text-white disabled:opacity-50 transition ${
                 isOverpayment && !confirmOverpay
                   ? "bg-pk-warning hover:bg-pk-warning"
                   : "bg-pk-success hover:bg-pk-success"
@@ -152,7 +152,7 @@ export function PaymentModal({ due, payForm, payError, paySubmitting, onChange, 
             <button
               type="button"
               onClick={() => { onClose(); setConfirmOverpay(false); }}
-              className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Cancel
             </button>

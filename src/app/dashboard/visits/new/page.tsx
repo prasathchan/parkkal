@@ -226,7 +226,7 @@ function NewVisitForm() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {error}
                 </div>
               )}
@@ -241,12 +241,12 @@ function NewVisitForm() {
                   placeholder="Search by name or code..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
                 <select
                   value={selectedPatient?.id || ""}
                   onChange={(e) => handlePatientSelect(e.target.value)}
-                  className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   size={5}
                 >
                   <option value="">-- Select Patient --</option>
@@ -280,7 +280,7 @@ function NewVisitForm() {
                               key={appt.id}
                               type="button"
                               onClick={() => selectAppointment(appt)}
-                              className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                              className={`w-full text-left p-3 rounded-pk-lg border-2 transition-all ${
                                 selectedAppointment?.id === appt.id
                                   ? "border-pk-teal-500 bg-pk-teal-50"
                                   : "border-pk-border hover:border-pk-teal-300 bg-pk-surface"
@@ -306,7 +306,7 @@ function NewVisitForm() {
                           ))}
                         </>
                       ) : (
-                        <div className="p-3 rounded-xl bg-pk-surface-raised border border-pk-border text-sm text-pk-text-muted">
+                        <div className="p-3 rounded-pk-lg bg-pk-surface-raised border border-pk-border text-sm text-pk-text-muted">
                           No scheduled appointments for today.
                         </div>
                       )}
@@ -314,7 +314,7 @@ function NewVisitForm() {
                       <button
                         type="button"
                         onClick={selectWalkIn}
-                        className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                        className={`w-full text-left p-3 rounded-pk-lg border-2 transition-all ${
                           visitSource === "walkin"
                             ? "border-pk-warning-border bg-pk-warning-fill"
                             : "border-pk-border hover:border-pk-warning-border bg-pk-surface"
@@ -342,7 +342,7 @@ function NewVisitForm() {
                   {currentUserRole === "DOCTOR" ? (
                     <div>
                       <label className="block text-sm font-medium text-pk-text-secondary mb-1">Doctor</label>
-                      <p className="text-sm px-3 py-2 bg-pk-surface-raised border border-pk-border rounded-lg text-pk-text-secondary">
+                      <p className="text-sm px-3 py-2 bg-pk-surface-raised border border-pk-border rounded-pk-sm text-pk-text-secondary">
                         {formatDoctorName(doctors.find((d) => d.id === currentUserId)?.name ?? "")}
                       </p>
                     </div>
@@ -354,7 +354,7 @@ function NewVisitForm() {
                       <select
                         value={form.doctorId}
                         onChange={(e) => setForm({ ...form, doctorId: e.target.value })}
-                        className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                        className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                       >
                         <option value="">-- Select Doctor --</option>
                         {doctors.map((d) => (
@@ -374,7 +374,7 @@ function NewVisitForm() {
                       type="date"
                       value={form.visitDate}
                       onChange={(e) => setForm({ ...form, visitDate: e.target.value })}
-                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
 
@@ -387,7 +387,7 @@ function NewVisitForm() {
                       onChange={(e) => setForm({ ...form, chiefComplaint: e.target.value })}
                       rows={3}
                       placeholder="Patient symptoms / reason for visit..."
-                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+                      className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                     />
                   </div>
 
@@ -400,7 +400,7 @@ function NewVisitForm() {
                       onChange={(e) => setForm({ ...form, doctorNotes: e.target.value })}
                       rows={3}
                       placeholder="Clinical observations..."
-                      className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+                      className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                     />
                   </div>
                 </>
@@ -411,7 +411,7 @@ function NewVisitForm() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 bg-pk-teal-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+                    className="flex-1 bg-pk-teal-600 text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
                   >
                     {submitting
                       ? "Creating..."
@@ -423,7 +423,7 @@ function NewVisitForm() {
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                  className="px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>

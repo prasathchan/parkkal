@@ -49,8 +49,8 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-pk-bg">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-pk-teal-900 rounded-full flex items-center justify-center mb-4">
@@ -65,7 +65,7 @@ function LoginForm() {
         </h2>
 
         {message && (
-          <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-pk-sm px-4 py-3 mb-4">
             {decodeURIComponent(message)}
           </div>
         )}
@@ -86,7 +86,7 @@ function LoginForm() {
               required
               autoComplete="email"
               placeholder="admin@parkkal.com"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -105,12 +105,12 @@ function LoginForm() {
               required
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           {error && (
-            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
               {error}
             </div>
           )}
@@ -124,7 +124,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
+            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition duration-200 text-sm"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>

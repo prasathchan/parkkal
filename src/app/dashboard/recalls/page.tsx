@@ -119,15 +119,15 @@ export default function RecallsPage() {
       </div>
 
       {/* Status tabs */}
-      <div className="flex gap-1 rounded-lg bg-pk-surface-sunken p-1 w-fit flex-wrap">
+      <div className="flex gap-1 rounded-pk-sm bg-pk-surface-sunken p-1 w-fit flex-wrap">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => handleTabChange(key)}
             aria-pressed={tab === key}
-            className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-pk-sm px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === key
-                ? "bg-pk-surface text-pk-text shadow-sm"
+                ? "bg-pk-surface text-pk-text shadow-pk-e1"
                 : "text-pk-text-secondary hover:text-pk-text"
             }`}
           >
@@ -142,7 +142,7 @@ export default function RecallsPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-pk-border bg-pk-surface overflow-hidden">
+      <div className="rounded-pk-sm border border-pk-border bg-pk-surface overflow-hidden">
         {loading ? (
           <div role="status" aria-label="Loading recalls…" className="p-4">
             <SkeletonTable rows={8} cols={7} />
@@ -214,7 +214,7 @@ export default function RecallsPage() {
                       ) : (
                         <Link
                           href={`/dashboard/appointments/new?patientId=${row.patientId}&recallVisitId=${row.id}&type=FOLLOWUP`}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-pk-teal-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-pk-teal-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-pk-sm bg-pk-teal-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-pk-teal-700 transition-colors"
                         >
                           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -257,14 +257,14 @@ export default function RecallsPage() {
             <button
               onClick={() => setOffset(Math.max(0, offset - LIMIT))}
               disabled={offset === 0}
-              className="rounded-md border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
+              className="rounded-pk-sm border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
             >
               Previous
             </button>
             <button
               onClick={() => setOffset(offset + LIMIT)}
               disabled={offset + recalls.length >= total}
-              className="rounded-md border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
+              className="rounded-pk-sm border border-pk-border px-3 py-1.5 text-xs font-medium hover:bg-pk-surface-raised disabled:opacity-40"
             >
               Next
             </button>

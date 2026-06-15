@@ -26,9 +26,9 @@ export default function AcceptDpaPage() {
 
   return (
     <div className="min-h-screen bg-pk-surface-raised flex items-center justify-center p-4">
-      <div className="bg-pk-surface rounded-2xl border border-pk-border shadow-sm max-w-lg w-full p-8">
+      <div className="bg-pk-surface rounded-pk-xl border border-pk-border shadow-pk-e1 max-w-lg w-full p-8">
         <div className="mb-6">
-          <div className="w-12 h-12 rounded-xl bg-pk-teal-50 border border-pk-teal-100 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-pk-lg bg-pk-teal-50 border border-pk-teal-100 flex items-center justify-center mb-4">
             <svg className="w-6 h-6 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
             </svg>
@@ -40,7 +40,7 @@ export default function AcceptDpaPage() {
           </p>
         </div>
 
-        <div className="bg-pk-surface-raised rounded-xl border border-pk-border p-4 mb-6 text-sm text-pk-text-secondary space-y-2 max-h-48 overflow-y-auto">
+        <div className="bg-pk-surface-raised rounded-pk-lg border border-pk-border p-4 mb-6 text-sm text-pk-text-secondary space-y-2 max-h-48 overflow-y-auto">
           <p className="font-semibold text-pk-text">Summary of Key Terms</p>
           <p>Parkkal acts as a <strong>Data Processor</strong> on behalf of your clinic (the Data Fiduciary) for all patient personal data stored in the system.</p>
           <p>Your clinic is responsible for ensuring patients have given informed consent before their data is collected.</p>
@@ -77,7 +77,7 @@ export default function AcceptDpaPage() {
         <button
           onClick={handleAccept}
           disabled={!checked || loading}
-          className="w-full bg-pk-teal-600 text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-pk-teal-600 text-white rounded-pk-lg py-2.5 text-sm font-semibold hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Accepting…" : "Accept & Continue to Dashboard"}
         </button>

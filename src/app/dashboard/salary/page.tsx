@@ -62,35 +62,35 @@ export default function SalaryPage() {
               type="month"
               value={month}
               onChange={e => setMonth(e.target.value)}
-              className="border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
           <button
             onClick={generateRecords}
             disabled={generating}
-            className="mt-5 bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="mt-5 bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-pk-sm transition"
           >
             {generating ? "Generating..." : "Generate Records"}
           </button>
         </div>
 
         {message && (
-          <div className="bg-pk-teal-50 border border-pk-teal-200 text-pk-teal-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-teal-50 border border-pk-teal-200 text-pk-teal-700 text-sm rounded-pk-sm px-4 py-3 mb-4">
             {message}
           </div>
         )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Total Payroll</p>
             <p className="text-2xl font-bold text-pk-text">₹{totalPayroll.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Total Paid</p>
             <p className="text-2xl font-bold text-pk-success-text">₹{totalPaid.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-pk-surface rounded-xl border border-pk-border p-4">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">Outstanding</p>
             <p className="text-2xl font-bold text-pk-danger-text">₹{outstanding.toLocaleString("en-IN")}</p>
           </div>
@@ -104,7 +104,7 @@ export default function SalaryPage() {
             <p className="text-sm mt-1">Click &ldquo;Generate Records&rdquo; to create them.</p>
           </div>
         ) : (
-          <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>

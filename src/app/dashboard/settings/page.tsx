@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
@@ -23,8 +24,10 @@ type Tab = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [org, setOrg] = useState<OrgProfile | null>(null);
-  const [tab, setTab] = useState<Tab>("profile");
+  const initialTab = (searchParams.get("tab") as Tab | null);
+  const [tab, setTab] = useState<Tab>(initialTab && ["profile", "appearance", "security"].includes(initialTab) ? initialTab : "profile");
   const [form, setForm] = useState({ name: "", tagline: "", phone: "", email: "" });
   const [adminMembers, setAdminMembers] = useState<AdminMember[]>([]);
   const [addressData, setAddressData] = useState<AddressValue>({ ...EMPTY_ADDRESS });
@@ -195,12 +198,12 @@ export default function SettingsPage() {
       <Header title="Settings" breadcrumb={[{ label: "Dashboard" }, { label: "Settings" }]} />
       <main id="main-content" className="flex-1 p-6 max-w-2xl">
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 p-1 rounded-lg w-fit" style={{ background: "var(--pk-surface-sunken)" }}>
+        <div className="flex gap-1 mb-6 p-1 rounded-pk-sm w-fit" style={{ background: "var(--pk-surface-sunken)" }}>
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setMessage(""); }}
-              className="px-4 py-2 rounded-md text-sm font-medium transition-all"
+              className="px-4 py-2 rounded-pk-sm text-sm font-medium transition-all"
               style={tab === t.id
                 ? { background: "var(--pk-surface)", color: "var(--pk-text)", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
                 : { color: "var(--pk-text-muted)" }
@@ -213,7 +216,7 @@ export default function SettingsPage() {
 
         {/* Profile Tab */}
         {tab === "profile" && (
-          <div className="rounded-xl border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+          <div className="rounded-pk-lg border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
             <h2 className="text-lg font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Organization Profile</h2>
             <p className="text-sm mb-6" style={{ color: "var(--pk-text-muted)" }}>Update your clinic&apos;s information</p>
 
@@ -324,7 +327,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Data & Privacy Section */}
-              <div className="rounded-xl border border-pk-border p-4 space-y-3">
+              <div className="rounded-pk-lg border border-pk-border p-4 space-y-3">
                 <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Data & Privacy (DPDP Act 2023)</h3>
                 <div className="flex items-center gap-3">
                   <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${dpaStatus.acceptedAt ? "bg-pk-success-fill text-pk-success-text border-pk-success-border" : "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border"}`}>
@@ -367,7 +370,7 @@ export default function SettingsPage() {
             {/* Logo */}
             <Section title="Clinic Logo" subtitle="Upload your clinic logo — shown in the sidebar">
               <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style={{ borderColor: "var(--pk-border)", background: "var(--pk-surface-sunken)" }}>
+                <div className="w-20 h-20 rounded-pk-lg border-2 border-dashed flex items-center justify-center overflow-hidden flex-shrink-0" style={{ borderColor: "var(--pk-border)", background: "var(--pk-surface-sunken)" }}>
                   {logoPreview ? (
                     <Image src={logoPreview} alt="Logo" width={80} height={80} className="w-full h-full object-contain" />
                   ) : (
@@ -380,12 +383,12 @@ export default function SettingsPage() {
                   <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
                   <button onClick={() => fileInputRef.current?.click()} disabled={logoUploading}
-                    className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium rounded-pk-sm border transition-colors disabled:opacity-50"
                     style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)", background: "var(--pk-surface)" }}>
                     {logoUploading ? "Uploading..." : "Upload Logo"}
                   </button>
                   {logoPreview && (
-                    <button onClick={handleRemoveLogo} className="block px-4 py-2 text-sm rounded-lg transition-colors" style={{ color: "#C0392B" }}>
+                    <button onClick={handleRemoveLogo} className="block px-4 py-2 text-sm rounded-pk-sm transition-colors" style={{ color: "#C0392B" }}>
                       Remove
                     </button>
                   )}
@@ -418,7 +421,7 @@ export default function SettingsPage() {
             <Section title="Font Family" subtitle="Applied across the entire interface">
               <div className="space-y-2">
                 {FONT_OPTIONS.map(f => (
-                  <label key={f.value} className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                  <label key={f.value} className="flex items-center gap-3 p-3 rounded-pk-sm border cursor-pointer transition-colors"
                     style={{ borderColor: theme.fontFamily === f.value ? "var(--pk-primary)" : "var(--pk-border)", background: theme.fontFamily === f.value ? "var(--pk-teal-50)" : "var(--pk-surface)" }}>
                     <input type="radio" name="font" value={f.value} checked={theme.fontFamily === f.value}
                       onChange={() => setTheme(t => ({ ...t, fontFamily: f.value as OrgThemeConfig["fontFamily"] }))} className="sr-only" />
@@ -444,7 +447,7 @@ export default function SettingsPage() {
                   { value: "system", label: "System", icon: "💻" },
                 ] as { value: OrgThemeConfig["darkMode"]; label: string; icon: string }[]).map(m => (
                   <button key={m.value} onClick={() => setTheme(t => ({ ...t, darkMode: m.value }))}
-                    className="flex-1 flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 text-sm font-medium transition-all"
+                    className="flex-1 flex flex-col items-center gap-1.5 p-3 rounded-pk-lg border-2 text-sm font-medium transition-all"
                     style={{ borderColor: theme.darkMode === m.value ? "var(--pk-primary)" : "var(--pk-border)", background: theme.darkMode === m.value ? "var(--pk-teal-50)" : "var(--pk-surface)", color: theme.darkMode === m.value ? "var(--pk-primary)" : "var(--pk-text-muted)" }}>
                     <span className="text-xl">{m.icon}</span>
                     {m.label}
@@ -455,7 +458,7 @@ export default function SettingsPage() {
 
             {/* Live Preview — the locked teal core with your chosen accent */}
             <Section title="Preview" subtitle="The locked teal core with your chosen accent">
-              <div className="rounded-xl overflow-hidden border" style={{ borderColor: "var(--pk-border)" }}>
+              <div className="rounded-pk-lg overflow-hidden border" style={{ borderColor: "var(--pk-border)" }}>
                 <div className="flex h-28">
                   <div className="w-40 flex flex-col p-3 gap-1.5" style={{ background: "#0D2B2B", borderRight: "1px solid rgba(255,255,255,0.1)" }}>
                     <div className="flex items-center gap-2 mb-1">
@@ -463,7 +466,7 @@ export default function SettingsPage() {
                       <div className="h-2 rounded flex-1" style={{ background: "rgba(255,255,255,0.4)" }} />
                     </div>
                     {[true, false, false].map((active, i) => (
-                      <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-md" style={{ background: active ? "rgba(255,255,255,0.10)" : "transparent", borderLeft: active ? "2px solid var(--pk-primary)" : "2px solid transparent" }}>
+                      <div key={i} className="flex items-center gap-2 px-2 py-1 rounded-pk-sm" style={{ background: active ? "rgba(255,255,255,0.10)" : "transparent", borderLeft: active ? "2px solid var(--pk-primary)" : "2px solid transparent" }}>
                         <div className="w-3 h-3 rounded-sm" style={{ background: active ? "#ffffff" : "rgba(255,255,255,0.4)" }} />
                         <div className="h-2 flex-1 rounded" style={{ background: active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)" }} />
                       </div>
@@ -473,7 +476,7 @@ export default function SettingsPage() {
                     <div className="h-4 w-24 rounded mb-2" style={{ background: "var(--pk-border)" }} />
                     <div className="grid grid-cols-3 gap-2">
                       {[1, 2, 3].map(i => (
-                        <div key={i} className="h-10 rounded-lg" style={{ background: i === 1 ? getAccent(theme.accentName).value : "var(--pk-surface)" }} />
+                        <div key={i} className="h-10 rounded-pk-sm" style={{ background: i === 1 ? getAccent(theme.accentName).value : "var(--pk-surface)" }} />
                       ))}
                     </div>
                   </div>
@@ -492,7 +495,7 @@ export default function SettingsPage() {
         )}
 
         {org && tab === "profile" && (
-          <div className="mt-4 rounded-xl border p-4 space-y-3" style={{ background: "var(--pk-surface-sunken)", borderColor: "var(--pk-border)" }}>
+          <div className="mt-4 rounded-pk-lg border p-4 space-y-3" style={{ background: "var(--pk-surface-sunken)", borderColor: "var(--pk-border)" }}>
             <div>
               <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>Organization ID: <code style={{ color: "var(--pk-text)" }}>{org.id}</code></p>
               <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Slug: <code style={{ color: "var(--pk-text)" }}>{org.slug}</code></p>
@@ -503,7 +506,7 @@ export default function SettingsPage() {
                 <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>Permanently delete this organization and all its data. This cannot be undone.</p>
                 <button
                   onClick={() => { setShowDeleteDialog(true); setDeleteConfirmName(""); setDeleteError(""); }}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-pk-sm text-xs font-semibold text-white transition-colors"
                   style={{ background: "#A8311F" }}
                 >
                   Delete Organization
@@ -516,7 +519,7 @@ export default function SettingsPage() {
         {/* Delete confirmation dialog */}
         {showDeleteDialog && org && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-            <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-md p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-pk-danger-fill flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 h-5 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -542,12 +545,12 @@ export default function SettingsPage() {
                   value={deleteConfirmName}
                   onChange={e => setDeleteConfirmName(e.target.value)}
                   placeholder={org.name}
-                  className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger"
                 />
               </div>
 
               {deleteError && (
-                <div className="mb-4 text-sm text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-lg px-3 py-2">
+                <div className="mb-4 text-sm text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-pk-sm px-3 py-2">
                   {deleteError}
                 </div>
               )}
@@ -555,7 +558,7 @@ export default function SettingsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteDialog(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                  className="flex-1 px-4 py-2 rounded-pk-sm border text-sm font-medium transition-colors"
                   style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
                 >
                   Cancel
@@ -563,7 +566,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleDeleteOrg}
                   disabled={deleteSubmitting || deleteConfirmName !== org.name}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-40"
+                  className="flex-1 px-4 py-2 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-40"
                   style={{ background: "#A8311F" }}
                 >
                   {deleteSubmitting ? "Deleting..." : "Delete Organization"}
@@ -582,7 +585,7 @@ export default function SettingsPage() {
                   <input type="password" required autoComplete="current-password"
                     value={pwForm.currentPassword}
                     onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
                     style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
                 </div>
                 <div>
@@ -590,7 +593,7 @@ export default function SettingsPage() {
                   <input type="password" required autoComplete="new-password" minLength={8}
                     value={pwForm.newPassword}
                     onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
                     style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
                   <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Minimum 8 characters.</p>
                 </div>
@@ -599,11 +602,11 @@ export default function SettingsPage() {
                   <input type="password" required autoComplete="new-password"
                     value={pwForm.confirmPassword}
                     onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2"
+                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
                     style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
                 </div>
                 {pwMessage && (
-                  <div className="text-sm rounded-lg px-4 py-3 border"
+                  <div className="text-sm rounded-pk-sm px-4 py-3 border"
                     style={pwMessage.type === "success"
                       ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
                       : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
@@ -615,7 +618,7 @@ export default function SettingsPage() {
             </Section>
 
             {/* Audit Log link */}
-            <div className="rounded-xl border p-6 flex items-start justify-between gap-4"
+            <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"
               style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>Audit Log</h3>
@@ -625,7 +628,7 @@ export default function SettingsPage() {
               </div>
               <Link
                 href="/dashboard/settings/audit-log"
-                className="shrink-0 text-sm font-medium px-4 py-2 rounded-lg border transition-colors"
+                className="shrink-0 text-sm font-medium px-4 py-2 rounded-pk-sm border transition-colors"
                 style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
               >
                 View Log →
@@ -633,7 +636,7 @@ export default function SettingsPage() {
             </div>
 
             {/* App Logs — errors & security events captured by the API layer */}
-            <div className="rounded-xl border p-6 flex items-start justify-between gap-4"
+            <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"
               style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>App Logs</h3>
@@ -643,7 +646,7 @@ export default function SettingsPage() {
               </div>
               <Link
                 href="/dashboard/settings/app-logs"
-                className="shrink-0 text-sm font-medium px-4 py-2 rounded-lg border transition-colors"
+                className="shrink-0 text-sm font-medium px-4 py-2 rounded-pk-sm border transition-colors"
                 style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
               >
                 View Logs →
@@ -667,7 +670,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Section({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+    <div className="rounded-pk-lg border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
       <h3 className="text-sm font-semibold mb-0.5" style={{ color: "var(--pk-text)" }}>{title}</h3>
       <p className="text-xs mb-4" style={{ color: "var(--pk-text-muted)" }}>{subtitle}</p>
       {children}
@@ -678,7 +681,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
 function SaveButton({ saving, label }: { saving: boolean; label: string }) {
   return (
     <button type="submit" disabled={saving}
-      className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+      className="px-6 py-2.5 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-50"
       style={{ background: "var(--pk-primary)" }}>
       {saving ? "Saving..." : label}
     </button>
@@ -688,7 +691,7 @@ function SaveButton({ saving, label }: { saving: boolean; label: string }) {
 function StatusMessage({ message }: { message: string }) {
   const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("saved") || message.toLowerCase().includes("refresh");
   return (
-    <div className="text-sm rounded-lg px-4 py-3 border" style={isSuccess
+    <div className="text-sm rounded-pk-sm px-4 py-3 border" style={isSuccess
       ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
       : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
       {message}

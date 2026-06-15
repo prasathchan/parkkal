@@ -74,15 +74,15 @@ function SelectOrgInner() {
   // Show spinner while checking sessionStorage to avoid a flash of "No organizations found"
   if (orgs === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
+      <div className="min-h-screen flex items-center justify-center bg-pk-bg">
         <div className="text-pk-text-muted text-sm">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100 p-4">
-      <div className="bg-pk-surface rounded-2xl shadow-xl p-8 w-full max-w-lg">
+    <div className="min-h-screen flex items-center justify-center bg-pk-bg p-4">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-8 w-full max-w-lg">
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg viewBox="0 0 24 24" fill="white" className="w-8 h-8">
@@ -94,7 +94,7 @@ function SelectOrgInner() {
         </div>
 
         {error && (
-          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3 mb-4">
             {error}
           </div>
         )}
@@ -105,7 +105,7 @@ function SelectOrgInner() {
               key={org.id}
               onClick={() => selectOrg(org.id)}
               disabled={selecting === org.id}
-              className="w-full text-left p-4 border border-pk-border rounded-xl hover:border-pk-teal-400 hover:shadow-md transition-all group disabled:opacity-60"
+              className="w-full text-left p-4 border border-pk-border rounded-pk-lg hover:border-pk-teal-400 hover:shadow-pk-e2 transition-all group disabled:opacity-60"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">

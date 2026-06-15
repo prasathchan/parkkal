@@ -283,7 +283,7 @@ export default function NewPatientPage() {
                   onChange={update("medicalHistory")}
                   rows={3}
                   placeholder="Known allergies, conditions, medications..."
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition resize-none"
                 />
               </div>
 
@@ -295,14 +295,14 @@ export default function NewPatientPage() {
                   <button
                     type="button"
                     onClick={() => { setReferralType("external"); setReferredByPatientId(null); setSelectedReferralName(""); setExternalSourceOther(""); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "external" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-pk-sm border transition ${referralType === "external" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     External Source
                   </button>
                   <button
                     type="button"
                     onClick={() => { setReferralType("patient"); setForm(f => ({ ...f, referralSource: "" })); }}
-                    className={`flex-1 py-2 text-sm rounded-lg border transition ${referralType === "patient" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
+                    className={`flex-1 py-2 text-sm rounded-pk-sm border transition ${referralType === "patient" ? "bg-pk-teal-600 text-white border-pk-teal-600" : "bg-pk-surface text-pk-text-secondary border-pk-border-strong hover:border-pk-teal-400"}`}
                   >
                     Existing Patient
                   </button>
@@ -315,7 +315,7 @@ export default function NewPatientPage() {
                         setForm(f => ({ ...f, referralSource: e.target.value }));
                         if (e.target.value !== "Other") setExternalSourceOther("");
                       }}
-                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition bg-pk-surface"
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition bg-pk-surface"
                     >
                       <option value="">Select source…</option>
                       {EXTERNAL_SOURCES.map(s => (
@@ -329,7 +329,7 @@ export default function NewPatientPage() {
                         onChange={e => setExternalSourceOther(e.target.value)}
                         maxLength={100}
                         placeholder="Please specify…"
-                        className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+                        className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                       />
                     )}
                   </div>
@@ -346,7 +346,7 @@ export default function NewPatientPage() {
                       }}
                       onFocus={() => setReferralDropdownOpen(true)}
                       placeholder="Search referring patient by name or code…"
-                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                     />
                     {referredByPatientId && (
                       <button
@@ -358,7 +358,7 @@ export default function NewPatientPage() {
                       </button>
                     )}
                     {referralDropdownOpen && referralPatients.length > 0 && (
-                      <ul className="absolute z-20 mt-1 w-full bg-pk-surface border border-pk-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <ul className="absolute z-20 mt-1 w-full bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 max-h-48 overflow-y-auto">
                         {referralPatients.map((p) => (
                           <li key={p.id}>
                             <button
@@ -384,7 +384,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* Emergency Contact */}
-              <div className="border border-pk-border rounded-lg p-4">
+              <div className="border border-pk-border rounded-pk-sm p-4">
                 <p className="text-sm font-semibold text-pk-text mb-0.5">Emergency Contact</p>
                 <p className="text-xs text-pk-text-muted mb-3">Optional — recommended but not required to save.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -429,7 +429,7 @@ export default function NewPatientPage() {
               </div>
 
               {/* Documents */}
-              <div className="border border-pk-warning-border rounded-lg p-4 bg-pk-warning-fill">
+              <div className="border border-pk-warning-border rounded-pk-sm p-4 bg-pk-warning-fill">
                 <p className="text-sm font-semibold text-pk-warning-text mb-1">Documents</p>
                 <p className="text-xs text-pk-warning-text mb-3">
                   Adding PAN and Aadhaar helps with government compliance and identity verification.
@@ -457,13 +457,13 @@ export default function NewPatientPage() {
               </div>
 
               {error && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {error}
                 </div>
               )}
 
               {/* Data processing consent — required by DPDP Act 2023 */}
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-pk-border bg-pk-surface-raised hover:bg-pk-surface-sunken transition">
+              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-pk-sm border border-pk-border bg-pk-surface-raised hover:bg-pk-surface-sunken transition">
                 <input
                   type="checkbox"
                   checked={dataConsent}

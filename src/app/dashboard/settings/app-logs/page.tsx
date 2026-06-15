@@ -162,7 +162,7 @@ export default function AppLogsPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setOffset(0); fetchLogs(0, false); }}
-              className="text-xs px-3 py-1.5 border border-pk-border rounded-lg bg-pk-surface text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="text-xs px-3 py-1.5 border border-pk-border rounded-pk-sm bg-pk-surface text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               ↺ Refresh
             </button>
@@ -179,13 +179,13 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Filter bar ── */}
-        <div className="bg-pk-surface border border-pk-border rounded-xl p-4 space-y-3">
+        <div className="bg-pk-surface border border-pk-border rounded-pk-lg p-4 space-y-3">
           <div className="flex items-center gap-3 flex-wrap">
             {/* Level */}
             <select
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="">All levels</option>
               <option value="error">Error</option>
@@ -199,7 +199,7 @@ export default function AppLogsPage() {
               value={route}
               onChange={(e) => setRoute(e.target.value)}
               placeholder="Filter by route…"
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
             />
 
             {/* Message search */}
@@ -208,14 +208,14 @@ export default function AppLogsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search message…"
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-48"
             />
 
             {/* Sort */}
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as "desc" | "asc")}
-              className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             >
               <option value="desc">Newest first</option>
               <option value="asc">Oldest first</option>
@@ -235,14 +235,14 @@ export default function AppLogsPage() {
               type="datetime-local"
               value={since}
               onChange={(e) => setSince(e.target.value)}
-              className="text-sm border border-pk-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <span className="text-xs text-pk-text-muted">to</span>
             <input
               type="datetime-local"
               value={until}
               onChange={(e) => setUntil(e.target.value)}
-              className="text-sm border border-pk-border rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <button onClick={setLastHour} className="text-xs text-pk-teal-600 hover:text-pk-teal-800 underline">Last hour</button>
             <button onClick={setLastDay}  className="text-xs text-pk-teal-600 hover:text-pk-teal-800 underline">Last 24 h</button>
@@ -258,7 +258,7 @@ export default function AppLogsPage() {
         </div>
 
         {/* ── Table ── */}
-        <div className="bg-pk-surface rounded-2xl border border-pk-border overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-xl border border-pk-border overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-pk-text-muted text-sm">Loading logs…</div>
           ) : logs.length === 0 ? (
@@ -334,7 +334,7 @@ export default function AppLogsPage() {
                             {entry.errorStack && (
                               <div>
                                 <p className="text-xs font-semibold text-pk-text-muted mb-1">Stack trace</p>
-                                <pre className="text-xs text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-lg px-4 py-3 overflow-x-auto whitespace-pre-wrap">
+                                <pre className="text-xs text-pk-danger-text bg-pk-danger-fill border border-pk-danger-border rounded-pk-sm px-4 py-3 overflow-x-auto whitespace-pre-wrap">
                                   {entry.errorStack}
                                 </pre>
                               </div>
@@ -342,7 +342,7 @@ export default function AppLogsPage() {
                             {entry.data && (
                               <div>
                                 <p className="text-xs font-semibold text-pk-text-muted mb-1">Context</p>
-                                <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-lg px-4 py-3 overflow-x-auto">
+                                <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-pk-sm px-4 py-3 overflow-x-auto">
                                   {JSON.stringify(entry.data, null, 2)}
                                 </pre>
                               </div>

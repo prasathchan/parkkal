@@ -185,12 +185,12 @@ function NewAppointmentForm() {
                   placeholder="Search patient by name or code..."
                   value={patientSearch}
                   onChange={(e) => setPatientSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 mb-2"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 mb-2"
                 />
                 <select
                   value={form.patientId}
                   onChange={(e) => setForm((f) => ({ ...f, patientId: e.target.value }))}
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 >
                   <option value="">— Select Patient —</option>
                   {patients.map((p) => (
@@ -218,7 +218,7 @@ function NewAppointmentForm() {
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Doctor</label>
-                  <p className="w-full px-4 py-2.5 border border-pk-border rounded-lg text-sm bg-pk-surface-raised text-pk-text-secondary">
+                  <p className="w-full px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm bg-pk-surface-raised text-pk-text-secondary">
                     {currentUserName ? formatDoctorName(currentUserName) : <span className="text-pk-text-muted">Loading…</span>}
                   </p>
                 </div>
@@ -257,12 +257,12 @@ function NewAppointmentForm() {
                   onChange={update("notes")}
                   rows={3}
                   placeholder="Additional notes..."
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 
               {error && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {error}
                 </div>
               )}

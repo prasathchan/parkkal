@@ -60,7 +60,7 @@ function RestoreModal({
   const [input, setInput] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-pk-surface rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-md mx-4 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-pk-danger-fill flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -73,7 +73,7 @@ function RestoreModal({
           </div>
         </div>
 
-        <div className="bg-pk-warning-fill border border-pk-warning-border rounded-lg p-3 mb-4 text-sm text-pk-warning-text">
+        <div className="bg-pk-warning-fill border border-pk-warning-border rounded-pk-sm p-3 mb-4 text-sm text-pk-warning-text">
           This will <strong>permanently overwrite</strong> all current patient, visit, treatment, billing, and appointment data with the snapshot. This cannot be undone.
         </div>
 
@@ -89,12 +89,12 @@ function RestoreModal({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="RESTORE"
-          className="w-full border border-pk-border-strong rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger mb-4"
+          className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-danger mb-4"
           autoFocus
         />
 
         {error && (
-          <div className="mb-4 rounded-lg border border-pk-danger-border bg-pk-danger-fill px-3 py-2 text-sm text-pk-danger-text">
+          <div className="mb-4 rounded-pk-sm border border-pk-danger-border bg-pk-danger-fill px-3 py-2 text-sm text-pk-danger-text">
             {error}
           </div>
         )}
@@ -104,7 +104,7 @@ function RestoreModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-sm rounded-lg border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised disabled:opacity-50"
+            className="px-4 py-2 text-sm rounded-pk-sm border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised disabled:opacity-50"
           >
             Cancel
           </button>
@@ -112,7 +112,7 @@ function RestoreModal({
             type="button"
             onClick={onConfirm}
             disabled={input !== "RESTORE" || loading}
-            className="px-4 py-2 text-sm rounded-lg bg-pk-danger text-white font-medium hover:bg-pk-danger disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded-pk-sm bg-pk-danger text-white font-medium hover:bg-pk-danger disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? "Restoring…" : "Restore"}
           </button>
@@ -176,7 +176,7 @@ export default function BackupPage() {
       <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {/* Info card */}
-        <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-xl p-4 text-sm text-pk-teal-800">
+        <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-pk-lg p-4 text-sm text-pk-teal-800">
           <p className="font-medium mb-1">How it works</p>
           <ul className="space-y-0.5 text-pk-teal-700 list-disc list-inside">
             <li>A snapshot is taken automatically every night at 2 AM.</li>
@@ -186,7 +186,7 @@ export default function BackupPage() {
         </div>
 
         {/* Take snapshot button */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm p-5">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-pk-text">Take a snapshot now</p>
@@ -196,7 +196,7 @@ export default function BackupPage() {
               type="button"
               onClick={handleSnapshot}
               disabled={snapshotting}
-              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
             >
               {snapshotting ? (
                 <>
@@ -222,7 +222,7 @@ export default function BackupPage() {
         </div>
 
         {restoreSuccess && (
-          <div className="bg-pk-success-fill border border-pk-success-border rounded-xl p-4 text-sm text-pk-success-text flex items-start justify-between gap-4">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-pk-lg p-4 text-sm text-pk-success-text flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold">Restore completed</p>
               <p className="mt-0.5">All data has been replaced with the selected snapshot. Reload the page to see the restored data.</p>
@@ -230,7 +230,7 @@ export default function BackupPage() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-pk-success text-white text-xs font-medium hover:bg-pk-success transition"
+              className="shrink-0 px-3 py-1.5 rounded-pk-sm bg-pk-success text-white text-xs font-medium hover:bg-pk-success transition"
             >
               Reload now
             </button>
@@ -238,7 +238,7 @@ export default function BackupPage() {
         )}
 
         {/* Snapshot timeline */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 overflow-hidden">
           <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between">
             <p className="font-medium text-pk-text">Snapshot history</p>
             <p className="text-xs text-pk-text-muted">{snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}</p>
@@ -284,7 +284,7 @@ export default function BackupPage() {
                     <button
                       type="button"
                       onClick={() => { setRestoreTarget(snap); setRestoreError(""); setRestoreSuccess(false); }}
-                      className="text-xs text-pk-danger-text hover:text-pk-danger-text font-medium flex-shrink-0 border border-pk-danger-border px-2.5 py-1 rounded-lg hover:bg-pk-danger-fill transition"
+                      className="text-xs text-pk-danger-text hover:text-pk-danger-text font-medium flex-shrink-0 border border-pk-danger-border px-2.5 py-1 rounded-pk-sm hover:bg-pk-danger-fill transition"
                     >
                       Restore
                     </button>

@@ -108,7 +108,7 @@ export default function PrivacyPolicyPage() {
               We share data with the following service providers solely to operate the platform:
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-pk-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm border border-pk-border rounded-pk-sm overflow-hidden">
                 <thead className="bg-pk-surface-raised">
                   <tr>
                     <th className="text-left px-4 py-2 font-medium text-pk-text-secondary">Sub-processor</th>

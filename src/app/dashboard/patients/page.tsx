@@ -95,7 +95,7 @@ export default function PatientsPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchPatients(search, offset)} />
         )}
 
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
           {/* Search bar + New Patient button */}
           <div className="px-6 py-4 border-b border-pk-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <input
@@ -104,13 +104,13 @@ export default function PatientsPage() {
               placeholder="Search by name, phone, or patient code..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full sm:max-w-sm px-4 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full sm:max-w-sm px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={exportPatients}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-pk-sm text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -220,14 +220,14 @@ export default function PatientsPage() {
                 <button
                   onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
                   disabled={offset === 0}
-                  className="px-3 py-1 rounded-md border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
+                  className="px-3 py-1 rounded-pk-sm border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setOffset(offset + PAGE_SIZE)}
                   disabled={offset + PAGE_SIZE >= total}
-                  className="px-3 py-1 rounded-md border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
+                  className="px-3 py-1 rounded-pk-sm border border-pk-border disabled:opacity-40 hover:bg-pk-surface-raised"
                 >
                   Next
                 </button>

@@ -15,7 +15,7 @@ export function PatientPrescriptionsTab({ prescriptions }: Props) {
   return (
     <div className="space-y-4">
       {prescriptions.map((rx) => (
-        <div key={rx.id} className="border border-pk-border rounded-xl overflow-hidden">
+        <div key={rx.id} className="border border-pk-border rounded-pk-lg overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 bg-pk-surface-raised border-b border-pk-border">
             <div className="flex items-center gap-3">
               <Link href={`/dashboard/visits/${rx.visitId}?tab=prescriptions`} className="text-xs text-pk-teal-600 hover:underline font-medium">

@@ -23,7 +23,7 @@ export function VisitHistoryTab({ patientName, history }: Props) {
             <Link
               key={h.id}
               href={`/dashboard/visits/${h.id}`}
-              className="flex items-center justify-between p-3 border border-pk-border rounded-lg hover:bg-pk-teal-50 hover:border-pk-teal-200 transition"
+              className="flex items-center justify-between p-3 border border-pk-border rounded-pk-sm hover:bg-pk-teal-50 hover:border-pk-teal-200 transition"
             >
               <div>
                 <p className="text-sm font-mono text-pk-teal-700">{h.visitCode}</p>

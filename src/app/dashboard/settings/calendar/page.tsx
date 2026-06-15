@@ -73,7 +73,7 @@ function CalendarSettingsInner() {
 
         {/* Success / error banners */}
         {successMsg && (
-          <div className="rounded-xl bg-pk-success-fill border border-pk-success-border px-4 py-3 text-sm text-pk-success-text flex items-center gap-2">
+          <div className="rounded-pk-lg bg-pk-success-fill border border-pk-success-border px-4 py-3 text-sm text-pk-success-text flex items-center gap-2">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -81,24 +81,24 @@ function CalendarSettingsInner() {
           </div>
         )}
         {errorMsg && (
-          <div className="rounded-xl bg-pk-danger-fill border border-pk-danger-border px-4 py-3 text-sm text-pk-danger-text">
+          <div className="rounded-pk-lg bg-pk-danger-fill border border-pk-danger-border px-4 py-3 text-sm text-pk-danger-text">
             {errorMsg}
           </div>
         )}
 
         {/* Explanation */}
-        <div className="rounded-xl bg-pk-teal-50 border border-pk-teal-100 px-4 py-4 text-sm text-pk-teal-700 space-y-1">
+        <div className="rounded-pk-lg bg-pk-teal-50 border border-pk-teal-100 px-4 py-4 text-sm text-pk-teal-700 space-y-1">
           <p className="font-semibold">How it works</p>
           <p>When you connect your calendar, every appointment assigned to you is automatically added to your personal calendar. If an appointment is rescheduled or cancelled, your calendar updates instantly.</p>
           <p className="text-pk-teal-500 text-xs mt-1">Your calendar credentials are stored encrypted and only used to push appointment events. We never read your existing calendar events.</p>
         </div>
 
         {/* Google Calendar */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {/* Google colour logo */}
-              <div className="h-10 w-10 rounded-lg bg-pk-surface border border-pk-border flex items-center justify-center shadow-sm">
+              <div className="h-10 w-10 rounded-pk-sm bg-pk-surface border border-pk-border flex items-center justify-center shadow-pk-e1">
                 <svg viewBox="0 0 24 24" className="h-6 w-6">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -113,7 +113,7 @@ function CalendarSettingsInner() {
             </div>
 
             {loading ? (
-              <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
+              <div className="h-8 w-24 rounded-pk-sm bg-pk-surface-sunken animate-pulse" />
             ) : status?.google ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-pk-success-text text-sm font-medium">
@@ -125,7 +125,7 @@ function CalendarSettingsInner() {
                 <button
                   onClick={() => disconnect("GOOGLE")}
                   disabled={disconnecting === "GOOGLE"}
-                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-pk-sm transition disabled:opacity-50"
                 >
                   {disconnecting === "GOOGLE" ? "Disconnecting…" : "Disconnect"}
                 </button>
@@ -133,7 +133,7 @@ function CalendarSettingsInner() {
             ) : (
               <a
                 href="/api/calendar/google"
-                className="inline-flex items-center gap-2 rounded-lg bg-pk-surface border border-pk-border-strong px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised shadow-sm transition"
+                className="inline-flex items-center gap-2 rounded-pk-sm bg-pk-surface border border-pk-border-strong px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised shadow-pk-e1 transition"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -148,10 +148,10 @@ function CalendarSettingsInner() {
         </div>
 
         {/* Outlook Calendar */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border p-5">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[#0078D4] flex items-center justify-center shadow-sm">
+              <div className="h-10 w-10 rounded-pk-sm bg-[#0078D4] flex items-center justify-center shadow-pk-e1">
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="white">
                   <path d="M7 6h4.5C13.43 6 15 7.57 15 9.5S13.43 13 11.5 13H9v4H7V6zm2 5h2.5c.83 0 1.5-.67 1.5-1.5S12.33 8 11.5 8H9v3zM16 8h1v10h-1z"/>
                   <path d="M17 8l3 2v6l-3 2V8z"/>
@@ -164,7 +164,7 @@ function CalendarSettingsInner() {
             </div>
 
             {loading ? (
-              <div className="h-8 w-24 rounded-lg bg-pk-surface-sunken animate-pulse" />
+              <div className="h-8 w-24 rounded-pk-sm bg-pk-surface-sunken animate-pulse" />
             ) : status?.outlook ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 text-pk-success-text text-sm font-medium">
@@ -176,7 +176,7 @@ function CalendarSettingsInner() {
                 <button
                   onClick={() => disconnect("OUTLOOK")}
                   disabled={disconnecting === "OUTLOOK"}
-                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                  className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-pk-sm transition disabled:opacity-50"
                 >
                   {disconnecting === "OUTLOOK" ? "Disconnecting…" : "Disconnect"}
                 </button>
@@ -184,7 +184,7 @@ function CalendarSettingsInner() {
             ) : (
               <a
                 href="/api/calendar/outlook"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#0078D4] px-3 py-2 text-sm font-medium text-white hover:bg-[#006CBE] shadow-sm transition"
+                className="inline-flex items-center gap-2 rounded-pk-sm bg-[#0078D4] px-3 py-2 text-sm font-medium text-white hover:bg-[#006CBE] shadow-pk-e1 transition"
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="white">
                   <path d="M7 6h4.5C13.43 6 15 7.57 15 9.5S13.43 13 11.5 13H9v4H7V6zm2 5h2.5c.83 0 1.5-.67 1.5-1.5S12.33 8 11.5 8H9v3z"/>
@@ -196,7 +196,7 @@ function CalendarSettingsInner() {
         </div>
 
         {/* Setup guide for admins */}
-        <details className="group rounded-xl border border-pk-border bg-pk-surface">
+        <details className="group rounded-pk-lg border border-pk-border bg-pk-surface">
           <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised">
             <span>🔧 Admin setup guide (one-time)</span>
             <svg className="h-4 w-4 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -213,7 +213,7 @@ function CalendarSettingsInner() {
                 <li>Add redirect URI: <code className="bg-pk-surface-sunken px-1 rounded">{"{your-domain}"}/api/calendar/google/callback</code></li>
                 <li>Copy Client ID + Secret → add to environment variables</li>
               </ol>
-              <div className="mt-2 rounded-lg bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
+              <div className="mt-2 rounded-pk-sm bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
                 GOOGLE_CLIENT_ID=...<br/>
                 GOOGLE_CLIENT_SECRET=...<br/>
                 GOOGLE_REDIRECT_URI=https://yourdomain.com/api/calendar/google/callback
@@ -228,7 +228,7 @@ function CalendarSettingsInner() {
                 <li>Certificates &amp; secrets → New client secret</li>
                 <li>API permissions → Microsoft Graph → Calendars.ReadWrite (delegated)</li>
               </ol>
-              <div className="mt-2 rounded-lg bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
+              <div className="mt-2 rounded-pk-sm bg-pk-surface-raised px-3 py-2 font-mono text-xs text-pk-text-muted">
                 MICROSOFT_CLIENT_ID=...<br/>
                 MICROSOFT_CLIENT_SECRET=...<br/>
                 MICROSOFT_REDIRECT_URI=https://yourdomain.com/api/calendar/outlook/callback

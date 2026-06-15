@@ -20,7 +20,7 @@ export function BloodGroupSelect({ value, onChange, required, className }: Blood
       value={value}
       onChange={(e) => onChange(e.target.value)}
       required={required}
-      className={`border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-full ${className ?? ""}`}
+      className={`border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-full ${className ?? ""}`}
     >
       {BLOOD_GROUP_OPTIONS.map((bg) => (
         <option key={bg.value} value={bg.value} disabled={bg.value === ""}>

@@ -79,31 +79,31 @@ export default function CouponsPage() {
           <h1 className="text-xl font-bold text-pk-text">Coupon Codes</h1>
           <p className="text-sm text-pk-text-muted mt-0.5">Create and manage discount codes for customers.</p>
         </div>
-        <button onClick={() => { setShowNew(true); setMsg(""); }} className="bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition">
+        <button onClick={() => { setShowNew(true); setMsg(""); }} className="bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition">
           + New coupon
         </button>
       </div>
 
-      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-pk-sm px-4 py-2">{msg}</p>}
 
       {showNew && (
-        <div className="bg-pk-surface rounded-xl border border-pk-teal-200 p-5 space-y-4">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-teal-200 p-5 space-y-4">
           <h2 className="font-semibold text-pk-text text-sm">New coupon</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Code *</label>
               <input type="text" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-                placeholder="WELCOME30" className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                placeholder="WELCOME30" className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Description</label>
               <input type="text" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="30% off first month" className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                placeholder="30% off first month" className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Discount type</label>
               <select value={form.discountType} onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value as "percent" | "amount" }))}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500">
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500">
                 <option value="percent">Percentage (%)</option>
                 <option value="amount">Fixed amount (₹)</option>
               </select>
@@ -113,41 +113,41 @@ export default function CouponsPage() {
                 Discount value ({form.discountType === "percent" ? "%" : "₹"})
               </label>
               <input type="number" min={0} value={form.discountValue} onChange={(e) => setForm((f) => ({ ...f, discountValue: Number(e.target.value) }))}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Max uses (blank = unlimited)</label>
               <input type="number" min={1} value={form.maxUses} onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))}
-                placeholder="100" className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                placeholder="100" className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Applies to plan (blank = any)</label>
               <input type="text" value={form.planSlug} onChange={(e) => setForm((f) => ({ ...f, planSlug: e.target.value }))}
-                placeholder="clinic" className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                placeholder="clinic" className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Valid from (optional)</label>
               <input type="date" value={form.validFrom} onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Valid until (optional)</label>
               <input type="date" value={form.validUntil} onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={createCoupon} disabled={creating || !form.code} className="bg-pk-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
+            <button onClick={createCoupon} disabled={creating || !form.code} className="bg-pk-teal-600 text-white px-4 py-1.5 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
               {creating ? "Creating…" : "Create coupon"}
             </button>
-            <button onClick={() => setShowNew(false)} className="px-4 py-1.5 rounded-lg text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
+            <button onClick={() => setShowNew(false)} className="px-4 py-1.5 rounded-pk-sm text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
+      <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">

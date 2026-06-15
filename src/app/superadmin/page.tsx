@@ -53,14 +53,14 @@ export default function SuperadminOverviewPage() {
           { label: "Active (paid)",  value: active },
           { label: "MRR (₹)",        value: `₹${mrr.toLocaleString("en-IN")}` },
         ].map((s) => (
-          <div key={s.label} className="bg-pk-surface rounded-xl border border-pk-border p-4">
+          <div key={s.label} className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
             <p className="text-xs text-pk-text-muted mb-1">{s.label}</p>
             <p className="text-2xl font-bold text-pk-text">{s.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
+      <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
         <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between">
           <h2 className="font-semibold text-pk-text text-sm">All subscriptions</h2>
           <Link href="/superadmin/subscriptions" className="text-xs text-pk-teal-600 hover:underline">Manage →</Link>

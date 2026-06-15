@@ -169,7 +169,7 @@ export default function AuditLogPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             {FILTER_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -186,7 +186,7 @@ export default function AuditLogPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-pk-surface rounded-2xl border border-pk-border overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-xl border border-pk-border overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-pk-text-muted text-sm">Loading audit log…</div>
           ) : entries.length === 0 ? (
@@ -241,7 +241,7 @@ export default function AuditLogPage() {
                       {isExpanded && entry.metadata && (
                         <tr key={`${entry.id}-meta`} className="bg-pk-surface-raised">
                           <td colSpan={5} className="px-5 py-3">
-                            <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-lg px-4 py-3 overflow-x-auto">
+                            <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-pk-sm px-4 py-3 overflow-x-auto">
                               {JSON.stringify(entry.metadata, null, 2)}
                             </pre>
                           </td>

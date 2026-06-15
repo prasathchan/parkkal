@@ -58,6 +58,12 @@
   --pk-surface-raised: var(--pk-neutral-50);
   --pk-surface-sunken: var(--pk-neutral-150);
 
+  /* ── Form input ─────────────────────────────────────────────────── */
+  --pk-input-bg:          var(--pk-neutral-0);
+  --pk-input-text:        var(--pk-neutral-900);
+  --pk-input-placeholder: var(--pk-neutral-400);
+  --pk-input-border:      var(--pk-neutral-300);
+
   /* ── Text ───────────────────────────────────────────────────────── */
   --pk-text:           var(--pk-neutral-900);
   --pk-text-secondary: var(--pk-neutral-600);
@@ -179,6 +185,12 @@
   --pk-accent-hover:  var(--pk-gold-400);         /* #D2933F */
   --pk-accent-tint:   rgba(200,135,58,0.12);
   --pk-accent-border: rgba(200,135,58,0.25);
+
+  /* Form input — gold fields on dark surfaces */
+  --pk-input-bg:          #DEAB54;
+  --pk-input-text:        #1C0E00;
+  --pk-input-placeholder: #7A5920;
+  --pk-input-border:      #C8943A;
 
   /* Semantic: Success */
   --pk-success-text:   #5DBE8C;
@@ -330,6 +342,19 @@
     font-variant-numeric: tabular-nums lining-nums;
     font-feature-settings: "tnum" 1, "lnum" 1;
   }
+
+  /* Form controls — use input tokens so dark mode gets gold fields */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  textarea,
+  select {
+    background-color: var(--pk-input-bg);
+    color: var(--pk-input-text);
+    border-color: var(--pk-input-border);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--pk-input-placeholder);
+  }
 }
 
 /* ─── Components ───────────────────────────────────────────────────── */
@@ -338,20 +363,20 @@
   .field-input {
     width: 100%;
     padding: 0.625rem 0.75rem;
-    border: 1px solid var(--pk-border);
+    border: 1px solid var(--pk-input-border);
     border-radius: var(--radius-sm);
     font-size: 0.875rem;
     line-height: 1.375rem;
     font-family: var(--font-body);
-    background: var(--pk-surface);
-    color: var(--pk-text);
+    background: var(--pk-input-bg);
+    color: var(--pk-input-text);
     outline: none;
     transition:
       border-color var(--motion-fast) var(--ease-out),
       box-shadow   var(--motion-fast) var(--ease-out);
   }
   .field-input::placeholder {
-    color: var(--pk-text-muted);
+    color: var(--pk-input-placeholder);
   }
   .field-input:hover {
     border-color: var(--pk-border-strong);

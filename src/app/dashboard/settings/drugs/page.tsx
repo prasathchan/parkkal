@@ -74,7 +74,7 @@ export default function DrugFormularyPage() {
 
       <main id="main-content" className="flex-1 p-6 max-w-2xl space-y-6">
         {/* Explanation */}
-        <div className="rounded-xl border p-5" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+        <div className="rounded-pk-lg border p-5" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
           <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Your clinic&apos;s drug list</h2>
           <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>
             Drugs you add here appear <strong>first</strong> in the prescription autocomplete, labelled &ldquo;Your Drugs&rdquo;.
@@ -86,7 +86,7 @@ export default function DrugFormularyPage() {
         {!showForm ? (
           <button
             onClick={() => { setShowForm(true); setError(""); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition"
+            className="flex items-center gap-2 px-4 py-2 rounded-pk-sm text-sm font-medium text-white transition"
             style={{ background: "var(--pk-primary)" }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -97,7 +97,7 @@ export default function DrugFormularyPage() {
         ) : (
           <form
             onSubmit={handleAdd}
-            className="rounded-xl border p-5 space-y-4"
+            className="rounded-pk-lg border p-5 space-y-4"
             style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}
           >
             <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>New drug</h3>
@@ -112,7 +112,7 @@ export default function DrugFormularyPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. Amoxicillin 500mg"
                 autoFocus
-                className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
                 style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
               />
             </div>
@@ -125,7 +125,7 @@ export default function DrugFormularyPage() {
                   value={form.defaultDosage}
                   onChange={(e) => setForm((f) => ({ ...f, defaultDosage: e.target.value }))}
                   placeholder="e.g. 1 tablet"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                  className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
                   style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
               </div>
@@ -137,13 +137,13 @@ export default function DrugFormularyPage() {
                     value={form.defaultFrequency}
                     onChange={(e) => setForm((f) => ({ ...f, defaultFrequency: e.target.value }))}
                     placeholder="e.g. 1-0-1"
-                    className="flex-1 text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                    className="flex-1 text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
                     style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                   />
                   <select
                     value=""
                     onChange={(e) => { if (e.target.value) setForm((f) => ({ ...f, defaultFrequency: e.target.value })); }}
-                    className="text-xs border rounded-lg px-2 py-2 focus:outline-none"
+                    className="text-xs border rounded-pk-sm px-2 py-2 focus:outline-none"
                     style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text-muted)" }}
                   >
                     <option value="">Preset</option>
@@ -158,7 +158,7 @@ export default function DrugFormularyPage() {
                   value={form.defaultDuration}
                   onChange={(e) => setForm((f) => ({ ...f, defaultDuration: e.target.value }))}
                   placeholder="e.g. 5 days"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                  className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
                   style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
               </div>
@@ -170,7 +170,7 @@ export default function DrugFormularyPage() {
               <button
                 type="button"
                 onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setError(""); }}
-                className="px-4 py-2 text-sm border rounded-lg transition"
+                className="px-4 py-2 text-sm border rounded-pk-sm transition"
                 style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
               >
                 Cancel
@@ -178,7 +178,7 @@ export default function DrugFormularyPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-medium rounded-lg text-white transition disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium rounded-pk-sm text-white transition disabled:opacity-50"
                 style={{ background: "var(--pk-primary)" }}
               >
                 {submitting ? "Adding…" : "Add Drug"}
@@ -188,7 +188,7 @@ export default function DrugFormularyPage() {
         )}
 
         {/* Drug list */}
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--pk-border)" }}>
+        <div className="rounded-pk-lg border overflow-hidden" style={{ borderColor: "var(--pk-border)" }}>
           {loading ? (
             <p className="text-sm text-center py-8" style={{ color: "var(--pk-text-muted)" }}>Loading…</p>
           ) : drugs.length === 0 ? (
@@ -227,7 +227,7 @@ export default function DrugFormularyPage() {
                       onClick={() => handleDelete(drug.id)}
                       disabled={deletingId === drug.id}
                       aria-label={`Remove ${drug.name}`}
-                      className="flex items-center justify-center w-7 h-7 rounded-lg transition disabled:opacity-40"
+                      className="flex items-center justify-center w-7 h-7 rounded-pk-sm transition disabled:opacity-40"
                       style={{ color: "#A8311F" }}
                     >
                       {deletingId === drug.id ? (

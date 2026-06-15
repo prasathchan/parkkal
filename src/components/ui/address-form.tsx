@@ -285,7 +285,7 @@ const INDIA_DISTRICTS: Record<string, string[]> = {
 };
 
 const INPUT_CLASS =
-  "w-full px-3 py-2 border border-pk-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500";
+  "w-full px-3 py-2 border border-pk-border rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500";
 
 interface AddressFormProps {
   value: AddressValue;
@@ -470,7 +470,7 @@ export function AddressForm({ value, onChange, required }: AddressFormProps) {
           onChange={(e) => update("fullAddress", e.target.value)}
           rows={2}
           placeholder="Door no., street, landmark..."
-          className="w-full px-3 py-2 border border-pk-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+          className="w-full px-3 py-2 border border-pk-border rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
         />
       </div>
     </div>

@@ -79,7 +79,7 @@ export default function VisitsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             <option value="">All Statuses</option>
             <option value="OPEN">Open</option>
@@ -91,7 +91,7 @@ export default function VisitsPage() {
             aria-label="Filter by date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           />
           <input
             type="text"
@@ -99,7 +99,7 @@ export default function VisitsPage() {
             placeholder="Search patient or visit code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 min-w-[200px]"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 min-w-[200px]"
           />
           {filtersActive && (
             <button onClick={clearFilters} className="text-sm text-pk-text-muted hover:text-pk-text-secondary underline">
@@ -115,7 +115,7 @@ export default function VisitsPage() {
             <button
               type="button"
               onClick={exportVisits}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-pk-sm text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -124,7 +124,7 @@ export default function VisitsPage() {
             </button>
             <Link
               href="/dashboard/visits/new"
-              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -135,7 +135,7 @@ export default function VisitsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 overflow-hidden">
           {loading ? (
             <div role="status" aria-label="Loading visits..." className="p-4">
               <SkeletonTable rows={8} cols={6} />

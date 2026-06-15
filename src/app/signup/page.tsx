@@ -63,8 +63,8 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100 py-12 px-4">
-      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-pk-bg py-12 px-4">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-10 w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
@@ -101,7 +101,7 @@ export default function SignupPage() {
               onChange={handleChange}
               required
               placeholder="Dr. Jane Smith"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -121,7 +121,7 @@ export default function SignupPage() {
               required
               autoComplete="email"
               placeholder="jane@example.com"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -133,7 +133,7 @@ export default function SignupPage() {
               Phone Number
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-3 py-2.5 border border-r-0 border-pk-border-strong rounded-l-lg bg-pk-surface-raised text-pk-text-muted text-sm">
+              <span className="inline-flex items-center px-3 py-2.5 border border-r-0 border-pk-border-strong rounded-l-pk-sm bg-pk-surface-raised text-pk-text-muted text-sm">
                 +91
               </span>
               <input
@@ -144,7 +144,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
                 placeholder="9876543210"
-                className="flex-1 px-4 py-2.5 border border-pk-border-strong rounded-r-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+                className="flex-1 px-4 py-2.5 border border-pk-border-strong rounded-r-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
               />
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function SignupPage() {
               onChange={handleChange}
               required
               placeholder="e.g. Smile Dental Clinic"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -184,7 +184,7 @@ export default function SignupPage() {
               required
               autoComplete="new-password"
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
@@ -204,12 +204,12 @@ export default function SignupPage() {
               required
               autoComplete="new-password"
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+              className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
             />
           </div>
 
           {error && (
-            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
               {error}
             </div>
           )}
@@ -217,7 +217,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm"
+            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition duration-200 text-sm"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>

@@ -113,7 +113,7 @@ export function NewTreatmentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-pk-surface rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-pk-surface rounded-pk-xl shadow-pk-e3 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border flex-shrink-0">
           <h2 className="text-base font-semibold text-pk-text">New Treatment Plan</h2>
@@ -139,10 +139,10 @@ export function NewTreatmentModal({
                   if (!e.target.value) setForm((f) => ({ ...f, patientId: "" }));
                 }}
                 placeholder="Search patient..."
-                className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
               {showPatientDropdown && patients.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 z-10">
                   {patients.map((p) => (
                     <button
                       key={p.id}
@@ -170,7 +170,7 @@ export function NewTreatmentModal({
               Doctor {currentUserRole !== "DOCTOR" && <span className="text-pk-danger-text">*</span>}
             </label>
             {currentUserRole === "DOCTOR" ? (
-              <p className="w-full px-3 py-2 border border-pk-border rounded-lg text-sm bg-pk-surface-raised text-pk-text-secondary">
+              <p className="w-full px-3 py-2 border border-pk-border rounded-pk-sm text-sm bg-pk-surface-raised text-pk-text-secondary">
                 {currentUserName}
               </p>
             ) : (
@@ -178,7 +178,7 @@ export function NewTreatmentModal({
                 value={form.doctorId}
                 onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 <option value="">Select doctor...</option>
                 {members.map((m) => (
@@ -199,7 +199,7 @@ export function NewTreatmentModal({
               required
               rows={3}
               placeholder="Describe the treatment plan..."
-              className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
             />
           </div>
 
@@ -211,7 +211,7 @@ export function NewTreatmentModal({
               value={form.procedure}
               onChange={(e) => setForm((f) => ({ ...f, procedure: e.target.value }))}
               placeholder="e.g. Root Canal Treatment, Crown Placement"
-              className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
 
@@ -235,12 +235,12 @@ export function NewTreatmentModal({
               step="0.01"
               value={form.cost}
               onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
-              className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
 
           {submitError && (
-            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
               {submitError}
             </div>
           )}
@@ -249,14 +249,14 @@ export function NewTreatmentModal({
             <button
               type="submit"
               disabled={submitting || !form.patientId || !form.doctorId || !form.description.trim()}
-              className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Saving..." : "Save Treatment Plan"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-pk-border-strong rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Cancel
             </button>

@@ -136,7 +136,7 @@ function ToothCell({
       {/* Condition popover */}
       {open && (
         <div
-          className={`absolute z-50 w-52 bg-pk-surface rounded-xl shadow-2xl border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
+          className={`absolute z-50 w-52 bg-pk-surface rounded-pk-lg shadow-pk-e3 border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
         >
           <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}
@@ -149,7 +149,7 @@ function ToothCell({
                   key={c}
                   type="button"
                   onClick={() => { onConditionChange(number, c, editNotes); setOpen(false); }}
-                  className={`text-left text-xs px-2 py-1 rounded-lg border transition-all ${condition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
+                  className={`text-left text-xs px-2 py-1 rounded-pk-sm border transition-all ${condition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
                   style={{ background: col.bg, borderColor: col.border, color: col.text }}
                 >
                   {CONDITION_LABELS[c]}
@@ -163,7 +163,7 @@ function ToothCell({
             onChange={(e) => setEditNotes(e.target.value)}
             onBlur={() => onConditionChange(number, condition, editNotes)}
             placeholder="Notes..."
-            className="w-full text-xs border border-pk-border rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
+            className="w-full text-xs border border-pk-border rounded-pk-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
           />
         </div>
       )}

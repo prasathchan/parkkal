@@ -172,10 +172,10 @@ function ActivateForm() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-        <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-pk-bg">
+        <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-10 w-full max-w-md">
           <Logo />
-          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 text-center">
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3 text-center">
             Invalid or expired link
           </div>
         </div>
@@ -184,8 +184,8 @@ function ActivateForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-pk-bg">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-10 w-full max-w-md">
         <Logo />
         <StepDots />
 
@@ -198,16 +198,16 @@ function ActivateForm() {
               <div>
                 <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="new-password" placeholder="••••••••"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Confirm password</label>
                 <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required autoComplete="new-password" placeholder="••••••••"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
               </div>
-              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
-                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                 {loading ? "Setting password..." : "Set password & continue"}
               </button>
             </form>
@@ -228,11 +228,11 @@ function ActivateForm() {
                 <div>
                   <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Email verification code</label>
                   <input type="text" inputMode="numeric" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} required maxLength={6} placeholder="000000"
-                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
+                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
                 </div>
-                {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+                {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
                 <button type="submit" disabled={loading}
-                  className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                  className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                   {loading ? "Verifying..." : "Verify email"}
                 </button>
                 <button type="button" onClick={() => { setError(""); sendEmailOtp(userId); }}
@@ -241,7 +241,7 @@ function ActivateForm() {
                 </button>
               </form>
             )}
-            {!userId && error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3 text-center">{error}</div>}
+            {!userId && error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3 text-center">{error}</div>}
           </>
         )}
 
@@ -256,11 +256,11 @@ function ActivateForm() {
                   <div>
                     <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Phone number</label>
                     <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="+91 9876543210"
-                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition" />
                   </div>
-                  {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+                  {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
                   <button type="submit" disabled={loading}
-                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                     {loading ? "Sending OTP..." : "Send OTP"}
                   </button>
                 </form>
@@ -275,11 +275,11 @@ function ActivateForm() {
                   <div>
                     <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Phone verification code</label>
                     <input type="text" inputMode="numeric" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} required maxLength={6} placeholder="000000"
-                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
+                      className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-center tracking-widest text-lg font-mono" />
                   </div>
-                  {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+                  {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
                   <button type="submit" disabled={loading}
-                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                    className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                     {loading ? "Verifying..." : isVerifyOnly ? "Verify & complete" : "Verify & activate account"}
                   </button>
                   <button type="button" onClick={() => { setPhoneStep("enter-phone"); setPhoneOtp(""); setError(""); }}

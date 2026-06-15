@@ -184,7 +184,7 @@ export default function StaffPage() {
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-pk-teal-600 hover:bg-pk-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="bg-pk-teal-600 hover:bg-pk-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-pk-sm transition"
           >
             + Add Staff
           </button>
@@ -199,7 +199,7 @@ export default function StaffPage() {
             action={{ label: "Add Staff", onClick: () => setShowModal(true) }}
           />
         ) : (
-          <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>
@@ -278,7 +278,7 @@ export default function StaffPage() {
       {/* Add Staff Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-pk-border flex justify-between items-center">
               <h2 className="text-lg font-bold text-pk-text">Add Staff Member</h2>
               <button onClick={() => setShowModal(false)} aria-label="Close modal" className="text-pk-text-muted hover:text-pk-text-secondary">
@@ -298,7 +298,7 @@ export default function StaffPage() {
                     onBlur={() => touch("email")}
                     required
                     placeholder="staff@example.com"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                    className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 ${touched.email && fieldErrors.email ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
                   {touched.email && fieldErrors.email && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.email}</p>}
                   <p className="text-xs text-pk-text-muted mt-1">If user exists, their profile will be used. Otherwise fill the fields below.</p>
@@ -310,7 +310,7 @@ export default function StaffPage() {
                     value={form.name}
                     onChange={updateForm("name")}
                     placeholder="Dr. Rajan Kumar"
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
@@ -321,7 +321,7 @@ export default function StaffPage() {
                     onChange={updateForm("phone")}
                     onBlur={() => touch("phone")}
                     placeholder="+91 98765 43210"
-                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                    className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 ${touched.phone && fieldErrors.phone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                   />
                   {touched.phone && fieldErrors.phone && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.phone}</p>}
                 </div>
@@ -331,7 +331,7 @@ export default function StaffPage() {
                     type="date"
                     value={form.dateOfBirth}
                     onChange={updateForm("dateOfBirth")}
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
@@ -339,7 +339,7 @@ export default function StaffPage() {
                   <select
                     value={form.gender}
                     onChange={updateForm("gender")}
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">Select</option>
                     <option value="MALE">Male</option>
@@ -360,7 +360,7 @@ export default function StaffPage() {
                     value={form.orgRoleId}
                     onChange={updateForm("orgRoleId")}
                     required
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">— Select Role —</option>
                     {orgRoles.map(r => (
@@ -373,7 +373,7 @@ export default function StaffPage() {
                   <select
                     value={form.salaryType}
                     onChange={updateForm("salaryType")}
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="FIXED">Fixed Monthly</option>
                     <option value="PER_APPOINTMENT">Per Appointment</option>
@@ -389,7 +389,7 @@ export default function StaffPage() {
                     onChange={updateForm("salaryAmount")}
                     placeholder="0"
                     min="0"
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
@@ -398,7 +398,7 @@ export default function StaffPage() {
                     type="date"
                     value={form.joinedAt}
                     onChange={updateForm("joinedAt")}
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
               </div>
@@ -410,7 +410,7 @@ export default function StaffPage() {
               </div>
 
               {/* Documents */}
-              <div className="border border-pk-warning-border rounded-lg p-4 bg-pk-warning-fill">
+              <div className="border border-pk-warning-border rounded-pk-sm p-4 bg-pk-warning-fill">
                 <p className="text-sm font-medium text-pk-warning-text mb-3">Documents (Optional)</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -422,7 +422,7 @@ export default function StaffPage() {
                       onBlur={() => touch("panNumber")}
                       placeholder="AAAAA9999A"
                       maxLength={10}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 uppercase ${touched.panNumber && fieldErrors.panNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.panNumber && fieldErrors.panNumber && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.panNumber}</p>}
                   </div>
@@ -435,7 +435,7 @@ export default function StaffPage() {
                       onBlur={() => touch("aadhaarNumber")}
                       placeholder="12 digits"
                       maxLength={12}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 ${touched.aadhaarNumber && fieldErrors.aadhaarNumber ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.aadhaarNumber && fieldErrors.aadhaarNumber && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.aadhaarNumber}</p>}
                   </div>
@@ -443,7 +443,7 @@ export default function StaffPage() {
               </div>
 
               {/* Activation Mode */}
-              <div className="border border-pk-border rounded-lg p-4 space-y-3">
+              <div className="border border-pk-border rounded-pk-sm p-4 space-y-3">
                 <p className="text-sm font-medium text-pk-text">Login &amp; Activation *</p>
                 {[
                   {
@@ -462,7 +462,7 @@ export default function StaffPage() {
                     desc: "The HR record is created as active (visible in staff, salary). A verification link is sent so the user can confirm their email and phone. Login remains disabled until you enable it.",
                   },
                 ].map((opt) => (
-                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${form.activationMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-pk-sm border cursor-pointer transition ${form.activationMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
                     <input
                       type="radio"
                       name="activationMode"
@@ -486,7 +486,7 @@ export default function StaffPage() {
                       onChange={updateForm("password")}
                       placeholder="Min. 8 characters"
                       autoComplete="new-password"
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                     {form.password && form.password.length < 8 && (
                       <p className="text-xs text-pk-danger-text mt-1">Password must be at least 8 characters</p>
@@ -496,7 +496,7 @@ export default function StaffPage() {
               </div>
 
               {/* Emergency Contact — mandatory for staff */}
-              <div className="border border-pk-border rounded-lg p-4">
+              <div className="border border-pk-border rounded-pk-sm p-4">
                 <p className="text-sm font-medium text-pk-text mb-1">Emergency Contact <span className="text-pk-danger-text">*</span></p>
                 <p className="text-xs text-pk-text-muted mb-3">Required before the staff record can be saved.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -508,7 +508,7 @@ export default function StaffPage() {
                       onChange={updateForm("ecName")}
                       required
                       placeholder="Full name"
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
@@ -517,7 +517,7 @@ export default function StaffPage() {
                       value={form.ecRelationship}
                       onChange={updateForm("ecRelationship")}
                       required
-                      className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="">Select</option>
                       <option value="Father">Father</option>
@@ -537,7 +537,7 @@ export default function StaffPage() {
                       onBlur={() => touch("ecPhone")}
                       required
                       placeholder="+91 98765 43210"
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
+                      className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 ${touched.ecPhone && fieldErrors.ecPhone ? "border-pk-danger-border focus:ring-pk-danger" : "border-pk-border-strong focus:ring-pk-teal-500"}`}
                     />
                     {touched.ecPhone && fieldErrors.ecPhone && <p className="text-xs text-pk-danger-text mt-1">{fieldErrors.ecPhone}</p>}
                   </div>
@@ -545,7 +545,7 @@ export default function StaffPage() {
               </div>
 
               {formError && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {formError}
                 </div>
               )}
@@ -561,7 +561,7 @@ export default function StaffPage() {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm"
+                    className="bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold px-6 py-2.5 rounded-pk-sm transition text-sm"
                   >
                     {saving ? "Adding..." : "Add Staff"}
                   </button>
@@ -569,7 +569,7 @@ export default function StaffPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised font-medium px-6 py-2.5 rounded-lg transition text-sm"
+                  className="border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised font-medium px-6 py-2.5 rounded-pk-sm transition text-sm"
                 >
                   Cancel
                 </button>

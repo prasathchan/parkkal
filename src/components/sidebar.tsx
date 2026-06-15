@@ -259,7 +259,7 @@ function NavLink({
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors",
+        "flex items-center gap-2.5 rounded-pk-sm text-sm font-medium transition-colors",
         item.sub ? "px-3 py-2" : "px-3 py-2.5"
       )}
       style={{
@@ -288,7 +288,7 @@ function LogoutButton({
       onClick={onLogout}
       title="Sign out"
       aria-label="Sign out"
-      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-pk-sm transition-colors"
       style={{
         color: hovered ? "#C0392B" : colors.text,
         background: hovered ? colors.hoverBg : "transparent",
@@ -359,11 +359,11 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
       <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.divider}` }}>
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+            <div className="w-8 h-8 rounded-pk-sm overflow-hidden flex-shrink-0 bg-white/10">
               <Image src={logoUrl} alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/10">
+            <div className="w-8 h-8 rounded-pk-sm flex items-center justify-center flex-shrink-0 bg-white/10">
               <Image src="/parkkal-mark-white.svg" alt="" width={20} height={20} className="w-5 h-5" />
             </div>
           )}

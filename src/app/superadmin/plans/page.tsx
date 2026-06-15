@@ -71,7 +71,7 @@ export default function PlansPage() {
         type={type}
         value={String(form[key] ?? "")}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+        className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
       />
     </div>
   );
@@ -83,11 +83,11 @@ export default function PlansPage() {
         <p className="text-sm text-pk-text-muted mt-0.5">Edit plan names, prices, and doctor limits. Changes take effect immediately for new subscriptions.</p>
       </div>
 
-      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-pk-sm px-4 py-2">{msg}</p>}
 
       <div className="space-y-4">
         {plans.map((plan) => (
-          <div key={plan.id} className="bg-pk-surface rounded-xl border border-pk-border p-5">
+          <div key={plan.id} className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
             {editing === plan.id ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -103,7 +103,7 @@ export default function PlansPage() {
                     type="text"
                     value={form.description ?? ""}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div>
@@ -112,7 +112,7 @@ export default function PlansPage() {
                     type="text"
                     value={typeof form.features === "string" ? form.features : JSON.parse(form.features || "[]").join(", ")}
                     onChange={(e) => setForm((f) => ({ ...f, features: e.target.value }))}
-                    className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -127,10 +127,10 @@ export default function PlansPage() {
                   </label>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={savePlan} disabled={saving} className="bg-pk-teal-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
+                  <button onClick={savePlan} disabled={saving} className="bg-pk-teal-600 text-white px-4 py-1.5 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
                     {saving ? "Saving…" : "Save changes"}
                   </button>
-                  <button onClick={() => setEditing(null)} className="px-4 py-1.5 rounded-lg text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
+                  <button onClick={() => setEditing(null)} className="px-4 py-1.5 rounded-pk-sm text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
                     Cancel
                   </button>
                 </div>

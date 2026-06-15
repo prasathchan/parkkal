@@ -68,10 +68,10 @@ export default function LandingPage() {
     <div className="min-h-screen bg-pk-surface text-pk-text">
 
       {/* Nav */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-pk-border">
+      <nav className="sticky top-0 z-50 bg-pk-surface/90 backdrop-blur border-b border-pk-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-pk-teal-900 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-pk-teal-900 rounded-pk-sm flex items-center justify-center">
               <Image src="/parkkal-mark-white.svg" alt="" width={20} height={20} className="w-5 h-5" />
             </div>
             <span className="font-bold text-lg text-pk-text">Parkkal</span>
@@ -83,7 +83,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-pk-text-secondary hover:text-pk-text transition">Sign in</Link>
-            <Link href="/signup" className="bg-pk-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-pk-teal-700 transition">
+            <Link href="/signup" className="bg-pk-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-pk-sm hover:bg-pk-teal-700 transition">
               Start free trial
             </Link>
           </div>
@@ -104,14 +104,14 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup"
-              className="inline-flex items-center justify-center gap-2 bg-pk-surface text-pk-teal-700 font-bold text-base px-8 py-3.5 rounded-xl hover:bg-pk-teal-50 transition shadow-lg">
+              className="inline-flex items-center justify-center gap-2 bg-white text-pk-teal-700 font-bold text-base px-8 py-3.5 rounded-pk-lg hover:bg-pk-teal-50 transition shadow-pk-e2">
               Start 14-day free trial
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
             <a href="mailto:support@parkkal.com?subject=Demo%20request"
-              className="inline-flex items-center justify-center gap-2 border border-white/30 text-white font-semibold text-base px-8 py-3.5 rounded-xl hover:bg-white/10 transition">
+              className="inline-flex items-center justify-center gap-2 border border-white/30 text-white font-semibold text-base px-8 py-3.5 rounded-pk-lg hover:bg-white/10 transition">
               Request a demo
             </a>
           </div>
@@ -128,7 +128,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f) => (
-              <div key={f.title} className="bg-pk-surface rounded-2xl border border-pk-border p-6 hover:shadow-md transition">
+              <div key={f.title} className="bg-pk-surface rounded-pk-xl border border-pk-border p-6 hover:shadow-pk-e2 transition">
                 <div className="text-3xl mb-4">{f.icon}</div>
                 <h3 className="font-bold text-pk-text text-lg mb-2">{f.title}</h3>
                 <p className="text-pk-text-muted text-sm leading-relaxed">{f.desc}</p>
@@ -160,7 +160,7 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
             {plans.map((p) => (
-              <div key={p.name} className={`rounded-2xl border p-8 flex flex-col ${p.highlight ? "border-pk-teal-500 ring-2 ring-pk-teal-500 bg-pk-teal-50" : "border-pk-border"}`}>
+              <div key={p.name} className={`rounded-pk-xl border p-8 flex flex-col ${p.highlight ? "border-pk-teal-500 ring-2 ring-pk-teal-500 bg-pk-teal-50" : "border-pk-border"}`}>
                 {p.highlight && (
                   <div className="text-xs font-bold text-pk-teal-600 uppercase tracking-wider mb-3">Most popular</div>
                 )}
@@ -182,12 +182,12 @@ export default function LandingPage() {
                 </ul>
                 {p.price === "Custom" ? (
                   <a href="mailto:support@parkkal.com?subject=Enterprise%20enquiry"
-                    className="block text-center border border-pk-border-strong text-pk-text-secondary font-semibold py-3 rounded-xl hover:bg-pk-surface-raised transition text-sm">
+                    className="block text-center border border-pk-border-strong text-pk-text-secondary font-semibold py-3 rounded-pk-lg hover:bg-pk-surface-raised transition text-sm">
                     Contact us
                   </a>
                 ) : (
                   <Link href="/signup"
-                    className={`block text-center font-semibold py-3 rounded-xl text-sm transition ${p.highlight ? "bg-pk-teal-600 text-white hover:bg-pk-teal-700" : "bg-pk-teal-900 text-white hover:bg-pk-teal-800"}`}>
+                    className={`block text-center font-semibold py-3 rounded-pk-lg text-sm transition ${p.highlight ? "bg-pk-teal-600 text-white hover:bg-pk-teal-700" : "bg-pk-teal-900 text-white hover:bg-pk-teal-800"}`}>
                     Start free trial
                   </Link>
                 )}
@@ -203,7 +203,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold mb-4">Ready to modernise your clinic?</h2>
           <p className="text-pk-text-muted text-lg mb-8">Join dental clinics across India who trust Parkkal to run their practice.</p>
           <Link href="/signup"
-            className="inline-flex items-center gap-2 bg-pk-teal-600 text-white font-bold text-base px-8 py-3.5 rounded-xl hover:bg-pk-teal-700 transition">
+            className="inline-flex items-center gap-2 bg-pk-teal-600 text-white font-bold text-base px-8 py-3.5 rounded-pk-lg hover:bg-pk-teal-700 transition">
             Start your free trial today
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />

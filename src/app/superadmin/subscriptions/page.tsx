@@ -72,16 +72,16 @@ export default function SubscriptionsPage() {
         <p className="text-sm text-pk-text-muted mt-0.5">View all organisations. Manually activate cash-paying clinics here.</p>
       </div>
 
-      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-lg px-4 py-2">{msg}</p>}
+      {msg && <p className="text-sm text-pk-success-text bg-pk-success-fill border border-pk-success-border rounded-pk-sm px-4 py-2">{msg}</p>}
 
       {activeForm && (
-        <div className="bg-pk-surface rounded-xl border border-pk-teal-200 p-5 space-y-4">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-teal-200 p-5 space-y-4">
           <h2 className="font-semibold text-pk-text text-sm">Manually activate subscription</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Plan</label>
               <select value={activeForm.planSlug} onChange={(e) => setActiveForm((f) => f ? { ...f, planSlug: e.target.value } : f)}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500">
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500">
                 {PLANS.map((p) => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
               </select>
             </div>
@@ -89,29 +89,29 @@ export default function SubscriptionsPage() {
               <label className="block text-xs text-pk-text-muted mb-1">Months</label>
               <input type="number" min={1} max={24} value={activeForm.months}
                 onChange={(e) => setActiveForm((f) => f ? { ...f, months: Number(e.target.value) } : f)}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Notes (optional)</label>
               <input type="text" value={activeForm.notes} placeholder="Cash payment received"
                 onChange={(e) => setActiveForm((f) => f ? { ...f, notes: e.target.value } : f)}
-                className="w-full border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
+                className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={activate} disabled={!!activating}
-              className="bg-pk-success text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition">
+              className="bg-pk-success text-white px-4 py-1.5 rounded-pk-sm text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition">
               {activating ? "Activating…" : "Activate"}
             </button>
             <button onClick={() => setActiveForm(null)}
-              className="px-4 py-1.5 rounded-lg text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
+              className="px-4 py-1.5 rounded-pk-sm text-sm border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition">
               Cancel
             </button>
           </div>
         </div>
       )}
 
-      <div className="bg-pk-surface rounded-xl border border-pk-border overflow-hidden">
+      <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
         {loading ? (
           <p className="px-5 py-8 text-center text-pk-text-muted text-sm">Loading…</p>
         ) : (
@@ -151,7 +151,7 @@ export default function SubscriptionsPage() {
                     <td className="px-5 py-3 text-right">
                       <button
                         onClick={() => setActiveForm({ id: s.id, planSlug: s.planSlug === "trial" ? "solo" : s.planSlug, months: 1, notes: "" })}
-                        className="text-xs bg-pk-success-fill text-pk-success-text border border-pk-success-border px-2.5 py-1 rounded-lg hover:bg-pk-success-fill transition"
+                        className="text-xs bg-pk-success-fill text-pk-success-text border border-pk-success-border px-2.5 py-1 rounded-pk-sm hover:bg-pk-success-fill transition"
                       >
                         Activate
                       </button>

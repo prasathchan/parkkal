@@ -136,12 +136,12 @@ export default function PatientEditPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-pk-sm px-4 py-3">
                   Patient updated successfully. Redirecting...
                 </div>
               )}
@@ -189,7 +189,7 @@ export default function PatientEditPage() {
                   <select
                     value={form.gender}
                     onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">Select gender</option>
                     {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -219,7 +219,7 @@ export default function PatientEditPage() {
                   onChange={(e) => setForm((f) => ({ ...f, medicalHistory: e.target.value }))}
                   rows={3}
                   placeholder="Allergies, chronic conditions, current medications..."
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 

@@ -109,13 +109,13 @@ export default function PrintPage() {
       <div className="no-print fixed top-4 right-4 flex gap-2">
         <button
           onClick={() => window.print()}
-          className="bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition shadow-lg"
+          className="bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition shadow-pk-e2"
         >
           Print / Save PDF
         </button>
         <button
           onClick={() => window.close()}
-          className="bg-pk-surface border border-pk-border text-pk-text-secondary px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition shadow-lg"
+          className="bg-pk-surface border border-pk-border text-pk-text-secondary px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition shadow-pk-e2"
         >
           Close
         </button>

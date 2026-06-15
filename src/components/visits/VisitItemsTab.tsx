@@ -108,7 +108,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
     <div className="space-y-5">
       {/* Add Item Form */}
       {visitStatus !== "CANCELLED" && (
-        <form onSubmit={handleAddItem} className="bg-pk-surface-raised rounded-lg p-4">
+        <form onSubmit={handleAddItem} className="bg-pk-surface-raised rounded-pk-sm p-4">
           {visitStatus === "COMPLETED" && (
             <p className="text-xs text-pk-warning-text mb-2">⚠️ Visit is completed — items added will update billing.</p>
           )}
@@ -122,7 +122,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                   const cat = e.target.value;
                   setNewItem({ itemName: "", category: cat, toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
                 }}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
@@ -135,7 +135,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                 required
                 value={newItem.itemName}
                 onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 placeholder="Medicine / Procedure..."
               />
             </div>
@@ -164,7 +164,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                         toothNumber: firstTooth,
                       }));
                     }}
-                    className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">— Pick a treatment plan —</option>
                     {treatments.map(tx => (
@@ -186,7 +186,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               <select
                 value={newItem.toothNumber}
                 onChange={(e) => setNewItem({ ...newItem, toothNumber: e.target.value })}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 <option value="">— Any tooth</option>
                 <optgroup label="Upper Right">
@@ -211,7 +211,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                 step="0.01"
                 value={newItem.quantity}
                 onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
             </div>
             <div>
@@ -222,7 +222,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                 step="0.01"
                 value={newItem.unitPrice}
                 onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
             </div>
           </div>
@@ -232,7 +232,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               <input
                 value={newItem.notes}
                 onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
-                className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 placeholder="Optional notes..."
               />
             </div>
@@ -245,7 +245,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               <button
                 type="submit"
                 disabled={addingItem}
-                className="bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+                className="bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
               >
                 {addingItem ? "Adding..." : "Add"}
               </button>

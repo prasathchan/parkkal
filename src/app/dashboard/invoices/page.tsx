@@ -138,12 +138,12 @@ export default function InvoicesPage() {
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
             placeholder="Search patient..."
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-52"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-52"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm border border-pk-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             <option value="ALL">All Statuses</option>
             <option value="DRAFT">Draft</option>
@@ -154,7 +154,7 @@ export default function InvoicesPage() {
           <div className="ml-auto">
             <button
               onClick={openSlideover}
-              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -165,7 +165,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Table card */}
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
           <div className="px-6 py-4 border-b border-pk-border flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-pk-text">Invoice List</h2>
@@ -235,7 +235,7 @@ export default function InvoicesPage() {
                           {inv.status !== "PAID" && (
                             <button
                               onClick={() => openPayModal(inv)}
-                              className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-lg hover:bg-pk-success transition"
+                              className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success transition"
                             >
                               Record Payment
                             </button>
@@ -244,7 +244,7 @@ export default function InvoicesPage() {
                             href={`/api/invoices/${inv.id}/pdf`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-lg hover:bg-pk-surface-raised transition"
+                            className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised transition"
                           >
                             PDF
                           </a>
@@ -263,7 +263,7 @@ export default function InvoicesPage() {
       {showSlideover && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/30" onClick={() => setShowSlideover(false)} />
-          <div className="w-full max-w-md bg-pk-surface shadow-xl flex flex-col h-full overflow-y-auto">
+          <div className="w-full max-w-md bg-pk-surface shadow-pk-e3 flex flex-col h-full overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border">
               <h2 className="text-base font-semibold text-pk-text">New Invoice</h2>
               <button onClick={() => setShowSlideover(false)} aria-label="Close panel" className="text-pk-text-muted hover:text-pk-text-secondary transition">
@@ -288,10 +288,10 @@ export default function InvoicesPage() {
                       setShowFormPatientDropdown(true);
                     }}
                     placeholder="Search patient..."
-                    className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                   {showFormPatientDropdown && formPatients.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-lg shadow-lg z-10">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 z-10">
                       {formPatients.map((p) => (
                         <button
                           key={p.id}
@@ -320,12 +320,12 @@ export default function InvoicesPage() {
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 
               {submitError && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {submitError}
                 </div>
               )}
@@ -334,14 +334,14 @@ export default function InvoicesPage() {
                 <button
                   type="submit"
                   disabled={submitting || !form.patientId}
-                  className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Saving..." : "Create Invoice"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowSlideover(false)}
-                  className="px-4 py-2 border border-pk-border-strong rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                  className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>
@@ -354,7 +354,7 @@ export default function InvoicesPage() {
       {/* Record Payment Modal */}
       {payModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-pk-surface rounded-xl shadow-2xl w-full max-w-sm p-6">
+          <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-pk-text mb-1">Record Payment</h3>
             <p className="text-sm text-pk-text-muted mb-4">
               Invoice <span className="font-mono">{payModal.invoice.id.slice(0, 8)}</span>
@@ -362,15 +362,15 @@ export default function InvoicesPage() {
             </p>
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-sm">
-                <div className="bg-pk-surface-raised rounded-lg p-3">
+                <div className="bg-pk-surface-raised rounded-pk-sm p-3">
                   <p className="text-xs text-pk-text-muted mb-0.5">Total</p>
                   <p className="font-semibold">{formatCurrency(payModal.invoice.totalAmount)}</p>
                 </div>
-                <div className="bg-pk-success-fill rounded-lg p-3">
+                <div className="bg-pk-success-fill rounded-pk-sm p-3">
                   <p className="text-xs text-pk-text-muted mb-0.5">Paid</p>
                   <p className="font-semibold text-pk-success-text">{formatCurrency(payModal.invoice.paidAmount)}</p>
                 </div>
-                <div className="bg-pk-danger-fill rounded-lg p-3">
+                <div className="bg-pk-danger-fill rounded-pk-sm p-3">
                   <p className="text-xs text-pk-text-muted mb-0.5">Balance</p>
                   <p className="font-semibold text-pk-danger-text">{formatCurrency(payModal.invoice.totalAmount - payModal.invoice.paidAmount)}</p>
                 </div>
@@ -387,27 +387,27 @@ export default function InvoicesPage() {
                   step="0.01"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   placeholder="0.00"
                 />
               </div>
 
               {payError && (
-                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{payError}</div>
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{payError}</div>
               )}
 
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
                   disabled={paySubmitting}
-                  className="flex-1 bg-pk-success text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition"
+                  className="flex-1 bg-pk-success text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition"
                 >
                   {paySubmitting ? "Processing..." : "Pay"}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setPayModal(null); setPayError(""); }}
-                  className="px-4 py-2.5 border border-pk-border rounded-lg text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+                  className="px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>

@@ -189,24 +189,24 @@ export default function VisitDetailPage() {
       <Header title={visit.visitCode} breadcrumb={[{ label: "Dashboard" }, { label: "Visits", href: "/dashboard/visits" }, { label: visit.visitCode }]} />
       <main id="main-content" className="flex-1 p-6 space-y-5">
         {pageError && (
-          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text rounded-lg px-4 py-3 text-sm flex items-center justify-between">
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text rounded-pk-sm px-4 py-3 text-sm flex items-center justify-between">
             <span>{pageError}</span>
             <button onClick={() => setPageError("")} aria-label="Dismiss error" className="ml-4 text-pk-danger-text hover:text-pk-danger-text font-bold leading-none">&times;</button>
           </div>
         )}
 
         {visit.appointmentId && appointmentStatus && appointmentStatus !== "COMPLETED" && visit.status !== "COMPLETED" && visit.status !== "CANCELLED" && (
-          <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-xl px-5 py-3 flex items-center justify-between gap-4">
+          <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-pk-lg px-5 py-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-sm text-pk-teal-800">
               <span>📅</span><span>This visit is linked to a scheduled appointment.</span>
             </div>
-            <button onClick={handleMarkAppointmentDone} disabled={markingApptDone} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
+            <button onClick={handleMarkAppointmentDone} disabled={markingApptDone} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition">
               {markingApptDone ? "Marking..." : "Mark Appointment Done"}
             </button>
           </div>
         )}
         {visit.appointmentId && (appointmentStatus === "COMPLETED" || visit.status === "COMPLETED") && (
-          <div className="bg-pk-success-fill border border-pk-success-border rounded-xl px-5 py-3 flex items-center gap-2 text-sm text-pk-success-text">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-pk-lg px-5 py-3 flex items-center gap-2 text-sm text-pk-success-text">
             <span>✅</span><span>Appointment marked as completed.</span>
           </div>
         )}
@@ -230,7 +230,7 @@ export default function VisitDetailPage() {
           onAddPayment={() => setShowPayModal(true)}
         />
 
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 overflow-hidden">
           <div className="border-b border-pk-border px-6 flex gap-1 overflow-x-auto">
             {(["items", "payments", "attachments", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${tab === t ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>

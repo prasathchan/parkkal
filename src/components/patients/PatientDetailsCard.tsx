@@ -56,7 +56,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               </span>
               <Link
                 href={`/dashboard/patients/${patient.id}/edit`}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-pk-text-secondary border border-pk-border hover:bg-pk-surface-raised px-2.5 py-1 rounded-lg transition"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-pk-text-secondary border border-pk-border hover:bg-pk-surface-raised px-2.5 py-1 rounded-pk-sm transition"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -110,7 +110,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
           {patient.medicalHistory && (
             <div className="mt-3">
               <p className="text-pk-text-muted text-xs mb-0.5">Medical History</p>
-              <p className="text-sm text-pk-text-secondary bg-pk-surface-raised rounded-lg p-3">{patient.medicalHistory}</p>
+              <p className="text-sm text-pk-text-secondary bg-pk-surface-raised rounded-pk-sm p-3">{patient.medicalHistory}</p>
             </div>
           )}
           <div className="mt-4 pt-4 border-t border-pk-danger-border">
@@ -121,7 +121,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               </div>
               <button
                 onClick={() => { setShowEraseModal(true); setConfirmText(""); setError(""); }}
-                className="text-xs border border-pk-danger-border text-pk-danger-text px-3 py-1.5 rounded-lg hover:bg-pk-danger-fill transition font-medium shrink-0 ml-4"
+                className="text-xs border border-pk-danger-border text-pk-danger-text px-3 py-1.5 rounded-pk-sm hover:bg-pk-danger-fill transition font-medium shrink-0 ml-4"
               >
                 Erase Data
               </button>
@@ -132,7 +132,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
 
       {showEraseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-pk-surface rounded-2xl border border-pk-danger-border shadow-xl max-w-md w-full p-6">
+          <div className="bg-pk-surface rounded-pk-xl border border-pk-danger-border shadow-pk-e3 max-w-md w-full p-6">
             <h2 className="text-base font-bold text-pk-danger-text mb-1">Permanently Erase Patient Data</h2>
             <p className="text-sm text-pk-text-secondary mb-4">
               This will permanently delete <strong>{patient.name}</strong> and all associated visits, prescriptions,
@@ -144,20 +144,20 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="ERASE"
-              className="w-full border border-pk-border rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pk-danger"
+              className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-pk-danger"
             />
             {error && <p className="text-xs text-pk-danger-text mb-3">{error}</p>}
             <div className="flex gap-3">
               <button
                 onClick={handleErase}
                 disabled={confirmText !== "ERASE" || loading}
-                className="flex-1 bg-pk-danger text-white rounded-xl py-2 text-sm font-semibold hover:bg-pk-danger transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-pk-danger text-white rounded-pk-lg py-2 text-sm font-semibold hover:bg-pk-danger transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Erasing…" : "Permanently Erase"}
               </button>
               <button
                 onClick={() => setShowEraseModal(false)}
-                className="flex-1 border border-pk-border text-pk-text-secondary rounded-xl py-2 text-sm font-medium hover:bg-pk-surface-raised transition"
+                className="flex-1 border border-pk-border text-pk-text-secondary rounded-pk-lg py-2 text-sm font-medium hover:bg-pk-surface-raised transition"
               >
                 Cancel
               </button>

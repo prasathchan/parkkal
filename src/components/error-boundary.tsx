@@ -46,13 +46,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex gap-3">
           <button
             onClick={this.handleReset}
-            className="px-4 py-2 bg-pk-teal-600 text-white rounded-lg text-sm font-medium hover:bg-pk-teal-700 transition"
+            className="px-4 py-2 bg-pk-teal-600 text-white rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
           >
             Try again
           </button>
           <Link
             href="/dashboard"
-            className="px-4 py-2 border border-pk-border text-pk-text-secondary rounded-lg text-sm font-medium hover:bg-pk-surface-raised transition"
+            className="px-4 py-2 border border-pk-border text-pk-text-secondary rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition"
           >
             Go to dashboard
           </Link>

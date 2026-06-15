@@ -210,7 +210,7 @@ export default function CalendarPage() {
         {/* Doctor filter */}
         {doctorOptions.length > 0 && (
           <select
-            className="ml-auto text-sm border border-pk-border-strong rounded-md px-3 py-1.5 bg-pk-surface"
+            className="ml-auto text-sm border border-pk-border-strong rounded-pk-sm px-3 py-1.5 bg-pk-surface"
             value={doctorFilter}
             onChange={(e) => setDoctorFilter(e.target.value)}
           >
@@ -228,7 +228,7 @@ export default function CalendarPage() {
 
       {/* ── Error ──────────────────────────────────────────────────────────── */}
       {error && (
-        <div className="mx-6 mt-3 p-3 bg-pk-danger-fill border border-pk-danger-border rounded-lg text-pk-danger-text text-sm">
+        <div className="mx-6 mt-3 p-3 bg-pk-danger-fill border border-pk-danger-border rounded-pk-sm text-pk-danger-text text-sm">
           {error}
         </div>
       )}
@@ -390,7 +390,7 @@ function AppointmentDetail({
       />
 
       {/* Sheet */}
-      <div className="fixed right-0 top-0 bottom-0 w-80 bg-pk-surface shadow-xl z-50 flex flex-col overflow-y-auto">
+      <div className="fixed right-0 top-0 bottom-0 w-80 bg-pk-surface shadow-pk-e3 z-50 flex flex-col overflow-y-auto">
         <div className="flex items-center justify-between px-4 py-3 border-b border-pk-border">
           <h2 className="font-semibold text-pk-text">Appointment</h2>
           <button
@@ -454,7 +454,7 @@ function AppointmentDetail({
           <div className="pt-2 space-y-2">
             <Link
               href={`/dashboard/appointments?highlight=${appt.id}`}
-              className="block w-full text-center text-sm font-medium text-pk-teal-600 hover:text-pk-teal-700 py-2 border border-pk-teal-200 rounded-lg hover:bg-pk-teal-50 transition-colors"
+              className="block w-full text-center text-sm font-medium text-pk-teal-600 hover:text-pk-teal-700 py-2 border border-pk-teal-200 rounded-pk-sm hover:bg-pk-teal-50 transition-colors"
               onClick={onClose}
             >
               View in List

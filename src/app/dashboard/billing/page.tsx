@@ -128,7 +128,7 @@ export default function BillingPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchData(page, search)} />
         )}
 
-        <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
           <div className="px-6 py-4 border-b border-pk-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-pk-text">Visit Billing Summary</h2>
@@ -148,18 +148,18 @@ export default function BillingPage() {
               placeholder="Search by patient name or visit code…"
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="border border-pk-border-strong rounded-lg px-3 py-1.5 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+              className="border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <div className="flex gap-1">
               <button
                 onClick={() => handleFilterChange("UNPAID")}
-                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "UNPAID" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
+                className={`px-3 py-1 text-xs rounded-pk-sm font-medium transition ${filter === "UNPAID" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
               >
                 Unpaid Only
               </button>
               <button
                 onClick={() => handleFilterChange("ALL")}
-                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "ALL" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
+                className={`px-3 py-1 text-xs rounded-pk-sm font-medium transition ${filter === "ALL" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
               >
                 All Visits
               </button>
@@ -228,7 +228,7 @@ export default function BillingPage() {
                           <button
                             onClick={() => handleMarkPaid(v)}
                             disabled={markingPaid === v.id}
-                            className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-lg hover:bg-pk-success disabled:opacity-50 transition"
+                            className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success disabled:opacity-50 transition"
                           >
                             {markingPaid === v.id ? "…" : "Mark Paid"}
                           </button>
@@ -252,14 +252,14 @@ export default function BillingPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="px-3 py-1 border border-pk-border rounded-lg hover:bg-pk-surface-raised disabled:opacity-40 transition"
+                  className="px-3 py-1 border border-pk-border rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-40 transition"
                 >
                   ← Prev
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1 border border-pk-border rounded-lg hover:bg-pk-surface-raised disabled:opacity-40 transition"
+                  className="px-3 py-1 border border-pk-border rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-40 transition"
                 >
                   Next →
                 </button>

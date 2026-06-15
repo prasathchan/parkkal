@@ -160,7 +160,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
 
       {/* Billed teeth hint */}
       {billedTeeth.length > 0 && isOpen && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-pk-warning-fill border border-pk-warning-border px-3 py-2">
+        <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-warning-fill border border-pk-warning-border px-3 py-2">
           <svg className="w-4 h-4 text-pk-warning-text flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -176,7 +176,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
 
       {/* No-snapshot notice for completed visits */}
       {!isOpen && !hasVisitSnapshot && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-pk-surface-raised border border-pk-border px-3 py-2">
+        <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-surface-raised border border-pk-border px-3 py-2">
           <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>

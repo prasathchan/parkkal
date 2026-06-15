@@ -127,10 +127,10 @@ export default function PatientDetailPage() {
 
       <main id="main-content" className="flex-1 p-6 space-y-6">
         {balance && (
-          <div className="bg-pk-surface rounded-xl border border-pk-border shadow-sm p-5">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-pk-text">Financial Summary</h3>
-              <Link href={`/dashboard/visits/new?patientId=${patient.id}`} className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pk-teal-700 transition">
+              <Link href={`/dashboard/visits/new?patientId=${patient.id}`} className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm text-xs font-medium hover:bg-pk-teal-700 transition">
                 + New Visit
               </Link>
             </div>

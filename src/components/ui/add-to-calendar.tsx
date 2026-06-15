@@ -98,8 +98,8 @@ export function AddToCalendar({ size = "md", ...eventParams }: AddToCalendarProp
 
   const btnClass =
     size === "sm"
-      ? "inline-flex items-center gap-1.5 rounded-md border border-pk-border bg-pk-surface px-2.5 py-1.5 text-xs font-medium text-pk-text-secondary shadow-sm hover:bg-pk-surface-raised transition-colors"
-      : "inline-flex items-center gap-2 rounded-lg border border-pk-border bg-pk-surface px-3.5 py-2 text-sm font-medium text-pk-text-secondary shadow-sm hover:bg-pk-surface-raised transition-colors";
+      ? "inline-flex items-center gap-1.5 rounded-pk-sm border border-pk-border bg-pk-surface px-2.5 py-1.5 text-xs font-medium text-pk-text-secondary shadow-pk-e1 hover:bg-pk-surface-raised transition-colors"
+      : "inline-flex items-center gap-2 rounded-pk-sm border border-pk-border bg-pk-surface px-3.5 py-2 text-sm font-medium text-pk-text-secondary shadow-pk-e1 hover:bg-pk-surface-raised transition-colors";
 
   return (
     <div ref={ref} className="relative inline-block">
@@ -118,7 +118,7 @@ export function AddToCalendar({ size = "md", ...eventParams }: AddToCalendarProp
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-1.5 w-52 origin-top-right rounded-xl border border-pk-border bg-pk-surface shadow-lg ring-1 ring-black/5 focus:outline-none"
+          className="absolute right-0 z-50 mt-1.5 w-52 origin-top-right rounded-pk-lg border border-pk-border bg-pk-surface shadow-pk-e2 ring-1 ring-black/5 focus:outline-none"
         >
           <div className="p-1.5 space-y-0.5">
             {/* Google Calendar */}
@@ -128,7 +128,7 @@ export function AddToCalendar({ size = "md", ...eventParams }: AddToCalendarProp
               rel="noopener noreferrer"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
+              className="flex items-center gap-3 rounded-pk-sm px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
             >
               <GoogleIcon />
               <span>Google Calendar</span>
@@ -141,7 +141,7 @@ export function AddToCalendar({ size = "md", ...eventParams }: AddToCalendarProp
               rel="noopener noreferrer"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
+              className="flex items-center gap-3 rounded-pk-sm px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
             >
               <OutlookIcon />
               <span>Outlook</span>
@@ -154,7 +154,7 @@ export function AddToCalendar({ size = "md", ...eventParams }: AddToCalendarProp
               type="button"
               role="menuitem"
               onClick={() => { links.download(); setOpen(false); }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
+              className="flex w-full items-center gap-3 rounded-pk-sm px-3 py-2.5 text-sm text-pk-text-secondary hover:bg-pk-surface-raised transition-colors"
             >
               <AppleIcon />
               <span>Apple / Other (.ics)</span>

@@ -121,8 +121,8 @@ function AppointmentPill({
       onClick={() => onClick(apt)}
       style={style}
       className={`
-        w-full text-left rounded-md border-l-4 px-2 py-1 shadow-sm transition
-        hover:shadow-md hover:brightness-95 cursor-pointer select-none
+        w-full text-left rounded-pk-sm border-l-4 px-2 py-1 shadow-pk-e1 transition
+        hover:shadow-pk-e2 hover:brightness-95 cursor-pointer select-none
         ${colors.bg} ${colors.border} ${colors.text} ${statusCls}
         ${compact ? "text-xs" : "text-xs"}
       `}
@@ -393,7 +393,7 @@ function TodaysQueue({
 
       {/* In chair now */}
       {inProgress && (
-        <div className="mx-3 mt-3 rounded-xl bg-pk-teal-50 border border-pk-teal-200 p-3">
+        <div className="mx-3 mt-3 rounded-pk-lg bg-pk-teal-50 border border-pk-teal-200 p-3">
           <div className="flex items-center gap-2 mb-1">
             <span className="h-2 w-2 rounded-full bg-pk-teal-500 animate-pulse" />
             <span className="text-xs font-semibold text-pk-teal-700 uppercase tracking-wide">In Chair Now</span>
@@ -406,7 +406,7 @@ function TodaysQueue({
 
       {/* Next up */}
       {nextUp && nextUp.id !== inProgress?.id && (
-        <div className="mx-3 mt-2 rounded-xl bg-pk-warning-fill border border-pk-warning-border p-3">
+        <div className="mx-3 mt-2 rounded-pk-lg bg-pk-warning-fill border border-pk-warning-border p-3">
           <div className="flex items-center gap-2 mb-1">
             <span className="h-2 w-2 rounded-full bg-pk-warning" />
             <span className="text-xs font-semibold text-pk-warning-text uppercase tracking-wide">Up Next</span>
@@ -428,7 +428,7 @@ function TodaysQueue({
               type="button"
               onClick={() => onAppointmentClick(apt)}
               className={`
-                w-full text-left rounded-lg p-2.5 transition border
+                w-full text-left rounded-pk-sm p-2.5 transition border
                 ${isNow   ? "bg-pk-teal-50 border-pk-teal-200"   :
                   isNext  ? "bg-pk-warning-fill border-pk-warning-border"  :
                   apt.status === "COMPLETED"  ? "bg-pk-surface border-pk-border opacity-50" :
@@ -505,7 +505,7 @@ function AppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-pk-surface rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-md overflow-hidden">
         {/* Header strip */}
         <div className={`h-2 ${colors.dot}`} />
         <div className="p-6">
@@ -576,7 +576,7 @@ function AppointmentModal({
             {(apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS") && (
               <Link
                 href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
+                className="inline-flex items-center gap-1.5 rounded-pk-sm bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -589,14 +589,14 @@ function AppointmentModal({
                 <button
                   onClick={() => handleStatus("NO_SHOW")}
                   disabled={updating}
-                  className="rounded-lg border border-pk-warning-border px-3 py-2 text-sm font-medium text-pk-warning-text hover:bg-pk-warning-fill transition disabled:opacity-50"
+                  className="rounded-pk-sm border border-pk-warning-border px-3 py-2 text-sm font-medium text-pk-warning-text hover:bg-pk-warning-fill transition disabled:opacity-50"
                 >
                   No Show
                 </button>
                 <button
                   onClick={() => handleStatus("CANCELLED")}
                   disabled={updating}
-                  className="rounded-lg border border-pk-danger-border px-3 py-2 text-sm font-medium text-pk-danger-text hover:bg-pk-danger-fill transition disabled:opacity-50"
+                  className="rounded-pk-sm border border-pk-danger-border px-3 py-2 text-sm font-medium text-pk-danger-text hover:bg-pk-danger-fill transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -604,7 +604,7 @@ function AppointmentModal({
             )}
             <Link
               href={`/dashboard/patients/${apt.patientId}`}
-              className="ml-auto rounded-lg border border-pk-border px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              className="ml-auto rounded-pk-sm border border-pk-border px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Patient Record
             </Link>
@@ -715,7 +715,7 @@ export default function AppointmentsPage() {
         <div className="flex items-center gap-1">
           <button
             onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-pk-surface-sunken transition text-pk-text-secondary"
+            className="p-1.5 rounded-pk-sm hover:bg-pk-surface-sunken transition text-pk-text-secondary"
             aria-label="Previous"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -724,7 +724,7 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-pk-surface-sunken transition text-pk-text-secondary"
+            className="p-1.5 rounded-pk-sm hover:bg-pk-surface-sunken transition text-pk-text-secondary"
             aria-label="Next"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -733,7 +733,7 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={goToday}
-            className="ml-1 px-3 py-1.5 rounded-lg border border-pk-border text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
+            className="ml-1 px-3 py-1.5 rounded-pk-sm border border-pk-border text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
           >
             Today
           </button>
@@ -743,7 +743,7 @@ export default function AppointmentsPage() {
         <h1 className="text-base font-semibold text-pk-text flex-1">{headerTitle}</h1>
 
         {/* View toggle */}
-        <div className="flex rounded-lg border border-pk-border overflow-hidden">
+        <div className="flex rounded-pk-sm border border-pk-border overflow-hidden">
           {(["day", "week"] as ViewMode[]).map((v) => (
             <button
               key={v}
@@ -762,7 +762,7 @@ export default function AppointmentsPage() {
         {/* Queue toggle */}
         <button
           onClick={() => setShowQueue((s) => !s)}
-          className={`p-1.5 rounded-lg border transition ${showQueue ? "border-pk-teal-200 bg-pk-teal-50 text-pk-teal-600" : "border-pk-border text-pk-text-muted hover:bg-pk-surface-raised"}`}
+          className={`p-1.5 rounded-pk-sm border transition ${showQueue ? "border-pk-teal-200 bg-pk-teal-50 text-pk-teal-600" : "border-pk-border text-pk-text-muted hover:bg-pk-surface-raised"}`}
           title="Toggle today's queue"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -773,7 +773,7 @@ export default function AppointmentsPage() {
         {/* New appointment */}
         <Link
           href={`/dashboard/appointments/new${viewMode === "day" ? `?date=${currentDate}` : ""}`}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
+          className="inline-flex items-center gap-1.5 rounded-pk-sm bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

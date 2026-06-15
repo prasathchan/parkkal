@@ -55,8 +55,8 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pk-teal-50 to-pk-teal-100">
-      <div className="bg-pk-surface rounded-2xl shadow-xl p-10 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-pk-bg">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 p-10 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-9 h-9">
@@ -77,12 +77,12 @@ function ForgotPasswordForm() {
                 <input
                   id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                   required autoComplete="email" placeholder="admin@clinic.com"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 focus:border-transparent transition"
                 />
               </div>
-              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
-                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                 {loading ? "Sending…" : "Send reset code"}
               </button>
             </form>
@@ -92,7 +92,7 @@ function ForgotPasswordForm() {
         {mode === "reset" && (
           <>
             <h2 className="text-xl font-semibold text-pk-text mb-2 text-center">Enter reset code</h2>
-            <div className="bg-pk-teal-50 border border-pk-teal-200 text-pk-teal-700 text-sm rounded-lg px-4 py-3 mb-5 text-center">
+            <div className="bg-pk-info-fill border border-pk-info-border text-pk-info-text text-sm rounded-pk-sm px-4 py-3 mb-5 text-center">
               If <strong>{email}</strong> has an account, a 6-digit code was sent. Check your inbox.
             </div>
             <form onSubmit={handleReset} className="space-y-5">
@@ -102,7 +102,7 @@ function ForgotPasswordForm() {
                   id="code" type="text" inputMode="numeric" maxLength={6} value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   required placeholder="123456"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
                 />
               </div>
               <div>
@@ -110,7 +110,7 @@ function ForgotPasswordForm() {
                 <input
                   id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                   required minLength={8} autoComplete="new-password" placeholder="Min 8 chars, letter + number"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
                 />
               </div>
               <div>
@@ -118,12 +118,12 @@ function ForgotPasswordForm() {
                 <input
                   id="confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
                   required autoComplete="new-password" placeholder="Repeat new password"
-                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 transition"
                 />
               </div>
-              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-lg px-4 py-3">{error}</div>}
+              {error && <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>}
               <button type="submit" disabled={loading}
-                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-lg transition text-sm">
+                className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition text-sm">
                 {loading ? "Resetting…" : "Reset password"}
               </button>
               <button type="button" onClick={() => setMode("request")}
@@ -144,7 +144,7 @@ function ForgotPasswordForm() {
             <h2 className="text-xl font-semibold text-pk-text mb-2">Password reset!</h2>
             <p className="text-sm text-pk-text-muted mb-6">Your password has been updated. You can now sign in with your new password.</p>
             <Link href="/login"
-              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-pk-teal-700 transition">
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-6 py-2.5 rounded-pk-sm text-sm font-semibold hover:bg-pk-teal-700 transition">
               Sign in
             </Link>
           </div>

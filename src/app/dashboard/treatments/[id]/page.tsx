@@ -156,14 +156,14 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
         {/* Loading */}
         {loading && (
-          <div className="bg-pk-surface rounded-2xl border border-pk-border p-12 text-center text-pk-text-muted text-sm">
+          <div className="bg-pk-surface rounded-pk-xl border border-pk-border p-12 text-center text-pk-text-muted text-sm">
             Loading treatment details…
           </div>
         )}
 
         {/* Error */}
         {!loading && error && (
-          <div className="bg-pk-danger-fill border border-pk-danger-border rounded-2xl p-6 text-center text-pk-danger-text text-sm">
+          <div className="bg-pk-danger-fill border border-pk-danger-border rounded-pk-xl p-6 text-center text-pk-danger-text text-sm">
             {error}
           </div>
         )}
@@ -171,7 +171,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
         {!loading && treatment && summary && payColors && (
           <>
             {/* ── Header card ── */}
-            <div className="bg-pk-surface rounded-2xl border border-pk-border p-6">
+            <div className="bg-pk-surface rounded-pk-xl border border-pk-border p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -239,7 +239,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                   href={`/api/treatments/${treatment.id}/consent-pdf`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-lg hover:bg-pk-surface-raised transition ml-auto"
+                  className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised transition ml-auto"
                 >
                   Download Consent Form PDF
                 </a>
@@ -250,19 +250,19 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
               {/* Box 1 — Treatment Cost (neutral) */}
-              <div className="bg-pk-surface rounded-xl border border-pk-border p-5 text-center">
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5 text-center">
                 <p className="text-xs text-pk-text-muted mb-1.5">Treatment Cost</p>
                 <p className="text-2xl font-bold text-pk-text">{formatCurrency(summary.treatmentCost)}</p>
               </div>
 
               {/* Box 2 — Total Paid (colored + progress bar) */}
-              <div className={`rounded-xl border p-5 ${payColors.cardBg} ${payColors.cardBorder}`}>
+              <div className={`rounded-pk-lg border p-5 ${payColors.cardBg} ${payColors.cardBorder}`}>
                 <p className={`text-xs font-medium mb-1.5 ${payColors.label}`}>Total Paid</p>
                 <p className={`text-2xl font-bold mb-2 ${payColors.text}`}>
                   {formatCurrency(summary.totalPaid)}
                 </p>
                 {/* Progress bar */}
-                <div className="w-full bg-white/60 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-pk-border rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-2 rounded-full transition-all ${payColors.bar}`}
                     style={{ width: `${summary.paidPercent}%` }}
@@ -275,13 +275,13 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
 
               {/* Box 3 — Balance */}
               {summary.outstanding > 0 ? (
-                <div className="bg-pk-danger-fill rounded-xl border border-pk-danger-border p-5 text-center">
+                <div className="bg-pk-danger-fill rounded-pk-lg border border-pk-danger-border p-5 text-center">
                   <p className="text-xs text-pk-danger-text mb-1.5">Outstanding</p>
                   <p className="text-2xl font-bold text-pk-danger-text">{formatCurrency(summary.outstanding)}</p>
                   <p className="text-xs text-pk-danger-text mt-1.5">Not yet charged</p>
                 </div>
               ) : (
-                <div className="bg-pk-success-fill rounded-xl border border-pk-success-border p-5 text-center flex flex-col items-center justify-center">
+                <div className="bg-pk-success-fill rounded-pk-lg border border-pk-success-border p-5 text-center flex flex-col items-center justify-center">
                   <span className="text-2xl mb-1">✓</span>
                   <p className="text-sm font-semibold text-pk-success-text">Fully Settled</p>
                   <p className="text-xs text-pk-success-text mt-0.5">No balance remaining</p>
@@ -290,7 +290,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
             </div>
 
             {/* ── Visit History ── */}
-            <div className="bg-pk-surface rounded-2xl border border-pk-border overflow-hidden">
+            <div className="bg-pk-surface rounded-pk-xl border border-pk-border overflow-hidden">
               <div className="px-6 py-4 border-b border-pk-border">
                 <h2 className="text-sm font-semibold text-pk-text">
                   Visit History
