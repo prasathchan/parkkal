@@ -11,7 +11,7 @@
  *   await orgApi.updateProfile({ name: "Parkkal Dental" });
  */
 
-import { apiFetch } from "./_client";
+import { apiFetch, ApiError } from "./_client";
 import type {
   OrgProfile,
   StaffMember,
@@ -47,15 +47,17 @@ export function updateOrgProfile(
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
 
-export function uploadLogo(file: File): Promise<{ logoUrl: string }> {
+export async function uploadLogo(file: File): Promise<{ logoUrl: string }> {
   const fd = new FormData();
   fd.append("logo", file);
-  // Don't pass Content-Type header — browser sets multipart boundary automatically
-  return apiFetch<{ logoUrl: string }>("/api/org/logo", {
-    method: "POST",
-    body: fd,
-    headers: {},
-  });
+  // Use raw fetch — apiFetch always sets Content-Type: application/json which
+  // overwrites the multipart/form-data boundary the browser must set itself.
+  const res = await fetch("/api/org/logo", { method: "POST", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ logoUrl: string }>;
 }
 
 export function deleteLogo(): Promise<{ success: true }> {

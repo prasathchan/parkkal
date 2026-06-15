@@ -48,7 +48,7 @@ function Tooth({ number, selected, onToggle, readOnly, upper }: ToothProps) {
     >
       {/* Tooth number label — above for upper, below for lower */}
       {upper && (
-        <span className="text-[9px] font-mono text-slate-500 leading-none">{number}</span>
+        <span className="text-[9px] font-mono text-pk-text-muted leading-none">{number}</span>
       )}
 
       {/* Crown SVG */}
@@ -67,15 +67,15 @@ function Tooth({ number, selected, onToggle, readOnly, upper }: ToothProps) {
       >
         <path
           d={crown.path}
-          fill={selected ? "#3B82F6" : "#F8FAFC"}
-          stroke={selected ? "#1D4ED8" : "#94A3B8"}
+          fill={selected ? "#0B6E6E" : "#FAF8F3"}
+          stroke={selected ? "#0B5654" : "#B0A99B"}
           strokeWidth="1.5"
           className="transition-colors duration-150"
         />
       </svg>
 
       {!upper && (
-        <span className="text-[9px] font-mono text-slate-500 leading-none">{number}</span>
+        <span className="text-[9px] font-mono text-pk-text-muted leading-none">{number}</span>
       )}
     </div>
   );
@@ -103,11 +103,11 @@ export function ToothChart({ value = [], onChange, readOnly = false, compact = f
   }
 
   if (compact) {
-    if (selected.size === 0) return <span className="text-slate-400 text-xs">—</span>;
+    if (selected.size === 0) return <span className="text-pk-text-muted text-xs">—</span>;
     return (
       <div className={cn("flex flex-wrap gap-1", className)}>
         {Array.from(selected).sort((a, b) => Number(a) - Number(b)).map(t => (
-          <span key={t} className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-xs font-mono">
+          <span key={t} className="inline-flex items-center px-1.5 py-0.5 rounded bg-pk-teal-100 text-pk-teal-800 text-xs font-mono">
             {t}
           </span>
         ))}
@@ -133,27 +133,27 @@ export function ToothChart({ value = [], onChange, readOnly = false, compact = f
   return (
     <div className={cn("select-none", className)}>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-2 text-[10px] text-slate-400">
+      <div className="flex items-center gap-4 mb-2 text-[10px] text-pk-text-muted">
         <span>Patient&apos;s upper right ← → upper left</span>
         {!readOnly && <span className="ml-auto">Click to select/deselect</span>}
       </div>
 
-      <div className="border border-slate-200 rounded-xl bg-slate-50 p-3 inline-block">
+      <div className="border border-pk-border rounded-pk-lg bg-pk-surface-raised p-3 inline-block">
         {/* Upper jaw */}
         <div className="flex items-end gap-px mb-1">
           {/* Q1 */}
           {row(UPPER_RIGHT, true)}
           {/* Midline */}
-          <div className="w-px bg-slate-300 mx-1 self-stretch" />
+          <div className="w-px bg-pk-neutral-300 mx-1 self-stretch" />
           {/* Q2 */}
           {row(UPPER_LEFT, true)}
         </div>
 
         {/* Jaw separator */}
         <div className="flex items-center gap-1 my-1.5">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-[9px] text-slate-400 font-medium">UPPER / LOWER</span>
-          <div className="flex-1 h-px bg-slate-200" />
+          <div className="flex-1 h-px bg-pk-surface-sunken" />
+          <span className="text-[9px] text-pk-text-muted font-medium">UPPER / LOWER</span>
+          <div className="flex-1 h-px bg-pk-surface-sunken" />
         </div>
 
         {/* Lower jaw */}
@@ -161,7 +161,7 @@ export function ToothChart({ value = [], onChange, readOnly = false, compact = f
           {/* Q4 */}
           {row(LOWER_RIGHT, false)}
           {/* Midline */}
-          <div className="w-px bg-slate-300 mx-1 self-stretch" />
+          <div className="w-px bg-pk-neutral-300 mx-1 self-stretch" />
           {/* Q3 */}
           {row(LOWER_LEFT, false)}
         </div>
@@ -171,13 +171,13 @@ export function ToothChart({ value = [], onChange, readOnly = false, compact = f
       {selected.size > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
           {Array.from(selected).sort((a, b) => Number(a) - Number(b)).map(t => (
-            <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-mono">
+            <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-pk-teal-100 text-pk-teal-800 text-xs font-mono">
               {t}
               {!readOnly && (
                 <button
                   type="button"
                   onClick={() => toggle(Number(t))}
-                  className="hover:text-blue-600 leading-none"
+                  className="hover:text-pk-teal-600 leading-none"
                   aria-label={`Remove tooth ${t}`}
                 >
                   ×

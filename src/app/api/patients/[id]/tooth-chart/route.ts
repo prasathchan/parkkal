@@ -80,6 +80,11 @@ export const PUT = withRoute(
       if (oldCond !== newCond) changedTeeth.push(tooth);
     }
 
+    // Skip history when nothing changed and a chart already exists.
+    if (changedTeeth.length === 0 && existing) {
+      return apiOk({ success: true, changedTeeth: [] });
+    }
+
     // Both writes must succeed together. D1 does not support db.transaction()
     // with async callbacks — use runCascade() (D1 batch) instead.
     const chartWrite = existing

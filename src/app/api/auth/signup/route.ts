@@ -210,7 +210,15 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    await sendEmailOTP(email, name, emailCode).catch(() => {});
+    try {
+      await sendEmailOTP(email, name, emailCode);
+    } catch (emailErr) {
+      log.error("Failed to send OTP email during signup", { userId, error: String(emailErr) });
+      return NextResponse.json(
+        { error: "Failed to send verification email. Please try again in a moment." },
+        { status: 502 }
+      );
+    }
 
     log.info("Signup completed", { userId, orgId });
     return NextResponse.json({ userId });

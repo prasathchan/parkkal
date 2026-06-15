@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/table";
 
 const STATUS_COLORS: Record<string, string> = {
-  PAID:             "bg-green-100 text-green-700",
-  PARTIALLY_PAID:   "bg-blue-100 text-blue-700",
-  PENDING:          "bg-yellow-100 text-yellow-700",
-  DRAFT:            "bg-slate-100 text-slate-600",
+  PAID:             "bg-pk-success-fill text-pk-success-text",
+  PARTIALLY_PAID:   "bg-pk-teal-100 text-pk-teal-700",
+  PENDING:          "bg-pk-warning-fill text-pk-warning-text",
+  DRAFT:            "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
 export default function InvoicesPage() {
@@ -138,12 +138,12 @@ export default function InvoicesPage() {
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
             placeholder="Search patient..."
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-52"
           />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             <option value="ALL">All Statuses</option>
             <option value="DRAFT">Draft</option>
@@ -154,7 +154,7 @@ export default function InvoicesPage() {
           <div className="ml-auto">
             <button
               onClick={openSlideover}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -165,16 +165,16 @@ export default function InvoicesPage() {
         </div>
 
         {/* Table card */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
+          <div className="px-6 py-4 border-b border-pk-border flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-slate-900">Invoice List</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Manage standalone invoices for patients</p>
+              <h2 className="font-semibold text-pk-text">Invoice List</h2>
+              <p className="text-xs text-pk-text-muted mt-0.5">Manage standalone invoices for patients</p>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">{pending} Pending</span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{partial} Partial</span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full">{paid} Paid</span>
+              <span className="bg-pk-warning-fill text-pk-warning-text px-2 py-1 rounded-full">{pending} Pending</span>
+              <span className="bg-pk-teal-100 text-pk-teal-700 px-2 py-1 rounded-full">{partial} Partial</span>
+              <span className="bg-pk-success-fill text-pk-success-text px-2 py-1 rounded-full">{paid} Paid</span>
             </div>
           </div>
 
@@ -194,7 +194,7 @@ export default function InvoicesPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-400">Loading...</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-pk-text-muted">Loading...</TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
@@ -212,22 +212,22 @@ export default function InvoicesPage() {
                   return (
                     <TableRow key={inv.id}>
                       <TableCell>
-                        <span className="font-mono text-xs text-blue-700">{inv.id.slice(0, 8)}</span>
+                        <span className="font-mono text-xs text-pk-teal-700">{inv.id.slice(0, 8)}</span>
                       </TableCell>
                       <TableCell className="font-medium">
                         {inv.patientName ?? inv.patientId}
                       </TableCell>
                       <TableCell className="font-semibold">{formatCurrency(inv.totalAmount)}</TableCell>
-                      <TableCell className="text-green-700">{formatCurrency(inv.paidAmount)}</TableCell>
-                      <TableCell className={`font-medium ${balance > 0 ? "text-red-600" : "text-slate-400"}`}>
+                      <TableCell className="text-pk-success-text">{formatCurrency(inv.paidAmount)}</TableCell>
+                      <TableCell className={`font-medium ${balance > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>
                         {formatCurrency(balance)}
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status] ?? "bg-slate-100 text-slate-700"}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[inv.status] ?? "bg-pk-surface-sunken text-pk-text-secondary"}`}>
                           {inv.status}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-500">
+                      <TableCell className="text-pk-text-muted">
                         {new Date(inv.createdAt).toLocaleDateString("en-IN")}
                       </TableCell>
                       <TableCell>
@@ -235,7 +235,7 @@ export default function InvoicesPage() {
                           {inv.status !== "PAID" && (
                             <button
                               onClick={() => openPayModal(inv)}
-                              className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 transition"
+                              className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success transition"
                             >
                               Record Payment
                             </button>
@@ -244,7 +244,7 @@ export default function InvoicesPage() {
                             href={`/api/invoices/${inv.id}/pdf`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs border border-slate-200 text-slate-600 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition"
+                            className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised transition"
                           >
                             PDF
                           </a>
@@ -263,10 +263,10 @@ export default function InvoicesPage() {
       {showSlideover && (
         <div className="fixed inset-0 z-40 flex">
           <div className="flex-1 bg-black/30" onClick={() => setShowSlideover(false)} />
-          <div className="w-full max-w-md bg-white shadow-xl flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h2 className="text-base font-semibold text-slate-900">New Invoice</h2>
-              <button onClick={() => setShowSlideover(false)} aria-label="Close panel" className="text-slate-400 hover:text-slate-600 transition">
+          <div className="w-full max-w-md bg-pk-surface shadow-pk-e3 flex flex-col h-full overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border">
+              <h2 className="text-base font-semibold text-pk-text">New Invoice</h2>
+              <button onClick={() => setShowSlideover(false)} aria-label="Close panel" className="text-pk-text-muted hover:text-pk-text-secondary transition">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -275,8 +275,8 @@ export default function InvoicesPage() {
 
             <form onSubmit={handleSubmit} className="flex-1 px-6 py-5 space-y-5">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Patient <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+                  Patient <span className="text-pk-danger-text">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -288,10 +288,10 @@ export default function InvoicesPage() {
                       setShowFormPatientDropdown(true);
                     }}
                     placeholder="Search patient..."
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   />
                   {showFormPatientDropdown && formPatients.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 z-10">
                       {formPatients.map((p) => (
                         <button
                           key={p.id}
@@ -301,31 +301,31 @@ export default function InvoicesPage() {
                             setFormPatientSearch(p.name);
                             setShowFormPatientDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-pk-surface-raised flex items-center gap-2"
                         >
                           <span className="font-medium">{p.name}</span>
-                          <span className="text-xs text-slate-400">{p.patientCode}</span>
+                          <span className="text-xs text-pk-text-muted">{p.patientCode}</span>
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-                {form.patientId && <p className="text-xs text-green-600 mt-1">Patient selected</p>}
+                {form.patientId && <p className="text-xs text-pk-success-text mt-1">Patient selected</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Notes</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Notes</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
                   placeholder="Optional notes..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 
               {submitError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {submitError}
                 </div>
               )}
@@ -334,14 +334,14 @@ export default function InvoicesPage() {
                 <button
                   type="submit"
                   disabled={submitting || !form.patientId}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Saving..." : "Create Invoice"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowSlideover(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>
@@ -354,31 +354,31 @@ export default function InvoicesPage() {
       {/* Record Payment Modal */}
       {payModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Record Payment</h3>
-            <p className="text-sm text-slate-500 mb-4">
+          <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-pk-text mb-1">Record Payment</h3>
+            <p className="text-sm text-pk-text-muted mb-4">
               Invoice <span className="font-mono">{payModal.invoice.id.slice(0, 8)}</span>
               {" · "}{payModal.invoice.patientName}
             </p>
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-sm">
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 mb-0.5">Total</p>
+                <div className="bg-pk-surface-raised rounded-pk-sm p-3">
+                  <p className="text-xs text-pk-text-muted mb-0.5">Total</p>
                   <p className="font-semibold">{formatCurrency(payModal.invoice.totalAmount)}</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 mb-0.5">Paid</p>
-                  <p className="font-semibold text-green-700">{formatCurrency(payModal.invoice.paidAmount)}</p>
+                <div className="bg-pk-success-fill rounded-pk-sm p-3">
+                  <p className="text-xs text-pk-text-muted mb-0.5">Paid</p>
+                  <p className="font-semibold text-pk-success-text">{formatCurrency(payModal.invoice.paidAmount)}</p>
                 </div>
-                <div className="bg-red-50 rounded-lg p-3">
-                  <p className="text-xs text-slate-400 mb-0.5">Balance</p>
-                  <p className="font-semibold text-red-600">{formatCurrency(payModal.invoice.totalAmount - payModal.invoice.paidAmount)}</p>
+                <div className="bg-pk-danger-fill rounded-pk-sm p-3">
+                  <p className="text-xs text-pk-text-muted mb-0.5">Balance</p>
+                  <p className="font-semibold text-pk-danger-text">{formatCurrency(payModal.invoice.totalAmount - payModal.invoice.paidAmount)}</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Amount to Pay (₹) <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+                  Amount to Pay (₹) <span className="text-pk-danger-text">*</span>
                 </label>
                 <input
                   type="number"
@@ -387,27 +387,27 @@ export default function InvoicesPage() {
                   step="0.01"
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   placeholder="0.00"
                 />
               </div>
 
               {payError && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{payError}</div>
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{payError}</div>
               )}
 
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
                   disabled={paySubmitting}
-                  className="flex-1 bg-green-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition"
+                  className="flex-1 bg-pk-success text-white px-4 py-2.5 rounded-pk-sm text-sm font-medium hover:bg-pk-success disabled:opacity-50 transition"
                 >
                   {paySubmitting ? "Processing..." : "Pay"}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setPayModal(null); setPayError(""); }}
-                  className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                  className="px-4 py-2.5 border border-pk-border rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
                 >
                   Cancel
                 </button>

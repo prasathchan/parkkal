@@ -31,11 +31,11 @@ interface Plan {
 }
 
 const STATUS_COPY: Record<string, { label: string; color: string }> = {
-  trialing:  { label: "Free trial",          color: "text-blue-700 bg-blue-50 border-blue-200" },
-  active:    { label: "Active",               color: "text-green-700 bg-green-50 border-green-200" },
-  past_due:  { label: "Payment overdue",      color: "text-yellow-700 bg-yellow-50 border-yellow-200" },
-  cancelled: { label: "Cancelled",            color: "text-slate-600 bg-slate-50 border-slate-200" },
-  expired:   { label: "Expired — read-only",  color: "text-red-700 bg-red-50 border-red-200" },
+  trialing:  { label: "Free trial",          color: "text-pk-teal-700 bg-pk-teal-50 border-pk-teal-200" },
+  active:    { label: "Active",               color: "text-pk-success-text bg-pk-success-fill border-pk-success-border" },
+  past_due:  { label: "Payment overdue",      color: "text-pk-warning-text bg-pk-warning-fill border-pk-warning-border" },
+  cancelled: { label: "Cancelled",            color: "text-pk-text-secondary bg-pk-surface-raised border-pk-border" },
+  expired:   { label: "Expired — read-only",  color: "text-pk-danger-text bg-pk-danger-fill border-pk-danger-border" },
 };
 
 function BillingPageInner() {
@@ -100,7 +100,7 @@ function BillingPageInner() {
       <main id="main-content" className="flex-1 p-6 max-w-3xl space-y-6">
 
         {upgraded && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+          <div className="bg-pk-success-fill border border-pk-success-border rounded-pk-lg px-4 py-3 text-sm text-pk-success-text flex items-center gap-2">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
@@ -108,21 +108,21 @@ function BillingPageInner() {
           </div>
         )}
         {cancelled && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+          <div className="bg-pk-warning-fill border border-pk-warning-border rounded-pk-lg px-4 py-3 text-sm text-pk-warning-text">
             Checkout was cancelled. No changes were made to your subscription.
           </div>
         )}
 
         {loading ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400 text-sm">Loading…</div>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-8 text-center text-pk-text-muted text-sm">Loading…</div>
         ) : sub ? (
           <>
             {/* Current plan card */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="font-semibold text-slate-900">Current plan</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Your organisation&apos;s active subscription.</p>
+                  <h2 className="font-semibold text-pk-text">Current plan</h2>
+                  <p className="text-xs text-pk-text-muted mt-0.5">Your organisation&apos;s active subscription.</p>
                 </div>
                 {statusInfo && (
                   <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${statusInfo.color}`}>
@@ -132,26 +132,26 @@ function BillingPageInner() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-slate-50 rounded-lg p-4">
-                  <p className="text-xs text-slate-400 mb-1">Plan</p>
-                  <p className="font-bold text-slate-900 text-lg">{sub.planName}</p>
+                <div className="bg-pk-surface-raised rounded-pk-sm p-4">
+                  <p className="text-xs text-pk-text-muted mb-1">Plan</p>
+                  <p className="font-bold text-pk-text text-lg">{sub.planName}</p>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-4">
-                  <p className="text-xs text-slate-400 mb-1">Monthly price</p>
-                  <p className="font-bold text-slate-900 text-lg">
+                <div className="bg-pk-surface-raised rounded-pk-sm p-4">
+                  <p className="text-xs text-pk-text-muted mb-1">Monthly price</p>
+                  <p className="font-bold text-pk-text text-lg">
                     {sub.priceMonthly === 0 ? "Free" : `₹${sub.priceMonthly.toLocaleString("en-IN")}`}
                   </p>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-4">
-                  <p className="text-xs text-slate-400 mb-1">
+                <div className="bg-pk-surface-raised rounded-pk-sm p-4">
+                  <p className="text-xs text-pk-text-muted mb-1">
                     {sub.status === "trialing" ? "Trial ends" : "Renews"}
                   </p>
-                  <p className={`font-bold text-lg ${sub.isReadOnly ? "text-red-700" : "text-slate-900"}`}>
+                  <p className={`font-bold text-lg ${sub.isReadOnly ? "text-pk-danger-text" : "text-pk-text"}`}>
                     {endDate
                       ? new Date(endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                       : "—"}
                     {sub.daysRemaining !== null && (
-                      <span className={`block text-xs font-normal mt-0.5 ${sub.daysRemaining < 0 ? "text-red-500" : sub.daysRemaining <= 7 ? "text-yellow-600" : "text-slate-400"}`}>
+                      <span className={`block text-xs font-normal mt-0.5 ${sub.daysRemaining < 0 ? "text-pk-danger-text" : sub.daysRemaining <= 7 ? "text-pk-warning-text" : "text-pk-text-muted"}`}>
                         {sub.daysRemaining < 0
                           ? `Expired ${Math.abs(sub.daysRemaining)} days ago`
                           : sub.daysRemaining === 0
@@ -164,21 +164,21 @@ function BillingPageInner() {
               </div>
 
               {sub.isReadOnly && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div className="mt-4 p-4 bg-pk-danger-fill border border-pk-danger-border rounded-pk-sm text-sm text-pk-danger-text">
                   Your subscription has expired. Your data is safe and visible, but you cannot create or edit records until you upgrade.
                 </div>
               )}
             </div>
 
             {/* Upgrade / contact section */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="font-semibold text-slate-900 mb-1">Upgrade or renew</h2>
-              <p className="text-sm text-slate-500 mb-4">
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+              <h2 className="font-semibold text-pk-text mb-1">Upgrade or renew</h2>
+              <p className="text-sm text-pk-text-muted mb-4">
                 Select a plan below to upgrade online, or contact us if you need a custom quote or want to pay via bank transfer.
               </p>
               <a
                 href="mailto:support@parkkal.com?subject=Subscription%20upgrade"
-                className="inline-flex items-center gap-2 border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
+                className="inline-flex items-center gap-2 border border-pk-border-strong text-pk-text-secondary px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition"
               >
                 Contact support
               </a>
@@ -186,7 +186,7 @@ function BillingPageInner() {
 
             {/* Checkout error */}
             {checkoutError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+              <div className="rounded-pk-lg border border-pk-danger-border bg-pk-danger-fill px-4 py-3 text-sm text-pk-danger-text flex items-start gap-2">
                 <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
@@ -196,47 +196,47 @@ function BillingPageInner() {
 
             {/* Available plans */}
             {plansError && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              <div className="rounded-pk-lg border border-pk-border bg-pk-surface-raised px-4 py-3 text-sm text-pk-text-muted">
                 Could not load available plans. Please refresh the page or{" "}
                 <a href="mailto:support@parkkal.com" className="underline">contact support</a>.
               </div>
             )}
             {!plansError && plans.length > 0 && (
               <div className="space-y-3">
-                <h2 className="font-semibold text-slate-900 text-sm">Available plans</h2>
+                <h2 className="font-semibold text-pk-text text-sm">Available plans</h2>
                 {plans.filter((p) => p.isActive && p.slug !== "trial").map((plan) => {
                   const features = (() => { try { return JSON.parse(plan.features) as string[]; } catch { return []; } })();
                   const isCurrent = plan.slug === sub.planSlug;
                   return (
-                    <div key={plan.id} className={`bg-white rounded-xl border p-5 ${isCurrent ? "border-blue-400 ring-1 ring-blue-400" : "border-slate-200"}`}>
+                    <div key={plan.id} className={`bg-pk-surface rounded-pk-lg border p-5 ${isCurrent ? "border-pk-teal-400 ring-1 ring-pk-teal-400" : "border-pk-border"}`}>
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-slate-900">{plan.name}</h3>
-                            {isCurrent && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Current</span>}
+                            <h3 className="font-semibold text-pk-text">{plan.name}</h3>
+                            {isCurrent && <span className="text-xs bg-pk-teal-100 text-pk-teal-700 px-2 py-0.5 rounded-full font-medium">Current</span>}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
-                          <p className="text-xs text-slate-500 mt-1">
+                          <p className="text-xs text-pk-text-muted mt-0.5">{plan.description}</p>
+                          <p className="text-xs text-pk-text-muted mt-1">
                             {plan.maxDoctors ?? "Unlimited"} doctors · {plan.maxStaff ?? "Unlimited"} staff
                           </p>
                           {features.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {features.map((f) => (
-                                <span key={f} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{f}</span>
+                                <span key={f} className="text-xs bg-pk-surface-sunken text-pk-text-secondary px-2 py-0.5 rounded">{f}</span>
                               ))}
                             </div>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0 ml-4 flex flex-col items-end gap-2">
                           <div>
-                            <p className="text-2xl font-bold text-slate-900">₹{plan.priceMonthly.toLocaleString("en-IN")}</p>
-                            <p className="text-xs text-slate-400">/month</p>
+                            <p className="text-2xl font-bold text-pk-text">₹{plan.priceMonthly.toLocaleString("en-IN")}</p>
+                            <p className="text-xs text-pk-text-muted">/month</p>
                           </div>
                           {!isCurrent && plan.priceMonthly > 0 && (
                             <button
                               onClick={() => startCheckout(plan.id)}
                               disabled={upgrading === plan.id}
-                              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                              className="inline-flex items-center gap-1.5 bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white text-xs font-semibold px-3 py-1.5 rounded-pk-sm transition"
                             >
                               {upgrading === plan.id ? "Redirecting…" : "Upgrade →"}
                             </button>
@@ -250,8 +250,8 @@ function BillingPageInner() {
             )}
           </>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
-            <p className="text-slate-500 text-sm">No subscription found. Please contact support.</p>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-8 text-center">
+            <p className="text-pk-text-muted text-sm">No subscription found. Please contact support.</p>
           </div>
         )}
       </main>

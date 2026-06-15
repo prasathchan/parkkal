@@ -9,6 +9,7 @@ import { calendarIntegrations } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { encryptField } from "@/lib/encryption";
 import { exchangeGoogleCode, generateId } from "@/lib/calendar-sync";
+import { getSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -20,16 +21,27 @@ export async function GET(req: NextRequest) {
     return Response.redirect(new URL("/dashboard/settings/calendar?error=google_denied", req.url));
   }
 
+  // Verify the session is still active and the state belongs to this user (CSRF guard).
+  const session = await getSession(req);
+  if (!session) {
+    return Response.redirect(new URL("/dashboard/settings/calendar?error=google_denied", req.url));
+  }
+
   try {
     const db = getDb();
 
-    const { userId, orgId } = JSON.parse(Buffer.from(state, "base64url").toString()) as { userId: string; orgId: string };
+    const { userId, orgId, nonce } = JSON.parse(Buffer.from(state, "base64url").toString()) as { userId: string; orgId: string; nonce?: string };
+    const storedNonce = req.cookies.get("cal_oauth_nonce")?.value;
+    if (!nonce || !storedNonce || storedNonce !== nonce || session.userId !== userId || session.orgId !== orgId) {
+      return Response.redirect(new URL("/dashboard/settings/calendar?error=google_denied", req.url));
+    }
     const tokens = await exchangeGoogleCode(code);
 
     const [encAccess, encRefresh] = await Promise.all([
       encryptField(tokens.accessToken),
       encryptField(tokens.refreshToken),
     ]);
+    if (!encAccess || !encRefresh) throw new Error("Token encryption failed");
 
     // Upsert — if already connected, replace the tokens
     const [existing] = await db
@@ -42,8 +54,8 @@ export async function GET(req: NextRequest) {
       await db
         .update(calendarIntegrations)
         .set({
-          accessToken:  encAccess  ?? "",
-          refreshToken: encRefresh ?? "",
+          accessToken:  encAccess,
+          refreshToken: encRefresh,
           expiresAt:    tokens.expiresAt,
           isActive:     1,
           updatedAt:    now,
@@ -55,8 +67,8 @@ export async function GET(req: NextRequest) {
         organizationId: orgId,
         userId,
         provider:       "GOOGLE",
-        accessToken:    encAccess  ?? "",
-        refreshToken:   encRefresh ?? "",
+        accessToken:    encAccess,
+        refreshToken:   encRefresh,
         expiresAt:      tokens.expiresAt,
         eventIdMap:     "{}",
         isActive:       1,

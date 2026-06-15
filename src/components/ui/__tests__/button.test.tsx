@@ -9,39 +9,44 @@ describe("Button", () => {
     expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
   });
 
-  it("default variant has blue background classes", () => {
+  it("default variant has teal primary background", () => {
     render(<Button>Click</Button>);
     const btn = screen.getByRole("button");
-    expect(btn.className).toContain("bg-blue-600");
+    expect(btn.className).toContain("bg-pk-primary");
+  });
+
+  it("accent variant uses the gold accent action surface", () => {
+    render(<Button variant="accent">Pay</Button>);
+    expect(screen.getByRole("button").className).toContain("bg-pk-accent-action");
   });
 
   it("outline variant has border classes", () => {
     render(<Button variant="outline">Click</Button>);
     const btn = screen.getByRole("button");
     expect(btn.className).toContain("border");
-    expect(btn.className).toContain("bg-white");
+    expect(btn.className).toContain("border-pk-border");
   });
 
-  it("destructive variant has red background", () => {
+  it("destructive variant has danger background", () => {
     render(<Button variant="destructive">Delete</Button>);
-    expect(screen.getByRole("button").className).toContain("bg-red-600");
+    expect(screen.getByRole("button").className).toContain("bg-pk-danger");
   });
 
   it("ghost variant has no solid background", () => {
     render(<Button variant="ghost">Cancel</Button>);
     const cls = screen.getByRole("button").className;
-    expect(cls).not.toContain("bg-blue-600");
-    expect(cls).not.toContain("bg-red-600");
+    expect(cls).not.toContain("bg-pk-primary");
+    expect(cls).not.toContain("bg-pk-danger");
   });
 
   it("sm size has small padding classes", () => {
     render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole("button").className).toContain("px-3");
+    expect(screen.getByRole("button").className).toContain("px-pk-3");
   });
 
   it("lg size has large padding classes", () => {
     render(<Button size="lg">Large</Button>);
-    expect(screen.getByRole("button").className).toContain("px-6");
+    expect(screen.getByRole("button").className).toContain("px-pk-6");
   });
 
   it("forwards disabled prop and applies disabled styles", () => {

@@ -132,10 +132,10 @@ export default function TreatmentsPage() {
 
   function statusBadgeClass(status: TreatmentStatus): string {
     if (status === "COMPLETED")
-      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700";
+      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-success-fill text-pk-success-text";
     if (status === "IN_PROGRESS")
-      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700";
-    return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700";
+      return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-teal-100 text-pk-teal-700";
+    return "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pk-warning-fill text-pk-warning-text";
   }
 
   const hasMore = offset < total;
@@ -167,10 +167,10 @@ export default function TreatmentsPage() {
                 }
               }}
               placeholder="Filter by patient..."
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-52"
+              className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 w-52"
             />
             {showFilterDropdown && filterPatients.length > 0 && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 w-64">
+              <div className="absolute top-full left-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 z-10 w-64">
                 {filterPatients.map((p) => (
                   <button
                     key={p.id}
@@ -181,10 +181,10 @@ export default function TreatmentsPage() {
                       setPatientSearch(p.name);
                       setShowFilterDropdown(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-pk-surface-raised flex items-center gap-2"
                   >
                     <span className="font-medium">{p.name}</span>
-                    <span className="text-xs text-slate-400">{p.patientCode}</span>
+                    <span className="text-xs text-pk-text-muted">{p.patientCode}</span>
                   </button>
                 ))}
               </div>
@@ -195,13 +195,13 @@ export default function TreatmentsPage() {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           />
 
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="text-sm text-slate-500 hover:text-slate-700 underline"
+              className="text-sm text-pk-text-muted hover:text-pk-text-secondary underline"
             >
               Clear filters
             </button>
@@ -209,7 +209,7 @@ export default function TreatmentsPage() {
 
           <div className="ml-auto flex items-center gap-3">
             {!loading && total > 0 && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-pk-text-muted">
                 {filterPatientName
                   ? `${total} for ${filterPatientName}`
                   : `${total} total`}
@@ -218,7 +218,7 @@ export default function TreatmentsPage() {
             <button
               type="button"
               onClick={exportTreatments}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-pk-sm text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -227,7 +227,7 @@ export default function TreatmentsPage() {
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -238,24 +238,24 @@ export default function TreatmentsPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Patient</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Doctor</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Procedure / Item</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Tooth</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Status</th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">Cost</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Patient</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Doctor</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Date</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Procedure / Item</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Tooth</th>
+                  <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Status</th>
+                  <th className="text-right px-4 py-3 font-semibold text-pk-text-secondary">Cost</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-pk-border">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-slate-400">Loading...</td>
+                    <td colSpan={7} className="text-center py-10 text-pk-text-muted">Loading...</td>
                   </tr>
                 ) : treatments.length === 0 ? (
                   <tr>
@@ -269,22 +269,22 @@ export default function TreatmentsPage() {
                   </tr>
                 ) : (
                   treatments.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50 transition">
+                    <tr key={t.id} className="hover:bg-pk-surface-raised transition">
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-900">{t.patientName}</div>
-                        <div className="text-xs text-slate-400">{t.patientCode}</div>
+                        <div className="font-medium text-pk-text">{t.patientName}</div>
+                        <div className="text-xs text-pk-text-muted">{t.patientCode}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-700">{t.doctorName || "—"}</td>
-                      <td className="px-4 py-3 text-slate-700">
+                      <td className="px-4 py-3 text-pk-text-secondary">{t.doctorName || "—"}</td>
+                      <td className="px-4 py-3 text-pk-text-secondary">
                         {new Date(t.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-slate-900">{t.description}</div>
+                        <div className="text-pk-text">{t.description}</div>
                         {t.procedure && (
-                          <div className="text-xs text-slate-400">{t.procedure}</div>
+                          <div className="text-xs text-pk-text-muted">{t.procedure}</div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
+                      <td className="px-4 py-3 text-pk-text-muted">
                         {t.toothNumbers ? (
                           <ToothChart
                             value={t.toothNumbers.split(",").map((s) => s.trim()).filter(Boolean)}
@@ -298,20 +298,20 @@ export default function TreatmentsPage() {
                           value={t.status || "PLANNED"}
                           disabled={updatingStatus === t.id}
                           onChange={(e) => handleStatusChange(t.id, e.target.value as TreatmentStatus)}
-                          className={`${statusBadgeClass((t.status || "PLANNED") as TreatmentStatus)} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 pr-6 disabled:opacity-50`}
+                          className={`${statusBadgeClass((t.status || "PLANNED") as TreatmentStatus)} border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-pk-teal-500 pr-6 disabled:opacity-50`}
                         >
                           <option value="PLANNED">PLANNED</option>
                           <option value="IN_PROGRESS">IN_PROGRESS</option>
                           <option value="COMPLETED">COMPLETED</option>
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-slate-900">
+                      <td className="px-4 py-3 text-right font-medium text-pk-text">
                         {formatCurrency(t.cost ?? 0)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/dashboard/treatments/${t.id}`}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+                          className="text-xs text-pk-teal-600 hover:text-pk-teal-800 font-medium whitespace-nowrap"
                         >
                           View History
                         </Link>
@@ -325,14 +325,14 @@ export default function TreatmentsPage() {
 
           {/* Pagination footer */}
           {!loading && hasMore && (
-            <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between">
-              <span className="text-xs text-slate-400">
+            <div className="px-4 py-4 border-t border-pk-border flex items-center justify-between">
+              <span className="text-xs text-pk-text-muted">
                 Showing {treatments.length} of {total}
               </span>
               <button
                 onClick={() => fetchTreatments(offset, true)}
                 disabled={loadingMore}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                className="text-sm text-pk-teal-600 hover:text-pk-teal-800 font-medium disabled:opacity-50"
               >
                 {loadingMore
                   ? "Loading..."

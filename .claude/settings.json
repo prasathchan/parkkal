@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npx tsc)",
+      "Bash(npx wrangler secret list *)",
+      "Bash(npx wrangler deployments list *)",
+      "Bash(npx wrangler tail *)",
+      "Bash(npx vitest *)",
+      "Bash(npx eslint *)",
+      "Bash(find src *)",
+      "Bash(find /Users/prasathchan/Documents/parkkal/app/parkkal/src *)",
+      "Bash(ls /Users/prasathchan/Documents/parkkal/app/parkkal/drizzle/migrations/)",
+      "Bash(sqlite3 local.db *)",
+      "Bash(sqlite3 /Users/prasathchan/Documents/parkkal/app/parkkal/local.db *)",
+      "Bash(npm test)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run test:coverage)",
+      "Bash(curl -s *)"
+    ]
+  }
+}

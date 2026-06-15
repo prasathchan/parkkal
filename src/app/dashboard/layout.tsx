@@ -45,7 +45,7 @@ export default async function DashboardLayout({
 
   return (
     <ThemeProvider config={themeConfig}>
-      <div className="flex min-h-screen" style={{ background: "var(--background)" }}>
+      <div className="flex min-h-screen" style={{ background: "var(--pk-bg)" }}>
         <Sidebar
           user={{ name: session.name, role: session.role, orgName: session.orgName, orgTagline: org?.tagline ?? null }}
           logoUrl={org?.logoUrl ?? null}
@@ -53,7 +53,7 @@ export default async function DashboardLayout({
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
           {/* Subscription banners */}
           {isReadOnly && (
-            <div className="bg-red-600 text-white px-5 py-2.5 flex items-center justify-between text-sm print:hidden">
+            <div className="bg-pk-danger text-white px-5 py-2.5 flex items-center justify-between text-sm print:hidden">
               <span>
                 {subscription?.status === "trialing"
                   ? "Your 30-day free trial has ended."
@@ -66,7 +66,7 @@ export default async function DashboardLayout({
             </div>
           )}
           {!isReadOnly && trialDaysLeft !== null && trialDaysLeft <= 7 && trialDaysLeft >= 0 && (
-            <div className="bg-amber-500 text-white px-5 py-2 flex items-center justify-between text-sm print:hidden">
+            <div className="bg-pk-warning text-white px-5 py-2 flex items-center justify-between text-sm print:hidden">
               <span>
                 {trialDaysLeft === 0
                   ? "Your free trial ends today."

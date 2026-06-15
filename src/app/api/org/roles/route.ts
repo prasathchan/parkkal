@@ -97,7 +97,7 @@ export const POST = withRoute(
       id: `role_${session.orgId}_${slug}_${now}`,
       organizationId: session.orgId,
       name: name.trim(), slug, description: description || null,
-      color: color || "#3B82F6", isSystem: 0,
+      color: color || "#0B6E6E", isSystem: 0,
       permissions: JSON.stringify(permissions || []),
       createdAt: now, updatedAt: now,
     };

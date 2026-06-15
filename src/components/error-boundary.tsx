@@ -33,26 +33,26 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-12 h-12 rounded-full bg-pk-danger-fill flex items-center justify-center mb-4">
+          <svg className="w-6 h-6 text-pk-danger-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
           </svg>
         </div>
-        <h1 className="text-base font-semibold text-slate-900 mb-1">Something went wrong</h1>
-        <p className="text-sm text-slate-500 mb-6 max-w-sm">
+        <h1 className="text-base font-semibold text-pk-text mb-1">Something went wrong</h1>
+        <p className="text-sm text-pk-text-muted mb-6 max-w-sm">
           {this.state.error?.message ?? "An unexpected error occurred. The team has been notified."}
         </p>
         <div className="flex gap-3">
           <button
             onClick={this.handleReset}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-pk-teal-600 text-white rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
           >
             Try again
           </button>
           <Link
             href="/dashboard"
-            className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition"
+            className="px-4 py-2 border border-pk-border text-pk-text-secondary rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition"
           >
             Go to dashboard
           </Link>

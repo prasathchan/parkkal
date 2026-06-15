@@ -259,7 +259,7 @@ function NavLink({
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg text-sm font-medium transition-colors",
+        "flex items-center gap-2.5 rounded-pk-sm text-sm font-medium transition-colors",
         item.sub ? "px-3 py-2" : "px-3 py-2.5"
       )}
       style={{
@@ -288,9 +288,9 @@ function LogoutButton({
       onClick={onLogout}
       title="Sign out"
       aria-label="Sign out"
-      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-pk-sm transition-colors"
       style={{
-        color: hovered ? "#ef4444" : colors.text,
+        color: hovered ? "#C0392B" : colors.text,
         background: hovered ? colors.hoverBg : "transparent",
       }}
       onMouseEnter={() => setHovered(true)}
@@ -359,14 +359,12 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
       <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.divider}` }}>
         <div className="flex items-center gap-3">
           {logoUrl ? (
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+            <div className="w-8 h-8 rounded-pk-sm overflow-hidden flex-shrink-0 bg-white/10">
               <Image src={logoUrl} alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: theme.sidebarStyle === "colored" ? "rgba(255,255,255,0.2)" : theme.primaryColor }}>
-              <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-              </svg>
+            <div className="w-8 h-8 rounded-pk-sm flex items-center justify-center flex-shrink-0 bg-white/10">
+              <Image src="/parkkal-mark-white.svg" alt="" width={20} height={20} className="w-5 h-5" />
             </div>
           )}
           <div>

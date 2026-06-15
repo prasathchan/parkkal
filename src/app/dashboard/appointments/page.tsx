@@ -29,15 +29,15 @@ const TOTAL_HOURS = HOUR_END - HOUR_START;
 
 // Appointment type colours
 const TYPE_COLORS: Record<string, { bg: string; border: string; text: string; dot: string }> = {
-  CONSULTATION: { bg: "bg-blue-50",   border: "border-blue-400",  text: "text-blue-800",  dot: "bg-blue-400"  },
-  CHECKUP:      { bg: "bg-green-50",  border: "border-green-400", text: "text-green-800", dot: "bg-green-400" },
-  TREATMENT:    { bg: "bg-purple-50", border: "border-purple-400",text: "text-purple-800",dot: "bg-purple-400"},
-  FOLLOWUP:     { bg: "bg-orange-50", border: "border-orange-400",text: "text-orange-800",dot: "bg-orange-400"},
+  CONSULTATION: { bg: "bg-pk-teal-50",   border: "border-pk-teal-400",  text: "text-pk-teal-800",  dot: "bg-pk-teal-400"  },
+  CHECKUP:      { bg: "bg-pk-success-fill",  border: "border-pk-success-border", text: "text-pk-success-text", dot: "bg-pk-success" },
+  TREATMENT:    { bg: "bg-pk-neutral-50", border: "border-pk-neutral-400",text: "text-pk-neutral-800",dot: "bg-pk-neutral-400"},
+  FOLLOWUP:     { bg: "bg-pk-warning-fill", border: "border-pk-warning-border",text: "text-pk-warning-text",dot: "bg-pk-warning"},
 };
 
 const STATUS_STYLE: Record<string, string> = {
   SCHEDULED:   "opacity-100",
-  IN_PROGRESS: "ring-2 ring-blue-400 ring-offset-1",
+  IN_PROGRESS: "ring-2 ring-pk-teal-400 ring-offset-1",
   COMPLETED:   "opacity-40",
   CANCELLED:   "opacity-25 line-through",
   NO_SHOW:     "opacity-30",
@@ -121,8 +121,8 @@ function AppointmentPill({
       onClick={() => onClick(apt)}
       style={style}
       className={`
-        w-full text-left rounded-md border-l-4 px-2 py-1 shadow-sm transition
-        hover:shadow-md hover:brightness-95 cursor-pointer select-none
+        w-full text-left rounded-pk-sm border-l-4 px-2 py-1 shadow-pk-e1 transition
+        hover:shadow-pk-e2 hover:brightness-95 cursor-pointer select-none
         ${colors.bg} ${colors.border} ${colors.text} ${statusCls}
         ${compact ? "text-xs" : "text-xs"}
       `}
@@ -136,8 +136,8 @@ function AppointmentPill({
       )}
       {apt.status === "IN_PROGRESS" && (
         <span className="inline-flex items-center gap-1 mt-0.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <span className="text-blue-600 font-medium">In chair</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-pk-teal-500 animate-pulse" />
+          <span className="text-pk-teal-600 font-medium">In chair</span>
         </span>
       )}
     </button>
@@ -155,7 +155,7 @@ function TimeColumn() {
           className="absolute w-full pr-2 text-right"
           style={{ top: i * PX_PER_HOUR - 8 }}
         >
-          <span className="text-xs text-gray-400 font-medium">
+          <span className="text-xs text-pk-text-muted font-medium">
             {((HOUR_START + i) % 12 || 12)}{HOUR_START + i < 12 ? " AM" : " PM"}
           </span>
         </div>
@@ -210,21 +210,21 @@ function DayView({
   return (
     <div className="flex overflow-x-auto">
       {/* Time labels */}
-      <div className="sticky left-0 z-10 bg-white border-r border-gray-100">
+      <div className="sticky left-0 z-10 bg-pk-surface border-r border-pk-border">
         <div className="h-10" /> {/* doctor header spacer */}
         <TimeColumn />
       </div>
 
       {/* Doctor columns */}
       {doctorGroups.map(({ doctorId, name, appointments: docApts }) => (
-        <div key={doctorId} className="flex-1 min-w-[180px] border-r border-gray-100 last:border-r-0">
+        <div key={doctorId} className="flex-1 min-w-[180px] border-r border-pk-border last:border-r-0">
           {/* Doctor header */}
-          <div className="h-10 flex items-center justify-center border-b border-gray-100 px-2">
+          <div className="h-10 flex items-center justify-center border-b border-pk-border px-2">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-600">
+              <div className="h-6 w-6 rounded-full bg-pk-teal-100 flex items-center justify-center text-xs font-bold text-pk-teal-600">
                 {name.charAt(0).toUpperCase()}
               </div>
-              <span className="text-sm font-medium text-gray-700 truncate">{name}</span>
+              <span className="text-sm font-medium text-pk-text-secondary truncate">{name}</span>
             </div>
           </div>
 
@@ -234,7 +234,7 @@ function DayView({
             {Array.from({ length: TOTAL_HOURS }, (_, i) => (
               <div
                 key={i}
-                className="absolute w-full border-t border-gray-100"
+                className="absolute w-full border-t border-pk-border"
                 style={{ top: i * PX_PER_HOUR }}
               />
             ))}
@@ -242,7 +242,7 @@ function DayView({
             {Array.from({ length: TOTAL_HOURS }, (_, i) => (
               <div
                 key={`h${i}`}
-                className="absolute w-full border-t border-dashed border-gray-50"
+                className="absolute w-full border-t border-dashed border-pk-border"
                 style={{ top: i * PX_PER_HOUR + PX_PER_HOUR / 2 }}
               />
             ))}
@@ -254,8 +254,8 @@ function DayView({
                 className="absolute left-0 right-0 z-20 flex items-center pointer-events-none"
                 style={{ top: nowY }}
               >
-                <div className="h-2.5 w-2.5 rounded-full bg-red-500 -ml-1.5 flex-shrink-0" />
-                <div className="h-px flex-1 bg-red-400" />
+                <div className="h-2.5 w-2.5 rounded-full bg-pk-danger -ml-1.5 flex-shrink-0" />
+                <div className="h-px flex-1 bg-pk-danger" />
               </div>
             )}
 
@@ -308,7 +308,7 @@ function WeekView({
   }, [appointments]);
 
   return (
-    <div className="grid grid-cols-7 divide-x divide-gray-100 min-h-[500px]">
+    <div className="grid grid-cols-7 divide-x divide-pk-border min-h-[500px]">
       {days.map((day) => {
         const ymd = toYMD(day);
         const header = formatDayHeader(day);
@@ -322,19 +322,19 @@ function WeekView({
               type="button"
               onClick={() => onDayClick(ymd)}
               className={`
-                py-2 text-center border-b border-gray-100 hover:bg-gray-50 transition
-                ${header.isToday ? "bg-blue-50" : ""}
+                py-2 text-center border-b border-pk-border hover:bg-pk-surface-raised transition
+                ${header.isToday ? "bg-pk-teal-50" : ""}
               `}
             >
-              <div className="text-xs font-medium text-gray-500 uppercase">{header.weekday}</div>
+              <div className="text-xs font-medium text-pk-text-muted uppercase">{header.weekday}</div>
               <div className={`
                 mx-auto mt-0.5 h-7 w-7 rounded-full flex items-center justify-center text-sm font-bold
-                ${header.isToday ? "bg-blue-600 text-white" : "text-gray-700"}
+                ${header.isToday ? "bg-pk-teal-600 text-white" : "text-pk-text-secondary"}
               `}>
                 {header.date}
               </div>
               {dayApts.length > 0 && (
-                <div className="text-xs text-gray-400 mt-0.5">{dayApts.length} appt{dayApts.length > 1 ? "s" : ""}</div>
+                <div className="text-xs text-pk-text-muted mt-0.5">{dayApts.length} appt{dayApts.length > 1 ? "s" : ""}</div>
               )}
             </button>
 
@@ -344,7 +344,7 @@ function WeekView({
                 <div className="h-full flex items-center justify-center">
                   <Link
                     href={`/dashboard/appointments/new?date=${ymd}`}
-                    className="text-xs text-gray-300 hover:text-blue-400 transition"
+                    className="text-xs text-pk-text-muted hover:text-pk-teal-400 transition"
                   >
                     +
                   </Link>
@@ -385,35 +385,35 @@ function TodaysQueue({
   );
 
   return (
-    <div className="w-72 flex-shrink-0 border-l border-gray-100 flex flex-col bg-gray-50">
-      <div className="px-4 py-3 border-b border-gray-200 bg-white">
-        <h2 className="text-sm font-semibold text-gray-800">Today&apos;s Queue</h2>
-        <p className="text-xs text-gray-400 mt-0.5">{sorted.length} appointment{sorted.length !== 1 ? "s" : ""}</p>
+    <div className="w-72 flex-shrink-0 border-l border-pk-border flex flex-col bg-pk-surface-raised">
+      <div className="px-4 py-3 border-b border-pk-border bg-pk-surface">
+        <h2 className="text-sm font-semibold text-pk-text">Today&apos;s Queue</h2>
+        <p className="text-xs text-pk-text-muted mt-0.5">{sorted.length} appointment{sorted.length !== 1 ? "s" : ""}</p>
       </div>
 
       {/* In chair now */}
       {inProgress && (
-        <div className="mx-3 mt-3 rounded-xl bg-blue-50 border border-blue-200 p-3">
+        <div className="mx-3 mt-3 rounded-pk-lg bg-pk-teal-50 border border-pk-teal-200 p-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">In Chair Now</span>
+            <span className="h-2 w-2 rounded-full bg-pk-teal-500 animate-pulse" />
+            <span className="text-xs font-semibold text-pk-teal-700 uppercase tracking-wide">In Chair Now</span>
           </div>
-          <p className="text-sm font-bold text-blue-900">{inProgress.patientName}</p>
-          <p className="text-xs text-blue-600">{inProgress.appointmentTime} · {TYPE_LABELS[inProgress.type]}</p>
-          <p className="text-xs text-blue-500 mt-0.5">{inProgress.doctorName}</p>
+          <p className="text-sm font-bold text-pk-teal-900">{inProgress.patientName}</p>
+          <p className="text-xs text-pk-teal-600">{inProgress.appointmentTime} · {TYPE_LABELS[inProgress.type]}</p>
+          <p className="text-xs text-pk-teal-500 mt-0.5">{inProgress.doctorName}</p>
         </div>
       )}
 
       {/* Next up */}
       {nextUp && nextUp.id !== inProgress?.id && (
-        <div className="mx-3 mt-2 rounded-xl bg-amber-50 border border-amber-200 p-3">
+        <div className="mx-3 mt-2 rounded-pk-lg bg-pk-warning-fill border border-pk-warning-border p-3">
           <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
-            <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Up Next</span>
+            <span className="h-2 w-2 rounded-full bg-pk-warning" />
+            <span className="text-xs font-semibold text-pk-warning-text uppercase tracking-wide">Up Next</span>
           </div>
-          <p className="text-sm font-bold text-amber-900">{nextUp.patientName}</p>
-          <p className="text-xs text-amber-600">{nextUp.appointmentTime} · {TYPE_LABELS[nextUp.type]}</p>
-          <p className="text-xs text-amber-500 mt-0.5">{nextUp.doctorName}</p>
+          <p className="text-sm font-bold text-pk-warning-text">{nextUp.patientName}</p>
+          <p className="text-xs text-pk-warning-text">{nextUp.appointmentTime} · {TYPE_LABELS[nextUp.type]}</p>
+          <p className="text-xs text-pk-warning-text mt-0.5">{nextUp.doctorName}</p>
         </div>
       )}
 
@@ -428,29 +428,29 @@ function TodaysQueue({
               type="button"
               onClick={() => onAppointmentClick(apt)}
               className={`
-                w-full text-left rounded-lg p-2.5 transition border
-                ${isNow   ? "bg-blue-50 border-blue-200"   :
-                  isNext  ? "bg-amber-50 border-amber-200"  :
-                  apt.status === "COMPLETED"  ? "bg-white border-gray-100 opacity-50" :
-                  apt.status === "CANCELLED"  ? "bg-white border-gray-100 opacity-30" :
-                  apt.status === "NO_SHOW"    ? "bg-red-50 border-red-100 opacity-40" :
-                  "bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50"}
+                w-full text-left rounded-pk-sm p-2.5 transition border
+                ${isNow   ? "bg-pk-teal-50 border-pk-teal-200"   :
+                  isNext  ? "bg-pk-warning-fill border-pk-warning-border"  :
+                  apt.status === "COMPLETED"  ? "bg-pk-surface border-pk-border opacity-50" :
+                  apt.status === "CANCELLED"  ? "bg-pk-surface border-pk-border opacity-30" :
+                  apt.status === "NO_SHOW"    ? "bg-pk-danger-fill border-pk-danger-border opacity-40" :
+                  "bg-pk-surface border-pk-border hover:border-pk-border hover:bg-pk-surface-raised"}
               `}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-800 truncate">{apt.patientName}</p>
-                  <p className="text-xs text-gray-500 truncate">{apt.doctorName}</p>
+                  <p className="text-xs font-semibold text-pk-text truncate">{apt.patientName}</p>
+                  <p className="text-xs text-pk-text-muted truncate">{apt.doctorName}</p>
                 </div>
                 <div className="flex-shrink-0 text-right">
-                  <p className="text-xs font-medium text-gray-600">{apt.appointmentTime ?? "—"}</p>
+                  <p className="text-xs font-medium text-pk-text-secondary">{apt.appointmentTime ?? "—"}</p>
                   <span className={`
                     inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium mt-0.5
-                    ${apt.status === "SCHEDULED"   ? "bg-gray-100 text-gray-600"   :
-                      apt.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700"   :
-                      apt.status === "COMPLETED"   ? "bg-green-100 text-green-700" :
-                      apt.status === "CANCELLED"   ? "bg-red-100 text-red-600"     :
-                      "bg-gray-100 text-gray-500"}
+                    ${apt.status === "SCHEDULED"   ? "bg-pk-surface-sunken text-pk-text-secondary"   :
+                      apt.status === "IN_PROGRESS" ? "bg-pk-teal-100 text-pk-teal-700"   :
+                      apt.status === "COMPLETED"   ? "bg-pk-success-fill text-pk-success-text" :
+                      apt.status === "CANCELLED"   ? "bg-pk-danger-fill text-pk-danger-text"     :
+                      "bg-pk-surface-sunken text-pk-text-muted"}
                   `}>
                     {apt.status === "IN_PROGRESS" ? "In Chair" :
                      apt.status === "NO_SHOW"     ? "No Show"  :
@@ -462,18 +462,18 @@ function TodaysQueue({
           );
         })}
         {sorted.length === 0 && (
-          <p className="text-center text-xs text-gray-400 py-8">No appointments today</p>
+          <p className="text-center text-xs text-pk-text-muted py-8">No appointments today</p>
         )}
       </div>
 
       {/* Legend */}
-      <div className="border-t border-gray-200 bg-white px-4 py-3">
-        <p className="text-xs font-medium text-gray-500 mb-2">Appointment types</p>
+      <div className="border-t border-pk-border bg-pk-surface px-4 py-3">
+        <p className="text-xs font-medium text-pk-text-muted mb-2">Appointment types</p>
         <div className="grid grid-cols-2 gap-1">
           {Object.entries(TYPE_COLORS).map(([type, c]) => (
             <div key={type} className="flex items-center gap-1.5">
               <span className={`h-2 w-2 rounded-full ${c.dot}`} />
-              <span className="text-xs text-gray-500">{TYPE_LABELS[type]}</span>
+              <span className="text-xs text-pk-text-muted">{TYPE_LABELS[type]}</span>
             </div>
           ))}
         </div>
@@ -505,18 +505,18 @@ function AppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-md overflow-hidden">
         {/* Header strip */}
         <div className={`h-2 ${colors.dot}`} />
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">
+              <div className="text-xs font-medium text-pk-text-muted uppercase tracking-wide mb-1">
                 {TYPE_LABELS[apt.type]}
               </div>
-              <h2 className="text-xl font-bold text-gray-900">{apt.patientName}</h2>
+              <h2 className="text-xl font-bold text-pk-text">{apt.patientName}</h2>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
+            <button onClick={onClose} className="text-pk-text-muted hover:text-pk-text-secondary p-1">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -524,21 +524,21 @@ function AppointmentModal({
           </div>
 
           <div className="space-y-3 text-sm">
-            <div className="flex items-center gap-3 text-gray-600">
-              <svg className="h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-3 text-pk-text-secondary">
+              <svg className="h-4 w-4 flex-shrink-0 text-pk-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>{apt.appointmentDate} {apt.appointmentTime && `· ${apt.appointmentTime}`}</span>
             </div>
-            <div className="flex items-center gap-3 text-gray-600">
-              <svg className="h-4 w-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-center gap-3 text-pk-text-secondary">
+              <svg className="h-4 w-4 flex-shrink-0 text-pk-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <span>{apt.doctorName}</span>
             </div>
             {apt.notes && (
-              <div className="flex items-start gap-3 text-gray-600">
-                <svg className="h-4 w-4 flex-shrink-0 mt-0.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-start gap-3 text-pk-text-secondary">
+                <svg className="h-4 w-4 flex-shrink-0 mt-0.5 text-pk-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span>{apt.notes}</span>
@@ -547,11 +547,11 @@ function AppointmentModal({
             <div className="flex items-center gap-3">
               <span className={`
                 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium
-                ${apt.status === "SCHEDULED"   ? "bg-gray-100 text-gray-700"   :
-                  apt.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-700"   :
-                  apt.status === "COMPLETED"   ? "bg-green-100 text-green-700" :
-                  apt.status === "CANCELLED"   ? "bg-red-100 text-red-600"     :
-                  "bg-gray-100 text-gray-500"}
+                ${apt.status === "SCHEDULED"   ? "bg-pk-surface-sunken text-pk-text-secondary"   :
+                  apt.status === "IN_PROGRESS" ? "bg-pk-teal-100 text-pk-teal-700"   :
+                  apt.status === "COMPLETED"   ? "bg-pk-success-fill text-pk-success-text" :
+                  apt.status === "CANCELLED"   ? "bg-pk-danger-fill text-pk-danger-text"     :
+                  "bg-pk-surface-sunken text-pk-text-muted"}
               `}>
                 {apt.status.replace("_", " ")}
               </span>
@@ -560,7 +560,7 @@ function AppointmentModal({
 
           {/* Add to calendar */}
           {apt.appointmentTime && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="mt-4 pt-4 border-t border-pk-border">
               <AddToCalendar
                 title={`${TYPE_LABELS[apt.type]} — ${apt.patientName}`}
                 date={apt.appointmentDate}
@@ -572,11 +572,11 @@ function AppointmentModal({
           )}
 
           {/* Actions */}
-          <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+          <div className="mt-4 pt-4 border-t border-pk-border flex flex-wrap gap-2">
             {(apt.status === "SCHEDULED" || apt.status === "IN_PROGRESS") && (
               <Link
                 href={`/dashboard/visits/new?patientId=${apt.patientId}&appointmentId=${apt.id}&doctorId=${apt.doctorId}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                className="inline-flex items-center gap-1.5 rounded-pk-sm bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -589,14 +589,14 @@ function AppointmentModal({
                 <button
                   onClick={() => handleStatus("NO_SHOW")}
                   disabled={updating}
-                  className="rounded-lg border border-amber-200 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+                  className="rounded-pk-sm border border-pk-warning-border px-3 py-2 text-sm font-medium text-pk-warning-text hover:bg-pk-warning-fill transition disabled:opacity-50"
                 >
                   No Show
                 </button>
                 <button
                   onClick={() => handleStatus("CANCELLED")}
                   disabled={updating}
-                  className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                  className="rounded-pk-sm border border-pk-danger-border px-3 py-2 text-sm font-medium text-pk-danger-text hover:bg-pk-danger-fill transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -604,7 +604,7 @@ function AppointmentModal({
             )}
             <Link
               href={`/dashboard/patients/${apt.patientId}`}
-              className="ml-auto rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+              className="ml-auto rounded-pk-sm border border-pk-border px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Patient Record
             </Link>
@@ -710,12 +710,12 @@ export default function AppointmentsPage() {
     <div className="flex-1 flex flex-col h-full overflow-hidden">
 
       {/* ── Calendar toolbar ── */}
-      <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-white flex-wrap">
+      <div className="flex items-center gap-3 px-6 py-3 border-b border-pk-border bg-pk-surface flex-wrap">
         {/* Navigation */}
         <div className="flex items-center gap-1">
           <button
             onClick={goPrev}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-600"
+            className="p-1.5 rounded-pk-sm hover:bg-pk-surface-sunken transition text-pk-text-secondary"
             aria-label="Previous"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -724,7 +724,7 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={goNext}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition text-gray-600"
+            className="p-1.5 rounded-pk-sm hover:bg-pk-surface-sunken transition text-pk-text-secondary"
             aria-label="Next"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -733,25 +733,25 @@ export default function AppointmentsPage() {
           </button>
           <button
             onClick={goToday}
-            className="ml-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+            className="ml-1 px-3 py-1.5 rounded-pk-sm border border-pk-border text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
           >
             Today
           </button>
         </div>
 
         {/* Title */}
-        <h1 className="text-base font-semibold text-gray-900 flex-1">{headerTitle}</h1>
+        <h1 className="text-base font-semibold text-pk-text flex-1">{headerTitle}</h1>
 
         {/* View toggle */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex rounded-pk-sm border border-pk-border overflow-hidden">
           {(["day", "week"] as ViewMode[]).map((v) => (
             <button
               key={v}
               onClick={() => setViewMode(v)}
               className={`px-3 py-1.5 text-sm font-medium transition ${
                 viewMode === v
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-50"
+                  ? "bg-pk-teal-600 text-white"
+                  : "bg-pk-surface text-pk-text-secondary hover:bg-pk-surface-raised"
               }`}
             >
               {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -762,7 +762,7 @@ export default function AppointmentsPage() {
         {/* Queue toggle */}
         <button
           onClick={() => setShowQueue((s) => !s)}
-          className={`p-1.5 rounded-lg border transition ${showQueue ? "border-blue-200 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+          className={`p-1.5 rounded-pk-sm border transition ${showQueue ? "border-pk-teal-200 bg-pk-teal-50 text-pk-teal-600" : "border-pk-border text-pk-text-muted hover:bg-pk-surface-raised"}`}
           title="Toggle today's queue"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -773,7 +773,7 @@ export default function AppointmentsPage() {
         {/* New appointment */}
         <Link
           href={`/dashboard/appointments/new${viewMode === "day" ? `?date=${currentDate}` : ""}`}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+          className="inline-flex items-center gap-1.5 rounded-pk-sm bg-pk-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -787,7 +787,7 @@ export default function AppointmentsPage() {
 
         {/* Calendar grid */}
         <div
-          className="flex-1 overflow-auto bg-white"
+          className="flex-1 overflow-auto bg-pk-surface"
           ref={(el) => {
             if (el && viewMode === "day") {
               const now = new Date();
@@ -798,7 +798,7 @@ export default function AppointmentsPage() {
         >
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="flex items-center gap-3 text-gray-400">
+              <div className="flex items-center gap-3 text-pk-text-muted">
                 <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />

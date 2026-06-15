@@ -17,17 +17,19 @@ export type ChartData = Partial<Record<string, ToothData>>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Brand odontogram palette (Brand System §3.1) — warm family only, no blue/purple.
+// Solid fills carry white glyph text; light statuses carry dark text.
 const CONDITION_COLORS: Record<ToothCondition, { bg: string; border: string; text: string }> = {
-  HEALTHY:    { bg: "#ffffff", border: "#cbd5e1", text: "#64748b" },
-  CARIES:     { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" },
-  FILLING:    { bg: "#eff6ff", border: "#3b82f6", text: "#2563eb" },
-  CROWN:      { bg: "#fefce8", border: "#eab308", text: "#ca8a04" },
-  MISSING:    { bg: "#f1f5f9", border: "#94a3b8", text: "#64748b" },
-  ROOT_CANAL: { bg: "#faf5ff", border: "#8b5cf6", text: "#7c3aed" },
-  BRIDGE:     { bg: "#ecfeff", border: "#06b6d4", text: "#0891b2" },
-  IMPLANT:    { bg: "#f0fdf4", border: "#22c55e", text: "#16a34a" },
-  FRACTURED:  { bg: "#fff7ed", border: "#f97316", text: "#ea580c" },
-  WATCH:      { bg: "#fffbeb", border: "#fbbf24", text: "#d97706" },
+  HEALTHY:    { bg: "#FFFFFF", border: "#B0A99B", text: "#847D6E" }, // neutral outline
+  CARIES:     { bg: "#C0392B", border: "#C0392B", text: "#FFFFFF" }, // danger red
+  FILLING:    { bg: "#0B6E6E", border: "#0B6E6E", text: "#FFFFFF" }, // teal
+  CROWN:      { bg: "#C8873A", border: "#C8873A", text: "#FFFFFF" }, // gold ◆
+  MISSING:    { bg: "#C4BDB0", border: "#B0A99B", text: "#4A4439" }, // light warm grey ✕
+  ROOT_CANAL: { bg: "#6B4A2F", border: "#6B4A2F", text: "#FFFFFF" }, // umber ▽
+  BRIDGE:     { bg: "#0B5654", border: "#0B5654", text: "#FFFFFF" }, // deep teal
+  IMPLANT:    { bg: "#6E7B7E", border: "#6E7B7E", text: "#FFFFFF" }, // steel grey
+  FRACTURED:  { bg: "#B35B43", border: "#B35B43", text: "#FFFFFF" }, // terracotta
+  WATCH:      { bg: "#FCEFD6", border: "#B8770F", text: "#9A5B0A" }, // warning attention
 };
 
 const CONDITION_LABELS: Record<ToothCondition, string> = {
@@ -97,7 +99,7 @@ function ToothCell({
     <div ref={ref} className="relative flex flex-col items-center">
       {/* Tooth number label — above for upper, below for lower */}
       {isUpper && (
-        <span className="text-[9px] text-slate-400 mb-0.5 leading-none select-none">{number}</span>
+        <span className="text-[9px] text-pk-text-muted mb-0.5 leading-none select-none">{number}</span>
       )}
 
       {/* Tooth shape */}
@@ -109,30 +111,34 @@ function ToothCell({
         className={`w-7 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-default" : "hover:scale-110 hover:z-10 cursor-pointer"}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
+        {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
         {condition === "MISSING" && (
-          <span className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs font-bold">×</span>
+          <span className="absolute inset-0 flex items-center justify-center text-pk-neutral-700 text-xs font-bold">✕</span>
+        )}
+        {condition === "CROWN" && (
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">◆</span>
         )}
         {condition === "ROOT_CANAL" && (
-          <span className="absolute inset-0 flex items-center justify-center text-purple-400 text-[8px] font-bold">RC</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">▽</span>
         )}
         {condition === "BRIDGE" && (
-          <span className="absolute inset-0 flex items-center justify-center text-cyan-500 text-[8px] font-bold">BR</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">BR</span>
         )}
         {condition === "IMPLANT" && (
-          <span className="absolute inset-0 flex items-center justify-center text-green-600 text-[8px] font-bold">IM</span>
+          <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">IM</span>
         )}
       </button>
 
       {!isUpper && (
-        <span className="text-[9px] text-slate-400 mt-0.5 leading-none select-none">{number}</span>
+        <span className="text-[9px] text-pk-text-muted mt-0.5 leading-none select-none">{number}</span>
       )}
 
       {/* Condition popover */}
       {open && (
         <div
-          className={`absolute z-50 w-52 bg-white rounded-xl shadow-2xl border border-slate-200 p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
+          className={`absolute z-50 w-52 bg-pk-surface rounded-pk-lg shadow-pk-e3 border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
         >
-          <p className="text-xs font-semibold text-slate-600 px-1 pb-1 border-b border-slate-100 mb-1">
+          <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}
           </p>
           <div className="grid grid-cols-2 gap-1 mb-2">
@@ -143,7 +149,7 @@ function ToothCell({
                   key={c}
                   type="button"
                   onClick={() => { onConditionChange(number, c, editNotes); setOpen(false); }}
-                  className={`text-left text-xs px-2 py-1 rounded-lg border transition-all ${condition === c ? "ring-2 ring-offset-1" : "hover:opacity-80"}`}
+                  className={`text-left text-xs px-2 py-1 rounded-pk-sm border transition-all ${condition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
                   style={{ background: col.bg, borderColor: col.border, color: col.text }}
                 >
                   {CONDITION_LABELS[c]}
@@ -157,7 +163,7 @@ function ToothCell({
             onChange={(e) => setEditNotes(e.target.value)}
             onBlur={() => onConditionChange(number, condition, editNotes)}
             placeholder="Notes..."
-            className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            className="w-full text-xs border border-pk-border rounded-pk-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
           />
         </div>
       )}
@@ -178,7 +184,7 @@ function Legend() {
               className="w-3.5 h-3.5 rounded-sm border flex-shrink-0"
               style={{ background: col.bg, borderColor: col.border }}
             />
-            <span className="text-[10px] text-slate-500">{CONDITION_LABELS[c]}</span>
+            <span className="text-[10px] text-pk-text-muted">{CONDITION_LABELS[c]}</span>
           </div>
         );
       })}
@@ -211,13 +217,13 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
       <div className="overflow-x-auto pb-2">
         <div className="min-w-[520px]">
           {/* Legend row */}
-          <div className="flex justify-between text-[9px] text-slate-400 font-medium mb-1 px-1">
+          <div className="flex justify-between text-[9px] text-pk-text-muted font-medium mb-1 px-1">
             <span>Patient&apos;s Right (Q1/Q4)</span>
             <span>Patient&apos;s Left (Q2/Q3)</span>
           </div>
 
           {/* Upper arch */}
-          <div className="flex items-end gap-0.5 justify-center mb-1 pb-2 border-b border-dashed border-slate-200">
+          <div className="flex items-end gap-0.5 justify-center mb-1 pb-2 border-b border-dashed border-pk-border">
             {UPPER_TEETH.map((n, i) => (
               <>
                 {i === 8 && <div key="midline-upper" className="w-2 flex-shrink-0" />}
@@ -234,12 +240,12 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
           </div>
 
           {/* Midline label */}
-          <div className="text-center text-[9px] text-slate-300 py-0.5 select-none">
+          <div className="text-center text-[9px] text-pk-text-muted py-0.5 select-none">
             — occlusal plane —
           </div>
 
           {/* Lower arch */}
-          <div className="flex items-start gap-0.5 justify-center mt-1 pt-2 border-t border-dashed border-slate-200">
+          <div className="flex items-start gap-0.5 justify-center mt-1 pt-2 border-t border-dashed border-pk-border">
             {LOWER_TEETH.map((n, i) => (
               <>
                 {i === 8 && <div key="midline-lower" className="w-2 flex-shrink-0" />}

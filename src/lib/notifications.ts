@@ -133,14 +133,14 @@ async function sendEmail(to: string, subject: string, message: string, patientNa
   const html = `
     <!DOCTYPE html>
     <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b;">
-      <div style="background: #f8fafc; border-radius: 12px; padding: 32px;">
-        <h2 style="color: #0f172a; margin: 0 0 8px;">🦷 Appointment Reminder</h2>
-        ${patientName ? `<p style="color: #64748b; margin: 0 0 24px;">Hi ${patientName},</p>` : ""}
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 16px 0;">
-          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155;">${message.replace(/\n/g, "<br>")}</p>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1C1A15;">
+      <div style="background: #FAF8F3; border-radius: 12px; padding: 32px;">
+        <h2 style="color: #1C1A15; margin: 0 0 8px;">🦷 Appointment Reminder</h2>
+        ${patientName ? `<p style="color: #645D50; margin: 0 0 24px;">Hi ${patientName},</p>` : ""}
+        <div style="background: white; border: 1px solid #E5E0D8; border-radius: 8px; padding: 20px; margin: 16px 0;">
+          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #4A4439;">${message.replace(/\n/g, "<br>")}</p>
         </div>
-        <p style="color: #94a3b8; font-size: 12px; margin: 16px 0 0;">
+        <p style="color: #B0A99B; font-size: 12px; margin: 16px 0 0;">
           This is an automated reminder from Parkkal.
           Please contact the clinic directly to reschedule or cancel.
         </p>

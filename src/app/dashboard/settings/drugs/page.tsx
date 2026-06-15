@@ -66,7 +66,7 @@ export default function DrugFormularyPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+    <div className="flex-1 flex flex-col" style={{ background: "var(--pk-bg)", color: "var(--pk-text)" }}>
       <Header
         title="Drug Formulary"
         breadcrumb={[{ label: "Dashboard" }, { label: "Settings", href: "/dashboard/settings" }, { label: "Drug Formulary" }]}
@@ -74,9 +74,9 @@ export default function DrugFormularyPage() {
 
       <main id="main-content" className="flex-1 p-6 max-w-2xl space-y-6">
         {/* Explanation */}
-        <div className="rounded-xl border p-5" style={{ background: "var(--card)", borderColor: "var(--border)" }}>
-          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>Your clinic&apos;s drug list</h2>
-          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+        <div className="rounded-pk-lg border p-5" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Your clinic&apos;s drug list</h2>
+          <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>
             Drugs you add here appear <strong>first</strong> in the prescription autocomplete, labelled &ldquo;Your Drugs&rdquo;.
             The built-in list of common dental drugs is always available as a fallback.
           </p>
@@ -86,8 +86,8 @@ export default function DrugFormularyPage() {
         {!showForm ? (
           <button
             onClick={() => { setShowForm(true); setError(""); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition"
-            style={{ background: "var(--primary)" }}
+            className="flex items-center gap-2 px-4 py-2 rounded-pk-sm text-sm font-medium text-white transition"
+            style={{ background: "var(--pk-primary)" }}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -97,13 +97,13 @@ export default function DrugFormularyPage() {
         ) : (
           <form
             onSubmit={handleAdd}
-            className="rounded-xl border p-5 space-y-4"
-            style={{ background: "var(--card)", borderColor: "var(--border)" }}
+            className="rounded-pk-lg border p-5 space-y-4"
+            style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}
           >
-            <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>New drug</h3>
+            <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>New drug</h3>
 
             <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted-foreground)" }}>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>
                 Drug name *
               </label>
               <input
@@ -112,39 +112,39 @@ export default function DrugFormularyPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="e.g. Amoxicillin 500mg"
                 autoFocus
-                className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--foreground)" }}
+                className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
+                style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted-foreground)" }}>Default dosage</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default dosage</label>
                 <input
                   type="text"
                   value={form.defaultDosage}
                   onChange={(e) => setForm((f) => ({ ...f, defaultDosage: e.target.value }))}
                   placeholder="e.g. 1 tablet"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--foreground)" }}
+                  className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
+                  style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted-foreground)" }}>Default frequency</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default frequency</label>
                 <div className="flex gap-1.5">
                   <input
                     type="text"
                     value={form.defaultFrequency}
                     onChange={(e) => setForm((f) => ({ ...f, defaultFrequency: e.target.value }))}
                     placeholder="e.g. 1-0-1"
-                    className="flex-1 text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                    style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--foreground)" }}
+                    className="flex-1 text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
+                    style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                   />
                   <select
                     value=""
                     onChange={(e) => { if (e.target.value) setForm((f) => ({ ...f, defaultFrequency: e.target.value })); }}
-                    className="text-xs border rounded-lg px-2 py-2 focus:outline-none"
-                    style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--muted-foreground)" }}
+                    className="text-xs border rounded-pk-sm px-2 py-2 focus:outline-none"
+                    style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text-muted)" }}
                   >
                     <option value="">Preset</option>
                     {FREQ_PRESETS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -152,34 +152,34 @@ export default function DrugFormularyPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: "var(--muted-foreground)" }}>Default duration</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default duration</label>
                 <input
                   type="text"
                   value={form.defaultDuration}
                   onChange={(e) => setForm((f) => ({ ...f, defaultDuration: e.target.value }))}
                   placeholder="e.g. 5 days"
-                  className="w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
-                  style={{ borderColor: "var(--border)", background: "var(--background)", color: "var(--foreground)" }}
+                  className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
+                  style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
               </div>
             </div>
 
-            {error && <p className="text-xs" style={{ color: "#dc2626" }}>{error}</p>}
+            {error && <p className="text-xs" style={{ color: "#A8311F" }}>{error}</p>}
 
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setError(""); }}
-                className="px-4 py-2 text-sm border rounded-lg transition"
-                style={{ borderColor: "var(--border)", color: "var(--foreground)" }}
+                className="px-4 py-2 text-sm border rounded-pk-sm transition"
+                style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 text-sm font-medium rounded-lg text-white transition disabled:opacity-50"
-                style={{ background: "var(--primary)" }}
+                className="px-4 py-2 text-sm font-medium rounded-pk-sm text-white transition disabled:opacity-50"
+                style={{ background: "var(--pk-primary)" }}
               >
                 {submitting ? "Adding…" : "Add Drug"}
               </button>
@@ -188,23 +188,23 @@ export default function DrugFormularyPage() {
         )}
 
         {/* Drug list */}
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+        <div className="rounded-pk-lg border overflow-hidden" style={{ borderColor: "var(--pk-border)" }}>
           {loading ? (
-            <p className="text-sm text-center py-8" style={{ color: "var(--muted-foreground)" }}>Loading…</p>
+            <p className="text-sm text-center py-8" style={{ color: "var(--pk-text-muted)" }}>Loading…</p>
           ) : drugs.length === 0 ? (
             <div className="py-10 text-center">
-              <svg className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--muted-foreground)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--pk-text-muted)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
               </svg>
-              <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>No drugs in your formulary yet</p>
-              <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)" }}>Add drugs your clinic uses most often to speed up prescriptions.</p>
+              <p className="text-sm font-medium" style={{ color: "var(--pk-text)" }}>No drugs in your formulary yet</p>
+              <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Add drugs your clinic uses most often to speed up prescriptions.</p>
             </div>
           ) : (
             <>
               {/* Table header */}
               <div
                 className="grid px-5 py-2.5 text-xs font-medium border-b"
-                style={{ gridTemplateColumns: "1fr 100px 100px 100px 40px", background: "var(--muted)", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+                style={{ gridTemplateColumns: "1fr 100px 100px 100px 40px", background: "var(--pk-surface-sunken)", borderColor: "var(--pk-border)", color: "var(--pk-text-muted)" }}
               >
                 <span>Drug name</span>
                 <span>Dosage</span>
@@ -212,23 +212,23 @@ export default function DrugFormularyPage() {
                 <span>Duration</span>
                 <span />
               </div>
-              <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+              <div className="divide-y" style={{ borderColor: "var(--pk-border)" }}>
                 {drugs.map((drug) => (
                   <div
                     key={drug.id}
                     className="grid items-center px-5 py-3"
                     style={{ gridTemplateColumns: "1fr 100px 100px 100px 40px" }}
                   >
-                    <span className="text-sm font-medium truncate pr-2" style={{ color: "var(--foreground)" }}>{drug.name}</span>
-                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{drug.defaultDosage || "—"}</span>
-                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{drug.defaultFrequency || "—"}</span>
-                    <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{drug.defaultDuration || "—"}</span>
+                    <span className="text-sm font-medium truncate pr-2" style={{ color: "var(--pk-text)" }}>{drug.name}</span>
+                    <span className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{drug.defaultDosage || "—"}</span>
+                    <span className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{drug.defaultFrequency || "—"}</span>
+                    <span className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{drug.defaultDuration || "—"}</span>
                     <button
                       onClick={() => handleDelete(drug.id)}
                       disabled={deletingId === drug.id}
                       aria-label={`Remove ${drug.name}`}
-                      className="flex items-center justify-center w-7 h-7 rounded-lg transition disabled:opacity-40"
-                      style={{ color: "#dc2626" }}
+                      className="flex items-center justify-center w-7 h-7 rounded-pk-sm transition disabled:opacity-40"
+                      style={{ color: "#A8311F" }}
                     >
                       {deletingId === drug.id ? (
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -248,7 +248,7 @@ export default function DrugFormularyPage() {
           )}
         </div>
 
-        <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+        <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>
           Changes apply immediately to the prescription form.{" "}
           <Link href="/dashboard/settings" className="underline">Back to settings</Link>
         </p>

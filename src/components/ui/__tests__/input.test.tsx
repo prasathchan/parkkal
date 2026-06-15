@@ -40,14 +40,16 @@ describe("Input", () => {
     expect(document.getElementById(errorId!)).toBeTruthy();
   });
 
-  it("has red border class when error is present", () => {
+  it("has the error class when error is present", () => {
     render(<Input id="x" error="Oops" />);
-    expect(screen.getByRole("textbox").className).toContain("border-red-400");
+    expect(screen.getByRole("textbox").className).toContain("field-error");
   });
 
-  it("has default border class when no error", () => {
+  it("uses the field-input token class when no error", () => {
     render(<Input id="x" />);
-    expect(screen.getByRole("textbox").className).toContain("border-slate-300");
+    const cls = screen.getByRole("textbox").className;
+    expect(cls).toContain("field-input");
+    expect(cls).not.toContain("field-error");
   });
 
   it("passes through standard input props", () => {

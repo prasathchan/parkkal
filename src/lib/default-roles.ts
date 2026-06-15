@@ -47,7 +47,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
   {
     name: "Administrator",
     slug: "administrator",
-    color: "#3B82F6",
+    color: "#0B6E6E",
     description: "Full access to all features and settings",
     isSystem: 1,
     permissions: ALL_PERMISSIONS,
@@ -70,7 +70,7 @@ export const DEFAULT_ROLES: DefaultRole[] = [
   {
     name: "Receptionist",
     slug: "receptionist",
-    color: "#8B5CF6",
+    color: "#645D50",
     description: "Front desk — patients, appointments, billing",
     isSystem: 0,
     permissions: [

@@ -17,18 +17,18 @@ interface Props {
 export function BillingPaymentModal({ visit, due, payMethod, onMethodChange, onConfirm, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-        <h3 className="text-base font-bold text-slate-900">Record Payment</h3>
-        <p className="text-sm text-slate-600">
-          Visit <span className="font-mono font-medium text-blue-700">{visit.visitCode}</span> —{" "}
+      <div className="bg-pk-surface rounded-pk-lg shadow-pk-e3 w-full max-w-sm p-6 space-y-4">
+        <h3 className="text-base font-bold text-pk-text">Record Payment</h3>
+        <p className="text-sm text-pk-text-secondary">
+          Visit <span className="font-mono font-medium text-pk-teal-700">{visit.visitCode}</span> —{" "}
           Amount: <span className="font-semibold">{formatCurrency(due)}</span>
         </p>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Payment Method</label>
+          <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Payment Method</label>
           <select
             value={payMethod}
             onChange={(e) => onMethodChange(e.target.value as PaymentMethod)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             <option value="CASH">Cash</option>
             <option value="CARD">Card</option>
@@ -37,10 +37,10 @@ export function BillingPaymentModal({ visit, due, payMethod, onMethodChange, onC
           </select>
         </div>
         <div className="flex gap-3 pt-2">
-          <button onClick={onConfirm} className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+          <button onClick={onConfirm} className="flex-1 bg-pk-success text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-success transition">
             Confirm Payment
           </button>
-          <button onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+          <button onClick={onClose} className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition">
             Cancel
           </button>
         </div>

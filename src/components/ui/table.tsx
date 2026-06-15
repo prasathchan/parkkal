@@ -15,20 +15,20 @@ function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
 function TableHead({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <thead
-      className={cn("bg-slate-50 border-b border-slate-200", className)}
+      className={cn("bg-pk-surface-raised border-b border-pk-border", className)}
       {...props}
     />
   );
 }
 
 function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn("divide-y divide-slate-100", className)} {...props} />;
+  return <tbody className={cn("divide-y divide-pk-border", className)} {...props} />;
 }
 
 function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn("hover:bg-slate-50 transition-colors", className)}
+      className={cn("hover:bg-pk-surface-raised transition-colors", className)}
       {...props}
     />
   );
@@ -37,7 +37,7 @@ function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) 
 function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn("px-4 py-3 text-slate-700", className)}
+      className={cn("px-4 py-3 text-pk-text-secondary", className)}
       {...props}
     />
   );
@@ -50,7 +50,7 @@ function TableHeadCell({
   return (
     <th
       className={cn(
-        "px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider",
+        "px-4 py-3 text-xs font-semibold text-pk-text-muted uppercase tracking-wider",
         className
       )}
       {...props}

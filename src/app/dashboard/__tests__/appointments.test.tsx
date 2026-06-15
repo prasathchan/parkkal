@@ -18,13 +18,17 @@ import { appointmentsApi } from "@/api";
 
 const mockList = appointmentsApi.list as ReturnType<typeof vi.fn>;
 
+// Use TODAY so the appointment always falls inside the current day/week view —
+// a fixed past date drifts out of view as real time advances (date-fragile).
+const TODAY_YMD = new Date().toISOString().slice(0, 10);
+
 const APPOINTMENT = {
   id: "a1",
   patientId: "p1",
   patientName: "Meena Iyer",
   doctorId: "d1",
   doctorName: "Dr. Suresh",
-  appointmentDate: "2026-06-12",
+  appointmentDate: TODAY_YMD,
   appointmentTime: "10:00",
   appointmentType: "CONSULTATION",
   status: "SCHEDULED",
@@ -41,19 +45,21 @@ describe("AppointmentsPage", () => {
     expect(container).toBeTruthy();
   });
 
+  // Generous waits: CI on `main` runs with coverage instrumentation, which is
+  // markedly slower than the plain test run — short waits race and flake there.
   it("renders appointment data after load", async () => {
     mockList.mockResolvedValue({ appointments: [APPOINTMENT], total: 1 });
     render(<AppointmentsPage />);
-    const matches = await screen.findAllByText("Meena Iyer", {}, { timeout: 3000 });
+    const matches = await screen.findAllByText("Meena Iyer", {}, { timeout: 10000 });
     expect(matches.length).toBeGreaterThan(0);
-  });
+  }, 15000);
 
   it("renders New Appointment link", async () => {
     mockList.mockResolvedValue({ appointments: [], total: 0 });
     render(<AppointmentsPage />);
     await waitFor(() =>
       expect(document.querySelector('a[href="/dashboard/appointments/new"]')).toBeTruthy(),
-      { timeout: 2000 }
+      { timeout: 10000 }
     );
-  });
+  }, 15000);
 });

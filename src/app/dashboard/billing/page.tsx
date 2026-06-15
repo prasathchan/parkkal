@@ -128,38 +128,38 @@ export default function BillingPage() {
           <ErrorState message={errorMsg} onRetry={() => fetchData(page, search)} />
         )}
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
+          <div className="px-6 py-4 border-b border-pk-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-semibold text-slate-900">Visit Billing Summary</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
+              <h2 className="font-semibold text-pk-text">Visit Billing Summary</h2>
+              <p className="text-xs text-pk-text-muted mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">{pending} Pending</span>
-              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">{partial} Partial</span>
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{paid} Paid</span>
+              <span className="bg-pk-warning-fill text-pk-warning-text px-2 py-1 rounded-full text-xs">{pending} Pending</span>
+              <span className="bg-pk-teal-100 text-pk-teal-700 px-2 py-1 rounded-full text-xs">{partial} Partial</span>
+              <span className="bg-pk-success-fill text-pk-success-text px-2 py-1 rounded-full text-xs">{paid} Paid</span>
             </div>
           </div>
 
-          <div className="px-6 py-3 border-b border-slate-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="px-6 py-3 border-b border-pk-border flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <input
               type="text"
               aria-label="Search billing records"
               placeholder="Search by patient name or visit code…"
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-pk-border-strong rounded-pk-sm px-3 py-1.5 text-sm w-full sm:w-72 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
             <div className="flex gap-1">
               <button
                 onClick={() => handleFilterChange("UNPAID")}
-                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "UNPAID" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`px-3 py-1 text-xs rounded-pk-sm font-medium transition ${filter === "UNPAID" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
               >
                 Unpaid Only
               </button>
               <button
                 onClick={() => handleFilterChange("ALL")}
-                className={`px-3 py-1 text-xs rounded-lg font-medium transition ${filter === "ALL" ? "bg-slate-700 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+                className={`px-3 py-1 text-xs rounded-pk-sm font-medium transition ${filter === "ALL" ? "bg-pk-neutral-700 text-white" : "border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"}`}
               >
                 All Visits
               </button>
@@ -183,7 +183,7 @@ export default function BillingPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-slate-400">
+                  <TableCell colSpan={9} className="text-center py-8 text-pk-text-muted">
                     Loading…
                   </TableCell>
                 </TableRow>
@@ -203,19 +203,19 @@ export default function BillingPage() {
                   return (
                     <TableRow key={v.id}>
                       <TableCell>
-                        <a href={`/dashboard/visits/${v.id}`} className="font-mono text-xs text-blue-700 hover:underline">
+                        <a href={`/dashboard/visits/${v.id}`} className="font-mono text-xs text-pk-teal-700 hover:underline">
                           {v.visitCode}
                         </a>
                       </TableCell>
                       <TableCell className="font-medium">
                         <div>{v.patientName || v.patientId}</div>
-                        {v.patientCode && <div className="text-xs text-slate-400">{v.patientCode}</div>}
+                        {v.patientCode && <div className="text-xs text-pk-text-muted">{v.patientCode}</div>}
                       </TableCell>
-                      <TableCell className="text-slate-600">{formatDoctorName(v.doctorName)}</TableCell>
-                      <TableCell className="text-slate-500">{v.visitDate}</TableCell>
+                      <TableCell className="text-pk-text-secondary">{formatDoctorName(v.doctorName)}</TableCell>
+                      <TableCell className="text-pk-text-muted">{v.visitDate}</TableCell>
                       <TableCell className="font-semibold">{formatCurrency(v.totalAmount)}</TableCell>
-                      <TableCell className="text-green-700">{formatCurrency(v.paidAmount)}</TableCell>
-                      <TableCell className={`font-medium ${due > 0 ? "text-red-600" : "text-slate-400"}`}>
+                      <TableCell className="text-pk-success-text">{formatCurrency(v.paidAmount)}</TableCell>
+                      <TableCell className={`font-medium ${due > 0 ? "text-pk-danger-text" : "text-pk-text-muted"}`}>
                         {formatCurrency(due)}
                       </TableCell>
                       <TableCell>
@@ -228,12 +228,12 @@ export default function BillingPage() {
                           <button
                             onClick={() => handleMarkPaid(v)}
                             disabled={markingPaid === v.id}
-                            className="text-xs bg-green-600 text-white px-2.5 py-1 rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                            className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success disabled:opacity-50 transition"
                           >
                             {markingPaid === v.id ? "…" : "Mark Paid"}
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-400">—</span>
+                          <span className="text-xs text-pk-text-muted">—</span>
                         )}
                       </TableCell>
                     </TableRow>
@@ -244,7 +244,7 @@ export default function BillingPage() {
           </Table>
 
           {totalPages > 1 && (
-            <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between text-sm text-slate-600">
+            <div className="px-6 py-3 border-t border-pk-border flex items-center justify-between text-sm text-pk-text-secondary">
               <span>
                 Page {page + 1} of {totalPages} ({total} total)
               </span>
@@ -252,14 +252,14 @@ export default function BillingPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+                  className="px-3 py-1 border border-pk-border rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-40 transition"
                 >
                   ← Prev
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="px-3 py-1 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition"
+                  className="px-3 py-1 border border-pk-border rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-40 transition"
                 >
                   Next →
                 </button>

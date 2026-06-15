@@ -30,12 +30,12 @@ type SalaryRecord = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "bg-red-100 text-red-700",
-  DOCTOR: "bg-purple-100 text-purple-700",
+  ADMIN: "bg-pk-danger-fill text-pk-danger-text",
+  DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
   NURSE: "bg-pink-100 text-pink-700",
-  RECEPTIONIST: "bg-blue-100 text-blue-700",
-  ATTENDANT: "bg-orange-100 text-orange-700",
-  HELPER: "bg-gray-100 text-gray-700",
+  RECEPTIONIST: "bg-pk-teal-100 text-pk-teal-700",
+  ATTENDANT: "bg-pk-warning-fill text-pk-warning-text",
+  HELPER: "bg-pk-surface-sunken text-pk-text-secondary",
 };
 
 const ROLES = ["ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "ATTENDANT", "HELPER"] as const;
@@ -224,11 +224,11 @@ export default function StaffDetailPage() {
     }
   }
 
-  if (loading) return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
+  if (loading) return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
   if (!member) return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3">
-      <p className="text-slate-500">Staff member not found.</p>
-      <button onClick={() => router.push("/dashboard/staff")} className="text-blue-600 hover:underline text-sm">
+      <p className="text-pk-text-muted">Staff member not found.</p>
+      <button onClick={() => router.push("/dashboard/staff")} className="text-pk-teal-600 hover:underline text-sm">
         Back to Staff
       </button>
     </div>
@@ -263,96 +263,96 @@ export default function StaffDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-start gap-5 mb-6">
-              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-700 text-2xl font-bold">{member.name.charAt(0).toUpperCase()}</span>
+              <div className="w-14 h-14 bg-pk-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-pk-teal-700 text-2xl font-bold">{member.name.charAt(0).toUpperCase()}</span>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-lg font-bold text-slate-900">{member.name}</h2>
-                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${ROLE_COLORS[member.role] || "bg-gray-100 text-gray-700"}`}>
+                  <h2 className="text-lg font-bold text-pk-text">{member.name}</h2>
+                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${ROLE_COLORS[member.role] || "bg-pk-surface-sunken text-pk-text-secondary"}`}>
                     {member.role}
                   </span>
                   {!member.isActive && (
-                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Inactive</span>
+                    <span className="text-xs bg-pk-danger-fill text-pk-danger-text px-2 py-0.5 rounded-full">Inactive</span>
                   )}
                 </div>
-                <p className="text-sm text-slate-500">{member.email}</p>
+                <p className="text-sm text-pk-text-muted">{member.email}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-6">
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Phone</p>
-                <p className="font-medium text-slate-900">{member.phone || "—"}</p>
+                <p className="text-xs text-pk-text-muted mb-0.5">Phone</p>
+                <p className="font-medium text-pk-text">{member.phone || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Gender</p>
-                <p className="font-medium text-slate-900">{member.gender || "—"}</p>
+                <p className="text-xs text-pk-text-muted mb-0.5">Gender</p>
+                <p className="font-medium text-pk-text">{member.gender || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Date of Birth</p>
-                <p className="font-medium text-slate-900">{member.dateOfBirth || "—"}</p>
+                <p className="text-xs text-pk-text-muted mb-0.5">Date of Birth</p>
+                <p className="font-medium text-pk-text">{member.dateOfBirth || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Joined</p>
-                <p className="font-medium text-slate-900">{member.joinedAt || "—"}</p>
+                <p className="text-xs text-pk-text-muted mb-0.5">Joined</p>
+                <p className="font-medium text-pk-text">{member.joinedAt || "—"}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">Salary</p>
-                <p className="font-medium text-slate-900">
+                <p className="text-xs text-pk-text-muted mb-0.5">Salary</p>
+                <p className="font-medium text-pk-text">
                   ₹{(member.salaryAmount ?? 0).toLocaleString("en-IN")}
                   {member.salaryType === "PER_APPOINTMENT" ? "/appt" : "/month"}
                 </p>
               </div>
               {member.address && (
                 <div className="col-span-2 sm:col-span-3">
-                  <p className="text-xs text-slate-400 mb-0.5">Address</p>
-                  <p className="font-medium text-slate-900">{formatAddressDisplay(parseAddress(member.address))}</p>
+                  <p className="text-xs text-pk-text-muted mb-0.5">Address</p>
+                  <p className="font-medium text-pk-text">{formatAddressDisplay(parseAddress(member.address))}</p>
                 </div>
               )}
             </div>
 
             {/* Edit Form */}
             {editing && (
-              <div className="border-t border-slate-100 pt-5 space-y-4">
-                <p className="text-sm font-semibold text-slate-700">Edit Personal Info</p>
+              <div className="border-t border-pk-border pt-5 space-y-4">
+                <p className="text-sm font-semibold text-pk-text-secondary">Edit Personal Info</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Name</label>
                     <input
                       type="text"
                       value={editForm.name}
                       onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Phone</label>
                     <input
                       type="tel"
                       value={editForm.phone}
                       onChange={(e) => { setEditForm((f) => ({ ...f, phone: e.target.value })); setPhoneError(""); }}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${phoneError ? "border-red-400" : "border-slate-300"}`}
+                      className={`w-full px-3 py-2 border rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 ${phoneError ? "border-pk-danger-border" : "border-pk-border-strong"}`}
                       placeholder="+91 98765 43210"
                     />
-                    {phoneError && <p className="text-xs text-red-500 mt-1">{phoneError}</p>}
+                    {phoneError && <p className="text-xs text-pk-danger-text mt-1">{phoneError}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Date of Birth</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Date of Birth</label>
                     <input
                       type="date"
                       value={editForm.dateOfBirth}
                       onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Gender</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Gender</label>
                     <select
                       value={editForm.gender}
                       onChange={(e) => setEditForm((f) => ({ ...f, gender: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="">— Select —</option>
                       <option value="MALE">Male</option>
@@ -361,37 +361,37 @@ export default function StaffDetailPage() {
                     </select>
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Address</label>
                     <AddressForm value={addressData} onChange={setAddressData} />
                   </div>
                 </div>
 
-                <p className="text-sm font-semibold text-slate-700 pt-2">Edit Role &amp; Salary</p>
+                <p className="text-sm font-semibold text-pk-text-secondary pt-2">Edit Role &amp; Salary</p>
 
                 {saveError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                     {saveError}
                   </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Role</label>
                     <select
                       value={editForm.role}
                       onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Status</label>
                     <select
                       value={editForm.isActive ? "active" : "inactive"}
                       onChange={(e) => setEditForm((f) => ({ ...f, isActive: e.target.value === "active" }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
@@ -399,27 +399,27 @@ export default function StaffDetailPage() {
                   </div>
 
                   {editForm.role === "ADMIN" && (
-                    <div className="flex items-center justify-between py-2 px-3 border border-slate-200 rounded-lg">
+                    <div className="flex items-center justify-between py-2 px-3 border border-pk-border rounded-pk-sm">
                       <div>
-                        <p className="text-sm font-medium text-slate-700">Can act as Doctor</p>
-                        <p className="text-xs text-slate-500">Appears in the doctor dropdown for appointments</p>
+                        <p className="text-sm font-medium text-pk-text-secondary">Can act as Doctor</p>
+                        <p className="text-xs text-pk-text-muted">Appears in the doctor dropdown for appointments</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => setEditForm((f) => ({ ...f, isDoctor: !f.isDoctor }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isDoctor ? "bg-blue-600" : "bg-slate-200"}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${editForm.isDoctor ? "bg-pk-teal-600" : "bg-pk-surface-sunken"}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${editForm.isDoctor ? "translate-x-6" : "translate-x-1"}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-pk-surface shadow transition-transform ${editForm.isDoctor ? "translate-x-6" : "translate-x-1"}`} />
                       </button>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Salary Type</label>
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Salary Type</label>
                     <select
                       value={editForm.salaryType}
                       onChange={(e) => setEditForm((f) => ({ ...f, salaryType: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     >
                       <option value="FIXED">Fixed Monthly</option>
                       <option value="PER_APPOINTMENT">Per Appointment</option>
@@ -427,7 +427,7 @@ export default function StaffDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                       {editForm.salaryType === "PER_APPOINTMENT" ? "Rate per Appointment (₹)" : "Monthly Salary (₹)"}
                     </label>
                     <input
@@ -435,7 +435,7 @@ export default function StaffDetailPage() {
                       min="0"
                       value={editForm.salaryAmount}
                       onChange={(e) => setEditForm((f) => ({ ...f, salaryAmount: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                     />
                   </div>
                 </div>
@@ -452,7 +452,7 @@ export default function StaffDetailPage() {
             )}
 
             {saveSuccess && (
-              <div className="mt-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+              <div className="mt-4 bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-pk-sm px-4 py-3">
                 Changes saved successfully.
               </div>
             )}
@@ -471,41 +471,41 @@ export default function StaffDetailPage() {
           </CardHeader>
           <CardContent>
             {emergencyContacts.length === 0 && !addingEC && (
-              <p className="text-sm text-slate-400">No emergency contacts added.</p>
+              <p className="text-sm text-pk-text-muted">No emergency contacts added.</p>
             )}
             {emergencyContacts.map((ec) => (
-              <div key={ec.id} className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 border-b border-slate-100 last:border-0">
+              <div key={ec.id} className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 border-b border-pk-border last:border-0">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">{ec.name} <span className="text-slate-400 font-normal">({ec.relationship})</span></p>
-                  <p className="text-sm text-slate-600">{ec.phone}{ec.email ? ` · ${ec.email}` : ""}</p>
-                  {ec.address && <p className="text-xs text-slate-400 mt-0.5">{ec.address}</p>}
+                  <p className="text-sm font-medium text-pk-text">{ec.name} <span className="text-pk-text-muted font-normal">({ec.relationship})</span></p>
+                  <p className="text-sm text-pk-text-secondary">{ec.phone}{ec.email ? ` · ${ec.email}` : ""}</p>
+                  {ec.address && <p className="text-xs text-pk-text-muted mt-0.5">{ec.address}</p>}
                 </div>
               </div>
             ))}
             {addingEC && (
-              <div className="mt-3 space-y-3 border-t border-slate-100 pt-4">
-                {ecError && <p className="text-sm text-red-600">{ecError}</p>}
+              <div className="mt-3 space-y-3 border-t border-pk-border pt-4">
+                {ecError && <p className="text-sm text-pk-danger-text">{ecError}</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Name *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Name *</label>
                     <input type="text" value={ecForm.name} onChange={(e) => setEcForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Relationship *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Relationship *</label>
                     <input type="text" value={ecForm.relationship} onChange={(e) => setEcForm((f) => ({ ...f, relationship: e.target.value }))}
                       placeholder="Spouse, Parent, Sibling…"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Phone *</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Phone *</label>
                     <input type="tel" value={ecForm.phone} onChange={(e) => setEcForm((f) => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+                    <label className="block text-xs font-medium text-pk-text-secondary mb-1">Email</label>
                     <input type="email" value={ecForm.email} onChange={(e) => setEcForm((f) => ({ ...f, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" />
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -524,50 +524,50 @@ export default function StaffDetailPage() {
           <CardHeader><CardTitle>Account Access</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2 text-sm">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isActive ? "bg-pk-success-fill text-pk-success-text" : "bg-pk-surface-sunken text-pk-text-muted"}`}>
                 {member.isActive ? "HR Active" : "HR Inactive"}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.portalAccess ? "bg-blue-100 text-blue-700" : "bg-yellow-100 text-yellow-700"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.portalAccess ? "bg-pk-teal-100 text-pk-teal-700" : "bg-pk-warning-fill text-pk-warning-text"}`}>
                 {member.portalAccess ? "Login Enabled" : "Login Disabled"}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isVerified ? "bg-teal-100 text-teal-700" : "bg-orange-100 text-orange-700"}`}>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.isVerified ? "bg-teal-100 text-teal-700" : "bg-pk-warning-fill text-pk-warning-text"}`}>
                 {member.isVerified ? "Devices Verified" : "Unverified"}
               </span>
             </div>
 
-            <div className="border-t border-slate-100 pt-4 space-y-3">
-              <p className="text-sm font-medium text-slate-700">Send activation / verification link</p>
+            <div className="border-t border-pk-border pt-4 space-y-3">
+              <p className="text-sm font-medium text-pk-text-secondary">Send activation / verification link</p>
               <div className="space-y-2">
                 {[
                   { value: "invite_link" as const, label: "Activation link (enable login)", desc: "User sets their own password and verifies email + phone. Login is enabled after." },
                   { value: "no_login_verify" as const, label: "Verification link (no login)", desc: "User verifies their email and phone. Login access remains disabled." },
                 ].map(opt => (
-                  <label key={opt.value} className={`flex gap-3 p-3 rounded-lg border cursor-pointer transition ${linkMode === opt.value ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                  <label key={opt.value} className={`flex gap-3 p-3 rounded-pk-sm border cursor-pointer transition ${linkMode === opt.value ? "border-pk-teal-500 bg-pk-teal-50" : "border-pk-border hover:bg-pk-surface-raised"}`}>
                     <input type="radio" name="linkMode" value={opt.value} checked={linkMode === opt.value}
                       onChange={() => { setLinkMode(opt.value); setLinkSent(false); setLinkError(""); }}
-                      className="mt-0.5 accent-blue-600" />
+                      className="mt-0.5 accent-pk-teal-600" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{opt.label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      <p className="text-sm font-medium text-pk-text">{opt.label}</p>
+                      <p className="text-xs text-pk-text-muted mt-0.5">{opt.desc}</p>
                     </div>
                   </label>
                 ))}
               </div>
-              {linkError && <p className="text-sm text-red-600">{linkError}</p>}
-              {linkSent && <p className="text-sm text-green-600">Link sent to {member.email}</p>}
+              {linkError && <p className="text-sm text-pk-danger-text">{linkError}</p>}
+              {linkSent && <p className="text-sm text-pk-success-text">Link sent to {member.email}</p>}
               <Button size="sm" onClick={handleSendLink} disabled={sendingLink}>
                 {sendingLink ? "Sending..." : "Send link"}
               </Button>
             </div>
 
             {member.phone && (
-              <div className="border-t border-slate-100 pt-4 space-y-2">
-                <p className="text-sm font-medium text-slate-700">Phone OTP</p>
-                <p className="text-xs text-slate-500">
+              <div className="border-t border-pk-border pt-4 space-y-2">
+                <p className="text-sm font-medium text-pk-text-secondary">Phone OTP</p>
+                <p className="text-xs text-pk-text-muted">
                   Send a one-time code to <span className="font-mono">{member.phone}</span> via SMS and email. Use this to test SMS delivery or manually re-verify a phone number.
                 </p>
                 {phoneOtpResult && (
-                  <p className={`text-sm ${phoneOtpResult.ok ? "text-green-600" : "text-red-600"}`}>
+                  <p className={`text-sm ${phoneOtpResult.ok ? "text-pk-success-text" : "text-pk-danger-text"}`}>
                     {phoneOtpResult.msg}
                   </p>
                 )}
@@ -586,26 +586,26 @@ export default function StaffDetailPage() {
             <CardContent>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="pb-2 text-left font-medium text-slate-600">Month</th>
-                    <th className="pb-2 text-left font-medium text-slate-600">Amount</th>
-                    <th className="pb-2 text-left font-medium text-slate-600">Paid</th>
-                    <th className="pb-2 text-left font-medium text-slate-600">Appts</th>
-                    <th className="pb-2 text-left font-medium text-slate-600">Status</th>
+                  <tr className="border-b border-pk-border">
+                    <th className="pb-2 text-left font-medium text-pk-text-secondary">Month</th>
+                    <th className="pb-2 text-left font-medium text-pk-text-secondary">Amount</th>
+                    <th className="pb-2 text-left font-medium text-pk-text-secondary">Paid</th>
+                    <th className="pb-2 text-left font-medium text-pk-text-secondary">Appts</th>
+                    <th className="pb-2 text-left font-medium text-pk-text-secondary">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-pk-border">
                   {salaryRecords.map((r, i) => (
                     <tr key={i}>
-                      <td className="py-2 text-slate-700">{r.month}</td>
-                      <td className="py-2 text-slate-700">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
-                      <td className="py-2 text-slate-700">₹{r.paidAmount.toLocaleString("en-IN")}</td>
-                      <td className="py-2 text-slate-500">{r.appointmentCount || "—"}</td>
+                      <td className="py-2 text-pk-text-secondary">{r.month}</td>
+                      <td className="py-2 text-pk-text-secondary">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-pk-text-secondary">₹{r.paidAmount.toLocaleString("en-IN")}</td>
+                      <td className="py-2 text-pk-text-muted">{r.appointmentCount || "—"}</td>
                       <td className="py-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          r.status === "PAID" ? "bg-green-100 text-green-700"
-                          : r.status === "PARTIAL" ? "bg-yellow-100 text-yellow-700"
-                          : "bg-slate-100 text-slate-600"
+                          r.status === "PAID" ? "bg-pk-success-fill text-pk-success-text"
+                          : r.status === "PARTIAL" ? "bg-pk-warning-fill text-pk-warning-text"
+                          : "bg-pk-surface-sunken text-pk-text-secondary"
                         }`}>
                           {r.status}
                         </span>
@@ -620,7 +620,7 @@ export default function StaffDetailPage() {
 
         <button
           onClick={() => router.push("/dashboard/staff")}
-          className="text-sm text-slate-500 hover:text-slate-700 transition"
+          className="text-sm text-pk-text-muted hover:text-pk-text-secondary transition"
         >
           &larr; Back to Staff
         </button>

@@ -108,21 +108,21 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
     <div className="space-y-5">
       {/* Add Item Form */}
       {visitStatus !== "CANCELLED" && (
-        <form onSubmit={handleAddItem} className="bg-slate-50 rounded-lg p-4">
+        <form onSubmit={handleAddItem} className="bg-pk-surface-raised rounded-pk-sm p-4">
           {visitStatus === "COMPLETED" && (
-            <p className="text-xs text-amber-600 mb-2">⚠️ Visit is completed — items added will update billing.</p>
+            <p className="text-xs text-pk-warning-text mb-2">⚠️ Visit is completed — items added will update billing.</p>
           )}
-          <p className="text-sm font-semibold text-slate-700 mb-3">Add Item</p>
+          <p className="text-sm font-semibold text-pk-text-secondary mb-3">Add Item</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Category</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Category</label>
               <select
                 value={newItem.category}
                 onChange={(e) => {
                   const cat = e.target.value;
                   setNewItem({ itemName: "", category: cat, toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
                 }}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
@@ -130,21 +130,21 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               </select>
             </div>
             <div className="lg:col-span-2">
-              <label className="block text-xs text-slate-500 mb-1">Item Name *</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Item Name *</label>
               <input
                 required
                 value={newItem.itemName}
                 onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 placeholder="Medicine / Procedure..."
               />
             </div>
             {/* Treatment picker */}
             {newItem.category === "TREATMENT" && (
               <div className="col-span-full">
-                <label className="block text-xs text-slate-500 mb-1">Select Treatment Plan *</label>
+                <label className="block text-xs text-pk-text-muted mb-1">Select Treatment Plan *</label>
                 {treatments.length === 0 ? (
-                  <p className="text-xs text-amber-600 mt-1">No treatment plans linked to this visit. Add one in the Treatment Plan tab first.</p>
+                  <p className="text-xs text-pk-warning-text mt-1">No treatment plans linked to this visit. Add one in the Treatment Plan tab first.</p>
                 ) : (
                   <select
                     value={newItem.linkedTreatmentId}
@@ -164,7 +164,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                         toothNumber: firstTooth,
                       }));
                     }}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">— Pick a treatment plan —</option>
                     {treatments.map(tx => (
@@ -175,18 +175,18 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                   </select>
                 )}
                 {newItem.linkedTreatmentId && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-pk-text-muted mt-1">
                     Estimated cost pre-filled. Edit the Unit Price below to match what the patient agreed to pay.
                   </p>
                 )}
               </div>
             )}
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Tooth #</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Tooth #</label>
               <select
                 value={newItem.toothNumber}
                 onChange={(e) => setNewItem({ ...newItem, toothNumber: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 <option value="">— Any tooth</option>
                 <optgroup label="Upper Right">
@@ -204,40 +204,40 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Qty</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Qty</label>
               <input
                 type="number"
                 min="0.01"
                 step="0.01"
                 value={newItem.quantity}
                 onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Unit Price (₹)</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Unit Price (₹)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={newItem.unitPrice}
                 onChange={(e) => setNewItem({ ...newItem, unitPrice: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
             </div>
           </div>
           <div className="flex items-center gap-3 mt-3">
             <div className="flex-1">
-              <label className="block text-xs text-slate-500 mb-1">Notes</label>
+              <label className="block text-xs text-pk-text-muted mb-1">Notes</label>
               <input
                 value={newItem.notes}
                 onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 placeholder="Optional notes..."
               />
             </div>
             <div className="pt-5">
-              <p className="text-sm font-semibold text-slate-700">
+              <p className="text-sm font-semibold text-pk-text-secondary">
                 = {formatCurrency(Number(newItem.quantity) * Number(newItem.unitPrice))}
               </p>
             </div>
@@ -245,12 +245,12 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
               <button
                 type="submit"
                 disabled={addingItem}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+                className="bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
               >
                 {addingItem ? "Adding..." : "Add"}
               </button>
               {addItemError && (
-                <p className="text-xs text-red-600">{addItemError}</p>
+                <p className="text-xs text-pk-danger-text">{addItemError}</p>
               )}
             </div>
           </div>
@@ -260,36 +260,36 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
       {/* Items Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-pk-surface-raised">
             <tr>
-              <th className="text-left px-3 py-2 font-semibold text-slate-600">Item</th>
-              <th className="text-left px-3 py-2 font-semibold text-slate-600">Category</th>
-              <th className="text-left px-3 py-2 font-semibold text-slate-600">Tooth</th>
-              <th className="text-right px-3 py-2 font-semibold text-slate-600">Qty</th>
-              <th className="text-right px-3 py-2 font-semibold text-slate-600">Unit Price</th>
-              <th className="text-right px-3 py-2 font-semibold text-slate-600">Amount</th>
+              <th className="text-left px-3 py-2 font-semibold text-pk-text-secondary">Item</th>
+              <th className="text-left px-3 py-2 font-semibold text-pk-text-secondary">Category</th>
+              <th className="text-left px-3 py-2 font-semibold text-pk-text-secondary">Tooth</th>
+              <th className="text-right px-3 py-2 font-semibold text-pk-text-secondary">Qty</th>
+              <th className="text-right px-3 py-2 font-semibold text-pk-text-secondary">Unit Price</th>
+              <th className="text-right px-3 py-2 font-semibold text-pk-text-secondary">Amount</th>
               {visitStatus !== "CANCELLED" && <th className="px-3 py-2"></th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-pk-border">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-6 text-slate-400">No items added yet</td>
+                <td colSpan={7} className="text-center py-6 text-pk-text-muted">No items added yet</td>
               </tr>
             ) : (
               items.map((item) => {
                 const isEditing = editState?.itemId === item.id;
                 if (isEditing && editState) {
                   return (
-                    <tr key={item.id} className="bg-blue-50">
+                    <tr key={item.id} className="bg-pk-teal-50">
                       <td className="px-3 py-2" colSpan={7}>
                         <form onSubmit={handleSaveEdit} className="flex flex-wrap gap-2 items-end">
                           <div>
-                            <label className="block text-xs text-slate-500 mb-0.5">Category</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Category</label>
                             <select
                               value={editState.category}
                               onChange={(e) => setEditState({ ...editState, category: e.target.value })}
-                              className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             >
                               {CATEGORIES.map((c) => (
                                 <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
@@ -297,62 +297,62 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                             </select>
                           </div>
                           <div className="flex-1 min-w-[140px]">
-                            <label className="block text-xs text-slate-500 mb-0.5">Item Name *</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Item Name *</label>
                             <input
                               required
                               value={editState.itemName}
                               onChange={(e) => setEditState({ ...editState, itemName: e.target.value })}
-                              className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-500 mb-0.5">Tooth #</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Tooth #</label>
                             <input
                               value={editState.toothNumber}
                               onChange={(e) => setEditState({ ...editState, toothNumber: e.target.value })}
                               placeholder="—"
-                              className="w-20 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-20 border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-500 mb-0.5">Qty</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Qty</label>
                             <input
                               type="number" min="0.01" step="0.01"
                               value={editState.quantity}
                               onChange={(e) => setEditState({ ...editState, quantity: e.target.value })}
-                              className="w-16 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-16 border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-slate-500 mb-0.5">Unit Price (₹)</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Unit Price (₹)</label>
                             <input
                               type="number" min="0" step="0.01"
                               value={editState.unitPrice}
                               onChange={(e) => setEditState({ ...editState, unitPrice: e.target.value })}
-                              className="w-24 border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-24 border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             />
                           </div>
                           <div className="flex-1 min-w-[100px]">
-                            <label className="block text-xs text-slate-500 mb-0.5">Notes</label>
+                            <label className="block text-xs text-pk-text-muted mb-0.5">Notes</label>
                             <input
                               value={editState.notes}
                               onChange={(e) => setEditState({ ...editState, notes: e.target.value })}
                               placeholder="Optional..."
-                              className="w-full border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             />
                           </div>
                           <div className="flex gap-2">
                             <button
                               type="submit"
                               disabled={savingEdit}
-                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                              className="bg-pk-teal-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50"
                             >
                               {savingEdit ? "Saving…" : "Save"}
                             </button>
                             <button
                               type="button"
                               onClick={() => setEditState(null)}
-                              className="border border-slate-300 text-slate-600 px-3 py-1 rounded text-sm hover:bg-slate-50"
+                              className="border border-pk-border-strong text-pk-text-secondary px-3 py-1 rounded text-sm hover:bg-pk-surface-raised"
                             >
                               Cancel
                             </button>
@@ -363,15 +363,15 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                   );
                 }
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50">
+                  <tr key={item.id} className="hover:bg-pk-surface-raised">
                     <td className="px-3 py-2.5">
-                      <div className="font-medium text-slate-900">{item.itemName}</div>
-                      {item.notes && <div className="text-xs text-slate-400">{item.notes}</div>}
+                      <div className="font-medium text-pk-text">{item.itemName}</div>
+                      {item.notes && <div className="text-xs text-pk-text-muted">{item.notes}</div>}
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{item.category}</span>
+                      <span className="text-xs bg-pk-surface-sunken px-2 py-0.5 rounded-full">{item.category}</span>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-500">{item.toothNumber || "—"}</td>
+                    <td className="px-3 py-2.5 text-pk-text-muted">{item.toothNumber || "—"}</td>
                     <td className="px-3 py-2.5 text-right">{item.quantity}</td>
                     <td className="px-3 py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
                     <td className="px-3 py-2.5 text-right font-semibold">{formatCurrency(item.amount)}</td>
@@ -380,14 +380,14 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                         <div className="flex justify-end gap-3">
                           <button
                             onClick={() => startEdit(item)}
-                            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                            className="text-pk-teal-600 hover:text-pk-teal-800 text-xs font-medium"
                           >
                             Edit
                           </button>
                           {!hasPayments && (
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
+                              className="text-pk-danger-text hover:text-pk-danger-text text-xs font-medium"
                             >
                               Delete
                             </button>
@@ -401,10 +401,10 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
             )}
           </tbody>
           {items.length > 0 && (
-            <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+            <tfoot className="bg-pk-surface-raised border-t-2 border-pk-border">
               <tr>
-                <td colSpan={5} className="px-3 py-2 text-right font-semibold text-slate-700">Subtotal</td>
-                <td className="px-3 py-2 text-right font-bold text-slate-900">
+                <td colSpan={5} className="px-3 py-2 text-right font-semibold text-pk-text-secondary">Subtotal</td>
+                <td className="px-3 py-2 text-right font-bold text-pk-text">
                   {formatCurrency(items.reduce((sum, i) => sum + i.amount, 0))}
                 </td>
                 {visitStatus !== "CANCELLED" && <td />}

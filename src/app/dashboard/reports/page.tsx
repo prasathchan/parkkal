@@ -16,8 +16,8 @@ function SvgBarChart({
   data,
   barKey,
   secondKey,
-  color = "#3b82f6",
-  secondColor = "#22c55e",
+  color = "#0B6E6E",
+  secondColor = "#2E7D5B",
   label,
   secondLabel,
   formatValue = (v: number) => String(v),
@@ -41,7 +41,7 @@ function SvgBarChart({
   return (
     <div>
       {secondKey && (
-        <div className="flex items-center gap-4 mb-2 text-xs text-slate-500">
+        <div className="flex items-center gap-4 mb-2 text-xs text-pk-text-muted">
           <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} /> {label}
           <span className="inline-block w-3 h-3 rounded-sm" style={{ background: secondColor }} /> {secondLabel}
         </div>
@@ -87,14 +87,14 @@ function SvgBarChart({
 
 // ─── Mini stat card ────────────────────────────────────────────────────────────
 
-function _Stat({ label, value, sub, color = "text-slate-900" }: {
+function _Stat({ label, value, sub, color = "text-pk-text" }: {
   label: string; value: string; sub?: string; color?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
+    <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
+      <p className="text-xs text-pk-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-pk-text-muted mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -102,30 +102,30 @@ function _Stat({ label, value, sub, color = "text-slate-900" }: {
 // ─── Status breakdown bar ──────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  COMPLETED:   "bg-green-500",
-  OPEN:        "bg-blue-500",
-  PLANNED:     "bg-yellow-400",
-  IN_PROGRESS: "bg-indigo-400",
-  CANCELLED:   "bg-slate-300",
-  NO_SHOW:     "bg-red-400",
-  SCHEDULED:   "bg-blue-400",
+  COMPLETED:   "bg-pk-success",
+  OPEN:        "bg-pk-teal-500",
+  PLANNED:     "bg-pk-warning",
+  IN_PROGRESS: "bg-pk-teal-400",
+  CANCELLED:   "bg-pk-neutral-300",
+  NO_SHOW:     "bg-pk-danger",
+  SCHEDULED:   "bg-pk-teal-400",
 };
 
 function StatusBreakdown({ data }: { data: Record<string, number> }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
-  if (total === 0) return <p className="text-xs text-slate-400">No data for this period.</p>;
+  if (total === 0) return <p className="text-xs text-pk-text-muted">No data for this period.</p>;
   return (
     <div className="space-y-1.5">
       {Object.entries(data).sort((a, b) => b[1] - a[1]).map(([status, n]) => (
         <div key={status} className="flex items-center gap-3">
-          <div className="w-24 text-xs text-slate-600 capitalize">{status.replace(/_/g, " ")}</div>
-          <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+          <div className="w-24 text-xs text-pk-text-secondary capitalize">{status.replace(/_/g, " ")}</div>
+          <div className="flex-1 bg-pk-surface-sunken rounded-full h-2 overflow-hidden">
             <div
-              className={`${STATUS_COLORS[status] ?? "bg-slate-400"} h-full rounded-full transition-all`}
+              className={`${STATUS_COLORS[status] ?? "bg-pk-neutral-400"} h-full rounded-full transition-all`}
               style={{ width: `${Math.round((n / total) * 100)}%` }}
             />
           </div>
-          <div className="text-xs text-slate-500 w-10 text-right">{n}</div>
+          <div className="text-xs text-pk-text-muted w-10 text-right">{n}</div>
         </div>
       ))}
     </div>
@@ -134,7 +134,7 @@ function StatusBreakdown({ data }: { data: Record<string, number> }) {
 
 // ─── Period-over-period stat card ─────────────────────────────────────────────
 
-function StatWithChange({ label, value, sub, prevValue, color = "text-slate-900", isRate = false }: {
+function StatWithChange({ label, value, sub, prevValue, color = "text-pk-text", isRate = false }: {
   label: string; value: string; sub?: string; prevValue?: number; color?: string; isRate?: boolean;
 }) {
   const current = parseFloat(value.replace(/[^0-9.-]/g, ""));
@@ -142,15 +142,15 @@ function StatWithChange({ label, value, sub, prevValue, color = "text-slate-900"
   const pct = hasChange ? Math.round(((current - prevValue) / Math.abs(prevValue)) * 100) : null;
   const up = pct !== null && pct > 0;
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
-      <p className="text-xs text-slate-500 mb-1">{label}</p>
+    <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
+      <p className="text-xs text-pk-text-muted mb-1">{label}</p>
       <p className={`text-xl font-bold ${color}`}>{value}</p>
       {pct !== null && (
-        <p className={`text-xs mt-0.5 ${up ? (isRate ? "text-red-500" : "text-green-600") : (isRate ? "text-green-600" : "text-red-500")}`}>
+        <p className={`text-xs mt-0.5 ${up ? (isRate ? "text-pk-danger-text" : "text-pk-success-text") : (isRate ? "text-pk-success-text" : "text-pk-danger-text")}`}>
           {up ? "▲" : "▼"} {Math.abs(pct)}% vs prior period
         </p>
       )}
-      {sub && !pct && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+      {sub && !pct && <p className="text-xs text-pk-text-muted mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -159,11 +159,11 @@ function StatWithChange({ label, value, sub, prevValue, color = "text-slate-900"
 
 function AgingTable({ buckets }: { buckets: AgingBucket[] }) {
   const total = buckets.reduce((s, b) => s + b.amount, 0);
-  if (total === 0) return <p className="text-xs text-slate-400 py-4 text-center">No outstanding balances.</p>;
+  if (total === 0) return <p className="text-xs text-pk-text-muted py-4 text-center">No outstanding balances.</p>;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm min-w-[320px]">
-        <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+        <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">
           <tr>
             <th className="px-5 py-3 text-left font-medium">Age</th>
             <th className="px-5 py-3 text-right font-medium">Visits</th>
@@ -171,21 +171,21 @@ function AgingTable({ buckets }: { buckets: AgingBucket[] }) {
             <th className="px-5 py-3 text-right font-medium">% of Total</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-pk-border">
           {buckets.filter((b) => b.count > 0).map((b) => (
-            <tr key={b.label} className="hover:bg-slate-50">
-              <td className="px-5 py-3 font-medium text-slate-800">{b.label}</td>
-              <td className="px-5 py-3 text-right text-slate-700">{b.count}</td>
-              <td className="px-5 py-3 text-right font-semibold text-red-700">{formatCurrency(b.amount)}</td>
-              <td className="px-5 py-3 text-right text-slate-500">{Math.round((b.amount / total) * 100)}%</td>
+            <tr key={b.label} className="hover:bg-pk-surface-raised">
+              <td className="px-5 py-3 font-medium text-pk-text">{b.label}</td>
+              <td className="px-5 py-3 text-right text-pk-text-secondary">{b.count}</td>
+              <td className="px-5 py-3 text-right font-semibold text-pk-danger-text">{formatCurrency(b.amount)}</td>
+              <td className="px-5 py-3 text-right text-pk-text-muted">{Math.round((b.amount / total) * 100)}%</td>
             </tr>
           ))}
         </tbody>
-        <tfoot className="border-t-2 border-slate-200">
+        <tfoot className="border-t-2 border-pk-border">
           <tr>
-            <td className="px-5 py-3 font-semibold text-slate-900">Total</td>
+            <td className="px-5 py-3 font-semibold text-pk-text">Total</td>
             <td className="px-5 py-3 text-right font-semibold">{buckets.reduce((s, b) => s + b.count, 0)}</td>
-            <td className="px-5 py-3 text-right font-bold text-red-700">{formatCurrency(total)}</td>
+            <td className="px-5 py-3 text-right font-bold text-pk-danger-text">{formatCurrency(total)}</td>
             <td />
           </tr>
         </tfoot>
@@ -212,15 +212,15 @@ function FunnelChart({ funnel }: { funnel: PatientFunnel }) {
         const dropPct = i > 0 ? Math.round(((steps[i - 1].value - step.value) / Math.max(steps[i - 1].value, 1)) * 100) : 0;
         return (
           <div key={step.label}>
-            <div className="flex items-center justify-between mb-1 text-xs text-slate-600">
+            <div className="flex items-center justify-between mb-1 text-xs text-pk-text-secondary">
               <span className="font-medium">{step.label}</span>
-              <span className="text-slate-500">{step.value.toLocaleString("en-IN")}
-                {i > 0 && dropPct > 0 && <span className="text-red-400 ml-1">−{dropPct}%</span>}
+              <span className="text-pk-text-muted">{step.value.toLocaleString("en-IN")}
+                {i > 0 && dropPct > 0 && <span className="text-pk-danger-text ml-1">−{dropPct}%</span>}
               </span>
             </div>
-            <div className="h-5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-5 bg-pk-surface-sunken rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-blue-500 transition-all"
+                className="h-full rounded-full bg-pk-teal-500 transition-all"
                 style={{ width: `${pct}%`, opacity: 1 - i * 0.12 }}
               />
             </div>
@@ -310,18 +310,18 @@ export default function ReportsPage() {
 
   if (forbidden) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-pk-surface-raised">
         <Header title="Reports" />
         <main id="main-content" className="max-w-5xl mx-auto px-4 py-16 text-center">
-          <p className="text-slate-500 text-sm">You don&apos;t have permission to view reports.</p>
-          <Link href="/dashboard" className="mt-4 inline-block text-blue-600 hover:underline text-sm">Back to Dashboard</Link>
+          <p className="text-pk-text-muted text-sm">You don&apos;t have permission to view reports.</p>
+          <Link href="/dashboard" className="mt-4 inline-block text-pk-teal-600 hover:underline text-sm">Back to Dashboard</Link>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-pk-surface-raised">
       <Header
         title="Reports"
         breadcrumb={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reports" }]}
@@ -331,15 +331,15 @@ export default function ReportsPage() {
         {/* ── Period selector ───────────────────────────────────────────────── */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Business Reports</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Revenue, patient activity, and clinical statistics.</p>
+            <h1 className="text-lg font-bold text-pk-text">Business Reports</h1>
+            <p className="text-xs text-pk-text-muted mt-0.5">Revenue, patient activity, and clinical statistics.</p>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
             {data && (
               <button
                 onClick={() => exportCsv(data, data.period.label)}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                className="px-3 py-1.5 rounded-pk-sm text-sm font-medium bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised transition"
               >
                 ↓ Export CSV
               </button>
@@ -349,10 +349,10 @@ export default function ReportsPage() {
               <button
                 key={p}
                 onClick={() => { setPeriod(p); setUseCustom(false); }}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                className={`px-3 py-1.5 rounded-pk-sm text-sm font-medium transition ${
                   !useCustom && period === p
-                    ? "bg-blue-600 text-white"
-                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-pk-teal-600 text-white"
+                    : "bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
                 }`}
               >
                 {PRESET_LABELS[p]}
@@ -362,10 +362,10 @@ export default function ReportsPage() {
             {/* Custom range toggle */}
             <button
               onClick={() => setUseCustom((v) => !v)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+              className={`px-3 py-1.5 rounded-pk-sm text-sm font-medium transition ${
                 useCustom
-                  ? "bg-blue-600 text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  ? "bg-pk-teal-600 text-white"
+                  : "bg-pk-surface border border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
               }`}
             >
               Custom
@@ -379,16 +379,16 @@ export default function ReportsPage() {
                   value={fromDate}
                   max={toDate}
                   onChange={(e) => setFromDate(e.target.value)}
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-pk-border rounded-pk-sm px-2 py-1.5 text-sm text-pk-text-secondary bg-pk-surface focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
-                <span className="text-slate-400 text-sm">–</span>
+                <span className="text-pk-text-muted text-sm">–</span>
                 <input
                   type="date"
                   value={toDate}
                   min={fromDate}
                   max={today()}
                   onChange={(e) => setToDate(e.target.value)}
-                  className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-pk-border rounded-pk-sm px-2 py-1.5 text-sm text-pk-text-secondary bg-pk-surface focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
               </div>
             )}
@@ -396,13 +396,13 @@ export default function ReportsPage() {
         </div>
 
         {error && !forbidden && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>
+          <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">{error}</div>
         )}
 
         {loading && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1,2,3,4].map((n) => (
-              <div key={n} className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse h-20" />
+              <div key={n} className="bg-pk-surface rounded-pk-lg border border-pk-border p-4 animate-pulse h-20" />
             ))}
           </div>
         )}
@@ -426,37 +426,37 @@ export default function ReportsPage() {
                 label="Collected"
                 value={formatCurrency(data.summary.totalCollected)}
                 prevValue={data.prevSummary?.totalCollected}
-                color={data.summary.collectionRate >= 80 ? "text-green-700" : "text-orange-700"}
+                color={data.summary.collectionRate >= 80 ? "text-pk-success-text" : "text-pk-warning-text"}
               />
               <StatWithChange
                 label="Outstanding"
                 value={formatCurrency(data.summary.outstanding)}
-                color={data.summary.outstanding > 0 ? "text-red-700" : "text-green-700"}
+                color={data.summary.outstanding > 0 ? "text-pk-danger-text" : "text-pk-success-text"}
               />
               <StatWithChange
                 label="Collection Rate"
                 value={`${data.summary.collectionRate}%`}
                 prevValue={data.prevSummary?.collectionRate}
                 isRate
-                color={data.summary.collectionRate >= 90 ? "text-green-700" : data.summary.collectionRate >= 70 ? "text-yellow-700" : "text-red-700"}
+                color={data.summary.collectionRate >= 90 ? "text-pk-success-text" : data.summary.collectionRate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}
               />
             </div>
 
             {/* ── Revenue chart ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-1">Revenue — {data.period.label}</h2>
-              <p className="text-xs text-slate-400 mb-4">Daily billed vs. collected.</p>
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+              <h2 className="text-sm font-semibold text-pk-text mb-1">Revenue — {data.period.label}</h2>
+              <p className="text-xs text-pk-text-muted mb-4">Daily billed vs. collected.</p>
               <SvgBarChart
                 data={data.revenueByDay as unknown as (Record<string, number> & { date?: string })[]}
                 barKey="billed"
                 secondKey="collected"
                 color="#93c5fd"
-                secondColor="#22c55e"
+                secondColor="#2E7D5B"
                 label="Billed"
                 secondLabel="Collected"
                 formatValue={formatCurrency}
               />
-              <div className="flex justify-between text-xs text-slate-400 mt-1">
+              <div className="flex justify-between text-xs text-pk-text-muted mt-1">
                 <span>{data.revenueByDay[0]?.date}</span>
                 <span>{data.revenueByDay[data.revenueByDay.length - 1]?.date}</span>
               </div>
@@ -464,9 +464,9 @@ export default function ReportsPage() {
 
             {/* ── Two-column: New Patients + Status distributions ────────────── */}
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h2 className="text-sm font-semibold text-slate-900 mb-1">New Patient Registrations</h2>
-                <p className="text-xs text-slate-400 mb-4">Patients registered per day.</p>
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+                <h2 className="text-sm font-semibold text-pk-text mb-1">New Patient Registrations</h2>
+                <p className="text-xs text-pk-text-muted mb-4">Patients registered per day.</p>
                 <SvgBarChart
                   data={data.newPatients as unknown as (Record<string, number> & { date?: string })[]}
                   barKey="count"
@@ -475,29 +475,29 @@ export default function ReportsPage() {
                   formatValue={(v) => `${v} patient${v !== 1 ? "s" : ""}`}
                 />
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h2 className="text-sm font-semibold text-slate-900 mb-4">Visit Status Breakdown</h2>
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+                <h2 className="text-sm font-semibold text-pk-text mb-4">Visit Status Breakdown</h2>
                 <StatusBreakdown data={data.visitsByStatus} />
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h2 className="text-sm font-semibold text-slate-900 mb-4">Appointment Status Breakdown</h2>
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+                <h2 className="text-sm font-semibold text-pk-text mb-4">Appointment Status Breakdown</h2>
                 <StatusBreakdown data={data.apptByStatus} />
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 p-5">
-                <h2 className="text-sm font-semibold text-slate-900 mb-4">Treatment Plan Status</h2>
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+                <h2 className="text-sm font-semibold text-pk-text mb-4">Treatment Plan Status</h2>
                 <StatusBreakdown data={data.treatmentByStatus} />
               </div>
             </div>
 
             {/* ── Per-doctor breakdown ──────────────────────────────────────── */}
             {data.doctorBreakdown.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-sm font-semibold text-slate-900">Doctor Performance</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Visits, billing, and collection per doctor this period.</p>
+              <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
+                <div className="px-5 py-4 border-b border-pk-border">
+                  <h2 className="text-sm font-semibold text-pk-text">Doctor Performance</h2>
+                  <p className="text-xs text-pk-text-muted mt-0.5">Visits, billing, and collection per doctor this period.</p>
                 </div>
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                  <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">
                     <tr>
                       <th className="px-5 py-3 text-left font-medium">Doctor</th>
                       <th className="px-5 py-3 text-right font-medium">Visits</th>
@@ -506,16 +506,16 @@ export default function ReportsPage() {
                       <th className="px-5 py-3 text-right font-medium">Rate</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-pk-border">
                     {data.doctorBreakdown.map((d) => {
                       const rate = d.billed > 0 ? Math.round((d.collected / d.billed) * 100) : 100;
                       return (
-                        <tr key={d.doctorId} className="hover:bg-slate-50">
-                          <td className="px-5 py-3 font-medium text-slate-800">{d.doctorName}</td>
-                          <td className="px-5 py-3 text-right text-slate-700">{d.visits}</td>
-                          <td className="px-5 py-3 text-right text-slate-700">{formatCurrency(d.billed)}</td>
-                          <td className="px-5 py-3 text-right text-slate-700">{formatCurrency(d.collected)}</td>
-                          <td className={`px-5 py-3 text-right font-medium ${rate >= 90 ? "text-green-700" : rate >= 70 ? "text-yellow-700" : "text-red-700"}`}>
+                        <tr key={d.doctorId} className="hover:bg-pk-surface-raised">
+                          <td className="px-5 py-3 font-medium text-pk-text">{d.doctorName}</td>
+                          <td className="px-5 py-3 text-right text-pk-text-secondary">{d.visits}</td>
+                          <td className="px-5 py-3 text-right text-pk-text-secondary">{formatCurrency(d.billed)}</td>
+                          <td className="px-5 py-3 text-right text-pk-text-secondary">{formatCurrency(d.collected)}</td>
+                          <td className={`px-5 py-3 text-right font-medium ${rate >= 90 ? "text-pk-success-text" : rate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}`}>
                             {rate}%
                           </td>
                         </tr>
@@ -527,16 +527,16 @@ export default function ReportsPage() {
             )}
 
             {/* ── Top procedures table ──────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h2 className="text-sm font-semibold text-slate-900">Top Procedures</h2>
-                <p className="text-xs text-slate-400 mt-0.5">By number of treatment plans created this period.</p>
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-pk-border">
+                <h2 className="text-sm font-semibold text-pk-text">Top Procedures</h2>
+                <p className="text-xs text-pk-text-muted mt-0.5">By number of treatment plans created this period.</p>
               </div>
               {data.topProcedures.length === 0 ? (
-                <p className="px-5 py-8 text-xs text-slate-400 text-center">No treatment records in this period.</p>
+                <p className="px-5 py-8 text-xs text-pk-text-muted text-center">No treatment records in this period.</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                  <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">
                     <tr>
                       <th className="px-5 py-3 text-left font-medium">#</th>
                       <th className="px-5 py-3 text-left font-medium">Procedure</th>
@@ -544,13 +544,13 @@ export default function ReportsPage() {
                       <th className="px-5 py-3 text-right font-medium">Revenue</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-pk-border">
                     {data.topProcedures.map((p, i) => (
-                      <tr key={p.procedure} className="hover:bg-slate-50">
-                        <td className="px-5 py-3 text-slate-400 text-xs">{i + 1}</td>
-                        <td className="px-5 py-3 font-medium text-slate-800">{p.procedure}</td>
-                        <td className="px-5 py-3 text-right text-slate-700">{p.count}</td>
-                        <td className="px-5 py-3 text-right font-medium text-slate-900">{formatCurrency(p.revenue)}</td>
+                      <tr key={p.procedure} className="hover:bg-pk-surface-raised">
+                        <td className="px-5 py-3 text-pk-text-muted text-xs">{i + 1}</td>
+                        <td className="px-5 py-3 font-medium text-pk-text">{p.procedure}</td>
+                        <td className="px-5 py-3 text-right text-pk-text-secondary">{p.count}</td>
+                        <td className="px-5 py-3 text-right font-medium text-pk-text">{formatCurrency(p.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -559,18 +559,18 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Outstanding balance aging ──────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100">
-                <h2 className="text-sm font-semibold text-slate-900">Outstanding Balance Aging</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Open visits bucketed by days since creation.</p>
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
+              <div className="px-5 py-4 border-b border-pk-border">
+                <h2 className="text-sm font-semibold text-pk-text">Outstanding Balance Aging</h2>
+                <p className="text-xs text-pk-text-muted mt-0.5">Open visits bucketed by days since creation.</p>
               </div>
               <AgingTable buckets={data.agingBuckets} />
             </div>
 
             {/* ── Patient funnel ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-900 mb-1">Patient Funnel</h2>
-              <p className="text-xs text-slate-400 mb-4">Conversion from registration through payment (all-time).</p>
+            <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">
+              <h2 className="text-sm font-semibold text-pk-text mb-1">Patient Funnel</h2>
+              <p className="text-xs text-pk-text-muted mb-4">Conversion from registration through payment (all-time).</p>
               <FunnelChart funnel={data.patientFunnel} />
             </div>
           </>

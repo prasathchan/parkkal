@@ -101,9 +101,9 @@ export const PATCH = withRoute<{ id: string }>(
 
     // Calendar sync side-effects (fire-and-forget)
     if (isCancelling) {
-      removeAppointmentFromCalendar(db, appt.doctorId, id).catch(() => {});
+      removeAppointmentFromCalendar(db, appt.doctorId, session.orgId, id).catch(() => {});
     } else if (updated) {
-      syncAppointmentToCalendar(db, updated.doctorId, {
+      syncAppointmentToCalendar(db, updated.doctorId, session.orgId, {
         appointmentId: id,
         title: "Dental Appointment",
         date:  updated.appointmentDate,
@@ -139,7 +139,7 @@ export const DELETE = withRoute<{ id: string }>(
     // Cancel any pending reminders so the cron job doesn't attempt delivery
     await cancelReminders(db, id);
     // Remove from doctor's personal calendar (fire-and-forget)
-    removeAppointmentFromCalendar(db, appt.doctorId, id).catch(() => {});
+    removeAppointmentFromCalendar(db, appt.doctorId, session.orgId, id).catch(() => {});
     log.info("Appointment deleted", { appointmentId: id });
     return apiOk({ success: true });
   }

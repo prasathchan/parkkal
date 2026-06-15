@@ -57,79 +57,79 @@ export default function SalaryPage() {
         {/* Controls */}
         <div className="flex items-center gap-4 mb-6">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Month</label>
+            <label className="block text-xs font-medium text-pk-text-secondary mb-1">Month</label>
             <input
               type="month"
               value={month}
               onChange={e => setMonth(e.target.value)}
-              className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-pk-border-strong rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
           <button
             onClick={generateRecords}
             disabled={generating}
-            className="mt-5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+            className="mt-5 bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white text-sm font-semibold px-4 py-2 rounded-pk-sm transition"
           >
             {generating ? "Generating..." : "Generate Records"}
           </button>
         </div>
 
         {message && (
-          <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg px-4 py-3 mb-4">
+          <div className="bg-pk-teal-50 border border-pk-teal-200 text-pk-teal-700 text-sm rounded-pk-sm px-4 py-3 mb-4">
             {message}
           </div>
         )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500 mb-1">Total Payroll</p>
-            <p className="text-2xl font-bold text-slate-900">₹{totalPayroll.toLocaleString("en-IN")}</p>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
+            <p className="text-xs text-pk-text-muted mb-1">Total Payroll</p>
+            <p className="text-2xl font-bold text-pk-text">₹{totalPayroll.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500 mb-1">Total Paid</p>
-            <p className="text-2xl font-bold text-green-600">₹{totalPaid.toLocaleString("en-IN")}</p>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
+            <p className="text-xs text-pk-text-muted mb-1">Total Paid</p>
+            <p className="text-2xl font-bold text-pk-success-text">₹{totalPaid.toLocaleString("en-IN")}</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-xs text-slate-500 mb-1">Outstanding</p>
-            <p className="text-2xl font-bold text-red-600">₹{outstanding.toLocaleString("en-IN")}</p>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-4">
+            <p className="text-xs text-pk-text-muted mb-1">Outstanding</p>
+            <p className="text-2xl font-bold text-pk-danger-text">₹{outstanding.toLocaleString("en-IN")}</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-slate-500">Loading...</div>
+          <div className="text-center py-12 text-pk-text-muted">Loading...</div>
         ) : records.length === 0 ? (
-          <div className="text-center py-12 text-slate-500">
+          <div className="text-center py-12 text-pk-text-muted">
             <p>No salary records for {month}.</p>
             <p className="text-sm mt-1">Click &ldquo;Generate Records&rdquo; to create them.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-pk-surface-raised border-b border-pk-border">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Staff Name</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Type</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Appts</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Total</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Paid</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-600">Action</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Staff Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Type</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Appts</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Total</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Paid</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Status</th>
+                  <th className="px-4 py-3 text-left font-medium text-pk-text-secondary">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-pk-border">
                 {records.map(r => (
-                  <tr key={r.id} className="hover:bg-slate-50">
+                  <tr key={r.id} className="hover:bg-pk-surface-raised">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-slate-900">{r.userName}</p>
-                      <p className="text-xs text-slate-500">{r.userEmail}</p>
+                      <p className="font-medium text-pk-text">{r.userName}</p>
+                      <p className="text-xs text-pk-text-muted">{r.userEmail}</p>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{r.salaryType}</td>
-                    <td className="px-4 py-3 text-slate-700">{r.appointmentCount}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-slate-700">₹{r.paidAmount.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-pk-text-secondary">{r.salaryType}</td>
+                    <td className="px-4 py-3 text-pk-text-secondary">{r.appointmentCount}</td>
+                    <td className="px-4 py-3 font-medium text-pk-text">₹{r.salaryAmount.toLocaleString("en-IN")}</td>
+                    <td className="px-4 py-3 text-pk-text-secondary">₹{r.paidAmount.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-green-100 text-green-700" : r.status === "PARTIALLY_PAID" ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-600"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === "PAID" ? "bg-pk-success-fill text-pk-success-text" : r.status === "PARTIALLY_PAID" ? "bg-pk-warning-fill text-pk-warning-text" : "bg-pk-surface-sunken text-pk-text-secondary"}`}>
                         {r.status}
                       </span>
                     </td>
@@ -137,7 +137,7 @@ export default function SalaryPage() {
                       {r.status !== "PAID" && (
                         <button
                           onClick={() => markPaid(r)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          className="text-xs text-pk-teal-600 hover:text-pk-teal-800 font-medium"
                         >
                           Mark Paid
                         </button>

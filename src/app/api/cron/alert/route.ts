@@ -88,7 +88,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const html = `
     <div style="font-family:system-ui,sans-serif;max-width:560px">
-      <h2 style="color:#dc2626">⚠️ Parkkal Error Rate Alert</h2>
+      <h2 style="color:#A8311F">⚠️ Parkkal Error Rate Alert</h2>
       <p>
         <strong>${errorCount}</strong> error/security events were logged in the last 15 minutes
         (threshold: ${ALERT_THRESHOLD}).
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       </table>
       <p style="margin-top:16px">
         <a href="https://parkkal-dental.chandran-aathi.workers.dev/dashboard/settings"
-           style="color:#2563eb">View admin app logs →</a>
+           style="color:#0B6E6E">View admin app logs →</a>
       </p>
       <p style="font-size:12px;color:#9ca3af;margin-top:24px">
         Alert fired by /api/cron/alert · ${new Date(now).toISOString()}

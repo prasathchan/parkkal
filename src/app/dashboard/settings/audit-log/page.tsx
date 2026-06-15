@@ -45,14 +45,14 @@ const ACTION_META: Record<string, { label: string; severity: Severity }> = {
 };
 
 const SEVERITY_PILL: Record<Severity, string> = {
-  critical: "bg-red-100 text-red-700 border border-red-200",
-  warning:  "bg-orange-100 text-orange-700 border border-orange-200",
-  info:     "bg-slate-100 text-slate-600 border border-slate-200",
+  critical: "bg-pk-danger-fill text-pk-danger-text border border-pk-danger-border",
+  warning:  "bg-pk-warning-fill text-pk-warning-text border border-pk-warning-border",
+  info:     "bg-pk-surface-sunken text-pk-text-secondary border border-pk-border",
 };
 
 const SEVERITY_ROW: Record<Severity, string> = {
-  critical: "bg-red-50/40",
-  warning:  "bg-orange-50/30",
+  critical: "bg-pk-danger-fill",
+  warning:  "bg-pk-warning-fill",
   info:     "",
 };
 
@@ -131,11 +131,11 @@ export default function AuditLogPage() {
 
   if (forbidden) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-pk-surface-raised">
         <Header title="Audit Log" />
         <main id="main-content" className="max-w-5xl mx-auto px-4 py-16 text-center">
-          <p className="text-slate-500 text-sm">Only administrators can view the audit log.</p>
-          <Link href="/dashboard/settings" className="mt-4 inline-block text-blue-600 hover:underline text-sm">
+          <p className="text-pk-text-muted text-sm">Only administrators can view the audit log.</p>
+          <Link href="/dashboard/settings" className="mt-4 inline-block text-pk-teal-600 hover:underline text-sm">
             Back to Settings
           </Link>
         </main>
@@ -144,24 +144,24 @@ export default function AuditLogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-pk-surface-raised">
       <Header title="Audit Log" />
       <main id="main-content" className="max-w-5xl mx-auto px-4 py-8 space-y-5">
 
         {/* Breadcrumb */}
-        <nav className="text-sm text-slate-500 flex items-center gap-1.5">
-          <Link href="/dashboard" className="hover:text-slate-700">Dashboard</Link>
+        <nav className="text-sm text-pk-text-muted flex items-center gap-1.5">
+          <Link href="/dashboard" className="hover:text-pk-text-secondary">Dashboard</Link>
           <span>/</span>
-          <Link href="/dashboard/settings" className="hover:text-slate-700">Settings</Link>
+          <Link href="/dashboard/settings" className="hover:text-pk-text-secondary">Settings</Link>
           <span>/</span>
-          <span className="text-slate-900 font-medium">Audit Log</span>
+          <span className="text-pk-text font-medium">Audit Log</span>
         </nav>
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Audit Log</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h1 className="text-lg font-bold text-pk-text">Audit Log</h1>
+            <p className="text-xs text-pk-text-muted mt-0.5">
               All administrative actions performed in your organisation, newest first.
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function AuditLogPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-sm border border-pk-border rounded-pk-sm px-3 py-2 bg-pk-surface text-pk-text-secondary focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
           >
             {FILTER_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -178,7 +178,7 @@ export default function AuditLogPage() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-3 text-xs text-pk-text-muted">
           <span className="font-medium">Severity:</span>
           <span className={`px-2 py-0.5 rounded-full ${SEVERITY_PILL.critical}`}>Critical (irreversible deletes)</span>
           <span className={`px-2 py-0.5 rounded-full ${SEVERITY_PILL.warning}`}>Warning (access/role changes)</span>
@@ -186,14 +186,14 @@ export default function AuditLogPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div className="bg-pk-surface rounded-pk-xl border border-pk-border overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-slate-400 text-sm">Loading audit log…</div>
+            <div className="p-12 text-center text-pk-text-muted text-sm">Loading audit log…</div>
           ) : entries.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm">No audit log entries found.</div>
+            <div className="p-12 text-center text-pk-text-muted text-sm">No audit log entries found.</div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-100">
+              <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide border-b border-pk-border">
                 <tr>
                   <th className="px-5 py-3 text-left font-medium">When</th>
                   <th className="px-5 py-3 text-left font-medium">Action</th>
@@ -202,7 +202,7 @@ export default function AuditLogPage() {
                   <th className="px-5 py-3 text-left font-medium">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-pk-border">
                 {entries.map((entry) => {
                   const meta = ACTION_META[entry.action];
                   const severity: Severity = meta?.severity ?? "info";
@@ -212,10 +212,10 @@ export default function AuditLogPage() {
                     <>
                       <tr
                         key={entry.id}
-                        className={`hover:bg-slate-50 transition cursor-pointer ${SEVERITY_ROW[severity]}`}
+                        className={`hover:bg-pk-surface-raised transition cursor-pointer ${SEVERITY_ROW[severity]}`}
                         onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                       >
-                        <td className="px-5 py-3 text-slate-500 whitespace-nowrap text-xs">
+                        <td className="px-5 py-3 text-pk-text-muted whitespace-nowrap text-xs">
                           {formatTimestamp(entry.createdAt)}
                         </td>
                         <td className="px-5 py-3">
@@ -223,25 +223,25 @@ export default function AuditLogPage() {
                             {meta?.label ?? entry.action}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-slate-700 text-xs">{actorDisplay(entry)}</td>
-                        <td className="px-5 py-3 text-slate-500 text-xs">
+                        <td className="px-5 py-3 text-pk-text-secondary text-xs">{actorDisplay(entry)}</td>
+                        <td className="px-5 py-3 text-pk-text-muted text-xs">
                           {entry.targetType}
                           {entry.targetId && (
-                            <span className="ml-1 font-mono text-slate-400">{entry.targetId.slice(0, 8)}…</span>
+                            <span className="ml-1 font-mono text-pk-text-muted">{entry.targetId.slice(0, 8)}…</span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-slate-400 text-xs">
+                        <td className="px-5 py-3 text-pk-text-muted text-xs">
                           {entry.metadata
-                            ? <span className="text-blue-500 hover:text-blue-700">{isExpanded ? "▲ hide" : "▼ show"}</span>
+                            ? <span className="text-pk-teal-500 hover:text-pk-teal-700">{isExpanded ? "▲ hide" : "▼ show"}</span>
                             : <span>—</span>}
                         </td>
                       </tr>
 
                       {/* Expanded metadata row */}
                       {isExpanded && entry.metadata && (
-                        <tr key={`${entry.id}-meta`} className="bg-slate-50">
+                        <tr key={`${entry.id}-meta`} className="bg-pk-surface-raised">
                           <td colSpan={5} className="px-5 py-3">
-                            <pre className="text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-4 py-3 overflow-x-auto">
+                            <pre className="text-xs text-pk-text-secondary bg-pk-surface border border-pk-border rounded-pk-sm px-4 py-3 overflow-x-auto">
                               {JSON.stringify(entry.metadata, null, 2)}
                             </pre>
                           </td>
@@ -256,11 +256,11 @@ export default function AuditLogPage() {
 
           {/* Load more */}
           {!loading && hasMore && (
-            <div className="px-5 py-4 border-t border-slate-100 text-center">
+            <div className="px-5 py-4 border-t border-pk-border text-center">
               <button
                 onClick={() => fetchEntries(offset, true, actionFilter)}
                 disabled={loadingMore}
-                className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                className="text-sm text-pk-teal-600 hover:text-pk-teal-800 font-medium disabled:opacity-50"
               >
                 {loadingMore ? "Loading…" : "Load more entries"}
               </button>

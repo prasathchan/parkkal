@@ -1,45 +1,12 @@
 "use client";
 
-/**
- * components/ui/toast.tsx
- *
- * Renders the active toasts as a fixed overlay in the bottom-right corner.
- * Mount <ToastContainer /> once inside the dashboard layout.
- *
- * Visual design:
- *   ✅ success — green
- *   ❌ error   — red
- *   ℹ️ info    — blue
- *   ⚠️ warning — amber
- */
-
 import { useToast, type Toast, type ToastType } from "@/context/toast-context";
 
-const STYLES: Record<ToastType, { bar: string; icon: string; text: string; close: string }> = {
-  success: {
-    bar: "bg-green-500",
-    icon: "text-green-600",
-    text: "text-green-900",
-    close: "text-green-400 hover:text-green-600",
-  },
-  error: {
-    bar: "bg-red-500",
-    icon: "text-red-600",
-    text: "text-red-900",
-    close: "text-red-400 hover:text-red-600",
-  },
-  info: {
-    bar: "bg-blue-500",
-    icon: "text-blue-600",
-    text: "text-blue-900",
-    close: "text-blue-400 hover:text-blue-600",
-  },
-  warning: {
-    bar: "bg-amber-500",
-    icon: "text-amber-600",
-    text: "text-amber-900",
-    close: "text-amber-400 hover:text-amber-600",
-  },
+const STYLES: Record<ToastType, { icon: string }> = {
+  success: { icon: "text-pk-teal-300" },
+  error:   { icon: "text-red-400" },
+  info:    { icon: "text-pk-teal-400" },
+  warning: { icon: "text-pk-gold-300" },
 };
 
 const ICONS: Record<ToastType, React.ReactNode> = {
@@ -67,28 +34,23 @@ const ICONS: Record<ToastType, React.ReactNode> = {
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
   const s = STYLES[toast.type];
+  const isAssertive = toast.type === "error";
   return (
     <div
       role="alert"
-      aria-live="assertive"
-      className="flex items-start gap-3 rounded-lg bg-white shadow-lg ring-1 ring-black/5 overflow-hidden min-w-[280px] max-w-sm"
+      aria-live={isAssertive ? "assertive" : "polite"}
+      className="flex items-start gap-3 rounded-pk-md bg-pk-neutral-900 shadow-pk-e3 overflow-hidden min-w-[280px] max-w-sm"
     >
-      {/* Left colour bar */}
-      <div className={`w-1 self-stretch flex-shrink-0 ${s.bar}`} />
+      <span className={`mt-3 ml-3 ${s.icon}`}>{ICONS[toast.type]}</span>
 
-      {/* Icon */}
-      <span className={`mt-3 ${s.icon}`}>{ICONS[toast.type]}</span>
-
-      {/* Message */}
-      <p className={`flex-1 py-3 pr-1 text-sm font-medium ${s.text}`}>
+      <p className="flex-1 py-3 pr-1 text-sm font-medium text-pk-neutral-50">
         {toast.message}
       </p>
 
-      {/* Dismiss button */}
       <button
         onClick={onDismiss}
         aria-label="Dismiss notification"
-        className={`mt-2.5 mr-2 p-1 rounded transition-colors ${s.close}`}
+        className="mt-2.5 mr-2 p-1 rounded-pk-xs text-pk-neutral-400 hover:text-pk-neutral-50 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -106,7 +68,7 @@ export function ToastContainer() {
   return (
     <div
       aria-label="Notifications"
-      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"
+      className="fixed top-5 right-5 z-pk-toast flex flex-col gap-2 pointer-events-none"
     >
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto animate-in slide-in-from-right-4 fade-in duration-200">

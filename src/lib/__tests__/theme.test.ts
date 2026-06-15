@@ -34,7 +34,7 @@ describe("parseThemeConfig", () => {
     expect(result.darkMode).toBe(DEFAULT_THEME.darkMode);
   });
 
-  it("full override: all fields present", () => {
+  it("full override: provided fields are retained and merged with defaults", () => {
     const custom = {
       primaryColor: "#7c3aed",
       fontFamily: "poppins" as const,
@@ -42,7 +42,11 @@ describe("parseThemeConfig", () => {
       sidebarStyle: "light" as const,
     };
     const result = parseThemeConfig(JSON.stringify(custom));
-    expect(result).toEqual(custom);
+    expect(result.primaryColor).toBe("#7c3aed");
+    expect(result.fontFamily).toBe("poppins");
+    expect(result.darkMode).toBe("dark");
+    // A stored config without accentName is migrated to the nearest curated accent.
+    expect(result.accentName).toBeTruthy();
   });
 });
 
@@ -104,21 +108,15 @@ describe("darken", () => {
 // ─── getSidebarColors ────────────────────────────────────────────────────────
 
 describe("getSidebarColors", () => {
-  it("returns dark-themed colors for sidebarStyle: dark", () => {
-    const colors = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "dark" });
-    expect(colors.bg).toBe("#0f172a");
-    expect(colors.textActive).toBe("#ffffff");
-  });
-
-  it("returns white background for sidebarStyle: light", () => {
-    const colors = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "light" });
-    expect(colors.bg).toBe("#ffffff");
-  });
-
-  it("uses primaryColor as background for sidebarStyle: colored", () => {
-    const primary = "#e11d48";
-    const colors = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "colored", primaryColor: primary });
-    expect(colors.bg).toBe(primary);
+  it("is LOCKED to the teal-900 ground regardless of sidebarStyle", () => {
+    // The light/colored variants are retired (Brand §14) — sidebar is always teal-900.
+    const dark = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "dark" });
+    const light = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "light" });
+    const colored = getSidebarColors({ ...DEFAULT_THEME, sidebarStyle: "colored", primaryColor: "#e11d48" });
+    expect(dark.bg).toBe("#0D2B2B");
+    expect(light.bg).toBe("#0D2B2B");
+    expect(colored.bg).toBe("#0D2B2B");
+    expect(dark.textActive).toBe("#ffffff");
   });
 
   it("returns an object with all required color keys", () => {

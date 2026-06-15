@@ -113,7 +113,7 @@ export default function PatientEditPage() {
   }
 
   if (loading) {
-    return <div className="flex-1 flex items-center justify-center text-slate-400">Loading...</div>;
+    return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
   }
 
   return (
@@ -136,12 +136,12 @@ export default function PatientEditPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+                <div className="bg-pk-success-fill border border-pk-success-border text-pk-success-text text-sm rounded-pk-sm px-4 py-3">
                   Patient updated successfully. Redirecting...
                 </div>
               )}
@@ -185,11 +185,11 @@ export default function PatientEditPage() {
                   onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Gender</label>
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Gender</label>
                   <select
                     value={form.gender}
                     onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                   >
                     <option value="">Select gender</option>
                     {GENDERS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -198,7 +198,7 @@ export default function PatientEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Blood Group</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Blood Group</label>
                 <BloodGroupSelect
                   value={form.bloodGroup || ""}
                   onChange={(v) => setForm((f) => ({ ...f, bloodGroup: v }))}
@@ -206,12 +206,12 @@ export default function PatientEditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Address</label>
                 <AddressForm value={addressData} onChange={setAddressData} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
                   Medical History / Known Conditions
                 </label>
                 <textarea
@@ -219,7 +219,7 @@ export default function PatientEditPage() {
                   onChange={(e) => setForm((f) => ({ ...f, medicalHistory: e.target.value }))}
                   rows={3}
                   placeholder="Allergies, chronic conditions, current medications..."
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-2.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
                 />
               </div>
 

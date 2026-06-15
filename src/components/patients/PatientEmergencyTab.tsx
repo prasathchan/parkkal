@@ -14,19 +14,19 @@ interface Props {
 
 export function PatientEmergencyTab({ contacts }: Props) {
   if (contacts.length === 0) {
-    return <p className="text-center text-slate-400 text-sm py-6">No emergency contacts on file.</p>;
+    return <p className="text-center text-pk-text-muted text-sm py-6">No emergency contacts on file.</p>;
   }
 
   return (
     <div className="space-y-3">
       {contacts.map((c) => (
-        <div key={c.id} className="flex items-start justify-between py-2 border-b border-slate-50 last:border-0">
+        <div key={c.id} className="flex items-start justify-between py-2 border-b border-pk-border last:border-0">
           <div>
-            <p className="text-sm font-medium text-slate-900">{c.name}</p>
-            <p className="text-xs text-slate-500">{c.relationship}</p>
-            {c.email && <p className="text-xs text-slate-400">{c.email}</p>}
+            <p className="text-sm font-medium text-pk-text">{c.name}</p>
+            <p className="text-xs text-pk-text-muted">{c.relationship}</p>
+            {c.email && <p className="text-xs text-pk-text-muted">{c.email}</p>}
           </div>
-          <p className="text-sm font-medium text-slate-700">{c.phone}</p>
+          <p className="text-sm font-medium text-pk-text-secondary">{c.phone}</p>
         </div>
       ))}
     </div>

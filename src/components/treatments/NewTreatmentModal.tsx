@@ -113,11 +113,11 @@ export function NewTreatmentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-pk-surface rounded-pk-xl shadow-pk-e3 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
-          <h2 className="text-base font-semibold text-slate-900">New Treatment Plan</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-pk-border flex-shrink-0">
+          <h2 className="text-base font-semibold text-pk-text">New Treatment Plan</h2>
+          <button onClick={onClose} className="text-pk-text-muted hover:text-pk-text-secondary transition">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -127,8 +127,8 @@ export function NewTreatmentModal({
         <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5">
           {/* Patient */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Patient <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+              Patient <span className="text-pk-danger-text">*</span>
             </label>
             <div className="relative">
               <input
@@ -139,10 +139,10 @@ export function NewTreatmentModal({
                   if (!e.target.value) setForm((f) => ({ ...f, patientId: "" }));
                 }}
                 placeholder="Search patient..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               />
               {showPatientDropdown && patients.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-pk-surface border border-pk-border rounded-pk-sm shadow-pk-e2 z-10">
                   {patients.map((p) => (
                     <button
                       key={p.id}
@@ -152,25 +152,25 @@ export function NewTreatmentModal({
                         setPatientSearch(p.name);
                         setShowPatientDropdown(false);
                       }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-pk-surface-raised flex items-center gap-2"
                     >
                       <span className="font-medium">{p.name}</span>
-                      <span className="text-xs text-slate-400">{p.patientCode}</span>
+                      <span className="text-xs text-pk-text-muted">{p.patientCode}</span>
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            {form.patientId && <p className="text-xs text-green-600 mt-1">Patient selected</p>}
+            {form.patientId && <p className="text-xs text-pk-success-text mt-1">Patient selected</p>}
           </div>
 
           {/* Doctor */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Doctor {currentUserRole !== "DOCTOR" && <span className="text-red-500">*</span>}
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+              Doctor {currentUserRole !== "DOCTOR" && <span className="text-pk-danger-text">*</span>}
             </label>
             {currentUserRole === "DOCTOR" ? (
-              <p className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-700">
+              <p className="w-full px-3 py-2 border border-pk-border rounded-pk-sm text-sm bg-pk-surface-raised text-pk-text-secondary">
                 {currentUserName}
               </p>
             ) : (
@@ -178,7 +178,7 @@ export function NewTreatmentModal({
                 value={form.doctorId}
                 onChange={(e) => setForm((f) => ({ ...f, doctorId: e.target.value }))}
                 required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 <option value="">Select doctor...</option>
                 {members.map((m) => (
@@ -190,8 +190,8 @@ export function NewTreatmentModal({
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Description <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
+              Description <span className="text-pk-danger-text">*</span>
             </label>
             <textarea
               value={form.description}
@@ -199,25 +199,25 @@ export function NewTreatmentModal({
               required
               rows={3}
               placeholder="Describe the treatment plan..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
             />
           </div>
 
           {/* Procedure */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Procedure</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Procedure</label>
             <input
               type="text"
               value={form.procedure}
               onChange={(e) => setForm((f) => ({ ...f, procedure: e.target.value }))}
               placeholder="e.g. Root Canal Treatment, Crown Placement"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
 
           {/* Tooth Numbers */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Tooth Selection (FDI)</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Tooth Selection (FDI)</label>
             <div className="flex justify-center">
               <ToothChart
                 value={form.toothNumbers}
@@ -228,19 +228,19 @@ export function NewTreatmentModal({
 
           {/* Cost */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Cost (₹)</label>
+            <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">Cost (₹)</label>
             <input
               type="number"
               min="0"
               step="0.01"
               value={form.cost}
               onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
           </div>
 
           {submitError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
               {submitError}
             </div>
           )}
@@ -249,14 +249,14 @@ export function NewTreatmentModal({
             <button
               type="submit"
               disabled={submitting || !form.patientId || !form.doctorId || !form.description.trim()}
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? "Saving..." : "Save Treatment Plan"}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+              className="px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
             >
               Cancel
             </button>
