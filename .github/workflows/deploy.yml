@@ -78,6 +78,12 @@ jobs:
           if [ "$WRANGLER_EXIT" -ne 0 ]; then
             if grep -q "triggers failed to deploy\|schedules.*failed" /tmp/deploy-output.txt; then
               echo "::warning::Cron schedule registration failed. Worker code was deployed successfully. Existing cron schedules continue to run."
+              echo "--- schedules API diagnostic ---"
+              curl -s -w "\nHTTP_STATUS:%{http_code}" \
+                "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/parkkal-dental/schedules" \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                -H "Content-Type: application/json" || true
+              echo "--- end diagnostic ---"
             else
               echo "::error::Worker deploy failed — see output above."
               exit 1
