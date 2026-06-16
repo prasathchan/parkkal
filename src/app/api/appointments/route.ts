@@ -68,10 +68,12 @@ export const GET = withRoute(
         createdAt: appointments.createdAt,
         patientName: patients.name,
         doctorName: users.name,
+        visitId: visits.id,
       })
       .from(appointments)
       .leftJoin(patients, eq(appointments.patientId, patients.id))
       .leftJoin(users, eq(appointments.doctorId, users.id))
+      .leftJoin(visits, eq(visits.appointmentId, appointments.id))
       .where(and(...conditions))
       // Clinic staff need chronological schedule view
       .orderBy(asc(appointments.appointmentDate), asc(appointments.appointmentTime))

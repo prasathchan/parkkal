@@ -29,7 +29,7 @@ export function PatientPrescriptionsTab({ prescriptions }: Props) {
               )}
             </div>
             <button
-              onClick={() => window.open(`/dashboard/visits/${rx.visitId}/print`, "_blank")}
+              onClick={() => window.open(`/print/visits/${rx.visitId}`, "_blank")}
               aria-label="Print prescription"
               className="flex items-center gap-1 text-xs text-pk-text-muted hover:text-pk-text-secondary px-2 py-1 rounded hover:bg-pk-surface-sunken transition"
             >

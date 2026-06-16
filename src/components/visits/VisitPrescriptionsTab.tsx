@@ -248,7 +248,7 @@ export function VisitPrescriptionsTab({
   }
 
   function handlePrint() {
-    window.open(`/dashboard/visits/${visitId}/print`, "_blank");
+    window.open(`/print/visits/${visitId}`, "_blank");
   }
 
   const canEdit = visitStatus !== "CANCELLED";

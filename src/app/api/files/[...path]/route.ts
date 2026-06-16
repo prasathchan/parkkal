@@ -37,7 +37,7 @@ export const GET = withRoute(
       return new NextResponse(file.data, {
         headers: {
           "Content-Type": file.mimeType,
-          "Cache-Control": "private, max-age=86400",
+          "Cache-Control": "private, no-cache, must-revalidate",
           "Content-Disposition": `inline; filename="${segments[segments.length - 1]}"`,
         },
       });

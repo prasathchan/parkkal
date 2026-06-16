@@ -7,6 +7,7 @@ import { orgApi, ApiError, type OrgDrug } from "@/api";
 
 const EMPTY_FORM = { name: "", defaultDosage: "", defaultFrequency: "", defaultDuration: "" };
 const FREQ_PRESETS = ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "BD", "TDS", "OD", "SOS"];
+const DURATION_PRESETS = ["3 days", "5 days", "7 days", "10 days", "14 days"];
 
 export default function DrugFormularyPage() {
   const [drugs, setDrugs] = useState<OrgDrug[]>([]);
@@ -117,8 +118,8 @@ export default function DrugFormularyPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-0">
+              <div className="min-w-0">
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default dosage</label>
                 <input
                   type="text"
@@ -129,39 +130,35 @@ export default function DrugFormularyPage() {
                   style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default frequency</label>
-                <div className="flex gap-1.5">
-                  <input
-                    type="text"
-                    value={form.defaultFrequency}
-                    onChange={(e) => setForm((f) => ({ ...f, defaultFrequency: e.target.value }))}
-                    placeholder="e.g. 1-0-1"
-                    className="flex-1 text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
-                    style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
-                  />
-                  <select
-                    value=""
-                    tabIndex={-1}
-                    onChange={(e) => { if (e.target.value) setForm((f) => ({ ...f, defaultFrequency: e.target.value })); }}
-                    className="text-xs border rounded-pk-sm px-2 py-2 focus:outline-none"
-                    style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text-muted)" }}
-                  >
-                    <option value="">Preset</option>
-                    {FREQ_PRESETS.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
+                <input
+                  type="text"
+                  list="freq-presets"
+                  value={form.defaultFrequency}
+                  onChange={(e) => setForm((f) => ({ ...f, defaultFrequency: e.target.value }))}
+                  placeholder="e.g. 1-0-1"
+                  className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
+                  style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
+                />
+                <datalist id="freq-presets">
+                  {FREQ_PRESETS.map((p) => <option key={p} value={p} />)}
+                </datalist>
               </div>
-              <div>
+              <div className="min-w-0">
                 <label className="block text-xs font-medium mb-1" style={{ color: "var(--pk-text-muted)" }}>Default duration</label>
                 <input
                   type="text"
+                  list="duration-presets"
                   value={form.defaultDuration}
                   onChange={(e) => setForm((f) => ({ ...f, defaultDuration: e.target.value }))}
                   placeholder="e.g. 5 days"
                   className="w-full text-sm border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2"
                   style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text)" }}
                 />
+                <datalist id="duration-presets">
+                  {DURATION_PRESETS.map((p) => <option key={p} value={p} />)}
+                </datalist>
               </div>
             </div>
 

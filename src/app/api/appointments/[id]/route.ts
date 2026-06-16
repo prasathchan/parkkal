@@ -36,10 +36,12 @@ export const GET = withRoute<{ id: string }>(
         createdAt:       appointments.createdAt,
         patientName:     patients.name,
         doctorName:      users.name,
+        visitId:         visits.id,
       })
       .from(appointments)
       .leftJoin(patients, eq(appointments.patientId, patients.id))
       .leftJoin(users, eq(appointments.doctorId, users.id))
+      .leftJoin(visits, eq(visits.appointmentId, appointments.id))
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     if (!appt) return apiError("Not found", 404);
     return apiOk({ appointment: appt });
@@ -100,10 +102,12 @@ export const PATCH = withRoute<{ id: string }>(
         createdAt:       appointments.createdAt,
         patientName:     patients.name,
         doctorName:      users.name,
+        visitId:         visits.id,
       })
       .from(appointments)
       .leftJoin(patients, eq(appointments.patientId, patients.id))
       .leftJoin(users, eq(appointments.doctorId, users.id))
+      .leftJoin(visits, eq(visits.appointmentId, appointments.id))
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     log.info("Appointment updated", { appointmentId: id });
 

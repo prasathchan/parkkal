@@ -23,6 +23,8 @@ export interface Appointment {
   patientName?: string | null;
   patientCode?: string | null;
   doctorName?: string | null;
+  /** Set once a visit has been recorded for this appointment */
+  visitId?: string | null;
 }
 
 // ─── Create payload ───────────────────────────────────────────────────────────

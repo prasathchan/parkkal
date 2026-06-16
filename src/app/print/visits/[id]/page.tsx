@@ -102,8 +102,9 @@ export default function PrintPage() {
           body { margin: 0; }
           .print-container { padding: 20px; }
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
-        .print-container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1C1A15; }
+        .print-container { max-width: 800px; margin: 0 auto; background: white; color: #1C1A15; padding: 40px; }
+        .print-container th { color: #1C1A15; }
       `}</style>
 
       <div className="no-print fixed top-4 right-4 flex gap-2">

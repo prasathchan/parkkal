@@ -26,10 +26,13 @@ const bcrypt = require(path.join(__dirname, "../node_modules/bcryptjs"));
 const MIGRATIONS_DIR = path.join(__dirname, "../drizzle/migrations");
 
 // ── Split a .sql file into individual statements ────────────────────────────
+// Strip comments BEFORE splitting on ";" — a comment containing a semicolon
+// (e.g. "payment; set = ...") would otherwise break a statement in half.
 function splitStatements(sql) {
   return sql
+    .replace(/--[^\n]*/g, "")
     .split(";")
-    .map((s) => s.replace(/--[^\n]*/g, "").trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 }
 
