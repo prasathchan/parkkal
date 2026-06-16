@@ -102,18 +102,34 @@ export default function CalendarPage() {
     setLoading(true);
     setError(null);
     try {
-      const results = await Promise.all(
-        dates.map(d => appointmentsApi.list({ date: toDateStr(d), doctorId: doctorFilter || undefined, limit: 200 }))
-      );
+      // Single range request instead of one request per visible date — a 42-day
+      // month grid used to fire 42 parallel requests, which could exhaust D1
+      // connections / Worker concurrency and surface as an intermittent 503.
+      const sorted    = [...dates].sort((a, b) => a.getTime() - b.getTime());
+      const startDate = toDateStr(sorted[0]);
+      const endDate    = toDateStr(sorted[sorted.length - 1]);
+      const { appointments: appts } = await appointmentsApi.list({
+        startDate, endDate,
+        doctorId: doctorFilter || undefined,
+        limit: 500,
+      });
+
+      const byDateInRange = new Map<string, Appointment[]>();
+      for (const a of appts) {
+        const list = byDateInRange.get(a.appointmentDate) ?? [];
+        list.push(a);
+        byDateInRange.set(a.appointmentDate, list);
+      }
+
       setByDate(prev => {
         const next = new Map(prev);
-        dates.forEach((d, i) => next.set(toDateStr(d), results[i].appointments));
+        dates.forEach(d => next.set(toDateStr(d), byDateInRange.get(toDateStr(d)) ?? []));
         return next;
       });
+
       const seen = new Map<string, string>();
-      for (const res of results)
-        for (const a of res.appointments)
-          if (a.doctorId && a.doctorName && !seen.has(a.doctorId)) seen.set(a.doctorId, a.doctorName);
+      for (const a of appts)
+        if (a.doctorId && a.doctorName && !seen.has(a.doctorId)) seen.set(a.doctorId, a.doctorName);
       setDoctorOptions(Array.from(seen.entries()).map(([id, name]) => ({ id, name })));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to load appointments");

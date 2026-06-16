@@ -48,7 +48,9 @@ export const GET = withRoute(
     if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
     if (doctorIdFilter)  conditions.push(eq(appointments.doctorId, doctorIdFilter));
 
-    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 200);
+    // Range queries (calendar month view) span many days in one request — allow a
+    // higher cap than the default single-day/page limit.
+    const limit = Math.min(Number(searchParams.get("limit") ?? 50), 500);
     const offset = Number(searchParams.get("offset") ?? 0);
 
     const [{ total }] = await db.select({ total: count() }).from(appointments).where(and(...conditions));
