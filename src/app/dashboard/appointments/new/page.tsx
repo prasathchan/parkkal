@@ -147,7 +147,7 @@ function NewAppointmentForm() {
         ...(recallVisitId ? { recallVisitId } : {}),
       });
       toast.success("Appointment booked successfully");
-      router.push("/dashboard/appointments");
+      router.push("/dashboard/appointments/calendar");
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : "Something went wrong.";
       toast.error(msg);
@@ -163,7 +163,7 @@ function NewAppointmentForm() {
         title="New Appointment"
         breadcrumb={[
           { label: "Dashboard" },
-          { label: "Appointments", href: "/dashboard/appointments" },
+          { label: "Appointments", href: "/dashboard/appointments/calendar" },
           { label: "New" },
         ]}
       />

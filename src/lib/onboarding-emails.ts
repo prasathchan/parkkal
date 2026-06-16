@@ -199,7 +199,7 @@ function buildEmail(step: number, name: string, clinicName: string): { subject: 
              <li>Pick the patient, doctor, date, and time</li>
              <li>Save — reminders are scheduled automatically</li>
            </ul>
-           <div style="text-align:center;margin:0 0 20px;">${btn(APP_URL + "/dashboard/appointments", "Schedule an appointment →")}</div>`,
+           <div style="text-align:center;margin:0 0 20px;">${btn(APP_URL + "/dashboard/appointments/calendar", "Schedule an appointment →")}</div>`,
         ),
       };
 

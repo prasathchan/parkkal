@@ -209,7 +209,7 @@ export default async function DashboardPage() {
                   <h2 id="zone-a-heading" className="font-semibold text-pk-text">Today&apos;s Schedule</h2>
                   <p className="text-xs text-pk-text-muted mt-0.5">{todayDate}</p>
                 </div>
-                <Link href="/dashboard/appointments" className="text-xs text-pk-teal-600 hover:underline">
+                <Link href="/dashboard/appointments/calendar" className="text-xs text-pk-teal-600 hover:underline">
                   View all
                 </Link>
               </div>
