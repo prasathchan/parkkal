@@ -51,7 +51,7 @@ export const ACTION_BUTTON_STYLE: Record<AppointmentStatus, { text: string; bord
   CONFIRMED:   { text: "text-pk-teal-700",     border: "border-pk-teal-300",       hoverBg: "hover:bg-pk-teal-50",      label: "Confirm"         },
   IN_PROGRESS: { text: "text-pk-teal-700",     border: "border-pk-teal-300",       hoverBg: "hover:bg-pk-teal-50",      label: "Start"           },
   COMPLETED:   { text: "text-pk-success-text", border: "border-pk-success-border", hoverBg: "hover:bg-pk-success-fill", label: "Complete"        },
-  CANCELLED:   { text: "text-pk-danger-text",  border: "border-pk-danger-border",  hoverBg: "hover:bg-pk-danger-fill",  label: "Cancel"          },
+  CANCELLED:   { text: "text-pk-danger-text",  border: "border-pk-danger-border",  hoverBg: "hover:bg-pk-danger-fill",  label: "Cancel Appointment" },
   NO_SHOW:     { text: "text-pk-warning-text", border: "border-pk-warning-border", hoverBg: "hover:bg-pk-warning-fill", label: "No Show"         },
 };
 
