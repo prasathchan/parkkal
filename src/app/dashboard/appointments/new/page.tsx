@@ -89,7 +89,9 @@ function NewAppointmentForm() {
     const paramDoctorId    = searchParams.get("doctorId");
     const paramRecallVisit = searchParams.get("recallVisitId");
     const paramType        = searchParams.get("type");
-    if (!paramPatientId && !paramDoctorId && !paramRecallVisit) return;
+    const paramDate        = searchParams.get("date");
+    const paramTime        = searchParams.get("time");
+    if (!paramPatientId && !paramDoctorId && !paramRecallVisit && !paramDate && !paramTime) return;
     prefillApplied.current = true;
 
     if (paramRecallVisit) setRecallVisitId(paramRecallVisit);
@@ -97,11 +99,17 @@ function NewAppointmentForm() {
     const updates: Partial<typeof form> = {};
     if (paramDoctorId)  updates.doctorId  = paramDoctorId;
     if (paramPatientId) updates.patientId = paramPatientId;
-    // Honour explicit type param (e.g. FOLLOWUP from recalls), default to FOLLOWUP
-    updates.type = paramType ?? "FOLLOWUP";
-    if (paramPatientId || paramDoctorId || paramRecallVisit) {
-      setForm((f) => ({ ...f, ...updates }));
+    if (paramDate)       updates.appointmentDate = paramDate;
+    if (paramTime)       updates.appointmentTime = paramTime;
+    // Honour explicit type param (e.g. FOLLOWUP from recalls); only default to
+    // FOLLOWUP when arriving via the recall/follow-up flow — a plain calendar
+    // click-to-book (date/time only) should keep the regular CONSULTATION default.
+    if (paramType) {
+      updates.type = paramType;
+    } else if (paramPatientId || paramDoctorId || paramRecallVisit) {
+      updates.type = "FOLLOWUP";
     }
+    setForm((f) => ({ ...f, ...updates }));
 
     // Fetch patient details so the select shows the correct option
     if (paramPatientId) {
