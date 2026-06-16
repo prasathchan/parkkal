@@ -38,4 +38,5 @@ export const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "CONFIRMED",  label: "Confirmed"  },
   { value: "COMPLETED",  label: "Completed"  },
   { value: "CANCELLED",  label: "Cancelled"  },
+  { value: "NO_SHOW",    label: "No Show"    },
 ];

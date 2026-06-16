@@ -236,9 +236,9 @@ export default function CalendarPage() {
         onToggleQueue={() => setShowQueue(s => !s)}
       />
 
-      {/* Keyboard hint */}
+      {/* Booking hint */}
       <div className="px-4 py-1 text-[11px] shrink-0" style={{ color: "var(--pk-text-muted)" }}>
-        ← → navigate &nbsp;·&nbsp; T = today &nbsp;·&nbsp; click empty slot to book
+        click empty slot to book
       </div>
 
       {error && (
