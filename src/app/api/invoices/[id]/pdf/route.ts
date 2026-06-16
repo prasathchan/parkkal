@@ -4,7 +4,7 @@ import { withRoute, apiError } from "@/lib/api";
 import { NextResponse } from "next/server";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
-  createDoc, headerBar, hRule, drawTable, drawRight, rupee,
+  createDoc, headerBar, hRule, drawTable, drawRight, rupee, embedOrgLogo,
   A4, COLOR,
 } from "@/lib/pdf";
 
@@ -26,6 +26,7 @@ export const GET = withRoute<{ id: string }>(
         orgAddress: organizations.address,
         orgPhone: organizations.phone,
         orgEmail: organizations.email,
+        orgLogoUrl: organizations.logoUrl,
         orgGstin: organizations.gstin,
         cgstRate: organizations.cgstRate,
         sgstRate: organizations.sgstRate,
@@ -56,8 +57,17 @@ export const GET = withRoute<{ id: string }>(
     headerBar(page);
 
     // ── Org header ─────────────────────────────────────────────────────────────
+    const logoImg = await embedOrgLogo(doc, row.orgLogoUrl);
+    let nameX = M;
+    if (logoImg) {
+      const logoH = 26;
+      const logoW = (logoImg.width / logoImg.height) * logoH;
+      page.drawImage(logoImg, { x: M, y: y - logoH + 4, width: logoW, height: logoH });
+      nameX = M + logoW + 10;
+    }
+
     page.drawText(row.orgName ?? "Dental Clinic", {
-      x: M, y, size: 18, font: fonts.bold, color: COLOR.primary,
+      x: nameX, y, size: 18, font: fonts.bold, color: COLOR.primary,
     });
     y -= 20;
 

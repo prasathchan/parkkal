@@ -9,7 +9,8 @@
  * A4 dimensions: 595 x 842 pts.
  */
 
-import { PDFDocument, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, PDFImage, PDFPage, StandardFonts, rgb } from "pdf-lib";
+import { getFile } from "@/lib/storage";
 
 export const A4 = { width: 595, height: 842 };
 
@@ -133,6 +134,24 @@ export function drawTable(
   }
 
   return y;
+}
+
+/** Loads the org logo from storage and embeds it into the PDF. Returns null if there's
+ *  no logo, the file is missing, or the format is unsupported (pdf-lib embeds PNG/JPEG only —
+ *  WebP logos fall back to text-only headers). */
+export async function embedOrgLogo(doc: PDFDocument, logoUrl: string | null): Promise<PDFImage | null> {
+  if (!logoUrl) return null;
+  const key = logoUrl.replace(/^\/api\/files\//, "");
+  const file = await getFile(key);
+  if (!file) return null;
+
+  try {
+    if (file.mimeType === "image/png") return await doc.embedPng(file.data);
+    if (file.mimeType === "image/jpeg") return await doc.embedJpg(file.data);
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 export function rupee(amount: number): string {
