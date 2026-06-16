@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type Step = "set-password" | "verify-email" | "verify-phone" | "done";
@@ -147,7 +148,7 @@ function ActivateForm() {
   const Logo = () => (
     <div className="flex flex-col items-center mb-8">
       <div className="w-16 h-16 bg-pk-teal-600 rounded-full flex items-center justify-center mb-4">
-        <img src="/parkkal-mark-white.svg" alt="Parkkal" className="w-9 h-9" />
+        <Image src="/parkkal-mark-white.svg" alt="Parkkal" width={36} height={36} className="w-9 h-9" unoptimized />
       </div>
       <h1 className="text-2xl font-bold text-pk-text">Parkkal</h1>
       <p className="text-pk-text-muted text-sm mt-1">One Platform. Every Clinic. Zero Compromises</p>
