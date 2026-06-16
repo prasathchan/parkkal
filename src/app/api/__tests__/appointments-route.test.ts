@@ -45,6 +45,7 @@ vi.mock("@/db/schema", () => ({
   appointments:         { id: "id", organizationId: "orgId", patientId: "patientId", doctorId: "doctorId", appointmentDate: "ad", status: "status" },
   patients:             { id: "id", name: "name", patientCode: "pc" },
   users:                { id: "id", name: "name" },
+  visits:               { id: "id", appointmentId: "appointmentId" },
   organizationPatients: { organizationId: "orgId", patientId: "patientId", isActive: "isActive" },
   organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
 }));
