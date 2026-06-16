@@ -1,5 +1,5 @@
 import { eq, and, notInArray } from "drizzle-orm";
-import { appointments, visits } from "@/db/schema";
+import { appointments, patients, users, visits } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { rescheduleReminders, cancelReminders } from "@/lib/reminder-scheduler";
 import { syncAppointmentToCalendar, removeAppointmentFromCalendar } from "@/lib/calendar-sync";
@@ -23,7 +23,23 @@ const updateSchema = z.object({
 export const GET = withRoute<{ id: string }>(
   { route: "GET /api/appointments/[id]" },
   async (_req, { session, db }, { id }) => {
-    const [appt] = await db.select().from(appointments)
+    const [appt] = await db
+      .select({
+        id:              appointments.id,
+        patientId:       appointments.patientId,
+        doctorId:        appointments.doctorId,
+        appointmentDate: appointments.appointmentDate,
+        appointmentTime: appointments.appointmentTime,
+        status:          appointments.status,
+        type:            appointments.type,
+        notes:           appointments.notes,
+        createdAt:       appointments.createdAt,
+        patientName:     patients.name,
+        doctorName:      users.name,
+      })
+      .from(appointments)
+      .leftJoin(patients, eq(appointments.patientId, patients.id))
+      .leftJoin(users, eq(appointments.doctorId, users.id))
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     if (!appt) return apiError("Not found", 404);
     return apiOk({ appointment: appt });
@@ -71,7 +87,23 @@ export const PATCH = withRoute<{ id: string }>(
       throw err;
     }
 
-    const [updated] = await db.select().from(appointments)
+    const [updated] = await db
+      .select({
+        id:              appointments.id,
+        patientId:       appointments.patientId,
+        doctorId:        appointments.doctorId,
+        appointmentDate: appointments.appointmentDate,
+        appointmentTime: appointments.appointmentTime,
+        status:          appointments.status,
+        type:            appointments.type,
+        notes:           appointments.notes,
+        createdAt:       appointments.createdAt,
+        patientName:     patients.name,
+        doctorName:      users.name,
+      })
+      .from(appointments)
+      .leftJoin(patients, eq(appointments.patientId, patients.id))
+      .leftJoin(users, eq(appointments.doctorId, users.id))
       .where(and(eq(appointments.id, id), eq(appointments.organizationId, session.orgId)));
     log.info("Appointment updated", { appointmentId: id });
 
