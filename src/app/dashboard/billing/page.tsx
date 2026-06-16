@@ -40,6 +40,7 @@ export default function BillingPage() {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [payModal, setPayModal] = useState<{ visit: VisitBilling; due: number } | null>(null);
   const [payMethod, setPayMethod] = useState<PaymentMethod>("CASH");
+  const [payAmount, setPayAmount] = useState<number>(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchData = useCallback(async (pageIdx: number, searchStr: string) => {
@@ -85,17 +86,26 @@ export default function BillingPage() {
     const due = visit.totalAmount - visit.paidAmount;
     if (due <= 0) return;
     setPayMethod("CASH");
+    setPayAmount(due);
+    setPayModal({ visit, due });
+  }
+
+  function handlePayCustom(visit: VisitBilling) {
+    const due = visit.totalAmount - visit.paidAmount;
+    if (due <= 0) return;
+    setPayMethod("CASH");
+    setPayAmount(0);
     setPayModal({ visit, due });
   }
 
   async function confirmMarkPaid() {
     if (!payModal) return;
-    const { visit, due } = payModal;
+    const { visit } = payModal;
     setMarkingPaid(visit.id);
     setPayModal(null);
     setErrorMsg(null);
     try {
-      await visitsApi.payments.add(visit.id, { amount: due, paymentMethod: payMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" });
+      await visitsApi.payments.add(visit.id, { amount: payAmount, paymentMethod: payMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER" });
       setErrorMsg(null);
       await fetchData(page, search);
     } catch (e) {
@@ -225,13 +235,22 @@ export default function BillingPage() {
                       </TableCell>
                       <TableCell>
                         {due > 0 && v.status !== "CANCELLED" ? (
-                          <button
-                            onClick={() => handleMarkPaid(v)}
-                            disabled={markingPaid === v.id}
-                            className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success disabled:opacity-50 transition"
-                          >
-                            {markingPaid === v.id ? "…" : "Mark Paid"}
-                          </button>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={() => handleMarkPaid(v)}
+                              disabled={markingPaid === v.id}
+                              className="text-xs bg-pk-success text-white px-2.5 py-1 rounded-pk-sm hover:bg-pk-success disabled:opacity-50 transition"
+                            >
+                              {markingPaid === v.id ? "…" : "Mark Paid"}
+                            </button>
+                            <button
+                              onClick={() => handlePayCustom(v)}
+                              disabled={markingPaid === v.id}
+                              className="text-xs border border-pk-border-strong text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-50 transition"
+                            >
+                              Pay Custom
+                            </button>
+                          </div>
                         ) : (
                           <span className="text-xs text-pk-text-muted">—</span>
                         )}
@@ -273,6 +292,7 @@ export default function BillingPage() {
         <BillingPaymentModal
           visit={payModal.visit} due={payModal.due}
           payMethod={payMethod} onMethodChange={setPayMethod}
+          amount={payAmount} onAmountChange={setPayAmount}
           onConfirm={confirmMarkPaid} onClose={() => setPayModal(null)}
         />
       )}
