@@ -558,9 +558,9 @@ function AppointmentModal({
             </div>
           </div>
 
-          {/* Add to calendar */}
-          {apt.appointmentTime && (
-            <div className="mt-4 pt-4 border-t border-pk-border">
+          {/* Add to calendar + Patient Record */}
+          <div className="mt-4 pt-4 border-t border-pk-border flex items-center gap-3">
+            {apt.appointmentTime && (
               <AddToCalendar
                 title={`${TYPE_LABELS[apt.type]} — ${apt.patientName}`}
                 date={apt.appointmentDate}
@@ -568,8 +568,17 @@ function AppointmentModal({
                 duration={30}
                 notes={apt.doctorName ? `Doctor: ${apt.doctorName}` : undefined}
               />
-            </div>
-          )}
+            )}
+            <Link
+              href={`/dashboard/patients/${apt.patientId}`}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-pk-sm border border-pk-teal-600 px-3 py-2 text-sm font-medium text-pk-teal-700 hover:bg-pk-teal-50 transition"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Patient Record
+            </Link>
+          </div>
 
           {/* Actions */}
           <div className="mt-4 pt-4 border-t border-pk-border flex flex-wrap gap-2">
@@ -602,12 +611,6 @@ function AppointmentModal({
                 </button>
               </>
             )}
-            <Link
-              href={`/dashboard/patients/${apt.patientId}`}
-              className="ml-auto rounded-pk-sm border border-pk-border px-3 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition"
-            >
-              Patient Record
-            </Link>
           </div>
         </div>
       </div>
