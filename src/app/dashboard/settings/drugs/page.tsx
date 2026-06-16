@@ -142,6 +142,7 @@ export default function DrugFormularyPage() {
                   />
                   <select
                     value=""
+                    tabIndex={-1}
                     onChange={(e) => { if (e.target.value) setForm((f) => ({ ...f, defaultFrequency: e.target.value })); }}
                     className="text-xs border rounded-pk-sm px-2 py-2 focus:outline-none"
                     style={{ borderColor: "var(--pk-border)", background: "var(--pk-bg)", color: "var(--pk-text-muted)" }}
