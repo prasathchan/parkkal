@@ -26,10 +26,34 @@ export const TYPE_LABELS: Record<string, string> = {
   FOLLOWUP:     "Follow-up",
 };
 
+/** Top accent bar / legend dot colour per appointment type — mirrors the calendar's own legend. */
+export const TYPE_BAR_COLOR: Record<string, string> = {
+  CONSULTATION: "bg-pk-teal-400",
+  CHECKUP:      "bg-pk-success",
+  TREATMENT:    "bg-pk-neutral-400",
+  FOLLOWUP:     "bg-pk-warning",
+};
+
 export const STATUS_TRANSITIONS: Partial<Record<AppointmentStatus, AppointmentStatus[]>> = {
   SCHEDULED:   ["CONFIRMED", "CANCELLED", "NO_SHOW"],
   CONFIRMED:   ["IN_PROGRESS", "CANCELLED", "NO_SHOW"],
   IN_PROGRESS: ["COMPLETED", "NO_SHOW"],
+};
+
+/**
+ * Action-button styling for status transitions — distinct from STATUS_STYLE,
+ * which colours the *resting* badge/chip once a status is applied. The
+ * action that *causes* the transition uses semantic intent colours instead
+ * (e.g. Cancel is danger/red even though a resting "Cancelled" chip is
+ * neutral grey, so the destructive action reads clearly in the moment).
+ */
+export const ACTION_BUTTON_STYLE: Record<AppointmentStatus, { text: string; border: string; hoverBg: string; label: string }> = {
+  SCHEDULED:   { text: "text-pk-info-text",    border: "border-pk-info-border",    hoverBg: "hover:bg-pk-info-fill",    label: "Mark Scheduled" },
+  CONFIRMED:   { text: "text-pk-teal-700",     border: "border-pk-teal-300",       hoverBg: "hover:bg-pk-teal-50",      label: "Confirm"         },
+  IN_PROGRESS: { text: "text-pk-teal-700",     border: "border-pk-teal-300",       hoverBg: "hover:bg-pk-teal-50",      label: "Start"           },
+  COMPLETED:   { text: "text-pk-success-text", border: "border-pk-success-border", hoverBg: "hover:bg-pk-success-fill", label: "Complete"        },
+  CANCELLED:   { text: "text-pk-danger-text",  border: "border-pk-danger-border",  hoverBg: "hover:bg-pk-danger-fill",  label: "Cancel"          },
+  NO_SHOW:     { text: "text-pk-warning-text", border: "border-pk-warning-border", hoverBg: "hover:bg-pk-warning-fill", label: "No Show"         },
 };
 
 export const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
