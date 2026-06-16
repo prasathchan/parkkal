@@ -23,12 +23,21 @@ export const POST = withRoute(
     if (!allowedExt) return apiError("Only JPEG, PNG, or WebP allowed", 400);
     if (file.size > MAX_SIZE) return apiError("File must be under 2 MB", 400);
 
-    const key = `logos/${session.orgId}${allowedExt}`;
+    const [existing] = await db.select({ logoUrl: organizations.logoUrl }).from(organizations).where(eq(organizations.id, session.orgId));
+
+    // Versioned key — a stable key would let CDN/browser caches keep serving the old
+    // image at the same URL after a re-upload, since re-upload doesn't change the URL.
+    const key = `logos/${session.orgId}/${Date.now()}${allowedExt}`;
     const bytes = await file.arrayBuffer();
     await storeFile(key, bytes, file.type);
 
     const logoUrl = `/api/files/${key}`;
     await db.update(organizations).set({ logoUrl, updatedAt: Date.now() }).where(eq(organizations.id, session.orgId));
+
+    if (existing?.logoUrl) {
+      const oldKey = existing.logoUrl.replace("/api/files/", "");
+      await deleteFile(oldKey).catch(() => {}); // best-effort
+    }
 
     log.info("Logo uploaded", { logoUrl });
     return apiOk({ logoUrl });

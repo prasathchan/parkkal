@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = { title: "Service Status — Parkkal" };
 
@@ -11,9 +12,7 @@ export default function StatusPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-10">
           <div className="w-10 h-10 bg-pk-teal-600 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-6 h-6">
-              <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 3.5 4 2 2 2C2 7 4 10 6 11C6 14 7 18 9 20C10 21.5 11 22 12 22C13 22 14 21.5 15 20C17 18 18 14 18 11C20 10 22 7 22 2C20 2 18.5 3.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" />
-            </svg>
+            <Image src="/parkkal-mark-white.svg" alt="" width={24} height={24} className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-pk-text">Parkkal Status</h1>

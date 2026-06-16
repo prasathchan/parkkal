@@ -37,7 +37,9 @@ export const GET = withRoute(
       return new NextResponse(file.data, {
         headers: {
           "Content-Type": file.mimeType,
-          "Cache-Control": "private, no-cache, must-revalidate",
+          // Logo keys are versioned per upload (see /api/org/logo), so the URL itself
+          // changes whenever the content does — safe to cache aggressively.
+          "Cache-Control": "private, max-age=31536000, immutable",
           "Content-Disposition": `inline; filename="${segments[segments.length - 1]}"`,
         },
       });
