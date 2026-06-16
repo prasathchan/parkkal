@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { appointmentsApi, ApiError } from "@/api";
 import type { Appointment, AppointmentStatus } from "@/types";
-import type { ViewMode, ZoomLevel } from "./types";
+import { HOUR_START, type ViewMode, type ZoomLevel } from "./types";
 import {
   getWeekStart, toDateStr, getMonthGridDates, formatPeriodLabel,
   isDateInWeek, isDateInMonth,
@@ -148,7 +148,7 @@ export default function CalendarPage() {
   // Scroll to ~1 hour before current time on first load
   useEffect(() => {
     if (!loading && scrollRef.current && view !== "month") {
-      const top = Math.max(0, (now.getHours() - 8 - 1) * HOUR_HEIGHT);
+      const top = Math.max(0, (now.getHours() - HOUR_START - 1) * HOUR_HEIGHT);
       scrollRef.current.scrollTop = top;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

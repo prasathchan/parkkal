@@ -4,8 +4,8 @@ export type ViewMode = "month" | "week" | "day";
 export type ZoomLevel = 1 | 1.5 | 2;
 export interface Lane { col: number; total: number }
 
-export const HOUR_START = 8;
-export const HOUR_END   = 20;
+export const HOUR_START = 0;
+export const HOUR_END   = 24;
 export const HOURS      = Array.from({ length: HOUR_END - HOUR_START }, (_, i) => HOUR_START + i);
 export const WEEK_DAYS  = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const DEFAULT_DURATION_MIN = 30;
