@@ -19,14 +19,17 @@ export function DetailSheet({
   const canStartVisit = appt.status === "SCHEDULED" || appt.status === "IN_PROGRESS";
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} aria-hidden="true" />
-
-      {/* Sheet */}
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/30"
+      onClick={onClose}
+    >
+      {/* Modal */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-80 z-50 flex flex-col shadow-pk-e3 overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-md max-h-[90vh] z-50 flex flex-col rounded-pk-lg shadow-pk-e3 overflow-y-auto"
         style={{ background: "var(--pk-surface)" }}
+        onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--pk-border)" }}>
@@ -151,6 +154,6 @@ export function DetailSheet({
           </Link>
         </div>
       </div>
-    </>
+    </div>
   );
 }
