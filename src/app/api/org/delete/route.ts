@@ -1,9 +1,12 @@
 import { eq, and, inArray } from "drizzle-orm";
 import {
   organizations, organizationMembers, organizationPatients, orgRoles,
-  patients, emergencyContacts, appointments, treatments, visitTreatments,
+  patients, emergencyContacts, appointments, appointmentReminders, treatments, visitTreatments,
   consentAuditLog, prescriptions, invoices, invoiceTreatments, salaryRecords,
   visits, visitItems, payments, attachments, verificationTokens, users,
+  subscriptions, couponRedemptions, calendarIntegrations,
+  toothChart, toothChartHistory, orgDrugs, onboardingEmails, orgBackups,
+  patientCodeSequences,
 } from "@/db/schema";
 import { withRoute, apiOk, apiError } from "@/lib/api";
 import { runCascade } from "@/lib/db";
@@ -25,7 +28,7 @@ export const POST = withRoute(
     if (!body.confirmName) return apiError("Confirmation required", 400);
 
     const orgId = session.orgId;
-    const [org] = await db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, orgId));
+    const [org] = await db.select({ name: organizations.name, slug: organizations.slug }).from(organizations).where(eq(organizations.id, orgId));
     if (!org) return apiError("Organization not found", 404);
     if (body.confirmName.trim() !== org.name.trim()) return apiError("Organization name does not match", 400);
 
@@ -63,27 +66,44 @@ export const POST = withRoute(
     // Order: children-before-parents. Large orgs may exceed 100 stmts —
     // runCascade() automatically splits into 100-statement chunks (each atomic).
     const cascadeOps = [
-      // Visit children (bulk delete by visitId set)
+      // Visit children (must precede visits)
       ...(visitIds.length > 0 ? [
         db.delete(visitTreatments).where(inArray(visitTreatments.visitId, visitIds)),
         db.delete(payments).where(inArray(payments.visitId, visitIds)),
         db.delete(visitItems).where(inArray(visitItems.visitId, visitIds)),
         db.delete(attachments).where(inArray(attachments.visitId, visitIds)),
+        db.delete(toothChartHistory).where(inArray(toothChartHistory.visitId, visitIds)),
       ] : []),
 
-      // Invoice children
+      // Invoice children (must precede invoices)
       ...(invoiceIds.length > 0 ? [
         db.delete(invoiceTreatments).where(inArray(invoiceTreatments.invoiceId, invoiceIds)),
       ] : []),
 
-      // Org-level tables (org-scoped, no per-row ID needed)
+      // Appointment children (must precede appointments)
+      db.delete(appointmentReminders).where(eq(appointmentReminders.organizationId, orgId)),
+
+      // Subscription children (must precede subscriptions)
+      db.delete(couponRedemptions).where(eq(couponRedemptions.organizationId, orgId)),
+
+      // Consent audit log (references treatments — must precede treatments)
       db.delete(consentAuditLog).where(eq(consentAuditLog.organizationId, orgId)),
+
+      // Core org-scoped tables
       db.delete(visits).where(eq(visits.organizationId, orgId)),
       db.delete(invoices).where(eq(invoices.organizationId, orgId)),
       db.delete(appointments).where(eq(appointments.organizationId, orgId)),
       db.delete(treatments).where(eq(treatments.organizationId, orgId)),
       db.delete(prescriptions).where(eq(prescriptions.organizationId, orgId)),
       db.delete(salaryRecords).where(eq(salaryRecords.organizationId, orgId)),
+      db.delete(subscriptions).where(eq(subscriptions.organizationId, orgId)),
+      db.delete(calendarIntegrations).where(eq(calendarIntegrations.organizationId, orgId)),
+      db.delete(orgDrugs).where(eq(orgDrugs.organizationId, orgId)),
+      db.delete(onboardingEmails).where(eq(onboardingEmails.organizationId, orgId)),
+      db.delete(orgBackups).where(eq(orgBackups.organizationId, orgId)),
+
+      // Tooth charts (reference patients — must precede patient deletion)
+      db.delete(toothChart).where(eq(toothChart.organizationId, orgId)),
 
       // Emergency contacts for patients and users
       ...(patientIds.length > 0 ? [
@@ -106,6 +126,9 @@ export const POST = withRoute(
         db.delete(verificationTokens).where(inArray(verificationTokens.userId, exclusiveUserIds)),
         db.delete(users).where(inArray(users.id, exclusiveUserIds)),
       ] : []),
+
+      // Per-org patient code sequence
+      db.delete(patientCodeSequences).where(eq(patientCodeSequences.scope, `org:${org.slug}`)),
 
       // Finally, the org itself
       db.delete(organizations).where(eq(organizations.id, orgId)),
