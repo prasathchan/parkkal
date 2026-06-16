@@ -35,8 +35,7 @@ export const TYPE_BAR_COLOR: Record<string, string> = {
 };
 
 export const STATUS_TRANSITIONS: Partial<Record<AppointmentStatus, AppointmentStatus[]>> = {
-  SCHEDULED:   ["CONFIRMED", "CANCELLED", "NO_SHOW"],
-  CONFIRMED:   ["IN_PROGRESS", "CANCELLED", "NO_SHOW"],
+  SCHEDULED:   ["CANCELLED", "NO_SHOW"],
   IN_PROGRESS: ["COMPLETED", "NO_SHOW"],
 };
 
@@ -59,7 +58,6 @@ export const ACTION_BUTTON_STYLE: Record<AppointmentStatus, { text: string; bord
 export const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: "",            label: "All"        },
   { value: "SCHEDULED",  label: "Scheduled"  },
-  { value: "CONFIRMED",  label: "Confirmed"  },
   { value: "COMPLETED",  label: "Completed"  },
   { value: "CANCELLED",  label: "Cancelled"  },
   { value: "NO_SHOW",    label: "No Show"    },
