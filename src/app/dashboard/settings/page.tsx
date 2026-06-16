@@ -253,9 +253,6 @@ export default function SettingsPage() {
               <Field label="Tagline">
                 <input type="text" value={form.tagline} maxLength={100} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} className="field-input" placeholder="e.g. One Platform. Every Clinic. Zero Compromises." />
               </Field>
-              <Field label="Phone">
-                <input type="text" value={form.phone} placeholder="+91 98765 43210" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="field-input" />
-              </Field>
               <Field label="Contact Person">
                 <select
                   value={form.email}
@@ -279,6 +276,9 @@ export default function SettingsPage() {
                 {form.email && (
                   <p className="text-xs text-pk-text-muted mt-1">Contact email: {form.email}</p>
                 )}
+              </Field>
+              <Field label="Phone">
+                <input type="text" value={form.phone} placeholder="+91 98765 43210" onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="field-input" />
               </Field>
               <Field label="Address">
                 <AddressForm value={addressData} onChange={setAddressData} />
