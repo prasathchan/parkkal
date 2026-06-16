@@ -72,6 +72,7 @@ export const organizations = sqliteTable("organizations", {
   dpaAcceptedAt: integer("dpa_accepted_at"),
   dpaAcceptedBy: text("dpa_accepted_by"),
   dataRetentionYears: integer("data_retention_years").notNull().default(7),
+  timezone: text("timezone").notNull().default("Asia/Kolkata"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });

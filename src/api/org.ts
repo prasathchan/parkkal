@@ -34,6 +34,7 @@ export interface UpdateOrgProfilePayload {
   website?: string;
   registrationNumber?: string;
   themeConfig?: unknown;
+  timezone?: string;
 }
 
 export function updateOrgProfile(

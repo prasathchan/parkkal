@@ -21,6 +21,7 @@ export interface OrgProfile {
   dpaAcceptedAt?: number | null;
   dpaAcceptedBy?: string | null;
   dataRetentionYears?: number | null;
+  timezone?: string;
   createdAt: number;
   updatedAt: number;
 }

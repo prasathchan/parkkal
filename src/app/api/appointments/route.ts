@@ -1,4 +1,4 @@
-import { eq, asc, and, count, gte, lte } from "drizzle-orm";
+import { eq, asc, and, count, gte, lte, notInArray } from "drizzle-orm";
 import { appointments, patients, users, organizationPatients, visits } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
@@ -119,6 +119,22 @@ export const POST = withRoute(
       if (recallVisit.patientId !== data.patientId)
         return apiError("Recall visit does not belong to this patient", 400);
     }
+
+    // Application-level slot check before insert — more reliable than parsing
+    // the D1 trigger error message, which varies across SQLite/D1 versions.
+    const [conflict] = await db
+      .select({ id: appointments.id })
+      .from(appointments)
+      .where(
+        and(
+          eq(appointments.organizationId, session.orgId),
+          eq(appointments.doctorId, data.doctorId),
+          eq(appointments.appointmentDate, data.appointmentDate),
+          eq(appointments.appointmentTime, data.appointmentTime),
+          notInArray(appointments.status, ["CANCELLED", "NO_SHOW"]),
+        ),
+      );
+    if (conflict) return apiError("This doctor already has an appointment at that date and time", 409);
 
     try {
       await db.insert(appointments).values(newAppt);

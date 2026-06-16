@@ -51,7 +51,7 @@ vi.mock("@/db/schema", () => ({
 vi.mock("drizzle-orm", () => ({
   like: vi.fn(), or: vi.fn(), and: vi.fn((...a: unknown[]) => a),
   desc: vi.fn(), count: vi.fn(() => "count"), eq: vi.fn(),
-  gte: vi.fn(), lte: vi.fn(), ne: vi.fn(), asc: vi.fn(), inArray: vi.fn(),
+  gte: vi.fn(), lte: vi.fn(), ne: vi.fn(), asc: vi.fn(), inArray: vi.fn(), notInArray: vi.fn(),
 }));
 
 // ─── Imports ──────────────────────────────────────────────────────────────────
@@ -154,6 +154,7 @@ describe("POST /api/appointments", () => {
   it("creates an appointment and returns 201", async () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
       [{ patientId: "p1", isActive: 1 }],  // patient-org check
+      [],                                   // slot conflict check (no conflict)
       undefined,                            // insert
     ]) as never);
 
@@ -167,6 +168,7 @@ describe("POST /api/appointments", () => {
     vi.mocked(getDb).mockReturnValue(makeDbMock([
       [{ isActive: 1 }],                  // member-active check
       [{ patientId: "p1", isActive: 1 }],
+      [],                                  // slot conflict check (no conflict)
       undefined,
     ]) as never);
 
@@ -177,17 +179,28 @@ describe("POST /api/appointments", () => {
     expect(( await responseJson(res) ).appointment.doctorId).toBe("u_doc");
   });
 
+  it("returns 409 when the slot is already taken (application-level check)", async () => {
+    vi.mocked(getDb).mockReturnValue(makeDbMock([
+      [{ patientId: "p1", isActive: 1 }],  // patient-org check
+      [{ id: "a_existing" }],               // slot conflict check → conflict found
+    ]) as never);
+
+    const res = await POST(makeReq("http://localhost/api/appointments", "POST", VALID_POST), CTX);
+    expect(res.status).toBe(409);
+    expect(( await responseJson(res) ).error).toMatch(/already has an appointment/i);
+  });
+
   it("returns 409 when DB trigger fires SLOT_TAKEN (double-booking)", async () => {
-    // Custom mock: patient-org check passes, insert throws SLOT_TAKEN
+    // Belt-and-suspenders: application check passes (race) but trigger still fires
     let callCount = 0;
     vi.mocked(getDb).mockReturnValue({
       select: () => ({
         from: () => ({
           where: async () => {
             callCount++;
-            return callCount === 1
-              ? [{ patientId: "p1", isActive: 1 }]
-              : [{ isActive: 1 }];
+            // call 1 = patient-org, call 2 = slot conflict (returns empty = no conflict)
+            if (callCount === 1) return [{ patientId: "p1", isActive: 1 }];
+            return [];
           },
         }),
       }),
@@ -246,6 +259,7 @@ describe("POST /api/appointments", () => {
     for (const type of ["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"]) {
       vi.mocked(getDb).mockReturnValue(makeDbMock([
         [{ patientId: "p1", isActive: 1 }],
+        [],        // slot conflict check (no conflict)
         undefined,
       ]) as never);
       const res = await POST(makeReq("http://localhost/api/appointments", "POST", {

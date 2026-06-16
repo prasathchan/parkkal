@@ -68,9 +68,24 @@ const REMINDER_SLOTS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Convert "YYYY-MM-DD HH:MM" to Unix ms. */
-function toUnixMs(date: string, time: string): number {
-  return new Date(`${date}T${time}:00`).getTime();
+/**
+ * Convert a wall-clock "YYYY-MM-DD HH:MM" in the given IANA timezone to Unix ms.
+ * Without this, Workers (which run in UTC) would treat the time as UTC, firing
+ * reminders 5h30m early for IST clinics.
+ */
+function toUnixMs(date: string, time: string, timezone: string): number {
+  // Treat the wall-clock time as a UTC placeholder to get a reference epoch
+  const asUtc = new Date(`${date}T${time}:00Z`).getTime();
+  // Find what that UTC epoch looks like in the target timezone (sv-SE gives YYYY-MM-DD HH:MM:SS)
+  const localStr = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: timezone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).format(asUtc).replace(" ", "T");
+  // offsetMs: how far ahead the timezone is (e.g. IST = +19800000 ms)
+  const offsetMs = new Date(localStr + "Z").getTime() - asUtc;
+  return asUtc - offsetMs;
 }
 
 // ─── Core: schedule reminders for one appointment ─────────────────────────────
@@ -83,7 +98,8 @@ function toUnixMs(date: string, time: string): number {
  *   - Has email → EMAIL
  */
 export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): Promise<void> {
-  const apptMs = toUnixMs(appt.appointmentDate, appt.appointmentTime);
+  // Timezone resolved below after org fetch; using placeholder until then
+  let apptMs = 0;
   const now    = Date.now();
 
   // ── Fetch patient contact info ────────────────────────────────────────────
@@ -94,9 +110,9 @@ export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): P
 
   if (!patient?.email) return;
 
-  // ── Fetch clinic name ─────────────────────────────────────────────────────
+  // ── Fetch clinic name + timezone ──────────────────────────────────────────
   const [org] = await db
-    .select({ name: organizations.name })
+    .select({ name: organizations.name, timezone: organizations.timezone })
     .from(organizations)
     .where(eq(organizations.id, appt.organizationId));
 
@@ -106,8 +122,10 @@ export async function scheduleReminders(db: DrizzleDB, appt: AppointmentInfo): P
     .from(users)
     .where(eq(users.id, appt.doctorId));
 
-  const clinicName  = org?.name    ?? "Parkkal";
-  const doctorName  = doctor?.name ?? undefined;
+  const clinicName  = org?.name     ?? "Parkkal";
+  const orgTimezone = org?.timezone ?? "Asia/Kolkata";
+  apptMs = toUnixMs(appt.appointmentDate, appt.appointmentTime, orgTimezone);
+  const doctorName  = doctor?.name  ?? undefined;
 
   // ── Determine which channels apply for this patient ───────────────────────
   const channels: NotificationChannel[] = [];

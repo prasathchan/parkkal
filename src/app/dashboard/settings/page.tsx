@@ -20,6 +20,18 @@ interface AdminMember {
 }
 
 
+const TIMEZONE_OPTIONS = [
+  { value: "Asia/Kolkata",      label: "IST — India Standard Time (UTC+5:30)" },
+  { value: "Asia/Dubai",        label: "GST — Gulf Standard Time (UTC+4)" },
+  { value: "Asia/Singapore",    label: "SGT — Singapore Time (UTC+8)" },
+  { value: "Asia/Tokyo",        label: "JST — Japan Standard Time (UTC+9)" },
+  { value: "Europe/London",     label: "GMT/BST — London (UTC+0/+1)" },
+  { value: "Europe/Paris",      label: "CET/CEST — Paris (UTC+1/+2)" },
+  { value: "America/New_York",  label: "EST/EDT — New York (UTC-5/-4)" },
+  { value: "America/Los_Angeles", label: "PST/PDT — Los Angeles (UTC-8/-7)" },
+  { value: "UTC",               label: "UTC — Coordinated Universal Time (UTC+0)" },
+];
+
 type Tab = "profile" | "appearance" | "security";
 
 export default function SettingsPage() {
@@ -41,6 +53,8 @@ export default function SettingsPage() {
   const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "", cgstRate: 9, sgstRate: 9 });
   const [dataRetentionYears, setDataRetentionYears] = useState(7);
   const [dpaStatus, setDpaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
+  const [timezone, setTimezone] = useState("Asia/Kolkata");
+  const [tzSaving, setTzSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -68,6 +82,7 @@ export default function SettingsPage() {
           sgstRate: (orgAny.sgstRate as number) ?? 9,
         });
         setDataRetentionYears((orgAny.dataRetentionYears as number) ?? 7);
+        setTimezone(o.timezone ?? "Asia/Kolkata");
         setDpaStatus({ version: (o.dpaVersion ?? null), acceptedAt: (o.dpaAcceptedAt ?? null) });
         setLoading(false);
       });
@@ -191,6 +206,17 @@ export default function SettingsPage() {
     } finally {
       setPwSaving(false);
     }
+  }
+
+  async function handleSaveTimezone() {
+    setTzSaving(true);
+    try {
+      await orgApi.updateProfile({ timezone });
+      toast.success("Timezone saved");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Failed to save timezone.");
+    }
+    setTzSaving(false);
   }
 
   return (
@@ -577,45 +603,72 @@ export default function SettingsPage() {
         )}
 
         {tab === "security" && (
-          <form onSubmit={handleChangePassword} className="space-y-5">
-            <Section title="Change Password" subtitle="Update your account password. You must enter your current password to confirm.">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>Current Password</label>
-                  <input type="password" required autoComplete="current-password"
-                    value={pwForm.currentPassword}
-                    onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
-                    style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>New Password</label>
-                  <input type="password" required autoComplete="new-password" minLength={8}
-                    value={pwForm.newPassword}
-                    onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
-                    style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
-                  <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Minimum 8 characters.</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>Confirm New Password</label>
-                  <input type="password" required autoComplete="new-password"
-                    value={pwForm.confirmPassword}
-                    onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
-                    style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
-                </div>
-                {pwMessage && (
-                  <div className="text-sm rounded-pk-sm px-4 py-3 border"
-                    style={pwMessage.type === "success"
-                      ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
-                      : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
-                    {pwMessage.text}
-                  </div>
-                )}
-                <SaveButton saving={pwSaving} label="Change Password" />
+          <div className="space-y-5">
+            {/* Clinic Timezone */}
+            <Section title="Clinic Timezone" subtitle="All appointment reminders and scheduled notifications use this timezone. Default is IST.">
+              <div className="space-y-3">
+                <select
+                  value={timezone}
+                  onChange={e => setTimezone(e.target.value)}
+                  className="field-input"
+                >
+                  {TIMEZONE_OPTIONS.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleSaveTimezone}
+                  disabled={tzSaving}
+                  className="px-4 py-2 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                  style={{ background: "var(--pk-primary)" }}
+                >
+                  {tzSaving ? "Saving..." : "Save Timezone"}
+                </button>
               </div>
             </Section>
+
+            {/* Change Password */}
+            <form onSubmit={handleChangePassword}>
+              <Section title="Change Password" subtitle="Update your account password. You must enter your current password to confirm.">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>Current Password</label>
+                    <input type="password" required autoComplete="current-password"
+                      value={pwForm.currentPassword}
+                      onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
+                      style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>New Password</label>
+                    <input type="password" required autoComplete="new-password" minLength={8}
+                      value={pwForm.newPassword}
+                      onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
+                      style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
+                    <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>Minimum 8 characters.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: "var(--pk-text)" }}>Confirm New Password</label>
+                    <input type="password" required autoComplete="new-password"
+                      value={pwForm.confirmPassword}
+                      onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-pk-sm border text-sm focus:outline-none focus:ring-2"
+                      style={{ background: "var(--pk-bg)", borderColor: "var(--pk-border)", color: "var(--pk-text)" }} />
+                  </div>
+                  {pwMessage && (
+                    <div className="text-sm rounded-pk-sm px-4 py-3 border"
+                      style={pwMessage.type === "success"
+                        ? { background: "#f0fdf4", borderColor: "#bbf7d0", color: "#15803d" }
+                        : { background: "#fef2f2", borderColor: "#fecaca", color: "#A8311F" }}>
+                      {pwMessage.text}
+                    </div>
+                  )}
+                  <SaveButton saving={pwSaving} label="Change Password" />
+                </div>
+              </Section>
+            </form>
 
             {/* Audit Log link */}
             <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"
@@ -652,7 +705,7 @@ export default function SettingsPage() {
                 View Logs →
               </Link>
             </div>
-          </form>
+          </div>
         )}
       </main>
     </div>
