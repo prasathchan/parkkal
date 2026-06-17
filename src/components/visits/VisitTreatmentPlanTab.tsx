@@ -21,7 +21,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   const [txForm, setTxForm] = useState({ description: "", toothNumbers: [] as string[], procedure: "", cost: "0" });
   const [txSubmitting, setTxSubmitting] = useState(false);
   const [txError, setTxError] = useState("");
-  const [txUpdating, setTxUpdating] = useState<string | null>(null);
+  const [_txUpdating, setTxUpdating] = useState<string | null>(null);
 
   // Link existing plan modal
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -110,7 +110,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     }
   }
 
-  function handleTreatmentStatusChange(tx: Treatment, newStatus: string) {
+  function _handleTreatmentStatusChange(tx: Treatment, newStatus: string) {
     const needsConsent = newStatus === "IN_PROGRESS" && !["VERIFIED", "EMERGENCY_OVERRIDE"].includes(tx.consentStatus);
     if (needsConsent) {
       setPendingStatusChange({ txId: tx.id, status: newStatus });
