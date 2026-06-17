@@ -14,9 +14,11 @@ interface Props {
   onPageError: (msg: string) => void;
   /** Called when user clicks "Add to Bill" — switches to items tab with pre-filled form */
   onAddToBill: (item: NewItemState) => void;
+  /** Called when an existing plan is linked — triggers bill item + chart update */
+  onLinkPlan?: (plan: Treatment) => Promise<void>;
 }
 
-export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, onPageError, onAddToBill }: Props) {
+export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, onPageError, onAddToBill, onLinkPlan }: Props) {
   // Add treatment form
   const [txForm, setTxForm] = useState({ description: "", toothNumbers: [] as string[], procedure: "", cost: "0" });
   const [txSubmitting, setTxSubmitting] = useState(false);
@@ -141,13 +143,18 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   }
 
   async function handleLinkPlan(txId: string) {
+    const plan = linkablePlans.find((p) => p.id === txId);
+    setShowLinkModal(false);
     try {
-      await treatmentsApi.forVisit.link(visitId, { treatmentId: txId });
+      if (plan && onLinkPlan) {
+        await onLinkPlan(plan);
+      } else {
+        await treatmentsApi.forVisit.link(visitId, { treatmentId: txId });
+        await onRefresh();
+      }
     } catch (err) {
       onPageError(err instanceof ApiError ? err.message : "Failed to link treatment");
     }
-    setShowLinkModal(false);
-    await onRefresh();
   }
 
   async function handleAddTreatmentPayment(e: React.FormEvent) {

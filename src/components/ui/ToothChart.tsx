@@ -71,6 +71,7 @@ function ToothCell({
   highlight,
   linkedTreatment,
   onConditionChange,
+  onToothSelect,
 }: {
   number: number;
   data: ToothData | undefined;
@@ -79,6 +80,7 @@ function ToothCell({
   highlight?: boolean;
   linkedTreatment?: { id: string; description: string; procedure?: string | null };
   onConditionChange: (n: number, condition: ToothCondition, notes?: string) => void;
+  onToothSelect?: (toothNumber: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [editNotes, setEditNotes] = useState(data?.notes ?? "");
@@ -97,7 +99,7 @@ function ToothCell({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const height = type === "molar" ? "h-10" : type === "premolar" ? "h-9" : "h-8";
+  const height = type === "molar" ? "h-12" : type === "premolar" ? "h-11" : "h-10";
 
   return (
     <div ref={ref} className="relative flex flex-col items-center">
@@ -111,8 +113,12 @@ function ToothCell({
         type="button"
         disabled={readOnly}
         title={CONDITION_LABELS[condition] + (data?.notes ? ` — ${data.notes}` : "")}
-        onClick={() => { if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); } }}
-        className={`w-7 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-default" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
+        onClick={() => {
+          onToothSelect?.(String(number));
+          if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); }
+          else onToothSelect?.(String(number));
+        }}
+        className={`w-8 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
         {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
@@ -213,9 +219,11 @@ interface ToothChartProps {
   linkedTreatments?: Array<{ id: string; description: string; procedure?: string | null; toothNumbers?: string | null }>;
   /** Called when a tooth condition changes, alongside onChange. Carries the associated treatmentId if any. */
   onToothChange?: (toothNumber: string, newCondition: ToothCondition, treatmentId: string | null) => void;
+  /** Called when any tooth is clicked (before condition picker opens) — used to trigger per-tooth history */
+  onToothSelect?: (toothNumber: string) => void;
 }
 
-export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, linkedTreatments, onToothChange }: ToothChartProps) {
+export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, linkedTreatments, onToothChange, onToothSelect }: ToothChartProps) {
   const highlightSet = new Set(highlightTeeth ?? []);
 
   // Build a map from tooth number → treatment (last IN_PROGRESS wins if multiple)
@@ -247,7 +255,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, l
     <div className="w-full">
       {/* Chart grid — scrolls horizontally on very small screens */}
       <div className="overflow-x-auto pb-2">
-        <div className="min-w-[520px]">
+        <div className="min-w-[620px]">
           {/* Legend row */}
           <div className="flex justify-between text-[9px] text-pk-text-muted font-medium mb-1 px-1">
             <span>Patient&apos;s Right (Q1/Q4)</span>
@@ -268,6 +276,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, l
                   highlight={highlightSet.has(String(n))}
                   linkedTreatment={toothToTreatmentMap.get(String(n))}
                   onConditionChange={handleChange}
+                  onToothSelect={onToothSelect}
                 />
               </>
             ))}
@@ -292,6 +301,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, l
                   highlight={highlightSet.has(String(n))}
                   linkedTreatment={toothToTreatmentMap.get(String(n))}
                   onConditionChange={handleChange}
+                  onToothSelect={onToothSelect}
                 />
               </>
             ))}

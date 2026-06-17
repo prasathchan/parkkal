@@ -164,7 +164,7 @@ export default function PatientDetailPage() {
             </div>
           </div>
           <CardContent>
-            {tab === "chart" && <PatientChartTab chartData={chartData} chartSaving={chartSaving} chartHistory={chartHistory} showHistory={showHistory} onChartChange={saveChart} onToggleHistory={() => setShowHistory((h) => !h)} />}
+            {tab === "chart" && <PatientChartTab patientId={id} chartData={chartData} chartSaving={chartSaving} chartHistory={chartHistory} showHistory={showHistory} onChartChange={saveChart} onToggleHistory={() => setShowHistory((h) => !h)} />}
             {tab === "prescriptions" && <PatientPrescriptionsTab prescriptions={rxData} />}
             {tab === "emergency" && <PatientEmergencyTab contacts={emergencyContacts} />}
             {(tab === "visits" || tab === "appointments" || tab === "treatments" || tab === "invoices") && (

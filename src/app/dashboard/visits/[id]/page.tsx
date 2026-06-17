@@ -221,6 +221,57 @@ export default function VisitDetailPage() {
     setBillChartSuggestion(toothNumbers);
   }
 
+  function inferConditionFromTreatment(description: string, procedure?: string | null): string {
+    const text = `${description} ${procedure ?? ""}`.toLowerCase();
+    if (/root.?canal|rct|endodont/i.test(text)) return "ROOT_CANAL";
+    if (/crown|ceramic|porcelain|zirconia|pfm/i.test(text)) return "CROWN";
+    if (/implant/i.test(text)) return "IMPLANT";
+    if (/bridge/i.test(text)) return "BRIDGE";
+    if (/extract|remov|pull|avuls/i.test(text)) return "MISSING";
+    if (/fractur|crack|chip/i.test(text)) return "FRACTURED";
+    if (/filling|composite|amalgam|restoration/i.test(text)) return "FILLING";
+    return "WATCH";
+  }
+
+  async function handleLinkTreatments(plans: Treatment[]) {
+    for (const plan of plans) {
+      await treatmentsApi.forVisit.link(id, { treatmentId: plan.id });
+
+      const alreadyBilledHere = items.some((i) => i.linkedTreatmentId === plan.id);
+      const outstanding = Math.max(0, plan.cost - (plan.billedAmount ?? 0));
+      if (!alreadyBilledHere && outstanding > 0) {
+        const firstTooth = plan.toothNumbers?.split(",")[0]?.trim() ?? "";
+        await visitsApi.items.add(id, {
+          itemName: plan.description,
+          category: "TREATMENT",
+          toothNumber: firstTooth || undefined,
+          quantity: 1,
+          unitPrice: outstanding,
+          notes: "",
+          linkedTreatmentId: plan.id,
+        });
+      }
+
+      if (plan.status === "IN_PROGRESS" && plan.toothNumbers) {
+        const teeth = plan.toothNumbers.split(",").map((t) => t.trim()).filter(Boolean);
+        if (teeth.length > 0) {
+          const inferredCondition = inferConditionFromTreatment(plan.description, plan.procedure);
+          const { toothData } = await patientsApi.getToothChart(visit!.patientId);
+          const updatedChart = { ...(toothData as Record<string, { condition: string }> ?? {}) };
+          for (const tooth of teeth) updatedChart[tooth] = { condition: inferredCondition };
+          await patientsApi.saveToothChart(
+            visit!.patientId,
+            updatedChart as Record<string, unknown>,
+            id,
+            "treatment_start",
+            plan.id,
+          );
+        }
+      }
+    }
+    await fetchVisit();
+  }
+
   function handleAddToBill(item: NewItemState) {
     setPrefillItem(item);
     setTab("items");
@@ -270,7 +321,7 @@ export default function VisitDetailPage() {
             visitId={id}
             patientId={visit.patientId}
             alreadyLinkedIds={new Set(treatments.map((t) => t.id))}
-            onLinked={fetchVisit}
+            onLink={handleLinkTreatments}
           />
         )}
 
@@ -388,7 +439,7 @@ export default function VisitDetailPage() {
             {tab === "photos" && <VisitPhotosTab visitId={id} visitStatus={visit.status} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "prescriptions" && <VisitPrescriptionsTab visitId={id} visitStatus={visit.status} prescriptions={prescriptions} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "history" && <VisitHistoryTab patientName={visit.patientName ?? ""} history={history} />}
-            {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} />}
+            {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} onLinkPlan={async (plan) => { await handleLinkTreatments([plan]); }} />}
             {tab === "chart" && <VisitToothChartTab visitId={id} patientId={visit.patientId} visitStatus={visit.status} items={items} treatments={treatments} onSuggestBill={handleChartSuggestBill} externalHighlightTeeth={chartHighlightTeeth} />}
           </div>
         </div>

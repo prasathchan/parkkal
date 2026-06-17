@@ -43,6 +43,7 @@ export interface VisitItem {
   unitPrice: number;
   amount: number;
   notes?: string | null;
+  linkedTreatmentId?: string | null;
 }
 
 export interface Payment {

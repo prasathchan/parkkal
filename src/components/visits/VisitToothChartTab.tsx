@@ -151,7 +151,7 @@ export function VisitToothChartTab({
     return () => { cancelled = true; };
   }, [patientId, visitId, isOpen]);
 
-  // Gap 6b — fetch teeth with any history after chart loads
+  // Gap 6b — fetch teeth with any history; re-fetch after each successful save
   useEffect(() => {
     if (loading) return;
     patientsApi
@@ -163,7 +163,9 @@ export function VisitToothChartTab({
         );
       })
       .catch(() => {});
-  }, [patientId, loading]);
+  // savedAt intentionally included: re-fetch after every successful save
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, loading, savedAt]);
 
   // ── Save (OPEN visits only) ──────────────────────────────────────────────────
 
@@ -207,12 +209,12 @@ export function VisitToothChartTab({
     }
   }
 
-  async function handleToothHistoryClick(tooth: string) {
-    if (historyTooth === tooth) { setHistoryTooth(null); return; }
+  async function handleToothSelect(tooth: string) {
+    if (historyTooth === tooth) return; // already shown — keep open; popover handles close
     setHistoryTooth(tooth);
     setHistoryLoading(true);
     try {
-      const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 10 });
+      const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 20 });
       setToothHistory(history);
     } catch { setToothHistory([]); }
     setHistoryLoading(false);
@@ -302,42 +304,32 @@ export function VisitToothChartTab({
         highlightTeeth={allHighlightTeeth}
         linkedTreatments={treatments}
         onToothChange={isOpen ? handleToothChange : undefined}
+        onToothSelect={handleToothSelect}
       />
 
-      {/* Per-tooth history — Gap 6b: show teeth with any history, not just non-HEALTHY */}
+      {/* Per-tooth history — auto-shown when a tooth is clicked */}
       <div className="mt-4 border-t border-pk-border pt-4">
-        <p className="text-xs text-pk-text-muted mb-2">
-          View tooth history:{" "}
-          <span className="text-pk-text-secondary">click a tooth number below</span>
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {teethWithHistory.map((tooth) => (
-            <button
-              key={tooth}
-              type="button"
-              onClick={() => handleToothHistoryClick(tooth)}
-              className={`text-xs px-2 py-1 rounded border transition ${
-                historyTooth === tooth
-                  ? "bg-pk-teal-600 text-white border-pk-teal-600"
-                  : "border-pk-border text-pk-text-muted hover:border-pk-teal-400 hover:text-pk-teal-700"
-              }`}
-            >
-              {tooth}
-            </button>
-          ))}
-          {teethWithHistory.length === 0 && (
-            <p className="text-xs text-pk-text-muted italic">No condition history recorded yet.</p>
-          )}
-        </div>
+        {!historyTooth && (
+          <p className="text-xs text-pk-text-muted italic">
+            Click any tooth above to view its condition history.
+          </p>
+        )}
 
         {historyTooth && (
-          <div className="mt-3 bg-pk-surface-raised border border-pk-border rounded-pk-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-pk-text">Tooth {historyTooth} — History</p>
+          <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold text-pk-text">Tooth {historyTooth} — Condition History</p>
+                {teethWithHistory.length > 1 && (
+                  <p className="text-xs text-pk-text-muted mt-0.5">
+                    {teethWithHistory.length} teeth with recorded history
+                  </p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setHistoryTooth(null)}
-                className="text-pk-text-muted hover:text-pk-text-secondary text-sm leading-none"
+                className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
               >
                 &times;
               </button>
@@ -345,17 +337,18 @@ export function VisitToothChartTab({
             {historyLoading ? (
               <p className="text-xs text-pk-text-muted">Loading…</p>
             ) : toothHistory.length === 0 ? (
-              <p className="text-xs text-pk-text-muted">No history recorded for this tooth.</p>
+              <p className="text-xs text-pk-text-muted italic">No condition changes recorded for this tooth yet.</p>
             ) : (
-              <ol className="space-y-2">
+              <ol className="space-y-3">
                 {toothHistory.map((entry, i) => {
                   const procedureLabel = entry.treatmentProcedure || entry.treatmentDescription;
                   return (
-                    <li key={entry.id} className="flex items-start gap-2 text-xs">
-                      <span className="text-pk-text-muted flex-shrink-0 mt-0.5">{i + 1}.</span>
-                      <div className="space-y-0.5">
-                        {/* Gap 6 — colored condition chips */}
-                        <div className="flex items-center gap-1 flex-wrap">
+                    <li key={entry.id} className="flex items-start gap-3 text-xs">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-pk-teal-100 text-pk-teal-700 font-bold flex items-center justify-center text-[10px]">
+                        {toothHistory.length - i}
+                      </span>
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {entry.previousCondition ? (
                             <>
                               <ConditionChip condition={entry.previousCondition} />
@@ -364,20 +357,20 @@ export function VisitToothChartTab({
                             </>
                           ) : (
                             <>
-                              <span className="text-pk-text-muted text-xs">First recorded:</span>
+                              <span className="text-pk-text-muted">First recorded as</span>
                               <ConditionChip condition={entry.newCondition} />
                             </>
                           )}
                         </div>
                         {procedureLabel && (
-                          <div className="text-pk-teal-700 font-medium">{procedureLabel}</div>
+                          <p className="text-pk-teal-700 font-medium truncate">{procedureLabel}</p>
                         )}
-                        <div className="text-pk-text-muted">
+                        <p className="text-pk-text-muted">
                           {new Date(entry.recordedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                          {entry.visitCode && ` · ${entry.visitCode}`}
+                          {entry.visitCode && <> · <span className="font-mono">{entry.visitCode}</span></>}
                           {" · "}{SOURCE_LABELS[entry.source] ?? entry.source}
                           {entry.recordedByName && ` · ${entry.recordedByName}`}
-                        </div>
+                        </p>
                       </div>
                     </li>
                   );
