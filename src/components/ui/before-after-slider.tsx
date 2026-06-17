@@ -81,7 +81,7 @@ export function BeforeAfterSlider({ beforeUrl, afterUrl, height = 320 }: Props) 
         onTouchStart={(e) => e.preventDefault()}
         onTouchMove={(e) => { e.preventDefault(); calcPos(e.touches[0].clientX); }}
       >
-        <svg viewBox="0 0 20 20" className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg viewBox="0 0 20 20" className="w-5 h-5 text-pk-text-secondary" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6,4 2,10 6,16" />
           <polyline points="14,4 18,10 14,16" />
         </svg>
