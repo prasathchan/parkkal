@@ -13,6 +13,15 @@ interface OrgOption {
   role: string;
 }
 
+function formatAddress(address: string): string {
+  try {
+    const parsed = JSON.parse(address) as Record<string, unknown>;
+    return Object.values(parsed).filter(Boolean).join(", ");
+  } catch {
+    return address;
+  }
+}
+
 const ROLE_COLORS: Record<string, string> = {
   ADMIN: "bg-pk-danger-fill text-pk-danger-text",
   DOCTOR: "bg-pk-neutral-100 text-pk-neutral-700",
@@ -119,7 +128,7 @@ function SelectOrgInner() {
                     </span>
                   </div>
                   {org.address && (
-                    <p className="text-sm text-pk-text-muted truncate">{org.address}</p>
+                    <p className="text-sm text-pk-text-muted truncate">{formatAddress(org.address)}</p>
                   )}
                 </div>
                 <svg
