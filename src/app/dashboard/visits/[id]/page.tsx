@@ -272,6 +272,13 @@ export default function VisitDetailPage() {
     await fetchVisit();
   }
 
+  async function handleLinkTreatmentsOnly(plans: Treatment[]) {
+    for (const plan of plans) {
+      await treatmentsApi.forVisit.link(id, { treatmentId: plan.id });
+    }
+    await fetchVisit();
+  }
+
   function handleAddToBill(item: NewItemState) {
     setPrefillItem(item);
     setTab("items");
@@ -322,6 +329,7 @@ export default function VisitDetailPage() {
             patientId={visit.patientId}
             alreadyLinkedIds={new Set(treatments.map((t) => t.id))}
             onLink={handleLinkTreatments}
+            onLinkOnly={handleLinkTreatmentsOnly}
           />
         )}
 

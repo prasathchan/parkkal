@@ -10,9 +10,10 @@ interface Props {
   patientId: string;
   alreadyLinkedIds: Set<string>;
   onLink: (plans: Treatment[]) => Promise<void>;
+  onLinkOnly: (plans: Treatment[]) => Promise<void>;
 }
 
-export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink }: Props) {
+export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink, onLinkOnly }: Props) {
   const [plans, setPlans] = useState<Treatment[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [linking, setLinking] = useState(false);
@@ -48,12 +49,16 @@ export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink }:
     setOpen(false);
   }
 
-  async function handleLink() {
+  async function handleLink(withBill: boolean) {
     const toLink = plans.filter((p) => checked.has(p.id));
     if (toLink.length === 0) return;
     setLinking(true);
     try {
-      await onLink(toLink);
+      if (withBill) {
+        await onLink(toLink);
+      } else {
+        await onLinkOnly(toLink);
+      }
     } finally {
       setLinking(false);
     }
@@ -165,18 +170,28 @@ export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink }:
         <div className="flex items-center justify-between gap-3 p-5 border-t border-pk-border flex-shrink-0">
           <button
             onClick={dismiss}
-            className="text-sm text-pk-text-muted hover:text-pk-text-secondary transition"
+            className="text-sm text-pk-text-muted hover:text-pk-text-secondary transition flex-shrink-0"
           >
             Skip for this visit
           </button>
-          <button
-            type="button"
-            disabled={linking || checkedCount === 0}
-            onClick={handleLink}
-            className="bg-pk-teal-600 text-white text-sm font-medium px-5 py-2 rounded-pk-sm hover:bg-pk-teal-700 disabled:opacity-50 transition"
-          >
-            {linking ? "Linking…" : `Link ${checkedCount} plan${checkedCount !== 1 ? "s" : ""} & Add to Bill`}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={linking || checkedCount === 0}
+              onClick={() => handleLink(false)}
+              className="border border-pk-border text-pk-text-secondary text-sm font-medium px-4 py-2 rounded-pk-sm hover:bg-pk-surface-raised disabled:opacity-50 transition"
+            >
+              {linking ? "Linking…" : `Link ${checkedCount} item${checkedCount !== 1 ? "s" : ""}`}
+            </button>
+            <button
+              type="button"
+              disabled={linking || checkedCount === 0}
+              onClick={() => handleLink(true)}
+              className="bg-pk-teal-600 text-white text-sm font-medium px-4 py-2 rounded-pk-sm hover:bg-pk-teal-700 disabled:opacity-50 transition"
+            >
+              {linking ? "Linking…" : `Link ${checkedCount} item${checkedCount !== 1 ? "s" : ""} & Add to Bill`}
+            </button>
+          </div>
         </div>
       </div>
     </div>
