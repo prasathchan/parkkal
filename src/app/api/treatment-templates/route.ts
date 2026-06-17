@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { treatmentTemplates } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
