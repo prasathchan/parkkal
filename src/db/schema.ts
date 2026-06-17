@@ -232,6 +232,7 @@ export const treatments = sqliteTable("treatments", {
   consentNotes: text("consent_notes"),
   emergencyOverride: integer("emergency_override").notNull().default(0),
   emergencyReason: text("emergency_reason"),
+  plannedSessions: integer("planned_sessions"),
   createdAt: integer("created_at").notNull(),
 });
 

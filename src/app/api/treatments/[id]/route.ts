@@ -46,6 +46,7 @@ const patchSchema = z.object({
   procedure: z.string().optional().nullable(),
   toothNumbers: z.string().optional().nullable(),
   cost: z.number().min(0).optional(),
+  plannedSessions: z.number().int().min(1).max(99).nullable().optional(),
 });
 
 // Valid forward transitions for non-ADMIN roles.
@@ -97,6 +98,7 @@ export const PATCH = withRoute<{ id: string }>(
     if (data.procedure !== undefined) updates.procedure = data.procedure;
     if (data.toothNumbers !== undefined) updates.toothNumbers = data.toothNumbers;
     if (data.cost !== undefined) updates.cost = data.cost;
+    if (data.plannedSessions !== undefined) updates.plannedSessions = data.plannedSessions;
 
     if (Object.keys(updates).length === 0) return apiError("No fields to update", 400);
 

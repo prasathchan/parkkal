@@ -107,6 +107,7 @@ export interface UpdateTreatmentPayload {
   procedure?: string | null;
   toothNumbers?: string | null;
   cost?: number;
+  plannedSessions?: number | null;
 }
 
 export function updateTreatment(

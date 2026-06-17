@@ -36,6 +36,7 @@ export const GET = withRoute<{ id: string }>(
         consentDocumentName: treatments.consentDocumentName,
         consentNotes: treatments.consentNotes,
         emergencyReason: treatments.emergencyReason,
+        plannedSessions: treatments.plannedSessions,
         createdAt: treatments.createdAt,
         patientName: patients.name,
         patientCode: patients.patientCode,

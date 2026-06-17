@@ -25,6 +25,7 @@ interface Treatment {
   consentNotes?: string | null;
   emergencyOverride: number;
   emergencyReason?: string | null;
+  plannedSessions?: number | null;
   createdAt: number;
   patientId: string;
   patientName?: string | null;
@@ -106,6 +107,51 @@ function getPaymentColors(pct: number): {
   return             { bar: "bg-pk-danger",    cardBg: "bg-pk-danger-fill",    cardBorder: "border-pk-danger-border",    text: "text-pk-danger-text",    label: "text-pk-danger-text" };
 }
 
+// ─── SessionCountSetter ───────────────────────────────────────────────────────
+// Tiny inline widget: "Set sessions" link → input → save on Enter/blur.
+// Shown only when plannedSessions is not yet set.
+function SessionCountSetter({ treatmentId, onSet }: { treatmentId: string; onSet: (n: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+
+  async function save() {
+    const n = parseInt(val, 10);
+    if (!n || n < 1) { setEditing(false); return; }
+    try {
+      await treatmentsApi.update(treatmentId, { plannedSessions: n });
+      onSet(n);
+    } catch { /* silently ignore */ }
+    setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="text-xs text-pk-text-muted hover:text-pk-teal-600 underline-offset-2 hover:underline"
+      >
+        Set sessions
+      </button>
+    );
+  }
+
+  return (
+    <input
+      autoFocus
+      type="number"
+      min="1"
+      max="99"
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={save}
+      onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
+      placeholder="# sessions"
+      className="w-24 text-xs border border-pk-teal-400 rounded-pk-sm px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-pk-teal-500"
+    />
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TreatmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -185,6 +231,14 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${STATUS_BADGE[treatment.status] ?? STATUS_BADGE.PLANNED}`}>
                       {STATUS_LABEL[treatment.status] ?? treatment.status}
                     </span>
+                    {/* Session X of Y */}
+                    {treatment.plannedSessions ? (
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full border bg-pk-teal-50 text-pk-teal-800 border-pk-teal-200">
+                        Session {summary.visitCount} of {treatment.plannedSessions}
+                      </span>
+                    ) : (
+                      <SessionCountSetter treatmentId={treatment.id} onSet={(n) => setTreatment(t => t ? { ...t, plannedSessions: n } : t)} />
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-pk-text-muted flex-wrap mt-1">
                     <Link

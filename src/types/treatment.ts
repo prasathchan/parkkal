@@ -29,6 +29,7 @@ export interface Treatment {
   consentUploadedAt?: number | null;
   consentNotes?: string | null;
   emergencyOverride: 0 | 1;
+  plannedSessions?: number | null;
   createdAt: number;
   // Joined fields — may be present depending on which endpoint returned this treatment
   patientName?: string | null;
