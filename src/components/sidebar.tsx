@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
@@ -275,31 +275,123 @@ function NavLink({
   );
 }
 
-function LogoutButton({
+function UserMenu({
+  user,
   onLogout,
   colors,
+  primaryColor,
 }: {
+  user: { name: string; role: string };
   onLogout: () => void;
   colors: SidebarColors;
+  primaryColor: string;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
   return (
-    <button
-      onClick={onLogout}
-      title="Sign out"
-      aria-label="Sign out"
-      className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-pk-sm transition-colors"
-      style={{
-        color: hovered ? "#C0392B" : colors.text,
-        background: hovered ? colors.hoverBg : "transparent",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
-      </svg>
-    </button>
+    <div ref={ref} className="relative">
+      {/* Popover menu — opens upward */}
+      {open && (
+        <div
+          className="absolute bottom-full left-0 right-0 mb-2 rounded-pk-sm overflow-hidden shadow-lg z-50"
+          style={{ background: colors.bg, border: `1px solid ${colors.divider}` }}
+        >
+          {/* User header inside popover */}
+          <div className="px-4 py-3" style={{ borderBottom: `1px solid ${colors.divider}` }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: primaryColor }}>
+                <span className="text-white text-sm font-bold">{user.name.charAt(0).toUpperCase()}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: colors.textActive }}>{user.name}</p>
+                <p className="text-xs truncate" style={{ color: colors.text, opacity: 0.6 }}>{user.role}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu items */}
+          <div className="py-1">
+            <button
+              onClick={() => { setOpen(false); router.push("/dashboard/profile"); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left"
+              style={{ color: colors.textActive }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = colors.hoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              My Profile
+            </button>
+            <button
+              onClick={() => { setOpen(false); router.push("/dashboard/settings/security"); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left"
+              style={{ color: colors.textActive }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = colors.hoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              Change Password
+            </button>
+          </div>
+
+          <div style={{ borderTop: `1px solid ${colors.divider}` }} className="py-1">
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors text-left"
+              style={{ color: "#C0392B" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = colors.hoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 rounded-pk-sm px-1 py-1.5 transition-colors"
+        style={{ background: open ? colors.hoverBg : "transparent" }}
+        onMouseEnter={(e) => { if (!open) e.currentTarget.style.background = colors.hoverBg; }}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.background = "transparent"; }}
+        aria-expanded={open}
+        aria-haspopup="true"
+        title="Account menu"
+      >
+        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: primaryColor }}>
+          <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
+        </div>
+        <div className="min-w-0 flex-1 text-left">
+          <p className="text-xs font-medium truncate" style={{ color: colors.userText }}>{user.name}</p>
+          <p className="text-xs truncate" style={{ color: colors.userSubText }}>{user.role}</p>
+        </div>
+        <svg
+          className="w-3.5 h-3.5 flex-shrink-0 transition-transform"
+          style={{ color: colors.userSubText, transform: open ? "rotate(180deg)" : "none" }}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -405,20 +497,9 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User info + logout */}
-      <div className="px-4 py-3" style={{ borderTop: `1px solid ${colors.divider}` }}>
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: theme.primaryColor }}>
-            <span className="text-white text-xs font-bold">
-              {user.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium truncate" style={{ color: colors.userText }}>{user.name}</p>
-            <p className="text-xs truncate" style={{ color: colors.userSubText }}>{user.role}</p>
-          </div>
-          <LogoutButton onLogout={handleLogout} colors={colors} />
-        </div>
+      {/* User menu */}
+      <div className="px-3 py-3" style={{ borderTop: `1px solid ${colors.divider}` }}>
+        <UserMenu user={user} onLogout={handleLogout} colors={colors} primaryColor={theme.primaryColor} />
       </div>
     </aside>
     </>

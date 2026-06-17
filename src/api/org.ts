@@ -17,6 +17,9 @@ import type {
   StaffMember,
   OrgRole,
   SalaryRecord,
+  StaffProfile,
+  CredentialDoc,
+  CredentialDocType,
 } from "@/types";
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
@@ -256,6 +259,91 @@ export function deleteOrgDrug(id: string): Promise<{ success: true }> {
   return apiFetch<{ success: true }>(`/api/org/drugs/${id}`, { method: "DELETE" });
 }
 
+// ─── Staff professional profile ───────────────────────────────────────────────
+
+export function getStaffProfile(userId: string): Promise<{ profile: StaffProfile | null }> {
+  return apiFetch<{ profile: StaffProfile | null }>(`/api/org/members/${userId}/profile`);
+}
+
+export interface UpdateStaffProfilePayload {
+  bio?: string | null;
+  specialization?: string | null;
+  yearsExperience?: number | null;
+  languages?: string[];
+  qualifications?: Array<{ id: string; degree: string; institution: string; year: string; notes?: string }>;
+  idaNumber?: string | null;
+  dciNumber?: string | null;
+  stateCouncilNumber?: string | null;
+  licenseExpiry?: string | null;
+  previousEmployer?: string | null;
+}
+
+export function updateStaffProfile(
+  userId: string,
+  data: UpdateStaffProfilePayload,
+): Promise<{ profile: StaffProfile }> {
+  return apiFetch<{ profile: StaffProfile }>(`/api/org/members/${userId}/profile`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function uploadStaffDoc(
+  userId: string,
+  file: File,
+  docType: CredentialDocType,
+): Promise<{ document: CredentialDoc }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("docType", docType);
+  const res = await fetch(`/api/org/members/${userId}/profile/docs`, { method: "POST", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ document: CredentialDoc }>;
+}
+
+export function deleteStaffDoc(userId: string, docId: string): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/org/members/${userId}/profile/docs?docId=${encodeURIComponent(docId)}`, {
+    method: "DELETE",
+  });
+}
+
+export function reviewStaffDoc(
+  userId: string,
+  docId: string,
+  action: "approve" | "reject",
+  reviewNote?: string,
+): Promise<{ document: CredentialDoc }> {
+  return apiFetch<{ document: CredentialDoc }>(`/api/org/members/${userId}/profile/docs/${docId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ action, reviewNote }),
+  });
+}
+
+// ─── Self-service profile (own user) ─────────────────────────────────────────
+
+export function getMyProfile(): Promise<{ user: { id: string; name: string; email: string; phone: string | null; dateOfBirth: string | null; gender: string | null; role: string }; profile: StaffProfile | null }> {
+  return apiFetch("/api/profile");
+}
+
+export function updateMyProfile(data: UpdateStaffProfilePayload & { name?: string; phone?: string | null; dateOfBirth?: string | null; gender?: string | null }): Promise<{ success: true }> {
+  return apiFetch("/api/profile", { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export async function uploadMyDoc(file: File, docType: CredentialDocType): Promise<{ document: CredentialDoc }> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("docType", docType);
+  const res = await fetch("/api/profile/docs", { method: "POST", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ document: CredentialDoc }>;
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const orgApi = {
@@ -285,6 +373,18 @@ export const orgApi = {
   delete:            deleteOrg,
   dismissOnboarding: dismissOnboarding,
   acceptDpa:         acceptDpa,
+  profile: {
+    get:       getStaffProfile,
+    update:    updateStaffProfile,
+    uploadDoc: uploadStaffDoc,
+    deleteDoc: deleteStaffDoc,
+    reviewDoc: reviewStaffDoc,
+  },
+  myProfile: {
+    get:       getMyProfile,
+    update:    updateMyProfile,
+    uploadDoc: uploadMyDoc,
+  },
   drugs: {
     list:   listOrgDrugs,
     add:    addOrgDrug,

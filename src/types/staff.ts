@@ -47,6 +47,56 @@ export interface StaffMember {
   createdAt: number;
 }
 
+// ─── Professional profile ─────────────────────────────────────────────────────
+
+export interface Qualification {
+  id: string;
+  degree: string;       // e.g. "BDS", "MDS"
+  institution: string;  // e.g. "SRM Dental College"
+  year: string;         // e.g. "2015"
+  notes?: string;       // e.g. "Specialization: Orthodontics"
+}
+
+export type CredentialDocType =
+  | "DEGREE_CERTIFICATE"
+  | "REGISTRATION_CERTIFICATE"
+  | "IDA_CARD"
+  | "DCI_CARD"
+  | "GOVERNMENT_ID"
+  | "TRAINING_CERT"
+  | "OTHER";
+
+export interface CredentialDoc {
+  id: string;
+  docType: CredentialDocType;
+  originalName: string;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: number;
+  // Admin review workflow — defaults to PENDING on staff self-upload, VERIFIED on admin upload
+  status: "PENDING" | "VERIFIED" | "REJECTED";
+  reviewNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: number | null;
+}
+
+export interface StaffProfile {
+  userId: string;
+  bio?: string | null;
+  specialization?: string | null;
+  yearsExperience?: number | null;
+  languages: string[];
+  qualifications: Qualification[];
+  idaNumber?: string | null;
+  dciNumber?: string | null;
+  stateCouncilNumber?: string | null;
+  licenseExpiry?: string | null;
+  previousEmployer?: string | null;
+  documents: CredentialDoc[];
+  createdAt: number;
+  updatedAt: number;
+}
+
 // ─── Custom role ──────────────────────────────────────────────────────────────
 
 export interface OrgRole {
