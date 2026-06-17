@@ -84,20 +84,52 @@ function ToothCell({
 }) {
   const [open, setOpen] = useState(false);
   const [editNotes, setEditNotes] = useState(data?.notes ?? "");
+  const [pendingCondition, setPendingCondition] = useState<ToothCondition | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const condition: ToothCondition = data?.condition ?? "HEALTHY";
-  const colors = CONDITION_COLORS[condition];
+  const displayCondition: ToothCondition = pendingCondition ?? condition;
+  const colors = CONDITION_COLORS[displayCondition];
   const type = getToothType(number);
+  const originalNotes = data?.notes ?? "";
+  const hasChange = (pendingCondition !== null && pendingCondition !== condition) || editNotes !== originalNotes;
 
-  // Close on outside click
+  // Close on outside click — also discards any pending change
   useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setPendingCondition(null);
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  function handleOpen() {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const popoverWidth = 216;
+    const popoverHeight = 340;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    let top: number | undefined;
+    let bottom: number | undefined;
+    if (spaceBelow >= popoverHeight || spaceBelow >= rect.top) {
+      top = rect.bottom + 4;
+    } else {
+      bottom = window.innerHeight - rect.top + 4;
+    }
+
+    let left = rect.left + rect.width / 2 - popoverWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - popoverWidth - 8));
+
+    setPendingCondition(null);
+    setPopoverPos({ top, bottom, left });
+    setEditNotes(data?.notes ?? "");
+    setOpen(true);
+  }
 
   const height = type === "molar" ? "h-16" : type === "premolar" ? "h-14" : "h-12";
 
@@ -115,25 +147,25 @@ function ToothCell({
         title={CONDITION_LABELS[condition] + (data?.notes ? ` — ${data.notes}` : "")}
         onClick={() => {
           onToothSelect?.(String(number));
-          if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); }
+          if (!readOnly) handleOpen();
         }}
         className={`w-9 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
-        {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
-        {condition === "MISSING" && (
+        {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). displayCondition gives live preview of pending change. */}
+        {displayCondition === "MISSING" && (
           <span className="absolute inset-0 flex items-center justify-center text-pk-neutral-700 text-xs font-bold">✕</span>
         )}
-        {condition === "CROWN" && (
+        {displayCondition === "CROWN" && (
           <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">◆</span>
         )}
-        {condition === "ROOT_CANAL" && (
+        {displayCondition === "ROOT_CANAL" && (
           <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">▽</span>
         )}
-        {condition === "BRIDGE" && (
+        {displayCondition === "BRIDGE" && (
           <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">BR</span>
         )}
-        {condition === "IMPLANT" && (
+        {displayCondition === "IMPLANT" && (
           <span className="absolute inset-0 flex items-center justify-center text-white text-[8px] font-bold">IM</span>
         )}
       </button>
@@ -142,10 +174,18 @@ function ToothCell({
         <span className="text-[9px] text-pk-text-muted mt-0.5 leading-none select-none">{number}</span>
       )}
 
-      {/* Condition popover */}
-      {open && (
+      {/* Condition popover — position:fixed escapes overflow-x:auto clipping on the chart scroll container */}
+      {open && popoverPos && (
         <div
-          className={`absolute z-50 w-52 bg-pk-surface rounded-pk-lg shadow-pk-e3 border border-pk-border p-2 ${isUpper ? "top-full mt-1" : "bottom-full mb-1"} ${number <= 18 || (number >= 31 && number <= 38) ? "left-0" : "right-0"}`}
+          style={{
+            position: "fixed",
+            top: popoverPos.top,
+            bottom: popoverPos.bottom,
+            left: popoverPos.left,
+            width: "216px",
+            zIndex: 9999,
+          }}
+          className="bg-pk-surface rounded-pk-lg shadow-pk-e3 border border-pk-border p-2"
         >
           <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}
@@ -162,8 +202,14 @@ function ToothCell({
                 <button
                   key={c}
                   type="button"
-                  onClick={() => { onConditionChange(number, c, editNotes); setOpen(false); }}
-                  className={`text-left text-xs px-2 py-1 rounded-pk-sm border transition-all ${condition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
+                  onClick={() => {
+                    if (c === condition) {
+                      setPendingCondition(null);
+                    } else {
+                      setPendingCondition(c);
+                    }
+                  }}
+                  className={`text-left text-xs px-2 py-1 rounded-pk-sm border transition-all ${displayCondition === c ? "ring-2 ring-offset-1 ring-[var(--pk-accent)]" : "hover:opacity-80"}`}
                   style={{ background: col.bg, borderColor: col.border, color: col.text }}
                 >
                   {CONDITION_LABELS[c]}
@@ -175,10 +221,45 @@ function ToothCell({
             type="text"
             value={editNotes}
             onChange={(e) => setEditNotes(e.target.value)}
-            onBlur={() => onConditionChange(number, condition, editNotes)}
             placeholder="Notes..."
             className="w-full text-xs border border-pk-border rounded-pk-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
           />
+          {/* Confirm / Undo — appears when a pending condition or notes change exists */}
+          {hasChange && (
+            <div className="mt-2 pt-2 border-t border-pk-border">
+              {pendingCondition !== null && pendingCondition !== condition && (
+                <p className="text-xs text-pk-text-muted mb-1.5 flex items-center gap-1.5">
+                  Changing to:
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                    style={{ background: CONDITION_COLORS[pendingCondition].bg, color: CONDITION_COLORS[pendingCondition].text }}
+                  >
+                    {CONDITION_LABELS[pendingCondition]}
+                  </span>
+                </p>
+              )}
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onConditionChange(number, pendingCondition ?? condition, editNotes);
+                    setPendingCondition(null);
+                    setOpen(false);
+                  }}
+                  className="flex-1 bg-pk-teal-600 text-white text-xs py-1.5 rounded-pk-sm font-medium hover:bg-pk-teal-700 transition"
+                >
+                  Confirm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPendingCondition(null); setEditNotes(originalNotes); }}
+                  className="flex-1 border border-pk-border text-pk-text-secondary text-xs py-1.5 rounded-pk-sm font-medium hover:bg-pk-surface-raised transition"
+                >
+                  Undo
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
