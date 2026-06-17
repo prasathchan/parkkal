@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -93,9 +93,7 @@ export default function MyProfilePage() {
   const [docError, setDocError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { fetchAll(); }, []);
-
-  async function fetchAll() {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const data = await orgApi.myProfile.get();
@@ -115,7 +113,9 @@ export default function MyProfilePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   function syncProfForm(p: StaffProfile) {
     setProfForm({
