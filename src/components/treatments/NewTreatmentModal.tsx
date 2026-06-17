@@ -61,8 +61,10 @@ export function NewTreatmentModal({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [templates, setTemplates] = useState<{ id: string; name: string; description: string; procedure?: string | null; defaultCost: number }[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced patient search
   useEffect(() => {
@@ -225,14 +227,28 @@ export function NewTreatmentModal({
             <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
               Description <span className="text-pk-danger-text">*</span>
             </label>
-            <textarea
+            <input
+              list="tx-desc-suggestions"
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({ ...f, description: val }));
+                if (suggestRef.current) clearTimeout(suggestRef.current);
+                suggestRef.current = setTimeout(() => {
+                  if (val.length >= 2) {
+                    treatmentsApi.suggest(val).then((d) => setSuggestions(d.suggestions ?? [])).catch(() => {});
+                  } else {
+                    setSuggestions([]);
+                  }
+                }, 200);
+              }}
               required
-              rows={3}
-              placeholder="Describe the treatment plan..."
-              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none"
+              placeholder="Describe the treatment plan…"
+              className="w-full px-3 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
+            <datalist id="tx-desc-suggestions">
+              {suggestions.map((s) => <option key={s} value={s} />)}
+            </datalist>
           </div>
 
           {/* Procedure */}

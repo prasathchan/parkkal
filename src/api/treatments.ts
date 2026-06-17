@@ -258,6 +258,7 @@ export const treatmentsApi = {
     create: createTreatmentTemplate,
     delete: deleteTreatmentTemplate,
   },
+  suggest: suggestTreatmentDescriptions,
 };
 
 // ─── Treatment templates ──────────────────────────────────────────────────────
@@ -269,6 +270,12 @@ export interface TreatmentTemplate {
   procedure?: string | null;
   defaultCost: number;
   createdAt: number;
+}
+
+export function suggestTreatmentDescriptions(q: string): Promise<{ suggestions: string[] }> {
+  return apiFetch<{ suggestions: string[] }>(
+    `/api/treatments/suggest?q=${encodeURIComponent(q)}`
+  );
 }
 
 export function listTreatmentTemplates(): Promise<{ templates: TreatmentTemplate[] }> {

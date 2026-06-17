@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "./types";
@@ -58,6 +58,8 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
 
   // Treatment templates
   const [templates, setTemplates] = useState<TreatmentTemplate[]>([]);
+  const [txSuggestions, setTxSuggestions] = useState<string[]>([]);
+  const suggestRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // L2: deferred link-prompt — shown once per visit, dismissed via sessionStorage
   const [showLinkPrompt, setShowLinkPrompt] = useState(false);
@@ -337,11 +339,26 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 <label className="block text-xs text-pk-text-muted mb-1">Description *</label>
                 <input
                   required
+                  list="vt-desc-suggestions"
                   value={txForm.description}
-                  onChange={(e) => setTxForm(f => ({ ...f, description: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTxForm(f => ({ ...f, description: val }));
+                    if (suggestRef.current) clearTimeout(suggestRef.current);
+                    suggestRef.current = setTimeout(() => {
+                      if (val.length >= 2) {
+                        treatmentsApi.suggest(val).then((d) => setTxSuggestions(d.suggestions ?? [])).catch(() => {});
+                      } else {
+                        setTxSuggestions([]);
+                      }
+                    }, 200);
+                  }}
                   placeholder="e.g. Root Canal Treatment"
                   className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                 />
+                <datalist id="vt-desc-suggestions">
+                  {txSuggestions.map((s) => <option key={s} value={s} />)}
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs text-pk-text-muted mb-1">Est. Cost (₹)</label>
