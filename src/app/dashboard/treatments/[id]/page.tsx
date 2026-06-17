@@ -334,6 +334,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                       <th className="px-5 py-3 text-left font-medium">Date</th>
                       <th className="px-5 py-3 text-left font-medium">Doctor</th>
                       <th className="px-5 py-3 text-left font-medium">Status</th>
+                      <th className="px-5 py-3 text-left font-medium">Session Notes</th>
                       {/* This Treatment = visit items specifically for this treatment plan */}
                       <th className="px-5 py-3 text-right font-medium">This Treatment</th>
                       {/* Visit Paid = total payment for that visit (may cover other treatments too) */}
@@ -361,6 +362,11 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                             {v.visitStatus}
                           </span>
                         </td>
+                        <td className="px-5 py-3.5 max-w-[180px]">
+                          {v.linkNotes
+                            ? <span className="text-xs text-pk-text-secondary italic">{v.linkNotes}</span>
+                            : <span className="text-pk-text-muted">—</span>}
+                        </td>
                         <td className="px-5 py-3.5 text-right font-semibold text-pk-text">
                           {v.treatmentBilledAmount > 0
                             ? formatCurrency(v.treatmentBilledAmount)
@@ -375,7 +381,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                   {/* Footer totals row */}
                   <tfoot className="bg-pk-surface-raised border-t border-pk-border">
                     <tr>
-                      <td colSpan={4} className="px-5 py-3 text-xs text-pk-text-muted font-medium">Totals</td>
+                      <td colSpan={5} className="px-5 py-3 text-xs text-pk-text-muted font-medium">Totals</td>
                       <td className="px-5 py-3 text-right font-bold text-pk-text">
                         {formatCurrency(summary.totalPaid)}
                       </td>

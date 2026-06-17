@@ -51,11 +51,27 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   // IN_PROGRESS without consent warning
   const [pendingStatusChange, setPendingStatusChange] = useState<{ txId: string; status: string } | null>(null);
 
+  // Session notes — keyed by treatmentId, autosaved on blur
+  const [sessionNotes, setSessionNotes] = useState<Record<string, string>>({});
+  const [notesSaving, setNotesSaving] = useState<Record<string, boolean>>({});
+
   // L2: deferred link-prompt — shown once per visit, dismissed via sessionStorage
   const [showLinkPrompt, setShowLinkPrompt] = useState(false);
   const [unlinkablePlans, setUnlinkablePlans] = useState<Treatment[]>([]);
 
   const DISMISS_KEY = `pk_visit_link_dismissed_${visitId}`;
+
+  // Seed session notes from server data (runs when treatments first load)
+  useEffect(() => {
+    setSessionNotes((prev) => {
+      const updated = { ...prev };
+      for (const tx of treatments) {
+        if (!(tx.id in updated)) updated[tx.id] = tx.linkNotes ?? "";
+      }
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [treatments.map(t => t.id).join(",")]);
 
   useEffect(() => {
     if (visit.status !== "OPEN") return;
@@ -178,6 +194,17 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
       setTxPayError(err instanceof ApiError ? err.message : "Payment failed");
     } finally {
       setTxPaySubmitting(false);
+    }
+  }
+
+  async function handleSaveNotes(txId: string, notes: string) {
+    setNotesSaving(prev => ({ ...prev, [txId]: true }));
+    try {
+      await treatmentsApi.forVisit.updateNotes(visitId, txId, notes || null);
+    } catch {
+      // silently fail — notes are not critical; user can retry by blurring again
+    } finally {
+      setNotesSaving(prev => ({ ...prev, [txId]: false }));
     }
   }
 
@@ -407,6 +434,28 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           </button>
                         )}
                       </div>
+                    </div>
+
+                    {/* Session notes — only editable in open visits */}
+                    <div className="mt-3 pt-3 border-t border-pk-border">
+                      {visit.status === "OPEN" ? (
+                        <div className="relative">
+                          <textarea
+                            rows={2}
+                            placeholder="Session notes for this visit… (auto-saves)"
+                            value={sessionNotes[tx.id] ?? ""}
+                            onChange={(e) => setSessionNotes(prev => ({ ...prev, [tx.id]: e.target.value }))}
+                            onBlur={(e) => handleSaveNotes(tx.id, e.target.value)}
+                            maxLength={500}
+                            className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-xs text-pk-text-secondary bg-pk-surface-raised focus:outline-none focus:ring-1 focus:ring-pk-teal-400 resize-none placeholder:text-pk-text-muted"
+                          />
+                          {notesSaving[tx.id] && (
+                            <span className="absolute bottom-2 right-2 text-[10px] text-pk-text-muted">Saving…</span>
+                          )}
+                        </div>
+                      ) : (sessionNotes[tx.id] || tx.linkNotes) ? (
+                        <p className="text-xs text-pk-text-secondary italic">{sessionNotes[tx.id] || tx.linkNotes}</p>
+                      ) : null}
                     </div>
 
                     {/* Consent row */}

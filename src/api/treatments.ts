@@ -177,6 +177,17 @@ export function unlinkTreatmentFromVisit(
   );
 }
 
+export function updateVisitTreatmentNotes(
+  visitId: string,
+  treatmentId: string,
+  notes: string | null,
+): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(
+    `/api/visits/${visitId}/treatments`,
+    { method: "PATCH", body: JSON.stringify({ treatmentId, notes }) },
+  );
+}
+
 /**
  * GET /api/treatments/[id]/visits
  * Returns the treatment detail, its full visit history, and financial summary.
@@ -232,6 +243,7 @@ export const treatmentsApi = {
     list: listTreatmentsForVisit,
     link: linkTreatmentToVisit,
     unlink: unlinkTreatmentFromVisit,
+    updateNotes: updateVisitTreatmentNotes,
   },
   consent: {
     upload: uploadConsent,

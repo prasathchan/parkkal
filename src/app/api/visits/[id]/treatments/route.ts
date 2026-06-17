@@ -179,6 +179,39 @@ export const POST = withRoute<Params>(
   }
 );
 
+// ── PATCH /api/visits/[id]/treatments ────────────────────────────────────────
+// Updates the session notes on the visit↔treatment junction row.
+const patchNotesSchema = z.object({
+  treatmentId: z.string(),
+  notes: z.string().max(500).nullable(),
+});
+
+export const PATCH = withRoute<Params>(
+  { route: "PATCH /api/visits/[id]/treatments", rateLimit: RATE_LIMITS.WRITE, permission: PERMISSIONS.TREATMENTS_CREATE },
+  async (req, { session, db, log }, { id: visitId }) => {
+    const body = await req.json().catch(() => null);
+    const parsed = patchNotesSchema.safeParse(body);
+    if (!parsed.success) return apiError("Invalid input", 400);
+
+    const [visit] = await db
+      .select({ id: visits.id })
+      .from(visits)
+      .where(and(eq(visits.id, visitId), eq(visits.organizationId, session.orgId)));
+    if (!visit) return apiError("Visit not found", 404);
+
+    await db
+      .update(visitTreatments)
+      .set({ notes: parsed.data.notes })
+      .where(and(
+        eq(visitTreatments.visitId, visitId),
+        eq(visitTreatments.treatmentId, parsed.data.treatmentId),
+      ));
+
+    log.info("Visit treatment notes updated", { visitId, treatmentId: parsed.data.treatmentId });
+    return apiOk({ success: true });
+  }
+);
+
 // ── DELETE /api/visits/[id]/treatments?treatmentId=xxx ───────────────────────
 // Unlinks a treatment plan from this visit (does NOT delete the treatment plan).
 export const DELETE = withRoute<Params>(

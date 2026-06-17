@@ -93,6 +93,7 @@ export interface Treatment {
   consentDocumentName?: string | null;
   consentUploadedAt?: number | null;
   consentNotes?: string | null;
+  linkNotes?: string | null;
 }
 
 // ─── Form state ───────────────────────────────────────────────────────────────
