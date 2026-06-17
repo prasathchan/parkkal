@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatDoctorName } from "@/lib/utils";
-import { parseAddress, formatAddressDisplay } from "@/lib/address";
+import { parseAddress } from "@/lib/address";
 import { visitsApi } from "@/api";
 
 interface PrintData {
@@ -125,6 +125,9 @@ export default function PrintPage() {
   const gst = clinic.gstRegistered ? computeGst(visit.totalAmount, clinic.cgstRate, clinic.sgstRate) : null;
   const status = billingStatus(visit.paidAmount, visit.totalAmount);
   const documentTitle = clinic.gstRegistered ? "TAX INVOICE" : "VISIT RECEIPT";
+  const addr = parseAddress(clinic.address);
+  const addrLine1 = addr.fullAddress || "";
+  const addrLine2 = [addr.city, addr.district, addr.state ? (addr.pincode ? `${addr.state} - ${addr.pincode}` : addr.state) : "", addr.country].filter(Boolean).join(", ");
 
   return (
     <>
@@ -172,7 +175,8 @@ export default function PrintPage() {
               )}
               <h1 style={{ fontSize: 20, fontWeight: 700, color: INK, margin: 0 }}>{clinic.name}</h1>
             </div>
-            <p style={{ fontSize: 12, color: MUTED, margin: "2px 0" }}>{formatAddressDisplay(parseAddress(clinic.address))}</p>
+            {addrLine1 && <p style={{ fontSize: 12, color: MUTED, margin: "2px 0" }}>{addrLine1}</p>}
+            {addrLine2 && <p style={{ fontSize: 12, color: MUTED, margin: "2px 0" }}>{addrLine2}</p>}
             <p style={{ fontSize: 12, color: MUTED, margin: "2px 0" }}>
               {clinic.phone && `Tel: ${clinic.phone}`}
               {clinic.phone && clinic.email && " · "}
@@ -214,7 +218,7 @@ export default function PrintPage() {
             border: `1px solid ${RULE}`, borderRadius: 6, padding: "12px 16px",
           }}
         >
-          <div><strong>Patient:</strong> {visit.patientName} ({visit.patientCode})</div>
+          <div><strong>Patient:</strong> {visit.patientName}</div>
           <div><strong>Doctor:</strong> {formatDoctorName(visit.doctorName)}</div>
           {visit.patientPhone && <div><strong>Phone:</strong> {visit.patientPhone}</div>}
           <div><strong>Date:</strong> {formatDate(visit.visitDate)}</div>
@@ -330,6 +334,10 @@ export default function PrintPage() {
                   <tr key={p.id} className="avoid-break" style={{ borderBottom: `1px solid ${RULE_LIGHT}` }}>
                     <td style={{ padding: "5px 8px" }}>
                       {new Date(p.paidAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      {" "}
+                      <span style={{ color: MUTED }}>
+                        {new Date(p.paidAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                      </span>
                     </td>
                     <td style={{ padding: "5px 8px", fontWeight: 700 }}>{formatCurrency(p.amount)}</td>
                     <td style={{ padding: "5px 8px" }}>{p.paymentMethod}</td>
