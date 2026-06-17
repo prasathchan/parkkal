@@ -24,6 +24,7 @@ import type {
   Prescription,
   Medicine,
   Attachment,
+  ClinicalPhoto,
 } from "@/types";
 import type { VisitStatus, ItemCategory, PaymentMethod } from "@/constants/visit";
 
@@ -260,6 +261,31 @@ export function deleteAttachment(
   );
 }
 
+// ─── Clinical photos ──────────────────────────────────────────────────────────
+
+export function listPhotos(visitId: string): Promise<{ photos: ClinicalPhoto[] }> {
+  return apiFetch<{ photos: ClinicalPhoto[] }>(`/api/visits/${visitId}/photos`);
+}
+
+export async function addPhoto(
+  visitId: string,
+  formData: FormData,
+): Promise<{ photo: ClinicalPhoto }> {
+  const res = await fetch(`/api/visits/${visitId}/photos`, { method: "POST", body: formData });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new ApiError(res.status, body.error || `Upload failed (${res.status})`);
+  }
+  return res.json() as Promise<{ photo: ClinicalPhoto }>;
+}
+
+export function deletePhoto(
+  visitId: string,
+  photoId: string,
+): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/visits/${visitId}/photos/${photoId}`, { method: "DELETE" });
+}
+
 // ─── Print ────────────────────────────────────────────────────────────────────
 
 export function getPrintData(visitId: string): Promise<unknown> {
@@ -294,5 +320,10 @@ export const visitsApi = {
     list: listAttachments,
     add: addAttachment,
     delete: deleteAttachment,
+  },
+  photos: {
+    list:   listPhotos,
+    add:    addPhoto,
+    delete: deletePhoto,
   },
 };

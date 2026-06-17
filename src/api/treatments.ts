@@ -14,7 +14,7 @@
  */
 
 import { apiFetch, ApiError } from "./_client";
-import type { Treatment } from "@/types";
+import type { Treatment, ClinicalPhoto } from "@/types";
 import type { TreatmentStatus } from "@/constants/treatment";
 
 // ─── Response shapes ─────────────────────────────────────────────────────────
@@ -188,6 +188,12 @@ export function overrideConsent(
   });
 }
 
+// ─── Clinical photos for a treatment ─────────────────────────────────────────
+
+export function listTreatmentPhotos(treatmentId: string): Promise<{ photos: ClinicalPhoto[] }> {
+  return apiFetch<{ photos: ClinicalPhoto[] }>(`/api/treatments/${treatmentId}/photos`);
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const treatmentsApi = {
@@ -205,5 +211,8 @@ export const treatmentsApi = {
   consent: {
     upload: uploadConsent,
     override: overrideConsent,
+  },
+  photos: {
+    list: listTreatmentPhotos,
   },
 };

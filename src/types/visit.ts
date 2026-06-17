@@ -101,3 +101,26 @@ export interface Attachment {
   uploadedByName?: string | null;
   createdAt: number;
 }
+
+// ─── Clinical photo (before/after) ───────────────────────────────────────────
+
+export type PhotoRole = "BEFORE" | "AFTER" | "PROGRESS" | "UNTAGGED";
+export type PhotoType = "INTRA_ORAL" | "EXTRA_ORAL" | "FULL_FACE" | "PANORAMIC" | "OTHER";
+
+export interface ClinicalPhoto {
+  id: string;
+  organizationId: string;
+  visitId: string;
+  patientId: string;
+  treatmentId?: string | null;
+  photoRole: PhotoRole;
+  photoType: PhotoType;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  fileUrl: string;
+  notes?: string | null;
+  uploadedBy: string;
+  createdAt: number;
+}

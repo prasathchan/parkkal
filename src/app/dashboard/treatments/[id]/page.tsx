@@ -6,6 +6,8 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { treatmentsApi, ApiError } from "@/api";
+import { TreatmentPhotosSection } from "@/components/treatments/TreatmentPhotosSection";
+import type { ClinicalPhoto } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +112,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
   const [treatment, setTreatment] = useState<Treatment | null>(null);
   const [visits, setVisits] = useState<VisitRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [photos, setPhotos] = useState<ClinicalPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -122,6 +125,7 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
         setTreatment(data.treatment);
         setVisits(data.visits);
         setSummary(data.summary);
+        treatmentsApi.photos.list(id).then((d) => setPhotos(d.photos ?? [])).catch(() => {});
       } catch (e) {
         const status = e instanceof ApiError ? e.status : 0;
         setError(e instanceof ApiError ? e.message : (status === 404 ? "Treatment plan not found." : "Network error. Please try again."));
@@ -288,6 +292,9 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                 </div>
               )}
             </div>
+
+            {/* ── Clinical Photos ── */}
+            <TreatmentPhotosSection photos={photos} />
 
             {/* ── Visit History ── */}
             <div className="bg-pk-surface rounded-pk-xl border border-pk-border overflow-hidden">

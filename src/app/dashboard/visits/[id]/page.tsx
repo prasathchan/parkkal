@@ -10,6 +10,7 @@ import { PaymentModal } from "@/components/visits/PaymentModal";
 import { VisitItemsTab } from "@/components/visits/VisitItemsTab";
 import { VisitPaymentsTab } from "@/components/visits/VisitPaymentsTab";
 import { VisitAttachmentsTab } from "@/components/visits/VisitAttachmentsTab";
+import { VisitPhotosTab } from "@/components/visits/VisitPhotosTab";
 import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
 import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
@@ -17,9 +18,10 @@ import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab
 import type {
   Visit, VisitItem, Payment, Attachment, HistoryVisit, Treatment, NewItemState,
 } from "@/components/visits/types";
+import type { ClinicalPhoto } from "@/types";
 import type { Prescription } from "@/types";
 
-type TabKey = "items" | "payments" | "attachments" | "prescriptions" | "history" | "treatmentPlan" | "chart";
+type TabKey = "items" | "payments" | "attachments" | "photos" | "prescriptions" | "history" | "treatmentPlan" | "chart";
 
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +31,7 @@ export default function VisitDetailPage() {
   const [items, setItems] = useState<VisitItem[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [photos, setPhotos] = useState<ClinicalPhoto[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [history, setHistory] = useState<HistoryVisit[]>([]);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -72,6 +75,7 @@ export default function VisitDetailPage() {
       }
       treatmentsApi.forVisit.list(id).then((d) => setTreatments(d.treatments ?? [])).catch(() => {});
       visitsApi.prescriptions.list(id).then((d) => setPrescriptions(d.prescriptions ?? [])).catch(() => {});
+      visitsApi.photos.list(id).then((d) => setPhotos(d.photos ?? [])).catch(() => {});
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : `Failed to load visit`);
     } finally {
@@ -232,9 +236,15 @@ export default function VisitDetailPage() {
 
         <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 overflow-hidden">
           <div className="border-b border-pk-border px-6 flex gap-1 overflow-x-auto">
-            {(["items", "payments", "attachments", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
+            {(["items", "payments", "attachments", "photos", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${tab === t ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>
-                {t === "items" ? "Items" : t === "treatmentPlan" ? "Treatment Plan" : t === "chart" ? "Dental Chart" : t === "prescriptions" ? "Prescriptions" : t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === "items" ? "Items"
+                  : t === "treatmentPlan" ? "Treatment Plan"
+                  : t === "chart" ? "Dental Chart"
+                  : t === "prescriptions" ? "Prescriptions"
+                  : t === "photos"
+                    ? (<span className="flex items-center gap-1">Photos{photos.length > 0 && <span className="text-xs bg-pk-teal-100 text-pk-teal-700 px-1.5 rounded-full">{photos.length}</span>}</span>)
+                  : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>
@@ -242,6 +252,7 @@ export default function VisitDetailPage() {
             {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "payments" && <VisitPaymentsTab visit={visit} payments={payments} due={due} onOpenPayModal={() => setShowPayModal(true)} />}
             {tab === "attachments" && <VisitAttachmentsTab visitId={id} visitStatus={visit.status} attachments={attachments} patientId={visit.patientId} onRefresh={fetchVisit} onPageError={setPageError} />}
+            {tab === "photos" && <VisitPhotosTab visitId={id} visitStatus={visit.status} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "prescriptions" && <VisitPrescriptionsTab visitId={id} visitStatus={visit.status} prescriptions={prescriptions} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "history" && <VisitHistoryTab patientName={visit.patientName ?? ""} history={history} />}
             {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} />}

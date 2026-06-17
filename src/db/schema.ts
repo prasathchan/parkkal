@@ -617,6 +617,37 @@ export const attachmentsRelations = relations(attachments, ({ one }) => ({
   patient: one(patients, { fields: [attachments.patientId], references: [patients.id] }),
 }));
 
+// ─── Clinical photos (before/after) ───────────────────────────────────────────
+// Distinct from `attachments` (which holds PDFs, X-rays, lab reports).
+// These are image-only clinical photos tagged with a role (BEFORE/AFTER/PROGRESS)
+// and optionally linked to a treatment plan for before/after comparison views.
+
+export const clinicalPhotos = sqliteTable("clinical_photos", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  visitId:        text("visit_id").notNull().references(() => visits.id),
+  patientId:      text("patient_id").notNull().references(() => patients.id),
+  treatmentId:    text("treatment_id").references(() => treatments.id),
+  photoRole:      text("photo_role", { enum: ["BEFORE", "AFTER", "PROGRESS", "UNTAGGED"] }).notNull().default("UNTAGGED"),
+  photoType:      text("photo_type", { enum: ["INTRA_ORAL", "EXTRA_ORAL", "FULL_FACE", "PANORAMIC", "OTHER"] }).notNull().default("INTRA_ORAL"),
+  fileName:       text("file_name").notNull(),
+  originalName:   text("original_name").notNull(),
+  mimeType:       text("mime_type").notNull(),
+  fileSize:       integer("file_size").notNull(),
+  fileUrl:        text("file_url").notNull(),
+  notes:          text("notes"),
+  uploadedBy:     text("uploaded_by").notNull().references(() => users.id),
+  createdAt:      integer("created_at").notNull(),
+});
+
+export const clinicalPhotosRelations = relations(clinicalPhotos, ({ one }) => ({
+  organization: one(organizations, { fields: [clinicalPhotos.organizationId], references: [organizations.id] }),
+  visit:        one(visits,        { fields: [clinicalPhotos.visitId],        references: [visits.id] }),
+  patient:      one(patients,      { fields: [clinicalPhotos.patientId],      references: [patients.id] }),
+  treatment:    one(treatments,    { fields: [clinicalPhotos.treatmentId],    references: [treatments.id] }),
+  uploader:     one(users,         { fields: [clinicalPhotos.uploadedBy],     references: [users.id] }),
+}));
+
 export const treatmentsRelations = relations(treatments, ({ one, many }) => ({
   organization: one(organizations, { fields: [treatments.organizationId], references: [organizations.id] }),
   patient:      one(patients,      { fields: [treatments.patientId],      references: [patients.id] }),
@@ -749,6 +780,33 @@ export const orgDrugs = sqliteTable("org_drugs", {
 
 export const orgDrugsRelations = relations(orgDrugs, ({ one }) => ({
   organization: one(organizations, { fields: [orgDrugs.organizationId], references: [organizations.id] }),
+}));
+
+// ─── Staff professional profiles ─────────────────────────────────────────────
+// One row per user. Stores professional credentials, qualifications, and
+// credential document references. Separate from `users` to keep the main
+// user table lean and because this data is admin-managed, not login-critical.
+export const staffProfiles = sqliteTable("staff_profiles", {
+  userId:              text("user_id").primaryKey().references(() => users.id),
+  bio:                 text("bio"),                         // free-text about/bio
+  specialization:      text("specialization"),              // e.g. "Orthodontist"
+  yearsExperience:     integer("years_experience"),
+  languages:           text("languages").notNull().default("[]"),   // JSON string[]
+  // qualifications: JSON array of { id, degree, institution, year, notes }
+  qualifications:      text("qualifications").notNull().default("[]"),
+  idaNumber:           text("ida_number"),                  // IDA membership no.
+  dciNumber:           text("dci_number"),                  // Dental Council of India
+  stateCouncilNumber:  text("state_council_number"),        // State Dental Council
+  licenseExpiry:       text("license_expiry"),              // YYYY-MM-DD
+  previousEmployer:    text("previous_employer"),
+  // documents: JSON array of { id, docType, originalName, fileName, fileUrl, uploadedAt }
+  documents:           text("documents").notNull().default("[]"),
+  createdAt:           integer("created_at").notNull(),
+  updatedAt:           integer("updated_at").notNull(),
+});
+
+export const staffProfilesRelations = relations(staffProfiles, ({ one }) => ({
+  user: one(users, { fields: [staffProfiles.userId], references: [users.id] }),
 }));
 
 // ─── Onboarding email sequence ───────────────────────────────────────────────
