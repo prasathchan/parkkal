@@ -116,7 +116,6 @@ function ToothCell({
         onClick={() => {
           onToothSelect?.(String(number));
           if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); }
-          else onToothSelect?.(String(number));
         }}
         className={`w-8 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
