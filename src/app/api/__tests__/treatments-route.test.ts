@@ -49,6 +49,7 @@ vi.mock("drizzle-orm", () => ({
   like: vi.fn(), or: vi.fn(), and: vi.fn((...a: unknown[]) => a),
   desc: vi.fn(), count: vi.fn(() => "count"), eq: vi.fn(),
   gte: vi.fn(), lte: vi.fn(), ne: vi.fn(), asc: vi.fn(), inArray: vi.fn(),
+  sql: vi.fn(),
 }));
 
 // ─── Imports ──────────────────────────────────────────────────────────────────
