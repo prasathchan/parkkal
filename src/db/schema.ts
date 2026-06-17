@@ -337,6 +337,17 @@ export const visitTreatments = sqliteTable(
   })
 );
 
+export const treatmentTemplates = sqliteTable("treatment_templates", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  procedure: text("procedure"),
+  defaultCost: real("default_cost").notNull().default(0),
+  createdBy: text("created_by").notNull().references(() => users.id),
+  createdAt: integer("created_at").notNull(),
+});
+
 export const visitItems = sqliteTable("visit_items", {
   id: text("id").primaryKey(),
   visitId: text("visit_id").notNull().references(() => visits.id),

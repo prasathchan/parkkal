@@ -253,4 +253,40 @@ export const treatmentsApi = {
   photos: {
     list: listTreatmentPhotos,
   },
+  templates: {
+    list: listTreatmentTemplates,
+    create: createTreatmentTemplate,
+    delete: deleteTreatmentTemplate,
+  },
 };
+
+// ─── Treatment templates ──────────────────────────────────────────────────────
+
+export interface TreatmentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  procedure?: string | null;
+  defaultCost: number;
+  createdAt: number;
+}
+
+export function listTreatmentTemplates(): Promise<{ templates: TreatmentTemplate[] }> {
+  return apiFetch<{ templates: TreatmentTemplate[] }>("/api/treatment-templates");
+}
+
+export function createTreatmentTemplate(data: {
+  name: string;
+  description: string;
+  procedure?: string;
+  defaultCost?: number;
+}): Promise<{ template: TreatmentTemplate }> {
+  return apiFetch<{ template: TreatmentTemplate }>("/api/treatment-templates", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteTreatmentTemplate(id: string): Promise<{ success: true }> {
+  return apiFetch<{ success: true }>(`/api/treatment-templates/${id}`, { method: "DELETE" });
+}

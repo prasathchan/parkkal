@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "./types";
 import { treatmentsApi, visitsApi, ApiError } from "@/api";
+import type { TreatmentTemplate } from "@/api/treatments";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 
 interface Props {
@@ -55,11 +56,18 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   const [sessionNotes, setSessionNotes] = useState<Record<string, string>>({});
   const [notesSaving, setNotesSaving] = useState<Record<string, boolean>>({});
 
+  // Treatment templates
+  const [templates, setTemplates] = useState<TreatmentTemplate[]>([]);
+
   // L2: deferred link-prompt — shown once per visit, dismissed via sessionStorage
   const [showLinkPrompt, setShowLinkPrompt] = useState(false);
   const [unlinkablePlans, setUnlinkablePlans] = useState<Treatment[]>([]);
 
   const DISMISS_KEY = `pk_visit_link_dismissed_${visitId}`;
+
+  useEffect(() => {
+    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch(() => {});
+  }, []);
 
   // Seed session notes from server data (runs when treatments first load)
   useEffect(() => {
@@ -298,6 +306,31 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                 + Link Existing Plan
               </button>
             </div>
+
+            {templates.length > 0 && (
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Start from template</label>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const t = templates.find((x) => x.id === e.target.value);
+                    if (!t) return;
+                    setTxForm(f => ({
+                      ...f,
+                      description: t.description,
+                      procedure: t.procedure ?? "",
+                      cost: String(t.defaultCost),
+                    }));
+                  }}
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm bg-pk-surface-raised text-pk-text-secondary focus:outline-none focus:ring-1 focus:ring-pk-teal-400"
+                >
+                  <option value="">— Template (optional) —</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

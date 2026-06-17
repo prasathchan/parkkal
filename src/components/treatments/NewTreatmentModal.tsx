@@ -60,6 +60,7 @@ export function NewTreatmentModal({
   const [members, setMembers] = useState<Member[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [templates, setTemplates] = useState<{ id: string; name: string; description: string; procedure?: string | null; defaultCost: number }[]>([]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -75,6 +76,11 @@ export function NewTreatmentModal({
       } catch { /* silently ignore search errors */ }
     }, 300);
   }, [patientSearch]);
+
+  // Load templates
+  useEffect(() => {
+    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch(() => {});
+  }, []);
 
   // Load doctor list (non-doctor roles only)
   useEffect(() => {
@@ -125,6 +131,32 @@ export function NewTreatmentModal({
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto px-6 py-5 space-y-5">
+          {/* Template picker */}
+          {templates.length > 0 && (
+            <div>
+              <label className="block text-xs text-pk-text-muted mb-1">Use a template</label>
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  const t = templates.find((x) => x.id === e.target.value);
+                  if (!t) return;
+                  setForm((f) => ({
+                    ...f,
+                    description: t.description,
+                    procedure: t.procedure ?? "",
+                    cost: String(t.defaultCost),
+                  }));
+                }}
+                className="w-full px-3 py-2 border border-pk-border rounded-pk-sm text-sm focus:outline-none focus:ring-1 focus:ring-pk-teal-400 bg-pk-surface-raised text-pk-text-secondary"
+              >
+                <option value="">— Start from a template (optional) —</option>
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Patient */}
           <div>
             <label className="block text-sm font-medium text-pk-text-secondary mb-1.5">
