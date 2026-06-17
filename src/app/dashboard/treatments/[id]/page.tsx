@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { treatmentsApi, ApiError } from "@/api";
 import { TreatmentPhotosSection } from "@/components/treatments/TreatmentPhotosSection";
+import { ProgressRing } from "@/components/ui/ProgressRing";
 import type { ClinicalPhoto } from "@/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -39,8 +40,9 @@ interface VisitRow {
   visitStatus: string;
   visitTotalAmount: number;
   visitPaidAmount: number;
-  treatmentBilledAmount: number; // amount charged to THIS treatment in this visit
+  treatmentBilledAmount: number;
   doctorName: string | null;
+  linkNotes?: string | null;
 }
 
 interface Summary {
@@ -197,6 +199,19 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                     {treatment.doctorName && <span>Dr. {treatment.doctorName}</span>}
                     <span>{new Date(treatment.createdAt).toLocaleDateString("en-IN")}</span>
                   </div>
+                </div>
+
+                {/* Progress ring + Book next session */}
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <ProgressRing percent={summary.paidPercent} size={52} strokeWidth={5} />
+                  {treatment.status !== "COMPLETED" && (
+                    <Link
+                      href={`/dashboard/appointments/new?patientId=${treatment.patientId}&type=FOLLOWUP&notes=${encodeURIComponent(`Follow-up: ${treatment.description}`)}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition whitespace-nowrap"
+                    >
+                      Book next session →
+                    </Link>
+                  )}
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "./types";
 import { treatmentsApi, visitsApi, ApiError } from "@/api";
+import { ProgressRing } from "@/components/ui/ProgressRing";
 
 interface Props {
   visitId: string;
@@ -362,6 +363,11 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                        <ProgressRing
+                          percent={tx.cost > 0 ? Math.round((txPaid / tx.cost) * 100) : (txPaid > 0 ? 100 : 0)}
+                          size={36}
+                          strokeWidth={3}
+                        />
                         {visit.status !== "CANCELLED" && txOutstanding > 0 && (
                           <button
                             onClick={() => {

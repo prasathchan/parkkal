@@ -91,7 +91,8 @@ function NewAppointmentForm() {
     const paramType        = searchParams.get("type");
     const paramDate        = searchParams.get("date");
     const paramTime        = searchParams.get("time");
-    if (!paramPatientId && !paramDoctorId && !paramRecallVisit && !paramDate && !paramTime) return;
+    const paramNotes       = searchParams.get("notes");
+    if (!paramPatientId && !paramDoctorId && !paramRecallVisit && !paramDate && !paramTime && !paramNotes) return;
     prefillApplied.current = true;
 
     if (paramRecallVisit) setRecallVisitId(paramRecallVisit);
@@ -101,6 +102,7 @@ function NewAppointmentForm() {
     if (paramPatientId) updates.patientId = paramPatientId;
     if (paramDate)       updates.appointmentDate = paramDate;
     if (paramTime)       updates.appointmentTime = paramTime;
+    if (paramNotes)      updates.notes = paramNotes;
     // Honour explicit type param (e.g. FOLLOWUP from recalls); only default to
     // FOLLOWUP when arriving via the recall/follow-up flow — a plain calendar
     // click-to-book (date/time only) should keep the regular CONSULTATION default.
