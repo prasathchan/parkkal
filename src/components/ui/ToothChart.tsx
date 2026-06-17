@@ -87,6 +87,8 @@ function ToothCell({
   const [pendingCondition, setPendingCondition] = useState<ToothCondition | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  // Click/dblclick disambiguation: single → toggle (open visits only), double → history
+  const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const condition: ToothCondition = data?.condition ?? "HEALTHY";
   const displayCondition: ToothCondition = pendingCondition ?? condition;
   const colors = CONDITION_COLORS[displayCondition];
@@ -140,16 +142,35 @@ function ToothCell({
         <span className="text-[9px] text-pk-text-muted mb-0.5 leading-none select-none">{number}</span>
       )}
 
-      {/* Tooth shape */}
+      {/* Tooth shape
+          Single click (open visit) → condition popover
+          Double click (any visit)  → history panel
+          In readOnly visits: single click does nothing; double click → history
+      */}
       <button
         type="button"
-        disabled={readOnly}
-        title={CONDITION_LABELS[condition] + (data?.notes ? ` — ${data.notes}` : "")}
+        title={`${CONDITION_LABELS[condition]}${data?.notes ? ` — ${data.notes}` : ""}  (double-click for history)`}
         onClick={() => {
-          onToothSelect?.(String(number));
-          if (!readOnly) handleOpen();
+          if (clickTimer.current) {
+            // second click of a double-click — let onDoubleClick handle it
+            clearTimeout(clickTimer.current);
+            clickTimer.current = null;
+            return;
+          }
+          clickTimer.current = setTimeout(() => {
+            clickTimer.current = null;
+            // Single click: open condition picker only in editable (non-readOnly) visits
+            if (!readOnly) handleOpen();
+          }, 220);
         }}
-        className={`w-9 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
+        onDoubleClick={() => {
+          if (clickTimer.current) {
+            clearTimeout(clickTimer.current);
+            clickTimer.current = null;
+          }
+          onToothSelect?.(String(number));
+        }}
+        className={`w-9 ${height} rounded-sm border-2 transition-all focus:outline-none relative hover:scale-110 hover:z-10 cursor-pointer ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
         {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). displayCondition gives live preview of pending change. */}

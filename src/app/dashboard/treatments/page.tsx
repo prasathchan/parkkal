@@ -30,6 +30,55 @@ export default function TreatmentsPage() {
   const [statusError, setStatusError] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
+  // Template management
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [templates, setTemplates] = useState<import("@/api/treatments").TreatmentTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateForm, setTemplateForm] = useState({ name: "", description: "", procedure: "", defaultCost: "0" });
+  const [templateSaving, setTemplateSaving] = useState(false);
+  const [templateError, setTemplateError] = useState("");
+
+  // Load templates when panel opens
+  useEffect(() => {
+    if (!showTemplates) return;
+    setTemplatesLoading(true);
+    treatmentsApi.templates.list()
+      .then((d) => setTemplates(d.templates ?? []))
+      .catch(() => {})
+      .finally(() => setTemplatesLoading(false));
+  }, [showTemplates]);
+
+  async function handleCreateTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    setTemplateSaving(true);
+    setTemplateError("");
+    try {
+      const cost = parseFloat(templateForm.defaultCost);
+      await treatmentsApi.templates.create({
+        name: templateForm.name,
+        description: templateForm.description,
+        procedure: templateForm.procedure || undefined,
+        defaultCost: isNaN(cost) ? 0 : cost,
+      });
+      setTemplateForm({ name: "", description: "", procedure: "", defaultCost: "0" });
+      const d = await treatmentsApi.templates.list();
+      setTemplates(d.templates ?? []);
+    } catch (err) {
+      setTemplateError(err instanceof ApiError ? err.message : "Failed to save template.");
+    } finally {
+      setTemplateSaving(false);
+    }
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    try {
+      await treatmentsApi.templates.delete(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      setTemplateError(err instanceof ApiError ? err.message : "Failed to delete template.");
+    }
+  }
+
   // Patient search for filter bar
   const [filterPatients, setFilterPatients] = useState<Patient[]>([]);
   const [filterPatientId, setFilterPatientId] = useState("");
@@ -226,6 +275,15 @@ export default function TreatmentsPage() {
               Export CSV
             </button>
             <button
+              onClick={() => setShowTemplates((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-pk-sm text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Templates
+            </button>
+            <button
               onClick={() => setShowModal(true)}
               className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 transition"
             >
@@ -342,6 +400,112 @@ export default function TreatmentsPage() {
           )}
         </div>
       </main>
+
+      {/* Treatment Templates panel */}
+      {showTemplates && (
+        <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-pk-text">Treatment Templates</h2>
+            <button
+              onClick={() => setShowTemplates(false)}
+              className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
+            >
+              &times;
+            </button>
+          </div>
+
+          {templateError && (
+            <p className="text-xs text-pk-danger-text">{templateError}</p>
+          )}
+
+          {/* Existing templates */}
+          {templatesLoading ? (
+            <p className="text-sm text-pk-text-muted">Loading templates…</p>
+          ) : templates.length === 0 ? (
+            <p className="text-sm text-pk-text-muted">No templates yet.</p>
+          ) : (
+            <div className="divide-y divide-pk-border border border-pk-border rounded-pk-sm">
+              {templates.map((tpl) => (
+                <div key={tpl.id} className="flex items-center gap-3 px-4 py-3 hover:bg-pk-surface-raised">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-pk-text">{tpl.name}</p>
+                    <p className="text-xs text-pk-text-muted truncate">{tpl.description}</p>
+                    {tpl.procedure && (
+                      <p className="text-xs text-pk-text-muted truncate">{tpl.procedure}</p>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-pk-text-secondary whitespace-nowrap">
+                    {formatCurrency(tpl.defaultCost ?? 0)}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteTemplate(tpl.id)}
+                    className="text-xs text-pk-danger-text hover:underline ml-2"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Create form */}
+          <form onSubmit={handleCreateTemplate} className="border border-pk-border rounded-pk-sm p-4 space-y-3">
+            <p className="text-xs font-semibold text-pk-text-secondary">Add new template</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. RCT — Single Canal"
+                  className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Description *</label>
+                <input
+                  type="text"
+                  required
+                  value={templateForm.description}
+                  onChange={(e) => setTemplateForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Root Canal Treatment"
+                  className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Procedure (optional)</label>
+                <input
+                  type="text"
+                  value={templateForm.procedure}
+                  onChange={(e) => setTemplateForm((f) => ({ ...f, procedure: e.target.value }))}
+                  placeholder="Endodontics"
+                  className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Default cost (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={templateForm.defaultCost}
+                  onChange={(e) => setTemplateForm((f) => ({ ...f, defaultCost: e.target.value }))}
+                  className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={templateSaving}
+              className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-teal-700 disabled:opacity-50 transition"
+            >
+              {templateSaving ? "Saving…" : "Save Template"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* New Treatment Plan Modal — extracted component */}
       {showModal && (

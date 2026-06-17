@@ -123,7 +123,7 @@ export function CompleteVisitModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-xl max-h-[90vh] flex flex-col">
+      <div className="bg-pk-surface rounded-pk-xl shadow-pk-e3 w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-pk-border flex-shrink-0">
           <div>

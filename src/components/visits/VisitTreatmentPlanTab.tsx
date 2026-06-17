@@ -139,15 +139,6 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     }
   }
 
-  function _handleTreatmentStatusChange(tx: Treatment, newStatus: string) {
-    const needsConsent = newStatus === "IN_PROGRESS" && !["VERIFIED", "EMERGENCY_OVERRIDE"].includes(tx.consentStatus);
-    if (needsConsent) {
-      setPendingStatusChange({ txId: tx.id, status: newStatus });
-    } else {
-      handleUpdateTreatmentStatus(tx.id, newStatus);
-    }
-  }
-
   async function handleUnlinkTreatment(txId: string) {
     if (!confirm("Unlink this treatment plan from this visit? The plan itself will not be deleted.")) return;
     try {
@@ -164,12 +155,27 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     try {
       const d = await treatmentsApi.list({ patientId: visit.patientId });
       const linkedIds = new Set(treatments.map(t => t.id));
-      setLinkablePlans((d.treatments || []).filter((t: Treatment) => !linkedIds.has(t.id)));
+      // Issue 2: exclude already-linked and COMPLETED plans
+      setLinkablePlans((d.treatments || []).filter(
+        (t: Treatment) => !linkedIds.has(t.id) && t.status !== "COMPLETED"
+      ));
     } catch { /* silently ignore — user sees empty state */ }
     setLinkLoading(false);
   }
 
-  async function handleLinkPlan(txId: string) {
+  // Issue 3A: link only — no bill item created
+  async function handleLinkOnly(txId: string) {
+    setShowLinkModal(false);
+    try {
+      await treatmentsApi.forVisit.link(visitId, { treatmentId: txId });
+      await onRefresh();
+    } catch (err) {
+      onPageError(err instanceof ApiError ? err.message : "Failed to link treatment");
+    }
+  }
+
+  // Issue 3B: link + add bill item for outstanding balance
+  async function handleLinkAndBill(txId: string) {
     const plan = linkablePlans.find((p) => p.id === txId);
     setShowLinkModal(false);
     try {
@@ -445,25 +451,41 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           size={36}
                           strokeWidth={3}
                         />
-                        {visit.status !== "CANCELLED" && txOutstanding > 0 && (
-                          <button
-                            onClick={() => {
-                              const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
-                              onAddToBill({
-                                itemName: tx.description,
-                                category: "TREATMENT",
-                                toothNumber: firstTooth,
-                                quantity: "1",
-                                unitPrice: String(txOutstanding),
-                                notes: "",
-                                linkedTreatmentId: tx.id,
-                              });
-                            }}
-                            className="text-xs bg-pk-neutral-600 text-white px-2.5 py-1.5 rounded-pk-sm hover:bg-pk-neutral-700 transition font-medium"
-                          >
-                            Add to Bill
-                          </button>
-                        )}
+                        {visit.status !== "CANCELLED" && txOutstanding > 0 && (() => {
+                          const consentOk = ["VERIFIED", "EMERGENCY_OVERRIDE"].includes(tx.consentStatus);
+                          if (consentOk) {
+                            return (
+                              <button
+                                onClick={() => {
+                                  const teeth = tx.toothNumbers ? tx.toothNumbers.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                  const firstTooth = teeth[0] ?? "";
+                                  // Gap A: if multi-tooth, surface all teeth in notes
+                                  const multiToothNote = teeth.length > 1 ? `Teeth: ${teeth.join(", ")}` : "";
+                                  onAddToBill({
+                                    itemName: tx.description,
+                                    category: "TREATMENT",
+                                    toothNumber: firstTooth,
+                                    quantity: "1",
+                                    unitPrice: String(txOutstanding),
+                                    notes: multiToothNote,
+                                    linkedTreatmentId: tx.id,
+                                  });
+                                }}
+                                className="text-xs bg-pk-neutral-600 text-white px-2.5 py-1.5 rounded-pk-sm hover:bg-pk-neutral-700 transition font-medium"
+                              >
+                                Add to Bill
+                              </button>
+                            );
+                          }
+                          return (
+                            <span
+                              title="Upload and verify consent to enable billing"
+                              className="text-xs text-pk-warning-text bg-pk-warning-fill border border-pk-warning-border px-2.5 py-1.5 rounded-pk-sm flex items-center gap-1 cursor-default"
+                            >
+                              🔒 Consent required
+                            </span>
+                          );
+                        })()}
                         {/* Status badge — read-only for OPEN visits (status changes
                             are handled by the Complete Visit modal to avoid mid-session
                             interruptions). COMPLETED visits show a plain badge. */}
@@ -650,28 +672,45 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
               {linkLoading ? (
                 <p className="text-sm text-pk-text-muted text-center py-6">Loading...</p>
               ) : linkablePlans.length === 0 ? (
-                <p className="text-sm text-pk-text-muted text-center py-6">No treatment plans found for this patient. Create one from the Treatment Plans page first.</p>
+                <p className="text-sm text-pk-text-muted text-center py-6">No active treatment plans found for this patient. Create one from the Treatment Plans page first.</p>
               ) : (
-                linkablePlans.map(plan => (
-                  <div key={plan.id} className="border border-pk-border rounded-pk-lg p-4 flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-pk-text">{plan.description}</p>
-                      {plan.procedure && <p className="text-xs text-pk-text-muted mt-0.5">{plan.procedure}</p>}
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-pk-warning-fill text-pk-warning-text" : plan.status === "IN_PROGRESS" ? "bg-pk-teal-50 text-pk-teal-700" : "bg-pk-success-fill text-pk-success-text"}`}>
-                          {plan.status === "IN_PROGRESS" ? "In Progress" : plan.status.charAt(0) + plan.status.slice(1).toLowerCase()}
-                        </span>
-                        <span className="text-xs text-pk-text-muted">{formatCurrency(plan.cost)}</span>
+                linkablePlans.map(plan => {
+                  const outstanding = Math.max(0, plan.cost - (plan.billedAmount ?? 0));
+                  return (
+                    <div key={plan.id} className="border border-pk-border rounded-pk-lg p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-pk-text">{plan.description}</p>
+                          {plan.procedure && <p className="text-xs text-pk-text-muted mt-0.5">{plan.procedure}</p>}
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${plan.status === "PLANNED" ? "bg-pk-warning-fill text-pk-warning-text" : "bg-pk-teal-50 text-pk-teal-700"}`}>
+                              {plan.status === "IN_PROGRESS" ? "In Progress" : "Planned"}
+                            </span>
+                            <span className="text-xs text-pk-text-muted">{formatCurrency(plan.cost)}</span>
+                            {outstanding > 0 && (
+                              <span className="text-xs text-pk-danger-text">Due: {formatCurrency(outstanding)}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Issue 3: two CTAs */}
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleLinkOnly(plan.id)}
+                          className="flex-1 text-xs border border-pk-border text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-raised transition font-medium"
+                        >
+                          Link Only
+                        </button>
+                        <button
+                          onClick={() => handleLinkAndBill(plan.id)}
+                          className="flex-1 text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium"
+                        >
+                          Link &amp; Add to Bill
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleLinkPlan(plan.id)}
-                      className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium flex-shrink-0"
-                    >
-                      Link
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

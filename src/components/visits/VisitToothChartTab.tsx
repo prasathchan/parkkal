@@ -129,13 +129,20 @@ export function VisitToothChartTab({
   const isOpen   = visitStatus === "OPEN";
   const readOnly = !isOpen;
 
-  // Teeth referenced in this visit's bill — highlighted as a hint
+  // Teeth referenced in this visit's bill items OR linked treatment plans — highlighted as a hint
   const billedTeeth = Array.from(
-    new Set(
-      items
+    new Set([
+      // From bill items (direct tooth_number column)
+      ...items
         .map((i) => i.toothNumber?.trim())
         .filter((t): t is string => !!t && /^[1-4][1-8]$/.test(t)),
-    ),
+      // From linked treatment plans (toothNumbers = "14,15" etc.)
+      ...treatments.flatMap((tx) =>
+        tx.toothNumbers
+          ? tx.toothNumbers.split(",").map(s => s.trim()).filter(t => /^[1-4][1-8]$/.test(t))
+          : []
+      ),
+    ]),
   ).sort((a, b) => Number(a) - Number(b));
 
   // Combined highlight set: billed + external (from bill→chart suggestion)
@@ -275,7 +282,7 @@ export function VisitToothChartTab({
           <h3 className="text-sm font-semibold text-pk-text">FDI Dental Chart</h3>
           <p className="text-xs text-pk-text-muted mt-0.5">
             {isOpen
-              ? "Click any tooth to update its condition. Changes are saved to the patient's cumulative chart and recorded as a snapshot for this visit."
+              ? "Click a tooth to update its condition. Double-click to see history. Changes are saved to the patient's cumulative chart."
               : hasVisitSnapshot
                 ? `Snapshot recorded during this visit on ${snapshotAt ? new Date(snapshotAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}.`
                 : "No chart edits were recorded during this visit. Showing current cumulative chart for reference."}
@@ -324,7 +331,7 @@ export function VisitToothChartTab({
           </svg>
           <p className="text-xs text-pk-text-muted">
             <span className="font-medium text-pk-text-secondary">Chart is view-only for this visit.</span>
-            {" "}To update a tooth&apos;s condition, open the patient&apos;s profile or edit it in an active visit.
+            {" "}Double-click any tooth to view its history. To update a condition, use an active visit or the patient profile.
           </p>
         </div>
       )}
