@@ -4,6 +4,8 @@ import { useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { CATEGORIES, DEFAULT_NEW_ITEM, type NewItemState, type Treatment, type VisitItem } from "./types";
 import { visitsApi, ApiError } from "@/api";
+import { ITEM_CATEGORY_LABEL } from "@/constants/visit";
+import { TreatmentPickerModal } from "./TreatmentPickerModal";
 
 interface Payment { id: string; }
 
@@ -16,6 +18,7 @@ interface Props {
   prefillItem?: NewItemState | null;
   onRefresh: () => Promise<void>;
   onPageError: (msg: string) => void;
+  onSuggestChart?: (toothNumbers: string[]) => void;
 }
 
 interface EditState {
@@ -28,12 +31,13 @@ interface EditState {
   notes: string;
 }
 
-export function VisitItemsTab({ visitId, visitStatus, items, treatments, payments, prefillItem, onRefresh, onPageError }: Props) {
+export function VisitItemsTab({ visitId, visitStatus, items, treatments, payments, prefillItem, onRefresh, onPageError, onSuggestChart }: Props) {
   const [newItem, setNewItem] = useState<NewItemState>(prefillItem ?? DEFAULT_NEW_ITEM);
   const [addingItem, setAddingItem] = useState(false);
   const [addItemError, setAddItemError] = useState("");
   const [editState, setEditState] = useState<EditState | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [showTreatmentPicker, setShowTreatmentPicker] = useState(false);
 
   const hasPayments = payments.length > 0;
 
@@ -51,6 +55,17 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
         quantity: Number(newItem.quantity),
         unitPrice: Number(newItem.unitPrice),
       });
+      // Fire chart suggestion if this was a treatment-linked item
+      if (newItem.linkedTreatmentId && onSuggestChart) {
+        const tx = treatments.find((t) => t.id === newItem.linkedTreatmentId);
+        if (tx?.toothNumbers) {
+          const toothNumbers = tx.toothNumbers
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+          if (toothNumbers.length > 0) onSuggestChart(toothNumbers);
+        }
+      }
       setNewItem(DEFAULT_NEW_ITEM);
       await onRefresh();
     } catch (e) {
@@ -121,11 +136,12 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                 onChange={(e) => {
                   const cat = e.target.value;
                   setNewItem({ itemName: "", category: cat, toothNumber: "", quantity: "1", unitPrice: "0", notes: "", linkedTreatmentId: "" });
+                  if (cat === "TREATMENT") setShowTreatmentPicker(true);
                 }}
                 className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
+                  <option key={c} value={c}>{ITEM_CATEGORY_LABEL[c as keyof typeof ITEM_CATEGORY_LABEL] ?? c}</option>
                 ))}
               </select>
             </div>
@@ -292,7 +308,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                               className="border border-pk-border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
                             >
                               {CATEGORIES.map((c) => (
-                                <option key={c} value={c}>{c === "TREATMENT" ? "Treatment Plan" : c}</option>
+                                <option key={c} value={c}>{ITEM_CATEGORY_LABEL[c as keyof typeof ITEM_CATEGORY_LABEL] ?? c}</option>
                               ))}
                             </select>
                           </div>
@@ -413,6 +429,25 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
           )}
         </table>
       </div>
+
+      {showTreatmentPicker && (
+        <TreatmentPickerModal
+          treatments={treatments}
+          onSelect={(tx) => {
+            const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+            const outstanding = Math.max(0, tx.cost - (tx.billedAmount ?? 0));
+            setNewItem((n) => ({
+              ...n,
+              linkedTreatmentId: tx.id,
+              itemName: tx.description,
+              unitPrice: String(outstanding > 0 ? outstanding : tx.cost),
+              toothNumber: firstTooth,
+            }));
+            setShowTreatmentPicker(false);
+          }}
+          onClose={() => setShowTreatmentPicker(false)}
+        />
+      )}
     </div>
   );
 }

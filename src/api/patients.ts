@@ -134,6 +134,8 @@ export interface ToothConditionEntry {
   visitCode: string | null;
   visitDate: string | null;
   treatmentId: string | null;
+  treatmentDescription: string | null;
+  treatmentProcedure: string | null;
   source: string;
   recordedBy: string;
   recordedByName: string | null;

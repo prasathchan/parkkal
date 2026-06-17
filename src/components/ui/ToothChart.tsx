@@ -69,6 +69,7 @@ function ToothCell({
   isUpper,
   readOnly,
   highlight,
+  linkedTreatment,
   onConditionChange,
 }: {
   number: number;
@@ -76,6 +77,7 @@ function ToothCell({
   isUpper: boolean;
   readOnly: boolean;
   highlight?: boolean;
+  linkedTreatment?: { id: string; description: string; procedure?: string | null };
   onConditionChange: (n: number, condition: ToothCondition, notes?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -143,6 +145,11 @@ function ToothCell({
           <p className="text-xs font-semibold text-pk-text-secondary px-1 pb-1 border-b border-pk-border mb-1">
             Tooth {number}
           </p>
+          {linkedTreatment && (
+            <div className="flex items-center gap-1.5 text-xs text-pk-teal-700 bg-teal-50 rounded px-2 py-1.5 mb-2">
+              <span className="font-medium truncate">{linkedTreatment.procedure || linkedTreatment.description}</span>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-1 mb-2">
             {ALL_CONDITIONS.map((c) => {
               const col = CONDITION_COLORS[c];
@@ -202,10 +209,28 @@ interface ToothChartProps {
   onChange?: (data: ChartData) => void;
   /** Tooth numbers to highlight with a ring — used to draw attention to specific teeth */
   highlightTeeth?: string[];
+  /** Treatments linked to this visit — used to show treatment context in the tooth popover */
+  linkedTreatments?: Array<{ id: string; description: string; procedure?: string | null; toothNumbers?: string | null }>;
+  /** Called when a tooth condition changes, alongside onChange. Carries the associated treatmentId if any. */
+  onToothChange?: (toothNumber: string, newCondition: ToothCondition, treatmentId: string | null) => void;
 }
 
-export function ToothChart({ data, readOnly = false, onChange, highlightTeeth }: ToothChartProps) {
+export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, linkedTreatments, onToothChange }: ToothChartProps) {
   const highlightSet = new Set(highlightTeeth ?? []);
+
+  // Build a map from tooth number → treatment (last IN_PROGRESS wins if multiple)
+  const toothToTreatmentMap = new Map<string, { id: string; description: string; procedure?: string | null }>();
+  if (linkedTreatments) {
+    for (const tx of linkedTreatments) {
+      if (!tx.toothNumbers) continue;
+      for (const raw of tx.toothNumbers.split(",")) {
+        const t = raw.trim();
+        if (!t) continue;
+        toothToTreatmentMap.set(t, { id: tx.id, description: tx.description, procedure: tx.procedure });
+      }
+    }
+  }
+
   function handleChange(n: number, condition: ToothCondition, notes?: string) {
     const updated: ChartData = {
       ...data,
@@ -214,6 +239,8 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth }:
     // Remove HEALTHY entries to keep the stored object compact
     if (condition === "HEALTHY" && !notes) delete updated[String(n)];
     onChange?.(updated);
+    const treatment = toothToTreatmentMap.get(String(n)) ?? null;
+    onToothChange?.(String(n), condition, treatment?.id ?? null);
   }
 
   return (
@@ -239,6 +266,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth }:
                   isUpper={true}
                   readOnly={readOnly}
                   highlight={highlightSet.has(String(n))}
+                  linkedTreatment={toothToTreatmentMap.get(String(n))}
                   onConditionChange={handleChange}
                 />
               </>
@@ -262,6 +290,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth }:
                   isUpper={false}
                   readOnly={readOnly}
                   highlight={highlightSet.has(String(n))}
+                  linkedTreatment={toothToTreatmentMap.get(String(n))}
                   onConditionChange={handleChange}
                 />
               </>

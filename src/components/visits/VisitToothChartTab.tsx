@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { patientsApi } from "@/api";
-import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
+import { ToothChart, type ChartData, type ToothCondition } from "@/components/ui/ToothChart";
 import type { ToothConditionEntry } from "@/api/patients";
-import type { VisitItem } from "./types";
+import type { VisitItem, Treatment } from "./types";
 
 const CONDITION_LABELS: Record<string, string> = {
   HEALTHY:    "Healthy",
@@ -19,19 +19,62 @@ const CONDITION_LABELS: Record<string, string> = {
   WATCH:      "Watch",
 };
 
+const CONDITION_CHIP_COLORS: Record<string, { bg: string; text: string }> = {
+  HEALTHY:    { bg: "#F5F3F0", text: "#847D6E" },
+  CARIES:     { bg: "#C0392B", text: "#FFFFFF" },
+  FILLING:    { bg: "#0B6E6E", text: "#FFFFFF" },
+  CROWN:      { bg: "#C8873A", text: "#FFFFFF" },
+  MISSING:    { bg: "#C4BDB0", text: "#4A4439" },
+  ROOT_CANAL: { bg: "#6B4A2F", text: "#FFFFFF" },
+  BRIDGE:     { bg: "#0B5654", text: "#FFFFFF" },
+  IMPLANT:    { bg: "#6E7B7E", text: "#FFFFFF" },
+  FRACTURED:  { bg: "#B35B43", text: "#FFFFFF" },
+  WATCH:      { bg: "#FCEFD6", text: "#9A5B0A" },
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  manual:             "✏ Manual",
+  treatment_start:    "▶ Treatment started",
+  treatment_complete: "✓ Treatment completed",
+};
+
+function ConditionChip({ condition }: { condition: string }) {
+  const label = CONDITION_LABELS[condition] ?? condition;
+  const colors = CONDITION_CHIP_COLORS[condition] ?? { bg: "#F5F3F0", text: "#847D6E" };
+  return (
+    <span
+      className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded"
+      style={{ background: colors.bg, color: colors.text }}
+    >
+      {label}
+    </span>
+  );
+}
+
 interface Props {
   visitId: string;
   patientId: string;
   visitStatus: "OPEN" | "COMPLETED" | "CANCELLED";
   items: VisitItem[];
+  treatments: Treatment[];
+  onSuggestBill?: (treatmentId: string, treatmentDescription: string, toothNumber: string) => void;
+  externalHighlightTeeth?: string[];
 }
 
 const SAVE_DEBOUNCE_MS = 700;
 
-export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: Props) {
+export function VisitToothChartTab({
+  visitId,
+  patientId,
+  visitStatus,
+  items,
+  treatments,
+  onSuggestBill,
+  externalHighlightTeeth,
+}: Props) {
   const [chartData, setChartData]         = useState<ChartData>({});
-  const [snapshotAt, setSnapshotAt]       = useState<number | null>(null); // when the visit snapshot was recorded
-  const [hasVisitSnapshot, setHasVisitSnapshot] = useState<boolean | null>(null); // null = loading
+  const [snapshotAt, setSnapshotAt]       = useState<number | null>(null);
+  const [hasVisitSnapshot, setHasVisitSnapshot] = useState<boolean | null>(null);
   const [loading, setLoading]             = useState(true);
   const [saving, setSaving]               = useState(false);
   const [savedAt, setSavedAt]             = useState<number | null>(null);
@@ -42,10 +85,14 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
   const [toothHistory, setToothHistory]   = useState<ToothConditionEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Gap 6b — all teeth that have any history entry
+  const [teethWithHistory, setTeethWithHistory] = useState<string[]>([]);
+
   // Used only for OPEN visits
-  const saveInFlight  = useRef(false);
-  const latestData    = useRef<ChartData>({});
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlight       = useRef(false);
+  const latestData         = useRef<ChartData>({});
+  const debounceTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestTreatmentId  = useRef<string | null>(null);
 
   const isOpen   = visitStatus === "OPEN";
   const readOnly = !isOpen;
@@ -55,9 +102,14 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
     new Set(
       items
         .map((i) => i.toothNumber?.trim())
-        .filter((t): t is string => !!t && /^[1-4][1-8]$/.test(t))
-    )
+        .filter((t): t is string => !!t && /^[1-4][1-8]$/.test(t)),
+    ),
   ).sort((a, b) => Number(a) - Number(b));
+
+  // Combined highlight set: billed + external (from bill→chart suggestion)
+  const allHighlightTeeth = Array.from(
+    new Set([...billedTeeth, ...(externalHighlightTeeth ?? [])]),
+  );
 
   // ── Load ────────────────────────────────────────────────────────────────────
 
@@ -67,23 +119,19 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
     async function load() {
       try {
         if (isOpen) {
-          // Pre-fill from the living cumulative chart
           const { toothData } = await patientsApi.getToothChart(patientId);
           if (!cancelled) {
             setChartData((toothData as ChartData) ?? {});
             setHasVisitSnapshot(false);
           }
         } else {
-          // Show the frozen snapshot recorded during this visit (if any)
           const { history } = await patientsApi.getToothChartHistory(patientId, visitId);
           if (!cancelled) {
             if (history.length > 0) {
-              // history is newest-first; [0] is the last save made during this visit
               setChartData(history[0].toothData as ChartData);
               setSnapshotAt(history[0].recordedAt);
               setHasVisitSnapshot(true);
             } else {
-              // No chart edits were made during this visit — fall back to current cumulative
               const { toothData } = await patientsApi.getToothChart(patientId);
               if (!cancelled) {
                 setChartData((toothData as ChartData) ?? {});
@@ -103,6 +151,20 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
     return () => { cancelled = true; };
   }, [patientId, visitId, isOpen]);
 
+  // Gap 6b — fetch teeth with any history after chart loads
+  useEffect(() => {
+    if (loading) return;
+    patientsApi
+      .getToothConditionHistory(patientId, { limit: 200 })
+      .then(({ history }) => {
+        const seen = new Set(history.map((h) => h.toothNumber));
+        setTeethWithHistory(
+          Array.from(seen).sort((a, b) => Number(a) - Number(b)),
+        );
+      })
+      .catch(() => {});
+  }, [patientId, loading]);
+
   // ── Save (OPEN visits only) ──────────────────────────────────────────────────
 
   const flushSave = useCallback(async () => {
@@ -113,10 +175,15 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
     setError("");
 
     try {
-      // Loop until no new changes arrived during the in-flight request
       while (true) {
         const toSave = latestData.current;
-        await patientsApi.saveToothChart(patientId, toSave as Record<string, unknown>, visitId, "manual");
+        await patientsApi.saveToothChart(
+          patientId,
+          toSave as Record<string, unknown>,
+          visitId,
+          "manual",
+          latestTreatmentId.current ?? undefined,
+        );
         if (latestData.current === toSave) break;
       }
       setSavedAt(Date.now());
@@ -128,6 +195,17 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
       setSaving(false);
     }
   }, [patientId, visitId]);
+
+  // Gap 4 — tooth change handler that fires bill suggestion
+  function handleToothChange(toothNumber: string, newCondition: ToothCondition, treatmentId: string | null) {
+    latestTreatmentId.current = treatmentId;
+    if (treatmentId && newCondition !== "HEALTHY" && isOpen) {
+      const tx = treatments.find((t) => t.id === treatmentId);
+      if (tx) {
+        onSuggestBill?.(treatmentId, tx.description, toothNumber);
+      }
+    }
+  }
 
   async function handleToothHistoryClick(tooth: string) {
     if (historyTooth === tooth) { setHistoryTooth(null); return; }
@@ -144,7 +222,6 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
     setChartData(data);
     latestData.current = data;
 
-    // Debounce: reset the timer on every change so rapid edits coalesce
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
   }, [flushSave]);
@@ -222,16 +299,19 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
         data={chartData}
         readOnly={readOnly}
         onChange={isOpen ? handleChange : undefined}
+        highlightTeeth={allHighlightTeeth}
+        linkedTreatments={treatments}
+        onToothChange={isOpen ? handleToothChange : undefined}
       />
 
-      {/* Per-tooth history — click any tooth number label to open */}
+      {/* Per-tooth history — Gap 6b: show teeth with any history, not just non-HEALTHY */}
       <div className="mt-4 border-t border-pk-border pt-4">
         <p className="text-xs text-pk-text-muted mb-2">
           View tooth history:{" "}
           <span className="text-pk-text-secondary">click a tooth number below</span>
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {Object.keys(chartData).sort().map((tooth) => (
+          {teethWithHistory.map((tooth) => (
             <button
               key={tooth}
               type="button"
@@ -245,6 +325,9 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
               {tooth}
             </button>
           ))}
+          {teethWithHistory.length === 0 && (
+            <p className="text-xs text-pk-text-muted italic">No condition history recorded yet.</p>
+          )}
         </div>
 
         {historyTooth && (
@@ -265,24 +348,40 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
               <p className="text-xs text-pk-text-muted">No history recorded for this tooth.</p>
             ) : (
               <ol className="space-y-2">
-                {toothHistory.map((entry, i) => (
-                  <li key={entry.id} className="flex items-start gap-2 text-xs">
-                    <span className="text-pk-text-muted flex-shrink-0 mt-0.5">{i + 1}.</span>
-                    <div>
-                      <span className="text-pk-text font-medium">
-                        {entry.previousCondition
-                          ? `${CONDITION_LABELS[entry.previousCondition] ?? entry.previousCondition} → ${CONDITION_LABELS[entry.newCondition] ?? entry.newCondition}`
-                          : `First recorded: ${CONDITION_LABELS[entry.newCondition] ?? entry.newCondition}`}
-                      </span>
-                      <span className="text-pk-text-muted ml-1.5">
-                        {new Date(entry.recordedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                        {entry.visitCode && ` · ${entry.visitCode}`}
-                        {entry.source === "treatment_start" && " · Treatment start"}
-                        {entry.source === "treatment_complete" && " · Treatment complete"}
-                      </span>
-                    </div>
-                  </li>
-                ))}
+                {toothHistory.map((entry, i) => {
+                  const procedureLabel = entry.treatmentProcedure || entry.treatmentDescription;
+                  return (
+                    <li key={entry.id} className="flex items-start gap-2 text-xs">
+                      <span className="text-pk-text-muted flex-shrink-0 mt-0.5">{i + 1}.</span>
+                      <div className="space-y-0.5">
+                        {/* Gap 6 — colored condition chips */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {entry.previousCondition ? (
+                            <>
+                              <ConditionChip condition={entry.previousCondition} />
+                              <span className="text-pk-text-muted">→</span>
+                              <ConditionChip condition={entry.newCondition} />
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-pk-text-muted text-xs">First recorded:</span>
+                              <ConditionChip condition={entry.newCondition} />
+                            </>
+                          )}
+                        </div>
+                        {procedureLabel && (
+                          <div className="text-pk-teal-700 font-medium">{procedureLabel}</div>
+                        )}
+                        <div className="text-pk-text-muted">
+                          {new Date(entry.recordedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          {entry.visitCode && ` · ${entry.visitCode}`}
+                          {" · "}{SOURCE_LABELS[entry.source] ?? entry.source}
+                          {entry.recordedByName && ` · ${entry.recordedByName}`}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             )}
           </div>

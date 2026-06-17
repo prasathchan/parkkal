@@ -15,6 +15,7 @@ import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
 import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
 import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab";
+import { LinkSuggestBar } from "@/components/visits/LinkSuggestBar";
 import { CompleteVisitModal } from "@/components/visits/CompleteVisitModal";
 import type {
   Visit, VisitItem, Payment, Attachment, HistoryVisit, Treatment, NewItemState,
@@ -62,6 +63,17 @@ export default function VisitDetailPage() {
   const [paySubmitting, setPaySubmitting] = useState(false);
 
   const [prefillItem, setPrefillItem] = useState<NewItemState | null>(null);
+
+  // Gap 4 — chart → bill suggestion
+  const [chartBillSuggestion, setChartBillSuggestion] = useState<{
+    treatmentId: string;
+    description: string;
+    toothNumber: string;
+  } | null>(null);
+
+  // Gap 5 — bill → chart suggestion
+  const [billChartSuggestion, setBillChartSuggestion] = useState<string[] | null>(null);
+  const [chartHighlightTeeth, setChartHighlightTeeth] = useState<string[]>([]);
 
   const fetchVisit = useCallback(async () => {
     setLoading(true);
@@ -201,6 +213,14 @@ export default function VisitDetailPage() {
     } finally { setMarkingApptDone(false); }
   }
 
+  function handleChartSuggestBill(treatmentId: string, description: string, toothNumber: string) {
+    setChartBillSuggestion({ treatmentId, description, toothNumber });
+  }
+
+  function handleBillSuggestChart(toothNumbers: string[]) {
+    setBillChartSuggestion(toothNumbers);
+  }
+
   function handleAddToBill(item: NewItemState) {
     setPrefillItem(item);
     setTab("items");
@@ -245,6 +265,15 @@ export default function VisitDetailPage() {
           </div>
         )}
 
+        {visit.status === "OPEN" && (
+          <LinkSuggestBar
+            visitId={id}
+            patientId={visit.patientId}
+            alreadyLinkedIds={new Set(treatments.map((t) => t.id))}
+            onLinked={fetchVisit}
+          />
+        )}
+
         <VisitHeaderCard
           visitId={id} visit={visit} due={due}
           editingNotes={editingNotes} notesForm={notesForm} savingNotes={savingNotes}
@@ -279,14 +308,88 @@ export default function VisitDetailPage() {
             ))}
           </div>
           <div className="p-6">
-            {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} onRefresh={fetchVisit} onPageError={setPageError} />}
+            {/* Gap 4 — chart → bill suggestion banner */}
+            {tab === "chart" && chartBillSuggestion && (
+              <div className="mb-4 flex items-center justify-between gap-4 rounded-pk-lg border border-pk-teal-200 bg-teal-50 px-4 py-3">
+                <p className="text-sm text-pk-teal-700 font-medium">
+                  <span className="font-semibold">{chartBillSuggestion.description}</span>
+                  {" · Tooth "}{chartBillSuggestion.toothNumber}
+                  {" — Add to bill?"}
+                </p>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <button
+                    type="button"
+                    className="bg-pk-teal-600 text-white text-xs font-medium px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition"
+                    onClick={() => {
+                      const tx = treatments.find((t) => t.id === chartBillSuggestion.treatmentId);
+                      if (tx) {
+                        setPrefillItem({
+                          itemName: tx.description,
+                          category: "TREATMENT",
+                          toothNumber: chartBillSuggestion.toothNumber,
+                          quantity: "1",
+                          unitPrice: String(Math.max(0, tx.cost - (tx.billedAmount ?? 0))),
+                          notes: "",
+                          linkedTreatmentId: tx.id,
+                        });
+                      }
+                      setChartBillSuggestion(null);
+                      setTab("items");
+                    }}
+                  >
+                    Add item
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-pk-text-muted hover:text-pk-text-secondary transition"
+                    onClick={() => setChartBillSuggestion(null)}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Gap 5 — bill → chart suggestion banner */}
+            {tab === "items" && billChartSuggestion && (
+              <div className="mb-4 flex items-center justify-between gap-4 rounded-pk-lg border border-pk-teal-200 bg-teal-50 px-4 py-3">
+                <p className="text-sm text-pk-teal-700 font-medium">
+                  Update the dental chart for{" "}
+                  {billChartSuggestion.length === 1
+                    ? `tooth ${billChartSuggestion[0]}`
+                    : `teeth ${billChartSuggestion.join(", ")}`}?
+                </p>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <button
+                    type="button"
+                    className="bg-pk-teal-600 text-white text-xs font-medium px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition"
+                    onClick={() => {
+                      setChartHighlightTeeth(billChartSuggestion);
+                      setBillChartSuggestion(null);
+                      setTab("chart");
+                    }}
+                  >
+                    Update chart
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-pk-text-muted hover:text-pk-text-secondary transition"
+                    onClick={() => setBillChartSuggestion(null)}
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} onRefresh={fetchVisit} onPageError={setPageError} onSuggestChart={handleBillSuggestChart} />}
             {tab === "payments" && <VisitPaymentsTab visit={visit} payments={payments} due={due} onOpenPayModal={() => setShowPayModal(true)} />}
             {tab === "attachments" && <VisitAttachmentsTab visitId={id} visitStatus={visit.status} attachments={attachments} patientId={visit.patientId} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "photos" && <VisitPhotosTab visitId={id} visitStatus={visit.status} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "prescriptions" && <VisitPrescriptionsTab visitId={id} visitStatus={visit.status} prescriptions={prescriptions} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "history" && <VisitHistoryTab patientName={visit.patientName ?? ""} history={history} />}
             {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} />}
-            {tab === "chart" && <VisitToothChartTab visitId={id} patientId={visit.patientId} visitStatus={visit.status} items={items} />}
+            {tab === "chart" && <VisitToothChartTab visitId={id} patientId={visit.patientId} visitStatus={visit.status} items={items} treatments={treatments} onSuggestBill={handleChartSuggestBill} externalHighlightTeeth={chartHighlightTeeth} />}
           </div>
         </div>
       </main>

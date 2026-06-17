@@ -10,7 +10,7 @@
  *   limit       — default 100
  */
 import { eq, and, desc } from "drizzle-orm";
-import { toothConditionHistory, organizationPatients, visits, users } from "@/db/schema";
+import { toothConditionHistory, organizationPatients, visits, users, treatments } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -55,15 +55,18 @@ export const GET = withRoute(
         visitId:           toothConditionHistory.visitId,
         visitCode:         visits.visitCode,
         visitDate:         visits.visitDate,
-        treatmentId:       toothConditionHistory.treatmentId,
-        source:            toothConditionHistory.source,
-        recordedBy:        toothConditionHistory.recordedBy,
-        recordedByName:    users.name,
-        recordedAt:        toothConditionHistory.recordedAt,
+        treatmentId:          toothConditionHistory.treatmentId,
+        treatmentDescription: treatments.description,
+        treatmentProcedure:   treatments.procedure,
+        source:               toothConditionHistory.source,
+        recordedBy:           toothConditionHistory.recordedBy,
+        recordedByName:       users.name,
+        recordedAt:           toothConditionHistory.recordedAt,
       })
       .from(toothConditionHistory)
-      .leftJoin(visits, eq(toothConditionHistory.visitId, visits.id))
-      .leftJoin(users,  eq(toothConditionHistory.recordedBy, users.id))
+      .leftJoin(visits,     eq(toothConditionHistory.visitId,     visits.id))
+      .leftJoin(users,      eq(toothConditionHistory.recordedBy,  users.id))
+      .leftJoin(treatments, eq(toothConditionHistory.treatmentId, treatments.id))
       .where(and(...conditions))
       .orderBy(desc(toothConditionHistory.recordedAt))
       .limit(limit);
