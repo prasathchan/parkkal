@@ -56,6 +56,10 @@ export default function PatientDetailPage() {
   const [chartHistory, setChartHistory] = useState<ToothChartHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
+  // Collapsible card state — all open by default
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+  const [tabsOpen, setTabsOpen] = useState(true);
 
   useEffect(() => {
     patientsApi.get(id).then((d) => setPatient(d.patient)).finally(() => setLoading(false));
@@ -127,50 +131,60 @@ export default function PatientDetailPage() {
 
       <main id="main-content" className="flex-1 p-6 space-y-6">
         {balance && (
-          <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-pk-text">Financial Summary</h3>
+          <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
+            <div className="flex items-center justify-between px-5 py-4">
+              <button type="button" onClick={() => setSummaryOpen((o) => !o)} className="flex items-center gap-2 text-left">
+                <svg className={`w-4 h-4 text-pk-text-muted transition-transform ${summaryOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <h3 className="font-semibold text-pk-text">Financial Summary</h3>
+              </button>
               <Link href={`/dashboard/visits/new?patientId=${patient.id}`} className="inline-flex items-center gap-2 bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm text-xs font-medium hover:bg-pk-teal-700 transition">
                 + New Visit
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {[
-                { label: "Total Billed", value: formatCurrency(balance.totalBilled), color: "text-pk-text" },
-                { label: "Total Paid", value: formatCurrency(balance.totalPaid), color: "text-pk-success-text" },
-                { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-pk-danger-text" : "text-pk-text-muted" },
-                { label: "Total Visits", value: String(balance.visitCount), color: "text-pk-text" },
-                { label: "Last Visit", value: balance.lastVisit || "—", color: "text-pk-text-secondary", small: true },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="text-xs text-pk-text-muted mb-1">{stat.label}</p>
-                  <p className={`${stat.small ? "text-sm" : "text-lg"} font-bold ${stat.color}`}>{stat.value}</p>
-                </div>
-              ))}
-            </div>
+            {summaryOpen && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 px-5 pb-5">
+                {[
+                  { label: "Total Billed", value: formatCurrency(balance.totalBilled), color: "text-pk-text" },
+                  { label: "Total Paid", value: formatCurrency(balance.totalPaid), color: "text-pk-success-text" },
+                  { label: "Outstanding", value: formatCurrency(balance.totalDue), color: balance.totalDue > 0 ? "text-pk-danger-text" : "text-pk-text-muted" },
+                  { label: "Total Visits", value: String(balance.visitCount), color: "text-pk-text" },
+                  { label: "Last Visit", value: balance.lastVisit || "—", color: "text-pk-text-secondary", small: true },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <p className="text-xs text-pk-text-muted mb-1">{stat.label}</p>
+                    <p className={`${stat.small ? "text-sm" : "text-lg"} font-bold ${stat.color}`}>{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        <PatientDetailsCard patient={patient} onErase={handleErase} />
+        <PatientDetailsCard patient={patient} collapsed={!detailsOpen} onToggleCollapse={() => setDetailsOpen((o) => !o)} onErase={handleErase} />
 
         <Card>
-          <div className="border-b border-pk-border px-6">
-            <div className="flex gap-1">
+          <div className="flex items-center gap-3 px-6 py-3 border-b border-pk-border">
+            <button type="button" onClick={() => setTabsOpen((o) => !o)} className="flex items-center gap-1.5 shrink-0">
+              <svg className={`w-4 h-4 text-pk-text-muted transition-transform ${tabsOpen ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <div className="flex gap-1 overflow-x-auto">
               {tabs.map((t) => (
-                <button key={t.key} onClick={() => setTab(t.key)} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>
+                <button key={t.key} onClick={() => { setTab(t.key); if (!tabsOpen) setTabsOpen(true); }} className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${tab === t.key ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
-          <CardContent>
-            {tab === "chart" && <PatientChartTab patientId={id} chartData={chartData} chartSaving={chartSaving} chartHistory={chartHistory} showHistory={showHistory} onChartChange={saveChart} onToggleHistory={() => setShowHistory((h) => !h)} />}
-            {tab === "prescriptions" && <PatientPrescriptionsTab prescriptions={rxData} />}
-            {tab === "emergency" && <PatientEmergencyTab contacts={emergencyContacts} />}
-            {(tab === "visits" || tab === "appointments" || tab === "treatments" || tab === "invoices") && (
-              <PatientTabList tab={tab} tabData={tabData} />
-            )}
-          </CardContent>
+          {tabsOpen && (
+            <CardContent>
+              {tab === "chart" && <PatientChartTab patientId={id} chartData={chartData} chartSaving={chartSaving} chartHistory={chartHistory} showHistory={showHistory} onChartChange={saveChart} onToggleHistory={() => setShowHistory((h) => !h)} />}
+              {tab === "prescriptions" && <PatientPrescriptionsTab prescriptions={rxData} />}
+              {tab === "emergency" && <PatientEmergencyTab contacts={emergencyContacts} />}
+              {(tab === "visits" || tab === "appointments" || tab === "treatments" || tab === "invoices") && (
+                <PatientTabList tab={tab} tabData={tabData} />
+              )}
+            </CardContent>
+          )}
         </Card>
       </main>
     </div>

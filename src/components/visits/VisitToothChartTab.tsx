@@ -3,8 +3,41 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { patientsApi } from "@/api";
 import { ToothChart, type ChartData, type ToothCondition } from "@/components/ui/ToothChart";
-import type { ToothConditionEntry } from "@/api/patients";
+import type { ToothConditionEntry, ToothChartHistoryEntry } from "@/api/patients";
 import type { VisitItem, Treatment } from "./types";
+
+// Derive per-tooth history from snapshots (fallback for teeth marked before migration 0048)
+function deriveHistoryFromSnapshots(tooth: string, snapshots: ToothChartHistoryEntry[]): ToothConditionEntry[] {
+  const sorted = [...snapshots].sort((a, b) => a.recordedAt - b.recordedAt);
+  const entries: ToothConditionEntry[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const snap = sorted[i];
+    if (!(snap.changedTeeth as string[]).includes(tooth)) continue;
+    const newCondition = (snap.toothData[tooth] as { condition?: string } | undefined)?.condition ?? "HEALTHY";
+    let previousCondition: string | null = null;
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = (sorted[j].toothData[tooth] as { condition?: string } | undefined)?.condition;
+      if (prev) { previousCondition = prev; break; }
+    }
+    entries.push({
+      id: `snap-${snap.id}-${tooth}`,
+      toothNumber: tooth,
+      previousCondition,
+      newCondition,
+      visitId: snap.visitId,
+      visitCode: snap.visitCode,
+      visitDate: null,
+      treatmentId: null,
+      treatmentDescription: null,
+      treatmentProcedure: null,
+      source: "manual",
+      recordedBy: snap.recordedBy,
+      recordedByName: snap.recordedByName,
+      recordedAt: snap.recordedAt,
+    });
+  }
+  return entries.reverse();
+}
 
 const CONDITION_LABELS: Record<string, string> = {
   HEALTHY:    "Healthy",
@@ -80,13 +113,12 @@ export function VisitToothChartTab({
   const [savedAt, setSavedAt]             = useState<number | null>(null);
   const [error, setError]                 = useState("");
 
-  // Per-tooth history popover
-  const [historyTooth, setHistoryTooth]   = useState<string | null>(null);
-  const [toothHistory, setToothHistory]   = useState<ToothConditionEntry[]>([]);
+  // Per-tooth history panel
+  const [historyTooth, setHistoryTooth]     = useState<string | null>(null);
+  const [toothHistory, setToothHistory]     = useState<ToothConditionEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-
-  // Gap 6b — all teeth that have any history entry
-  const [teethWithHistory, setTeethWithHistory] = useState<string[]>([]);
+  // Cached chart snapshots — fetched lazily as fallback when condition history is empty
+  const [chartHistoryCache, setChartHistoryCache] = useState<ToothChartHistoryEntry[] | null>(null);
 
   // Used only for OPEN visits
   const saveInFlight       = useRef(false);
@@ -151,21 +183,14 @@ export function VisitToothChartTab({
     return () => { cancelled = true; };
   }, [patientId, visitId, isOpen]);
 
-  // Gap 6b — fetch teeth with any history; re-fetch after each successful save
+  // Pre-warm chart history cache for fallback (fetched once when chart loads)
   useEffect(() => {
-    if (loading) return;
-    patientsApi
-      .getToothConditionHistory(patientId, { limit: 200 })
-      .then(({ history }) => {
-        const seen = new Set(history.map((h) => h.toothNumber));
-        setTeethWithHistory(
-          Array.from(seen).sort((a, b) => Number(a) - Number(b)),
-        );
-      })
-      .catch(() => {});
-  // savedAt intentionally included: re-fetch after every successful save
+    if (loading || chartHistoryCache !== null) return;
+    patientsApi.getToothChartHistory(patientId)
+      .then(({ history }) => setChartHistoryCache(history))
+      .catch(() => setChartHistoryCache([]));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId, loading, savedAt]);
+  }, [patientId, loading]);
 
   // ── Save (OPEN visits only) ──────────────────────────────────────────────────
 
@@ -210,13 +235,21 @@ export function VisitToothChartTab({
   }
 
   async function handleToothSelect(tooth: string) {
-    if (historyTooth === tooth) return; // already shown — keep open; popover handles close
     setHistoryTooth(tooth);
     setHistoryLoading(true);
     try {
       const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 20 });
-      setToothHistory(history);
-    } catch { setToothHistory([]); }
+      if (history.length > 0) {
+        setToothHistory(history);
+      } else {
+        // Fallback: derive from chart snapshots (teeth marked before migration 0048)
+        const snapshots = chartHistoryCache ?? (await patientsApi.getToothChartHistory(patientId).then(r => r.history).catch(() => []));
+        if (chartHistoryCache === null) setChartHistoryCache(snapshots);
+        setToothHistory(deriveHistoryFromSnapshots(tooth, snapshots));
+      }
+    } catch {
+      setToothHistory([]);
+    }
     setHistoryLoading(false);
   }
 
@@ -318,14 +351,7 @@ export function VisitToothChartTab({
         {historyTooth && (
           <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-semibold text-pk-text">Tooth {historyTooth} — Condition History</p>
-                {teethWithHistory.length > 1 && (
-                  <p className="text-xs text-pk-text-muted mt-0.5">
-                    {teethWithHistory.length} teeth with recorded history
-                  </p>
-                )}
-              </div>
+              <p className="text-sm font-semibold text-pk-text">Tooth {historyTooth} — Condition History</p>
               <button
                 type="button"
                 onClick={() => setHistoryTooth(null)}

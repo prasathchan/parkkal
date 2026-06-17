@@ -23,9 +23,11 @@ interface Patient {
 interface Props {
   patient: Patient;
   onErase: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function PatientDetailsCard({ patient, onErase }: Props) {
+export function PatientDetailsCard({ patient, onErase, collapsed = false, onToggleCollapse }: Props) {
   const [showEraseModal, setShowEraseModal] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,10 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Patient Details</CardTitle>
+            <button type="button" onClick={onToggleCollapse} className="flex items-center gap-2">
+              <svg className={`w-4 h-4 text-pk-text-muted transition-transform ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              <CardTitle>Patient Details</CardTitle>
+            </button>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono bg-pk-teal-100 text-pk-teal-700 px-2.5 py-1 rounded-full">
                 {patient.patientCode}
@@ -66,7 +71,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        {!collapsed && <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-pk-text-muted text-xs mb-0.5">Phone</p>
@@ -127,7 +132,7 @@ export function PatientDetailsCard({ patient, onErase }: Props) {
               </button>
             </div>
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {showEraseModal && (

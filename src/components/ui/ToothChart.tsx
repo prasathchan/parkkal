@@ -99,7 +99,7 @@ function ToothCell({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const height = type === "molar" ? "h-12" : type === "premolar" ? "h-11" : "h-10";
+  const height = type === "molar" ? "h-16" : type === "premolar" ? "h-14" : "h-12";
 
   return (
     <div ref={ref} className="relative flex flex-col items-center">
@@ -117,7 +117,7 @@ function ToothCell({
           onToothSelect?.(String(number));
           if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); }
         }}
-        className={`w-8 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
+        className={`w-9 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-pointer" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
         {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
@@ -254,7 +254,7 @@ export function ToothChart({ data, readOnly = false, onChange, highlightTeeth, l
     <div className="w-full">
       {/* Chart grid — scrolls horizontally on very small screens */}
       <div className="overflow-x-auto pb-2">
-        <div className="min-w-[620px]">
+        <div className="min-w-[700px]">
           {/* Legend row */}
           <div className="flex justify-between text-[9px] text-pk-text-muted font-medium mb-1 px-1">
             <span>Patient&apos;s Right (Q1/Q4)</span>

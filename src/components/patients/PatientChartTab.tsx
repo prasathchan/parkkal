@@ -6,17 +6,12 @@ import { patientsApi } from "@/api";
 import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
 import type { ToothChartHistoryEntry, ToothConditionEntry } from "@/api/patients";
 
+// ─── Condition display helpers ────────────────────────────────────────────────
+
 const CONDITION_LABELS: Record<string, string> = {
-  HEALTHY:    "Healthy",
-  CARIES:     "Cavity",
-  FILLING:    "Filling",
-  CROWN:      "Crown",
-  MISSING:    "Missing",
-  ROOT_CANAL: "Root Canal",
-  BRIDGE:     "Bridge",
-  IMPLANT:    "Implant",
-  FRACTURED:  "Fractured",
-  WATCH:      "Watch",
+  HEALTHY: "Healthy", CARIES: "Cavity", FILLING: "Filling", CROWN: "Crown",
+  MISSING: "Missing", ROOT_CANAL: "Root Canal", BRIDGE: "Bridge",
+  IMPLANT: "Implant", FRACTURED: "Fractured", WATCH: "Watch",
 };
 
 const CONDITION_COLORS: Record<string, { bg: string; text: string }> = {
@@ -42,14 +37,55 @@ function ConditionChip({ condition }: { condition: string }) {
   const label = CONDITION_LABELS[condition] ?? condition;
   const col = CONDITION_COLORS[condition] ?? { bg: "#F5F3F0", text: "#847D6E" };
   return (
-    <span
-      className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded"
-      style={{ background: col.bg, color: col.text }}
-    >
+    <span className="inline-block text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: col.bg, color: col.text }}>
       {label}
     </span>
   );
 }
+
+// ─── Derive per-tooth history from chart snapshots (fallback for pre-0048 data) ──
+
+type DerivedEntry = Omit<ToothConditionEntry, "id"> & { id: string };
+
+function deriveHistoryFromSnapshots(tooth: string, snapshots: ToothChartHistoryEntry[]): DerivedEntry[] {
+  const sorted = [...snapshots].sort((a, b) => a.recordedAt - b.recordedAt);
+  const entries: DerivedEntry[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const snap = sorted[i];
+    if (!(snap.changedTeeth as string[]).includes(tooth)) continue;
+
+    const newCondition = (snap.toothData[tooth] as { condition?: string } | undefined)?.condition ?? "HEALTHY";
+
+    // Walk backwards through ALL snapshots (not just relevant ones) to find previous condition
+    let previousCondition: string | null = null;
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = (sorted[j].toothData[tooth] as { condition?: string } | undefined)?.condition;
+      if (prev) { previousCondition = prev; break; }
+    }
+
+    entries.push({
+      id: `snap-${snap.id}-${tooth}`,
+      toothNumber: tooth,
+      previousCondition,
+      newCondition,
+      visitId: snap.visitId,
+      visitCode: snap.visitCode,
+      visitDate: null,
+      treatmentId: null,
+      treatmentDescription: null,
+      treatmentProcedure: null,
+      source: "manual",
+      recordedBy: snap.recordedBy,
+      recordedByName: snap.recordedByName,
+      recordedAt: snap.recordedAt,
+    });
+  }
+
+  return entries.reverse(); // newest first
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {
   patientId: string;
@@ -63,11 +99,11 @@ interface Props {
 
 export function PatientChartTab({ patientId, chartData, chartSaving, chartHistory, showHistory, onChartChange, onToggleHistory }: Props) {
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
-  const [toothHistory, setToothHistory] = useState<ToothConditionEntry[]>([]);
+  const [toothHistory, setToothHistory] = useState<DerivedEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  // Condition history grouped by tooth (for snapshot "what changed" enrichment)
-  const [conditionHistory, setConditionHistory] = useState<ToothConditionEntry[]>([]);
 
+  // Pre-fetch condition history for enriching snapshot entries
+  const [conditionHistory, setConditionHistory] = useState<ToothConditionEntry[]>([]);
   useEffect(() => {
     patientsApi.getToothConditionHistory(patientId, { limit: 200 })
       .then(({ history }) => setConditionHistory(history))
@@ -79,21 +115,32 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
     setHistoryLoading(true);
     try {
       const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 20 });
-      setToothHistory(history);
-    } catch { setToothHistory([]); }
+      if (history.length > 0) {
+        setToothHistory(history as DerivedEntry[]);
+      } else {
+        // Fallback: derive from snapshot history (covers teeth marked before migration 0048)
+        setToothHistory(deriveHistoryFromSnapshots(tooth, chartHistory));
+      }
+    } catch {
+      setToothHistory(deriveHistoryFromSnapshots(tooth, chartHistory));
+    }
     setHistoryLoading(false);
   }
 
-  // For each snapshot entry, get the condition changes that happened at that time
-  function getChangesForSnapshot(entry: ToothChartHistoryEntry): Array<{ tooth: string; prev: string | null; next: string }> {
-    const visitConditions = conditionHistory.filter(
-      (h) => h.visitId === entry.visitId && entry.changedTeeth.includes(h.toothNumber),
+  // For snapshot history: enrich each entry with condition change detail
+  function getChangesForSnapshot(snap: ToothChartHistoryEntry) {
+    const visitEntries = conditionHistory.filter(
+      (h) => h.visitId === snap.visitId && snap.changedTeeth.includes(h.toothNumber),
     );
-    if (visitConditions.length > 0) {
-      return visitConditions.map((h) => ({ tooth: h.toothNumber, prev: h.previousCondition, next: h.newCondition }));
+    if (visitEntries.length > 0) {
+      return visitEntries.map((h) => ({ tooth: h.toothNumber, prev: h.previousCondition, next: h.newCondition }));
     }
-    // Fallback: just list the teeth that changed without condition details
-    return entry.changedTeeth.map((t) => ({ tooth: t, prev: null, next: (entry.toothData[t] as { condition?: string })?.condition ?? "UNKNOWN" }));
+    // Fallback using snapshot data (no condition history records)
+    return snap.changedTeeth.map((t) => ({
+      tooth: t,
+      prev: null,
+      next: (snap.toothData[t] as { condition?: string } | undefined)?.condition ?? "HEALTHY",
+    }));
   }
 
   return (
@@ -108,7 +155,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
 
       <ToothChart data={chartData} onChange={onChartChange} onToothSelect={handleToothSelect} />
 
-      {/* Per-tooth history panel — auto-shown on click */}
+      {/* Per-tooth history — primary view */}
       <div className="mt-5 border-t border-pk-border pt-4">
         {!selectedTooth ? (
           <p className="text-xs text-pk-text-muted italic">Click any tooth above to view its condition history.</p>
@@ -116,13 +163,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
           <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-pk-text">Tooth {selectedTooth} — Condition History</p>
-              <button
-                type="button"
-                onClick={() => setSelectedTooth(null)}
-                className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
-              >
-                &times;
-              </button>
+              <button type="button" onClick={() => setSelectedTooth(null)} className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none">&times;</button>
             </div>
             {historyLoading ? (
               <p className="text-xs text-pk-text-muted">Loading…</p>
@@ -140,21 +181,12 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
                       <div className="space-y-1 flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {entry.previousCondition ? (
-                            <>
-                              <ConditionChip condition={entry.previousCondition} />
-                              <span className="text-pk-text-muted">→</span>
-                              <ConditionChip condition={entry.newCondition} />
-                            </>
+                            <><ConditionChip condition={entry.previousCondition} /><span className="text-pk-text-muted">→</span><ConditionChip condition={entry.newCondition} /></>
                           ) : (
-                            <>
-                              <span className="text-pk-text-muted">First recorded as</span>
-                              <ConditionChip condition={entry.newCondition} />
-                            </>
+                            <><span className="text-pk-text-muted">First recorded as</span><ConditionChip condition={entry.newCondition} /></>
                           )}
                         </div>
-                        {procedureLabel && (
-                          <p className="text-pk-teal-700 font-medium truncate">{procedureLabel}</p>
-                        )}
+                        {procedureLabel && <p className="text-pk-teal-700 font-medium truncate">{procedureLabel}</p>}
                         <p className="text-pk-text-muted">
                           {new Date(entry.recordedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                           {entry.visitCode && (
@@ -173,18 +205,18 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
         )}
       </div>
 
-      {/* Snapshot history timeline */}
+      {/* All chart saves — secondary toggle */}
       {chartHistory.length > 0 && (
-        <div className="mt-5 border-t border-pk-border pt-4">
+        <div className="mt-4">
           <button
             type="button"
             onClick={onToggleHistory}
-            className="flex items-center gap-2 text-sm font-medium text-pk-text-secondary hover:text-pk-text transition-colors"
+            className="flex items-center gap-1.5 text-xs text-pk-text-muted hover:text-pk-text-secondary transition-colors"
           >
-            <svg className={`w-4 h-4 transition-transform ${showHistory ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-3.5 h-3.5 transition-transform ${showHistory ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            Chart History ({chartHistory.length} {chartHistory.length === 1 ? "save" : "saves"})
+            {showHistory ? "Hide" : "View"} all chart saves ({chartHistory.length})
           </button>
 
           {showHistory && (
@@ -202,9 +234,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
                         {new Date(snap.recordedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                       {snap.visitCode && (
-                        <Link href={`/dashboard/visits/${snap.visitId}`} className="text-xs text-pk-teal-600 hover:underline font-mono">
-                          {snap.visitCode}
-                        </Link>
+                        <Link href={`/dashboard/visits/${snap.visitId}`} className="text-xs text-pk-teal-600 hover:underline font-mono">{snap.visitCode}</Link>
                       )}
                       <span className="text-xs text-pk-text-muted">by {snap.recordedByName}</span>
                     </div>
@@ -214,22 +244,15 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
                           <li key={c.tooth} className="flex items-center gap-1.5 text-xs">
                             <span className="font-mono text-pk-text-secondary bg-pk-surface-sunken px-1 rounded text-[10px]">{c.tooth}</span>
                             {c.prev ? (
-                              <>
-                                <ConditionChip condition={c.prev} />
-                                <span className="text-pk-text-muted">→</span>
-                                <ConditionChip condition={c.next} />
-                              </>
+                              <><ConditionChip condition={c.prev} /><span className="text-pk-text-muted">→</span><ConditionChip condition={c.next} /></>
                             ) : (
-                              <>
-                                <span className="text-pk-text-muted text-[10px]">set to</span>
-                                <ConditionChip condition={c.next} />
-                              </>
+                              <><span className="text-pk-text-muted text-[10px]">set to</span><ConditionChip condition={c.next} /></>
                             )}
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs text-pk-text-muted mt-0.5">No condition changes</p>
+                      <p className="text-xs text-pk-text-muted mt-0.5 italic">No condition changes in this save.</p>
                     )}
                   </li>
                 );
