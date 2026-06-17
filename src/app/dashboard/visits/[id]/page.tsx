@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { visitsApi, appointmentsApi, treatmentsApi, ApiError } from "@/api";
+import { visitsApi, appointmentsApi, treatmentsApi, patientsApi, ApiError } from "@/api";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { VisitHeaderCard } from "@/components/visits/VisitHeaderCard";
@@ -15,10 +15,13 @@ import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
 import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
 import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab";
+import { CompleteVisitModal } from "@/components/visits/CompleteVisitModal";
 import type {
   Visit, VisitItem, Payment, Attachment, HistoryVisit, Treatment, NewItemState,
 } from "@/components/visits/types";
 import type { ClinicalPhoto } from "@/types";
+import type { TreatmentDecision } from "@/api/treatments";
+import type { ChartData } from "@/components/ui/ToothChart";
 import type { Prescription } from "@/types";
 
 type TabKey = "items" | "payments" | "attachments" | "photos" | "prescriptions" | "history" | "treatmentPlan" | "chart";
@@ -42,6 +45,8 @@ export default function VisitDetailPage() {
   const [markingApptDone, setMarkingApptDone] = useState(false);
   const [appointmentStatus, setAppointmentStatus] = useState<string | null>(null);
   const [completingVisit, setCompletingVisit] = useState(false);
+  const [completeCheckDecisions, setCompleteCheckDecisions] = useState<TreatmentDecision[] | null>(null);
+  const [currentChartData, setCurrentChartData] = useState<ChartData>({});
 
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesForm, setNotesForm] = useState({ chiefComplaint: "", doctorNotes: "", diagnosis: "" });
@@ -149,16 +154,41 @@ export default function VisitDetailPage() {
 
   async function handleCompleteVisit() {
     if (!visit) return;
-    const due = visit.totalAmount - visit.paidAmount;
-    if (due > 0 && !confirm(`This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway?`)) return;
     setCompletingVisit(true);
     setPageError("");
     try {
+      // Check if any treatment decisions are needed before completing
+      const check = await treatmentsApi.getCompleteCheck(id);
+      if (check.needsAttention) {
+        // Load current chart data for the modal
+        const { toothData } = await patientsApi.getToothChart(visit.patientId);
+        setCurrentChartData((toothData as ChartData) ?? {});
+        setCompleteCheckDecisions(check.treatments);
+        setCompletingVisit(false);
+        return;
+      }
+
+      // No treatment decisions needed — proceed with outstanding balance check
+      const due = visit.totalAmount - visit.paidAmount;
+      if (due > 0 && !confirm(`This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway?`)) {
+        setCompletingVisit(false);
+        return;
+      }
+
       await visitsApi.update(id, { status: "COMPLETED" });
       await fetchVisit();
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
     } finally { setCompletingVisit(false); }
+  }
+
+  async function handleModalComplete() {
+    if (!visit) return;
+    const due = visit.totalAmount - visit.paidAmount;
+    if (due > 0 && !confirm(`This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway?`)) return;
+    await visitsApi.update(id, { status: "COMPLETED" });
+    setCompleteCheckDecisions(null);
+    await fetchVisit();
   }
 
   async function handleMarkAppointmentDone() {
@@ -265,6 +295,17 @@ export default function VisitDetailPage() {
         <PaymentModal
           due={due} payForm={payForm} payError={payError} paySubmitting={paySubmitting}
           onChange={setPayForm} onSubmit={handleAddPayment} onClose={() => { setShowPayModal(false); setPayError(""); }}
+        />
+      )}
+
+      {completeCheckDecisions && visit && (
+        <CompleteVisitModal
+          visitId={id}
+          patientId={visit.patientId}
+          decisions={completeCheckDecisions}
+          currentChartData={currentChartData}
+          onComplete={handleModalComplete}
+          onCancel={() => setCompleteCheckDecisions(null)}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { ToothChart } from "@/components/ui/tooth-chart";
 import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "./types";
@@ -48,10 +48,40 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   // IN_PROGRESS without consent warning
   const [pendingStatusChange, setPendingStatusChange] = useState<{ txId: string; status: string } | null>(null);
 
+  // L2: deferred link-prompt — shown once per visit, dismissed via sessionStorage
+  const [showLinkPrompt, setShowLinkPrompt] = useState(false);
+  const [unlinkablePlans, setUnlinkablePlans] = useState<Treatment[]>([]);
+
+  const DISMISS_KEY = `pk_visit_link_dismissed_${visitId}`;
+
+  useEffect(() => {
+    if (visit.status !== "OPEN") return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem(DISMISS_KEY)) return;
+    if (treatments.length > 0) return; // already has linked plans
+
+    // Check for existing unlinked plans for this patient
+    treatmentsApi.list({ patientId: visit.patientId, status: "PLANNED" }).then((d) => {
+      const plans = (d.treatments ?? []).filter((t: Treatment) => t.status !== "COMPLETED");
+      if (plans.length > 0) {
+        setUnlinkablePlans(plans);
+        setShowLinkPrompt(true);
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitId]);
+
   async function handleAddTreatment(e: React.FormEvent) {
     e.preventDefault();
     setTxSubmitting(true);
     setTxError("");
+    // L7: require at least one tooth number unless it looks like a consultation
+    const isConsultation = /consult/i.test(txForm.description) || /consult/i.test(txForm.procedure);
+    if (!isConsultation && txForm.toothNumbers.length === 0) {
+      setTxError("Please select at least one tooth. For consultations without a specific tooth, include 'consultation' in the description.");
+      setTxSubmitting(false);
+      return;
+    }
     try {
       await treatmentsApi.forVisit.link(visitId, {
         description: txForm.description,
@@ -190,6 +220,36 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
 
   return (
     <>
+      {/* L2: deferred link-prompt — shown once per visit session */}
+      {showLinkPrompt && (
+        <div className="bg-pk-teal-50 border border-pk-teal-200 rounded-pk-lg px-4 py-3 flex items-start justify-between gap-3 mb-3">
+          <div>
+            <p className="text-sm font-semibold text-pk-teal-800">Existing treatment plan{unlinkablePlans.length > 1 ? "s" : ""} found</p>
+            <p className="text-xs text-pk-teal-600 mt-0.5">
+              {unlinkablePlans.length === 1
+                ? `"${unlinkablePlans[0].description}" — link it to this visit to track payments.`
+                : `${unlinkablePlans.length} plans available — link them to track payments in this visit.`}
+            </p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => { setShowLinkPrompt(false); handleOpenLinkModal(); }}
+              className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm font-medium hover:bg-pk-teal-700 transition"
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => { sessionStorage.setItem(DISMISS_KEY, "1"); setShowLinkPrompt(false); }}
+              className="text-xs border border-pk-teal-300 text-pk-teal-700 px-3 py-1.5 rounded-pk-sm font-medium hover:bg-pk-teal-100 transition"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-5">
         {visit.status !== "CANCELLED" && (
           <form onSubmit={handleAddTreatment} className="bg-pk-surface-raised rounded-pk-lg p-4 space-y-3 border border-pk-border">
@@ -314,20 +374,16 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                             Add to Bill
                           </button>
                         )}
-                        <select
-                          value={tx.status}
-                          disabled={txUpdating === tx.id}
-                          onChange={(e) => handleTreatmentStatusChange(tx, e.target.value)}
-                          className={`text-xs border rounded-pk-sm px-2 py-1.5 font-medium focus:outline-none focus:ring-2 focus:ring-pk-teal-500 disabled:opacity-50 ${
-                            tx.status === "PLANNED" ? "bg-pk-warning-fill border-pk-warning-border text-pk-warning-text"
-                            : tx.status === "IN_PROGRESS" ? "bg-pk-teal-50 border-pk-teal-200 text-pk-teal-800"
-                            : "bg-pk-success-fill border-pk-success-border text-pk-success-text"
-                          }`}
-                        >
-                          <option value="PLANNED">Planned</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="COMPLETED">Completed</option>
-                        </select>
+                        {/* Status badge — read-only for OPEN visits (status changes
+                            are handled by the Complete Visit modal to avoid mid-session
+                            interruptions). COMPLETED visits show a plain badge. */}
+                        <span className={`text-xs border rounded-pk-sm px-2 py-1.5 font-medium ${
+                          tx.status === "PLANNED"     ? "bg-pk-warning-fill border-pk-warning-border text-pk-warning-text"
+                          : tx.status === "IN_PROGRESS" ? "bg-pk-teal-50 border-pk-teal-200 text-pk-teal-800"
+                          : "bg-pk-success-fill border-pk-success-border text-pk-success-text"
+                        }`}>
+                          {tx.status === "PLANNED" ? "Planned" : tx.status === "IN_PROGRESS" ? "In Progress" : "Completed"}
+                        </span>
                         {visit.status !== "CANCELLED" && (
                           <button
                             onClick={() => handleUnlinkTreatment(tx.id)}

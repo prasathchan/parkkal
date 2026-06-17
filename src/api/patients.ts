@@ -110,15 +110,46 @@ export function getToothChart(patientId: string): Promise<{ toothData: Record<st
   return apiFetch<{ toothData: Record<string, unknown> }>(`/api/patients/${patientId}/tooth-chart`);
 }
 
+export type ToothChartSaveSource = "manual" | "treatment_start" | "treatment_complete";
+
 export function saveToothChart(
   patientId: string,
   toothData: Record<string, unknown>,
   visitId?: string,
+  source?: ToothChartSaveSource,
+  treatmentId?: string,
 ): Promise<{ success: true; changedTeeth: string[] }> {
   return apiFetch<{ success: true; changedTeeth: string[] }>(`/api/patients/${patientId}/tooth-chart`, {
     method: "PUT",
-    body: JSON.stringify({ toothData, visitId }),
+    body: JSON.stringify({ toothData, visitId, source: source ?? "manual", treatmentId: treatmentId ?? null }),
   });
+}
+
+export interface ToothConditionEntry {
+  id: string;
+  toothNumber: string;
+  previousCondition: string | null;
+  newCondition: string;
+  visitId: string | null;
+  visitCode: string | null;
+  visitDate: string | null;
+  treatmentId: string | null;
+  source: string;
+  recordedBy: string;
+  recordedByName: string | null;
+  recordedAt: number;
+}
+
+export function getToothConditionHistory(
+  patientId: string,
+  params?: { toothNumber?: string; visitId?: string; limit?: number },
+): Promise<{ history: ToothConditionEntry[] }> {
+  const q = new URLSearchParams();
+  if (params?.toothNumber) q.set("toothNumber", params.toothNumber);
+  if (params?.visitId)     q.set("visitId", params.visitId);
+  if (params?.limit)       q.set("limit", String(params.limit));
+  const qs = q.toString() ? `?${q}` : "";
+  return apiFetch<{ history: ToothConditionEntry[] }>(`/api/patients/${patientId}/tooth-condition-history${qs}`);
 }
 
 export interface ToothChartHistoryEntry {
@@ -173,5 +204,6 @@ export const patientsApi = {
   getToothChart,
   saveToothChart,
   getToothChartHistory,
+  getToothConditionHistory,
   listPrescriptions: listPatientPrescriptions,
 };

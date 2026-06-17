@@ -3,7 +3,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { patientsApi } from "@/api";
 import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
+import type { ToothConditionEntry } from "@/api/patients";
 import type { VisitItem } from "./types";
+
+const CONDITION_LABELS: Record<string, string> = {
+  HEALTHY:    "Healthy",
+  CARIES:     "Cavity",
+  FILLING:    "Filling",
+  CROWN:      "Crown",
+  MISSING:    "Missing",
+  ROOT_CANAL: "Root Canal",
+  BRIDGE:     "Bridge",
+  IMPLANT:    "Implant",
+  FRACTURED:  "Fractured",
+  WATCH:      "Watch",
+};
 
 interface Props {
   visitId: string;
@@ -22,6 +36,11 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
   const [saving, setSaving]               = useState(false);
   const [savedAt, setSavedAt]             = useState<number | null>(null);
   const [error, setError]                 = useState("");
+
+  // Per-tooth history popover
+  const [historyTooth, setHistoryTooth]   = useState<string | null>(null);
+  const [toothHistory, setToothHistory]   = useState<ToothConditionEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Used only for OPEN visits
   const saveInFlight  = useRef(false);
@@ -97,7 +116,7 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
       // Loop until no new changes arrived during the in-flight request
       while (true) {
         const toSave = latestData.current;
-        await patientsApi.saveToothChart(patientId, toSave as Record<string, unknown>, visitId);
+        await patientsApi.saveToothChart(patientId, toSave as Record<string, unknown>, visitId, "manual");
         if (latestData.current === toSave) break;
       }
       setSavedAt(Date.now());
@@ -109,6 +128,17 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
       setSaving(false);
     }
   }, [patientId, visitId]);
+
+  async function handleToothHistoryClick(tooth: string) {
+    if (historyTooth === tooth) { setHistoryTooth(null); return; }
+    setHistoryTooth(tooth);
+    setHistoryLoading(true);
+    try {
+      const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 10 });
+      setToothHistory(history);
+    } catch { setToothHistory([]); }
+    setHistoryLoading(false);
+  }
 
   const handleChange = useCallback((data: ChartData) => {
     setChartData(data);
@@ -193,6 +223,71 @@ export function VisitToothChartTab({ visitId, patientId, visitStatus, items }: P
         readOnly={readOnly}
         onChange={isOpen ? handleChange : undefined}
       />
+
+      {/* Per-tooth history — click any tooth number label to open */}
+      <div className="mt-4 border-t border-pk-border pt-4">
+        <p className="text-xs text-pk-text-muted mb-2">
+          View tooth history:{" "}
+          <span className="text-pk-text-secondary">click a tooth number below</span>
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.keys(chartData).sort().map((tooth) => (
+            <button
+              key={tooth}
+              type="button"
+              onClick={() => handleToothHistoryClick(tooth)}
+              className={`text-xs px-2 py-1 rounded border transition ${
+                historyTooth === tooth
+                  ? "bg-pk-teal-600 text-white border-pk-teal-600"
+                  : "border-pk-border text-pk-text-muted hover:border-pk-teal-400 hover:text-pk-teal-700"
+              }`}
+            >
+              {tooth}
+            </button>
+          ))}
+        </div>
+
+        {historyTooth && (
+          <div className="mt-3 bg-pk-surface-raised border border-pk-border rounded-pk-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-pk-text">Tooth {historyTooth} — History</p>
+              <button
+                type="button"
+                onClick={() => setHistoryTooth(null)}
+                className="text-pk-text-muted hover:text-pk-text-secondary text-sm leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            {historyLoading ? (
+              <p className="text-xs text-pk-text-muted">Loading…</p>
+            ) : toothHistory.length === 0 ? (
+              <p className="text-xs text-pk-text-muted">No history recorded for this tooth.</p>
+            ) : (
+              <ol className="space-y-2">
+                {toothHistory.map((entry, i) => (
+                  <li key={entry.id} className="flex items-start gap-2 text-xs">
+                    <span className="text-pk-text-muted flex-shrink-0 mt-0.5">{i + 1}.</span>
+                    <div>
+                      <span className="text-pk-text font-medium">
+                        {entry.previousCondition
+                          ? `${CONDITION_LABELS[entry.previousCondition] ?? entry.previousCondition} → ${CONDITION_LABELS[entry.newCondition] ?? entry.newCondition}`
+                          : `First recorded: ${CONDITION_LABELS[entry.newCondition] ?? entry.newCondition}`}
+                      </span>
+                      <span className="text-pk-text-muted ml-1.5">
+                        {new Date(entry.recordedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        {entry.visitCode && ` · ${entry.visitCode}`}
+                        {entry.source === "treatment_start" && " · Treatment start"}
+                        {entry.source === "treatment_complete" && " · Treatment complete"}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

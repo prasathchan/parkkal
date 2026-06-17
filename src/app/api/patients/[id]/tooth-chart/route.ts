@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { toothChart, toothChartHistory, organizationPatients } from "@/db/schema";
+import { toothChart, toothChartHistory, toothConditionHistory, organizationPatients } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { runCascade } from "@/lib/db";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -57,8 +57,11 @@ export const PUT = withRoute(
     const parsed = toothDataSchema.safeParse(body.toothData ?? {});
     if (!parsed.success) return apiError("Invalid tooth data", 400);
 
-    // Optional visitId — links this save to a specific visit for history tracking
-    const visitId = typeof body.visitId === "string" ? body.visitId : null;
+    const visitId    = typeof body.visitId    === "string" ? body.visitId    : null;
+    const treatmentId = typeof body.treatmentId === "string" ? body.treatmentId : null;
+    const source = (["manual", "treatment_start", "treatment_complete"] as const).includes(
+      body.source as "manual" | "treatment_start" | "treatment_complete"
+    ) ? (body.source as "manual" | "treatment_start" | "treatment_complete") : "manual";
 
     const now = Date.now();
     const newData = parsed.data;
@@ -101,17 +104,36 @@ export const PUT = withRoute(
         });
 
     const historyWrite = db.insert(toothChartHistory).values({
-      id:             randomUUID(),
+      id:           randomUUID(),
       organizationId: session.orgId,
       patientId,
       visitId,
-      toothData:      JSON.stringify(newData),
-      changedTeeth:   JSON.stringify(changedTeeth),
-      recordedBy:     session.userId,
-      recordedAt:     now,
+      toothData:    JSON.stringify(newData),
+      changedTeeth: JSON.stringify(changedTeeth),
+      source,
+      recordedBy:   session.userId,
+      recordedAt:   now,
     });
 
     await runCascade(db, [chartWrite, historyWrite]);
+
+    // Write per-tooth condition history entries for each changed tooth.
+    // These power the patient-facing tooth timeline and the Chart→Treatment deferred prompt.
+    for (const tooth of changedTeeth) {
+      await db.insert(toothConditionHistory).values({
+        id:                randomUUID(),
+        organizationId:    session.orgId,
+        patientId,
+        toothNumber:       tooth,
+        previousCondition: oldData[tooth]?.condition ?? null,
+        newCondition:      newData[tooth]?.condition ?? "HEALTHY",
+        visitId,
+        treatmentId,
+        source,
+        recordedBy:        session.userId,
+        recordedAt:        now,
+      });
+    }
 
     return apiOk({ success: true, changedTeeth });
   }

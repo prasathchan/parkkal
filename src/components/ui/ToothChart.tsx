@@ -68,12 +68,14 @@ function ToothCell({
   data,
   isUpper,
   readOnly,
+  highlight,
   onConditionChange,
 }: {
   number: number;
   data: ToothData | undefined;
   isUpper: boolean;
   readOnly: boolean;
+  highlight?: boolean;
   onConditionChange: (n: number, condition: ToothCondition, notes?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -108,7 +110,7 @@ function ToothCell({
         disabled={readOnly}
         title={CONDITION_LABELS[condition] + (data?.notes ? ` — ${data.notes}` : "")}
         onClick={() => { if (!readOnly) { setEditNotes(data?.notes ?? ""); setOpen(true); } }}
-        className={`w-7 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-default" : "hover:scale-110 hover:z-10 cursor-pointer"}`}
+        className={`w-7 ${height} rounded-sm border-2 transition-all focus:outline-none relative ${readOnly ? "cursor-default" : "hover:scale-110 hover:z-10 cursor-pointer"} ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
       >
         {/* Glyph overlays — colour-blind-safe cues (Brand §3.1). Light glyph on solid fills. */}
@@ -198,9 +200,12 @@ interface ToothChartProps {
   data: ChartData;
   readOnly?: boolean;
   onChange?: (data: ChartData) => void;
+  /** Tooth numbers to highlight with a ring — used to draw attention to specific teeth */
+  highlightTeeth?: string[];
 }
 
-export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps) {
+export function ToothChart({ data, readOnly = false, onChange, highlightTeeth }: ToothChartProps) {
+  const highlightSet = new Set(highlightTeeth ?? []);
   function handleChange(n: number, condition: ToothCondition, notes?: string) {
     const updated: ChartData = {
       ...data,
@@ -233,6 +238,7 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
                   data={data[String(n)]}
                   isUpper={true}
                   readOnly={readOnly}
+                  highlight={highlightSet.has(String(n))}
                   onConditionChange={handleChange}
                 />
               </>
@@ -255,6 +261,7 @@ export function ToothChart({ data, readOnly = false, onChange }: ToothChartProps
                   data={data[String(n)]}
                   isUpper={false}
                   readOnly={readOnly}
+                  highlight={highlightSet.has(String(n))}
                   onConditionChange={handleChange}
                 />
               </>

@@ -75,6 +75,65 @@ if (!patient) return apiError("Not found", 404);
 
 ---
 
+## Multi-branch: how one organisation runs multiple clinics
+
+> **Status: designed, not yet implemented.**
+> Full implementation spec: `product/specs/MULTI_BRANCH.md`
+
+A single `Organization` can have multiple physical **branches** (locations). The
+architecture uses a two-level isolation model — the most important concept to understand
+before touching any branch-related code:
+
+```
+Org isolation  = HARD WALL   — WHERE organization_id = ?  on every query, always
+Branch filter  = SOFT LENS   — WHERE branch_id = ?  applied only where relevant
+```
+
+**Branch is not a data partition.** It is a view filter. The same patient record
+is visible to all branches within the org. A visit record carries a `branch_id` to
+record *where it happened* — not to restrict who can see it.
+
+### The three data layers
+
+| Layer | Filter applied | Examples |
+|-------|---------------|---------|
+| Global | none | `patients`, `users` |
+| Org | `organization_id = ?` | `treatments`, `org_roles`, `org_drugs` |
+| Branch | `organization_id = ?` AND optionally `branch_id = ?` | `visits`, `appointments`, `invoices` |
+
+The branch filter is optional because org admins (`branchAccess: 'all'`) see all
+branches. Branch staff see only their assigned branches.
+
+### New tables
+
+- **`branches`** — the physical location (`id`, `organizationId`, `name`, `code`,
+  `isHeadquarters`, `timezone`, `settings`)
+- **`branch_members`** — staff-to-branch assignment many-to-many
+  (`branchId`, `userId`, `organizationId`, `orgRoleId`, `isPrimary`)
+
+### Modified tables (add `branch_id`)
+
+`visits`, `appointments`, `invoices`, `salary_records`,
+`organization_patients` (as `registered_branch_id`)
+
+### Session changes
+
+JWT gains `branchAccess: 'all' | string[]` and `primaryBranchId`.
+The *active* branch is **not** in the JWT — it flows as an `X-Branch-Id` request
+header so staff can switch branches without re-logging in.
+
+### withRoute() gains two new flags
+
+```typescript
+branchAware: true   // reads + validates X-Branch-Id, injects branchFilter
+crossBranch: true   // skips branch filter — org admin reports only
+```
+
+See `product/specs/MULTI_BRANCH.md` for the complete SQL, migration plan,
+permission additions, query patterns, and implementation checklist.
+
+---
+
 ## Permissions: two-level model
 
 Staff have a **coarse role** (`ADMIN`, `DOCTOR`, `NURSE`, etc.) AND optionally a

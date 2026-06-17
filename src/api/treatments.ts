@@ -17,6 +17,30 @@ import { apiFetch, ApiError } from "./_client";
 import type { Treatment, ClinicalPhoto } from "@/types";
 import type { TreatmentStatus } from "@/constants/treatment";
 
+// ─── Complete-check ───────────────────────────────────────────────────────────
+
+export interface TreatmentDecision {
+  id: string;
+  description: string;
+  procedure: string | null;
+  toothNumbers: string | null;
+  status: "PLANNED" | "IN_PROGRESS" | "COMPLETED";
+  cost: number;
+  totalPaid: number;
+  paidThisVisit: number;
+  chartChangedThisVisit: boolean;
+  hasChartStartEntry: boolean;
+  suggestedStatus: "IN_PROGRESS" | "COMPLETED" | null;
+}
+
+export function getCompleteCheck(
+  visitId: string,
+): Promise<{ needsAttention: boolean; treatments: TreatmentDecision[] }> {
+  return apiFetch<{ needsAttention: boolean; treatments: TreatmentDecision[] }>(
+    `/api/visits/${visitId}/complete-check`,
+  );
+}
+
 // ─── Response shapes ─────────────────────────────────────────────────────────
 
 /** One visit row returned by GET /api/treatments/[id]/visits */
@@ -203,6 +227,7 @@ export const treatmentsApi = {
   update: updateTreatment,
   delete: deleteTreatment,
   getVisits: getTreatmentVisits,
+  getCompleteCheck,
   forVisit: {
     list: listTreatmentsForVisit,
     link: linkTreatmentToVisit,

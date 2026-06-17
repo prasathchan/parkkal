@@ -465,6 +465,7 @@ export const toothChart = sqliteTable("tooth_chart", {
 // ─── Tooth Chart History ──────────────────────────────────────────────────────
 // Full snapshot written every time the cumulative chart is saved.
 // visit_id is nullable — direct edits from the patient page are still tracked.
+// source distinguishes manual doctor edits from treatment-driven saves.
 export const toothChartHistory = sqliteTable("tooth_chart_history", {
   id:             text("id").primaryKey(),
   organizationId: text("organization_id").notNull().references(() => organizations.id),
@@ -472,8 +473,31 @@ export const toothChartHistory = sqliteTable("tooth_chart_history", {
   visitId:        text("visit_id").references(() => visits.id),
   toothData:      text("tooth_data").notNull(),              // JSON full snapshot
   changedTeeth:   text("changed_teeth").notNull().default("[]"), // JSON string[]
+  source:         text("source").notNull().default("manual"), // "manual" | "treatment_start" | "treatment_complete"
   recordedBy:     text("recorded_by").notNull().references(() => users.id),
   recordedAt:     integer("recorded_at").notNull(),
+});
+
+// ─── Tooth Condition History ──────────────────────────────────────────────────
+// Per-tooth condition change log. One row per tooth per change event.
+// Complements tooth_chart_history (which stores full snapshots) — this table is
+// queryable per tooth and links changes to the treatment that caused them.
+// source values:
+//   "manual"             — doctor edited the chart directly
+//   "treatment_start"    — chart updated when treatment moved to IN_PROGRESS
+//   "treatment_complete" — chart updated when treatment was marked COMPLETED
+export const toothConditionHistory = sqliteTable("tooth_condition_history", {
+  id:                text("id").primaryKey(),
+  organizationId:    text("organization_id").notNull().references(() => organizations.id),
+  patientId:         text("patient_id").notNull().references(() => patients.id),
+  toothNumber:       text("tooth_number").notNull(),
+  previousCondition: text("previous_condition"),              // null = first recorded condition
+  newCondition:      text("new_condition").notNull(),
+  visitId:           text("visit_id").references(() => visits.id),
+  treatmentId:       text("treatment_id").references(() => treatments.id),
+  source:            text("source").notNull().default("manual"),
+  recordedBy:        text("recorded_by").notNull().references(() => users.id),
+  recordedAt:        integer("recorded_at").notNull(),
 });
 
 // ─── Patient code sequences ───────────────────────────────────────────────────
@@ -682,6 +706,14 @@ export const consentAuditLogRelations = relations(consentAuditLog, ({ one }) => 
   treatment:    one(treatments,    { fields: [consentAuditLog.treatmentId],    references: [treatments.id] }),
   organization: one(organizations, { fields: [consentAuditLog.organizationId], references: [organizations.id] }),
   actor:        one(users,         { fields: [consentAuditLog.actorId],         references: [users.id] }),
+}));
+
+export const toothConditionHistoryRelations = relations(toothConditionHistory, ({ one }) => ({
+  organization: one(organizations, { fields: [toothConditionHistory.organizationId], references: [organizations.id] }),
+  patient:      one(patients,      { fields: [toothConditionHistory.patientId],      references: [patients.id] }),
+  visit:        one(visits,        { fields: [toothConditionHistory.visitId],         references: [visits.id] }),
+  treatment:    one(treatments,    { fields: [toothConditionHistory.treatmentId],     references: [treatments.id] }),
+  recorder:     one(users,         { fields: [toothConditionHistory.recordedBy],      references: [users.id] }),
 }));
 
 
