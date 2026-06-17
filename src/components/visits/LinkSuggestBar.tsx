@@ -39,6 +39,10 @@ export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId, patientId]);
 
+  function close() {
+    setOpen(false);
+  }
+
   function dismiss() {
     if (typeof window !== "undefined") sessionStorage.setItem(`pk_link_suggest_${visitId}`, "1");
     setOpen(false);
@@ -86,7 +90,7 @@ export function LinkSuggestBar({ visitId, patientId, alreadyLinkedIds, onLink }:
               Linking auto-creates a bill item and updates the chart for in-progress treatments.
             </p>
           </div>
-          <button onClick={dismiss} aria-label="Dismiss" className="text-pk-text-muted hover:text-pk-text-secondary text-xl leading-none ml-4">&times;</button>
+          <button onClick={close} aria-label="Close" className="text-pk-text-muted hover:text-pk-text-secondary text-xl leading-none ml-4">&times;</button>
         </div>
 
         {/* Select all row */}

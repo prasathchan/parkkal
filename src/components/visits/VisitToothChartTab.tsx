@@ -316,6 +316,19 @@ export function VisitToothChartTab({
         </div>
       )}
 
+      {/* Read-only notice — shown for all non-open visits */}
+      {!isOpen && (
+        <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-surface-raised border border-pk-border px-3 py-2.5">
+          <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <p className="text-xs text-pk-text-muted">
+            <span className="font-medium text-pk-text-secondary">Chart is view-only for this visit.</span>
+            {" "}To update a tooth&apos;s condition, open the patient&apos;s profile or edit it in an active visit.
+          </p>
+        </div>
+      )}
+
       {/* No-snapshot notice for completed visits */}
       {!isOpen && !hasVisitSnapshot && (
         <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-surface-raised border border-pk-border px-3 py-2">

@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, count } from "drizzle-orm";
+import { eq, desc, and, gte, lte, count, sql } from "drizzle-orm";
 import { treatments, patients, users, organizationPatients, organizationMembers } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
@@ -62,6 +62,7 @@ export const GET = withRoute(
         patientName: patients.name,
         patientCode: patients.patientCode,
         doctorName: users.name,
+        billedAmount: sql<number>`(SELECT COALESCE(SUM(unit_price * quantity), 0) FROM visit_items WHERE linked_treatment_id = ${treatments.id})`,
       })
       .from(treatments)
       .leftJoin(patients, eq(treatments.patientId, patients.id))
