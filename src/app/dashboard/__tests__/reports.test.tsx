@@ -8,7 +8,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("@/api", () => ({
-  reportsApi: { get: vi.fn() },
+  reportsApi: { get: vi.fn(), branchComparison: vi.fn().mockResolvedValue({ branches: [], period: { start: 0, end: 0 } }) },
+  locationsApi: { list: vi.fn().mockResolvedValue({ locations: [] }) },
+  authApi: { me: vi.fn().mockResolvedValue({ user: { role: "ADMIN", primaryLocationId: null } }) },
   ApiError: class ApiError extends Error {},
 }));
 
@@ -32,6 +34,7 @@ const REPORT_DATA = {
   treatmentByStatus: {},
   topProcedures: [],
   agingBuckets: [],
+  topOutstandingPatients: [],
   patientFunnel: { registered: 0, hadVisit: 0, hadTreatmentPlan: 0, hadInvoice: 0, hadPayment: 0 },
   doctorBreakdown: [],
 };

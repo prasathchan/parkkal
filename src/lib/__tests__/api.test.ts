@@ -45,7 +45,7 @@ vi.mock("@/lib/logger", () => ({
 const defaultDbMock = {
   select: () => ({
     from: () => ({
-      where: async () => [{ isActive: 1 }],
+      where: async () => [{ isActive: 1, role: "ADMIN" }],
     }),
   }),
 };
@@ -54,12 +54,20 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/db/schema", () => ({
-  organizationMembers: { organizationId: "organization_id", userId: "user_id", isActive: "is_active" },
+  organizationMembers: { organizationId: "organization_id", userId: "user_id", isActive: "is_active", role: "role" },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(),
   and: vi.fn(),
+}));
+
+vi.mock("@/lib/subscription", () => ({
+  getOrgSubscription: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/lib/app-logger", () => ({
+  writeAppLog: vi.fn(),
 }));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -289,6 +297,7 @@ describe("withRoute — rate limiting", () => {
 describe("withRoute — authorization", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getDb).mockReturnValue(defaultDbMock as never);
     mockedGetSession.mockResolvedValue(VALID_SESSION);
     mockedIsTokenRevoked.mockResolvedValue(false);
     mockedCheckRateLimit.mockResolvedValue({ allowed: true, remaining: 99, resetAt: 0 });
@@ -323,6 +332,9 @@ describe("withRoute — authorization", () => {
   it("returns 403 for non-ADMIN on adminOnly route", async () => {
     const doctorSession = { ...VALID_SESSION, role: "DOCTOR" };
     mockedGetSession.mockResolvedValue(doctorSession);
+    vi.mocked(getDb).mockReturnValue({
+      select: () => ({ from: () => ({ where: async () => [{ isActive: 1, role: "DOCTOR" }] }) }),
+    } as never);
     const handler = withRoute(
       { route: "DELETE /test", adminOnly: true },
       async () => apiOk({ ok: true })
@@ -347,6 +359,7 @@ describe("withRoute — authorization", () => {
 describe("withRoute — error handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getDb).mockReturnValue(defaultDbMock as never);
     mockedGetSession.mockResolvedValue(VALID_SESSION);
     mockedIsTokenRevoked.mockResolvedValue(false);
     mockedHasPermission.mockResolvedValue(true);
@@ -383,6 +396,7 @@ describe("withRoute — error handling", () => {
 describe("withRoute — path params", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getDb).mockReturnValue(defaultDbMock as never);
     mockedGetSession.mockResolvedValue(VALID_SESSION);
     mockedIsTokenRevoked.mockResolvedValue(false);
     mockedHasPermission.mockResolvedValue(true);
@@ -435,7 +449,7 @@ describe("withRoute — deactivated member", () => {
     vi.mocked(getDb).mockReturnValue({
       select: () => ({
         from: () => ({
-          where: async () => [{ isActive: 0 }],
+          where: async () => [{ isActive: 0, role: "DOCTOR" }],
         }),
       }),
     } as never);

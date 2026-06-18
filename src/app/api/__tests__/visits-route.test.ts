@@ -45,8 +45,9 @@ vi.mock("@/db/schema",      () => ({
   patients:             { id: "id", name: "name", patientCode: "patientCode" },
   users:                { id: "id", name: "name" },
   organizationPatients: { organizationId: "orgId", patientId: "patientId" },
-  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive", role: "role" },
   appointments:         { id: "id", organizationId: "orgId", status: "status" },
+  locations:            { id: "id", organizationId: "orgId", name: "name" },
 }));
 vi.mock("drizzle-orm", () => ({
   eq:    vi.fn(), and: vi.fn((...a: unknown[]) => a), count: vi.fn(() => "count"),
@@ -112,9 +113,9 @@ describe("GET /api/visits", () => {
   it("DOCTOR: member-active check at results[0], then count at results[1]", async () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION as never);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],   // member check
-      [{ total: 1 }],      // count
-      [SAMPLE_VISIT],      // rows
+      [{ isActive: 1, role: "DOCTOR" }],   // member check
+      [{ total: 1 }],                       // count
+      [SAMPLE_VISIT],                       // rows
     ]) as never);
     const { GET } = await import("@/app/api/visits/route");
     const res = await GET(new NextRequest("http://localhost/api/visits"), NO_PARAMS);
@@ -225,7 +226,7 @@ describe("POST /api/visits", () => {
   it("DOCTOR: overrides doctorId to own userId regardless of body", async () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION as never);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],           // member check (non-ADMIN)
+      [{ isActive: 1, role: "DOCTOR" }],   // member check (non-ADMIN)
       [{ patientId: "p1" }],
       [{ userId: "u_doc" }],
       [{ todayCount: 2 }],

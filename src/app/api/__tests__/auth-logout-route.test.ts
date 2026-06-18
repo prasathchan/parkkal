@@ -28,7 +28,8 @@ vi.mock("@/lib/logger",     () => ({
 }));
 vi.mock("@/lib/app-logger", () => ({ writeAppLog: vi.fn() }));
 vi.mock("@/db/schema",      () => ({
-  organizationMembers: { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  organizationMembers:      { organizationId: "orgId", userId: "userId", isActive: "isActive", role: "role" },
+  staffLocationAssignments: { userId: "userId", organizationId: "orgId", locationId: "locationId", isPrimary: "isPrimary" },
 }));
 vi.mock("drizzle-orm",      () => ({
   eq: vi.fn(), and: vi.fn((...a: unknown[]) => a),

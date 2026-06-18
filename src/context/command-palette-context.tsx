@@ -9,7 +9,10 @@ interface CommandPaletteContextValue {
   toggle: () => void;
 }
 
-const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
+const noop = () => {};
+const CommandPaletteContext = createContext<CommandPaletteContextValue>({
+  isOpen: false, open: noop, close: noop, toggle: noop,
+});
 
 export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +27,5 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCommandPalette() {
-  const ctx = useContext(CommandPaletteContext);
-  if (!ctx) throw new Error("useCommandPalette must be inside CommandPaletteProvider");
-  return ctx;
+  return useContext(CommandPaletteContext);
 }

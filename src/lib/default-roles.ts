@@ -32,6 +32,7 @@ export const ALL_PERMISSIONS = [
   "org.settings",
   "reports.view",
   "roles.manage",
+  "locations.manage",
 ];
 
 export interface DefaultRole {

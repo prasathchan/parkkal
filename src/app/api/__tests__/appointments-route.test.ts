@@ -47,7 +47,8 @@ vi.mock("@/db/schema", () => ({
   users:                { id: "id", name: "name" },
   visits:               { id: "id", appointmentId: "appointmentId" },
   organizationPatients: { organizationId: "orgId", patientId: "patientId", isActive: "isActive" },
-  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive", role: "role" },
+  locations:            { id: "id", organizationId: "orgId", name: "name" },
 }));
 vi.mock("drizzle-orm", () => ({
   like: vi.fn(), or: vi.fn(), and: vi.fn((...a: unknown[]) => a),
@@ -124,7 +125,7 @@ describe("GET /api/appointments", () => {
   it("DOCTOR: uses server-enforced doctorId filter without error", async () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],    // member-active check
+      [{ isActive: 1, role: "DOCTOR" }],    // member-active check
       [{ total: 0 }],
       [],
     ]) as never);
@@ -167,7 +168,7 @@ describe("POST /api/appointments", () => {
   it("DOCTOR: overrides doctorId to their own userId", async () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],                  // member-active check
+      [{ isActive: 1, role: "DOCTOR" }],   // member-active check
       [{ patientId: "p1", isActive: 1 }],
       [],                                  // slot conflict check (no conflict)
       undefined,

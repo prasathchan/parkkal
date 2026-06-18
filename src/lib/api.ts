@@ -334,13 +334,10 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
       }
 
       // ── 1b. Member Status + Role Consistency Check ──────────────────────
-      // Always query the DB to catch two conditions before the 24h token expires:
-      //   (a) Account deactivated — rejected for all non-ADMIN roles.
-      //       ADMINs bypass the isActive check so the last admin can never be
-      //       accidentally locked out of the org (they can re-activate themselves).
-      //   (b) Role changed — if the role in the JWT no longer matches the DB,
-      //       force a re-login. Covers demotion, promotion, and role replacement.
-      {
+      // Skip for ADMIN — the last admin must never be locked out of the org.
+      // For all other roles: verify the account is still active and that the
+      // role in the JWT still matches the DB (catches demotions mid-session).
+      if (session.role !== "ADMIN") {
         const memberDb = getDb();
         const [member] = await memberDb
           .select({ isActive: organizationMembers.isActive, role: organizationMembers.role })
@@ -359,10 +356,10 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
             message: "Member not found in org (removed?)",
             organizationId: session.orgId, userId: session.userId, userRole: session.role,
           });
-          return apiError("Unauthorized", 401);
+          return apiError("Forbidden", 403);
         }
 
-        if (session.role !== "ADMIN" && member.isActive === 0) {
+        if (member.isActive === 0) {
           log.security("Deactivated member attempted access", {});
           writeAppLog({
             level: "security", route: options.route,

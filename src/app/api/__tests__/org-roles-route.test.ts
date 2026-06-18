@@ -87,7 +87,7 @@ describe("GET /api/org/roles", () => {
   it("returns 403 for non-ADMIN role", async () => {
     vi.mocked(getSession).mockResolvedValue(NON_ADMIN_SESSION as never);
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],  // member check (non-ADMIN)
+      [{ isActive: 1, role: "DOCTOR" }],  // member check (non-ADMIN)
     ]) as never);
     const { GET } = await import("@/app/api/org/roles/route");
     const res = await GET(new NextRequest("http://localhost/api/org/roles"), NO_PARAMS);
@@ -186,7 +186,7 @@ describe("POST /api/org/roles", () => {
 
   it("returns 403 for non-ADMIN", async () => {
     vi.mocked(getSession).mockResolvedValue(NON_ADMIN_SESSION as never);
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }]]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "DOCTOR" }]]) as never);
     const { POST } = await import("@/app/api/org/roles/route");
     const res = await POST(makeReq({ name: "Test", permissions: [] }), NO_PARAMS);
     expect(res.status).toBe(403);

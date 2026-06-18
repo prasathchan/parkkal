@@ -76,7 +76,7 @@ describe("GET /api/export — permission gates", () => {
     // PATIENTS_VIEW only — withRoute() will pass, but the in-handler check must block
     vi.mocked(getSession).mockResolvedValue(makeSession(["patients.view"]) as never);
     // First DB call inside withRoute = member-active check → must return { isActive: 1 }
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }]]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "RECEPTIONIST" }]]) as never);
     // hasPermission: PATIENTS_VIEW=true (passes withRoute), VISITS_VIEW=false (blocked)
     vi.mocked(hasPermission).mockImplementation(async (_s, perm) => perm === "patients.view");
 
@@ -88,7 +88,7 @@ describe("GET /api/export — permission gates", () => {
 
   it("returns 403 on treatments export when user lacks TREATMENTS_VIEW", async () => {
     vi.mocked(getSession).mockResolvedValue(makeSession(["patients.view"]) as never);
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }]]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "RECEPTIONIST" }]]) as never);
     vi.mocked(hasPermission).mockImplementation(async (_s, perm) => perm === "patients.view");
 
     const res = await GET(makeRequest("treatments"), NO_PARAMS);
@@ -100,7 +100,7 @@ describe("GET /api/export — permission gates", () => {
   it("allows visits export when user has VISITS_VIEW", async () => {
     vi.mocked(getSession).mockResolvedValue(makeSession(["patients.view", "visits.view"]) as never);
     // results[0] = member-active check, results[1] = the visits SELECT query
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }], []]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "RECEPTIONIST" }], []]) as never);
     vi.mocked(hasPermission).mockResolvedValue(true);
 
     const res = await GET(makeRequest("visits"), NO_PARAMS);
@@ -110,7 +110,7 @@ describe("GET /api/export — permission gates", () => {
 
   it("allows treatments export when user has TREATMENTS_VIEW", async () => {
     vi.mocked(getSession).mockResolvedValue(makeSession(["patients.view", "treatments.view"]) as never);
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }], []]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "RECEPTIONIST" }], []]) as never);
     vi.mocked(hasPermission).mockResolvedValue(true);
 
     const res = await GET(makeRequest("treatments"), NO_PARAMS);
@@ -120,7 +120,7 @@ describe("GET /api/export — permission gates", () => {
 
   it("returns 400 for unknown export type", async () => {
     vi.mocked(getSession).mockResolvedValue(makeSession(["patients.view"]) as never);
-    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1 }]]) as never);
+    vi.mocked(getDb).mockReturnValue(makeDbMock([[{ isActive: 1, role: "RECEPTIONIST" }]]) as never);
     vi.mocked(hasPermission).mockResolvedValue(true);
 
     const res = await GET(

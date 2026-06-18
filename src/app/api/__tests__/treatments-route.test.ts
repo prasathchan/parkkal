@@ -43,7 +43,7 @@ vi.mock("@/db/schema", () => ({
   patients:             { id: "id", name: "name", patientCode: "pc" },
   users:                { id: "id", name: "name" },
   organizationPatients: { organizationId: "orgId", patientId: "patientId", isActive: "isActive" },
-  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive" },
+  organizationMembers:  { organizationId: "orgId", userId: "userId", isActive: "isActive", role: "role" },
 }));
 vi.mock("drizzle-orm", () => ({
   like: vi.fn(), or: vi.fn(), and: vi.fn((...a: unknown[]) => a),
@@ -108,7 +108,7 @@ describe("GET /api/treatments", () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION);
     // DOCTOR: results[0] = member check, results[1-2] = handler
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],          // member-active check
+      [{ isActive: 1, role: "DOCTOR" }],   // member-active check
       [{ total: 1 }],
       [TREATMENT],
     ]) as never);
@@ -160,7 +160,7 @@ describe("POST /api/treatments", () => {
   it("DOCTOR: overrides doctorId to their own userId regardless of body", async () => {
     vi.mocked(getSession).mockResolvedValue(DOCTOR_SESSION); // userId = "u_doc"
     vi.mocked(getDb).mockReturnValue(makeDbMock([
-      [{ isActive: 1 }],                  // member-active check (non-ADMIN)
+      [{ isActive: 1, role: "DOCTOR" }],   // member-active check (non-ADMIN)
       [{ patientId: "p1", isActive: 1 }],
       [{ userId: "u_doc" }],
       undefined,
