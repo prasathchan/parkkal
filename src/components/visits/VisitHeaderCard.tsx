@@ -80,6 +80,12 @@ export function VisitHeaderCard({
             {formatDoctorName(visit.doctorName)}
             <span className="text-pk-text-muted mx-2">·</span>
             {visit.visitDate}
+            {visit.locationName && (
+              <>
+                <span className="text-pk-text-muted mx-2">·</span>
+                {visit.locationName}
+              </>
+            )}
           </p>
 
           {/* Clinical notes */}

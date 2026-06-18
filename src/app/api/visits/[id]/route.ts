@@ -10,6 +10,7 @@ import {
   users,
   appointments,
   treatments,
+  locations,
 } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { writeAuditLog } from "@/lib/audit";
@@ -43,10 +44,13 @@ export const GET = withRoute<{ id: string }>(
         patientName: patients.name,
         patientCode: patients.patientCode,
         doctorName: users.name,
+        locationId: visits.locationId,
+        locationName: locations.name,
       })
       .from(visits)
       .leftJoin(patients, eq(visits.patientId, patients.id))
       .leftJoin(users, eq(visits.doctorId, users.id))
+      .leftJoin(locations, eq(visits.locationId, locations.id))
       .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
 
     if (!visitRow) return apiError("Visit not found", 404);

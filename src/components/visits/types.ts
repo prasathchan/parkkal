@@ -32,6 +32,8 @@ export interface Visit {
   patientId: string;
   doctorName?: string | null;
   doctorId: string;
+  locationId?: string | null;
+  locationName?: string | null;
 }
 
 export interface VisitItem {

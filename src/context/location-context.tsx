@@ -30,6 +30,7 @@ interface LocationContextValue {
   isMultiBranch:       boolean;
   canSwitchLocation:   boolean;         // false = user is locked to their branch
   loading:             boolean;
+  refetchLocations:    () => void;
 }
 
 const LocationContext = createContext<LocationContextValue>({
@@ -40,6 +41,7 @@ const LocationContext = createContext<LocationContextValue>({
   isMultiBranch:         false,
   canSwitchLocation:     true,
   loading:               true,
+  refetchLocations:      () => {},
 });
 
 export function LocationProvider({ children }: { children: ReactNode }) {
@@ -48,7 +50,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   const [canSwitchLocation, setCanSwitch]       = useState(true);
   const [loading, setLoading]                   = useState(true);
 
-  useEffect(() => {
+  const fetchLocations = useCallback(() => {
     Promise.all([locationsApi.list(), authApi.me()])
       .then(([{ locations: locs }, meData]) => {
         setLocations(locs);
@@ -61,21 +63,20 @@ export function LocationProvider({ children }: { children: ReactNode }) {
         const active = locs.filter((l) => l.isActive);
 
         if (!canSwitch && primaryLocId && active.some((l) => l.id === primaryLocId)) {
-          // Non-admin with a primary location → lock to it silently
           setSelectedRaw(primaryLocId);
         } else if (canSwitch) {
-          // Admin/Manager → restore from localStorage
           const stored = typeof localStorage !== "undefined"
             ? localStorage.getItem(STORAGE_KEY)
             : null;
           const valid = stored && locs.some((l) => l.id === stored && l.isActive);
           setSelectedRaw(valid ? stored : null);
         }
-        // else: no primary location, no restriction → stay on "All Locations"
       })
       .catch(() => setLocations([]))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { fetchLocations(); }, [fetchLocations]);
 
   const setSelectedLocationId = useCallback((id: string | null) => {
     if (!canSwitchLocation) return; // locked users cannot change
@@ -96,6 +97,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     <LocationContext.Provider value={{
       locations, selectedLocationId, setSelectedLocationId,
       selectedLocation, isMultiBranch, canSwitchLocation, loading,
+      refetchLocations: fetchLocations,
     }}>
       {children}
     </LocationContext.Provider>

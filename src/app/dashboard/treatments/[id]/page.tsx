@@ -291,7 +291,8 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
                 {/* Progress ring + Book next session */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <ProgressRing percent={summary.paidPercent} size={52} strokeWidth={5} />
-                  {treatment.status !== "COMPLETED" && (
+                  {treatment.status !== "COMPLETED" &&
+                  (treatment.consentStatus === "VERIFIED" || treatment.consentStatus === "NOT_REQUIRED" || treatment.consentStatus === "OVERRIDE") && (
                     <Link
                       href={`/dashboard/appointments/new?patientId=${treatment.patientId}&type=FOLLOWUP&notes=${encodeURIComponent(`Follow-up: ${treatment.description}`)}`}
                       className="inline-flex items-center gap-1.5 text-xs font-medium bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition whitespace-nowrap"

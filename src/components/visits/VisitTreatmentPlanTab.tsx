@@ -467,16 +467,13 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                               <button
                                 onClick={() => {
                                   const teeth = tx.toothNumbers ? tx.toothNumbers.split(",").map(s => s.trim()).filter(Boolean) : [];
-                                  const firstTooth = teeth[0] ?? "";
-                                  // Gap A: if multi-tooth, surface all teeth in notes
-                                  const multiToothNote = teeth.length > 1 ? `Teeth: ${teeth.join(", ")}` : "";
                                   onAddToBill({
                                     itemName: tx.description,
                                     category: "TREATMENT",
-                                    toothNumber: firstTooth,
+                                    toothNumber: teeth.join(", "),
                                     quantity: "1",
                                     unitPrice: String(txOutstanding),
-                                    notes: multiToothNote,
+                                    notes: "",
                                     linkedTreatmentId: tx.id,
                                   });
                                 }}

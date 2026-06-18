@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Header } from "@/components/header";
 import { locationsApi, ApiError } from "@/api";
 import { parseAddress, formatAddressDisplay } from "@/lib/address";
+import { useLocation } from "@/context/location-context";
 import type { Location } from "@/types";
 
 function displayAddress(raw: string | null | undefined): string | null {
@@ -276,6 +277,7 @@ function EditLocationModal({ location, onClose, onSaved }: { location: Location;
 }
 
 export default function LocationsSettingsPage() {
+  const { refetchLocations } = useLocation();
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -397,7 +399,7 @@ export default function LocationsSettingsPage() {
       {showAdd && (
         <AddLocationModal
           onClose={() => setShowAdd(false)}
-          onSaved={() => { setShowAdd(false); fetchLocations(); }}
+          onSaved={() => { setShowAdd(false); fetchLocations(); refetchLocations(); }}
         />
       )}
 
@@ -405,7 +407,7 @@ export default function LocationsSettingsPage() {
         <EditLocationModal
           location={editLocation}
           onClose={() => setEditLocation(null)}
-          onSaved={() => { setEditLocation(null); fetchLocations(); }}
+          onSaved={() => { setEditLocation(null); fetchLocations(); refetchLocations(); }}
         />
       )}
 
