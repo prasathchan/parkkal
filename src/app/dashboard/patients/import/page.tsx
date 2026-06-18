@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { patientsApi } from "@/api";
 import type { ImportPatientRow } from "@/api/patients";
@@ -90,9 +89,7 @@ function parseCSV(text: string): { rows: ParsedRow[]; headerErrors: string[] } {
 }
 
 export default function ImportPatientsPage() {
-  const router = useRouter();
   const [step, setStep]         = useState<Step>(1);
-  const [csvText, setCsvText]   = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [parsed, setParsed]     = useState<ParsedRow[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -107,7 +104,6 @@ export default function ImportPatientsPage() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      setCsvText(text);
       const { rows, headerErrors } = parseCSV(text);
       setParsed(rows);
       setParseErrors(headerErrors);

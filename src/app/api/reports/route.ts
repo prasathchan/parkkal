@@ -19,7 +19,7 @@
  *   treatmentByStatus — { PLANNED, IN_PROGRESS, COMPLETED }
  */
 import { eq, and, gte, lte, lt, sum, count, ne, isNotNull, sql } from "drizzle-orm";
-import { visits, payments, organizationPatients, appointments, treatments, users, invoices, patients, locations } from "@/db/schema";
+import { visits, payments, organizationPatients, appointments, treatments, users, invoices, patients } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 

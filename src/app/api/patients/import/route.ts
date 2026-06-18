@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { patients, organizationPatients, patientCodeSequences } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";

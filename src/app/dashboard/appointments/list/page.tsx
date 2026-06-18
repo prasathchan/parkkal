@@ -44,7 +44,7 @@ export default function AppointmentsListPage() {
         offset: pageOffset,
       };
       if (status) params.status = status;
-      if (date)   params.startDate = date, params.endDate = date;
+      if (date) { params.startDate = date; params.endDate = date; }
       if (selectedLocationId) params.locationId = selectedLocationId;
       const res = await appointmentsApi.list(params);
       setAppointments(res.appointments);
@@ -55,7 +55,7 @@ export default function AppointmentsListPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedLocationId]);
 
   useEffect(() => { fetchAppointments(offset, statusFilter, dateFilter); }, [offset, statusFilter, dateFilter, selectedLocationId, fetchAppointments]);
   useEffect(() => { setOffset(0); }, [statusFilter, dateFilter]);
@@ -71,7 +71,7 @@ export default function AppointmentsListPage() {
   function toggleOne(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   }
