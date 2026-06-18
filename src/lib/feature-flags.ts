@@ -33,7 +33,11 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   consent_ai: true,
 };
 
-const KV_KEY = "feature-flags";
+const GLOBAL_KV_KEY = "feature-flags";
+
+function kvKey(orgId?: string) {
+  return orgId ? `feature-flags:${orgId}` : GLOBAL_KV_KEY;
+}
 
 async function getKV(): Promise<KVNamespace | null> {
   try {
@@ -46,11 +50,15 @@ async function getKV(): Promise<KVNamespace | null> {
   }
 }
 
-export async function getFeatureFlags(): Promise<FeatureFlags> {
+/**
+ * Read flags for an org. When orgId is provided, org-level overrides are merged
+ * on top of the global defaults so unset flags always fall back gracefully.
+ */
+export async function getFeatureFlags(orgId?: string): Promise<FeatureFlags> {
   const kv = await getKV();
   if (!kv) return { ...DEFAULT_FLAGS };
   try {
-    const stored = await kv.get<Partial<FeatureFlags>>(KV_KEY, "json");
+    const stored = await kv.get<Partial<FeatureFlags>>(kvKey(orgId), "json");
     if (!stored) return { ...DEFAULT_FLAGS };
     return { ...DEFAULT_FLAGS, ...stored };
   } catch {
@@ -58,10 +66,14 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
   }
 }
 
-export async function setFeatureFlags(flags: Partial<FeatureFlags>): Promise<void> {
+/**
+ * Write flag overrides. When orgId is provided, only that org's KV key is
+ * updated — global defaults are unchanged.
+ */
+export async function setFeatureFlags(flags: Partial<FeatureFlags>, orgId?: string): Promise<void> {
   const kv = await getKV();
   if (!kv) return;
-  const current = await getFeatureFlags();
+  const current = await getFeatureFlags(orgId);
   const updated = { ...current, ...flags };
-  await kv.put(KV_KEY, JSON.stringify(updated));
+  await kv.put(kvKey(orgId), JSON.stringify(updated));
 }
