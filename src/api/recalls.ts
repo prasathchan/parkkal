@@ -13,16 +13,18 @@ import { apiFetch } from "./_client";
 import type { RecallVisit, RecallListResponse } from "@/types";
 
 export interface ListRecallsParams {
-  status?: "unscheduled" | "scheduled" | "fulfilled" | "lapsed" | "all";
-  limit?: number;
-  offset?: number;
+  status?:     "unscheduled" | "scheduled" | "fulfilled" | "lapsed" | "all";
+  locationId?: string;
+  limit?:      number;
+  offset?:     number;
 }
 
 export function listRecalls(
   params: ListRecallsParams = {},
 ): Promise<RecallListResponse> {
   const q = new URLSearchParams();
-  if (params.status) q.set("status", params.status);
+  if (params.status)     q.set("status",     params.status);
+  if (params.locationId) q.set("locationId", params.locationId);
   if (params.limit  != null) q.set("limit",  String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<RecallListResponse>(`/api/recalls?${q}`);

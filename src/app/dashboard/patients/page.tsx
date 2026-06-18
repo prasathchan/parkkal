@@ -47,6 +47,7 @@ export default function PatientsPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);              // Which page of results we're on
   const [total, setTotal] = useState(0);                // Total number of matching patients
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // Wait 300ms after the user stops typing before searching
   // (prevents firing an API call on every single keystroke)
@@ -65,6 +66,7 @@ export default function PatientsPage() {
       });
       setPatients(result.patients);
       setTotal(result.total);
+      setSelected(new Set());
     } catch {
       setErrorMsg("Failed to load patients. Please refresh the page.");
     } finally {
@@ -79,6 +81,32 @@ export default function PatientsPage() {
   useEffect(() => {
     fetchPatients(search, offset);
   }, [search, offset, fetchPatients]);
+
+  // ─── Selection helpers ───────────────────────────────────────────────────────
+
+  function toggleAll() {
+    if (selected.size === patients.length) setSelected(new Set());
+    else setSelected(new Set(patients.map((p) => p.id)));
+  }
+
+  function toggleOne(id: string) {
+    setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  }
+
+  function exportSelected() {
+    const rows = patients.filter((p) => selected.has(p.id));
+    const header = "code,name,phone,email,dateOfBirth,gender,bloodGroup,registered";
+    const lines = rows.map((p) =>
+      [p.patientCode, `"${p.name}"`, p.phone, p.email ?? "", p.dateOfBirth ?? "", p.gender ?? "", p.bloodGroup ?? "", new Date(p.createdAt).toLocaleDateString("en-CA")].join(",")
+    );
+    const csv  = [header, ...lines].join("\n");
+    const url  = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `patients-selected-${new Date().toLocaleDateString("en-CA")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
@@ -106,7 +134,7 @@ export default function PatientsPage() {
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full sm:max-w-sm px-4 py-2 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={exportPatients}
@@ -115,8 +143,17 @@ export default function PatientsPage() {
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
-                Export CSV
+                Export All
               </button>
+              <Link
+                href="/dashboard/patients/import"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-pk-sm text-sm font-medium border border-pk-border-strong text-pk-text-secondary hover:bg-pk-surface-raised transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                Import CSV
+              </Link>
               <Link href="/dashboard/patients/new">
                 <Button size="sm">
                   <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,6 +164,19 @@ export default function PatientsPage() {
               </Link>
             </div>
           </div>
+
+          {/* Selection banner */}
+          {selected.size > 0 && (
+            <div className="px-6 py-2 border-b border-pk-border bg-pk-teal-50 flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium text-pk-teal-800">{selected.size} patient{selected.size !== 1 ? "s" : ""} selected</span>
+              <button onClick={exportSelected} className="px-3 py-1 rounded-pk-sm bg-pk-teal-600 text-white text-xs font-medium hover:bg-pk-teal-700 transition">
+                Export Selected CSV
+              </button>
+              <button onClick={() => setSelected(new Set())} className="text-xs text-pk-teal-700 hover:underline ml-auto">
+                Clear
+              </button>
+            </div>
+          )}
 
           {/* Patient list */}
           {loading ? (
@@ -146,6 +196,9 @@ export default function PatientsPage() {
                 <Table>
                   <TableHead>
                     <tr>
+                      <th className="px-4 py-3 w-10">
+                        <input type="checkbox" checked={selected.size === patients.length && patients.length > 0} onChange={toggleAll} className="rounded border-pk-border" aria-label="Select all" />
+                      </th>
                       <TableHeadCell>Code</TableHeadCell>
                       <TableHeadCell>Name</TableHeadCell>
                       <TableHeadCell>Phone</TableHeadCell>
@@ -156,7 +209,10 @@ export default function PatientsPage() {
                   </TableHead>
                   <TableBody>
                     {patients.map((patient) => (
-                      <TableRow key={patient.id}>
+                      <TableRow key={patient.id} className={selected.has(patient.id) ? "bg-pk-teal-50" : undefined}>
+                        <TableCell>
+                          <input type="checkbox" checked={selected.has(patient.id)} onChange={() => toggleOne(patient.id)} className="rounded border-pk-border" aria-label={`Select ${patient.name}`} />
+                        </TableCell>
                         <TableCell className="font-mono text-xs font-medium text-pk-teal-700">
                           {patient.patientCode}
                         </TableCell>

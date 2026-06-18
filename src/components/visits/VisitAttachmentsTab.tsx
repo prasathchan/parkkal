@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatBytes, type Attachment } from "./types";
 import { visitsApi, ApiError } from "@/api";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Props {
   visitId: string;
@@ -16,6 +17,7 @@ interface Props {
 export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patientId, onRefresh, onPageError }: Props) {
   const [fileType, setFileType] = useState("OTHER");
   const [uploadError, setUploadError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -34,8 +36,7 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
     }
   }
 
-  async function handleDeleteAttachment(attId: string) {
-    if (!confirm("Delete this attachment?")) return;
+  async function doDeleteAttachment(attId: string) {
     try {
       await visitsApi.attachments.delete(visitId, attId);
       await onRefresh();
@@ -97,7 +98,7 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
               <p className="text-xs text-pk-text-muted">{att.fileType} · {formatBytes(att.fileSize)}</p>
               {visitStatus !== "CANCELLED" && (
                 <button
-                  onClick={() => handleDeleteAttachment(att.id)}
+                  onClick={() => setConfirmDeleteId(att.id)}
                   aria-label={`Delete attachment ${att.originalName}`}
                   className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center justify-center w-6 h-6 bg-pk-danger-fill text-pk-danger-text rounded-full text-xs hover:bg-pk-danger-fill transition"
                 >
@@ -107,6 +108,17 @@ export function VisitAttachmentsTab({ visitId, visitStatus, attachments, patient
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Delete attachment?"
+          message="This will permanently remove the attachment."
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { const id = confirmDeleteId; setConfirmDeleteId(null); doDeleteAttachment(id); }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   );

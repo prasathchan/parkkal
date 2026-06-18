@@ -17,6 +17,7 @@ export interface SessionUser {
   role: SystemRole;
   permissions: string[];
   orgRoleId?: string | null;
+  primaryLocationId?: string | null;
 }
 
 /** Lightweight user summary returned by GET /api/users (no PHI, no salary) */

@@ -15,6 +15,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/header";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { calendarApi, ApiError } from "@/api";
 
 interface CalendarStatus {
@@ -27,6 +28,7 @@ function CalendarSettingsInner() {
   const [status,    setStatus]    = useState<CalendarStatus | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
+  const [confirmProvider, setConfirmProvider] = useState<"GOOGLE" | "OUTLOOK" | null>(null);
 
   const successMsg =
     searchParams.get("connected") === "google"  ? "Google Calendar connected successfully!" :
@@ -45,8 +47,7 @@ function CalendarSettingsInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function disconnect(provider: "GOOGLE" | "OUTLOOK") {
-    if (!confirm(`Disconnect ${provider === "GOOGLE" ? "Google" : "Outlook"} Calendar? Your appointments will no longer sync.`)) return;
+  async function doDisconnect(provider: "GOOGLE" | "OUTLOOK") {
     setDisconnecting(provider);
     try {
       await calendarApi.disconnect(provider);
@@ -123,7 +124,7 @@ function CalendarSettingsInner() {
                   Connected
                 </div>
                 <button
-                  onClick={() => disconnect("GOOGLE")}
+                  onClick={() => setConfirmProvider("GOOGLE")}
                   disabled={disconnecting === "GOOGLE"}
                   className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-pk-sm transition disabled:opacity-50"
                 >
@@ -174,7 +175,7 @@ function CalendarSettingsInner() {
                   Connected
                 </div>
                 <button
-                  onClick={() => disconnect("OUTLOOK")}
+                  onClick={() => setConfirmProvider("OUTLOOK")}
                   disabled={disconnecting === "OUTLOOK"}
                   className="text-xs text-pk-danger-text hover:text-pk-danger-text border border-pk-danger-border hover:bg-pk-danger-fill px-2.5 py-1.5 rounded-pk-sm transition disabled:opacity-50"
                 >
@@ -238,6 +239,17 @@ function CalendarSettingsInner() {
         </details>
 
       </main>
+
+      {confirmProvider && (
+        <ConfirmModal
+          title={`Disconnect ${confirmProvider === "GOOGLE" ? "Google" : "Outlook"} Calendar?`}
+          message="Your appointments will no longer sync to this calendar."
+          confirmLabel="Disconnect"
+          variant="danger"
+          onConfirm={() => { const p = confirmProvider; setConfirmProvider(null); doDisconnect(p); }}
+          onCancel={() => setConfirmProvider(null)}
+        />
+      )}
     </div>
   );
 }

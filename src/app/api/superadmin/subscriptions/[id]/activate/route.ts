@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { subscriptions, subscriptionPlans } from "@/db/schema";
 import { isSuperAdmin } from "@/lib/superadmin";
+import { requireSuperadminToken, logSuperadminAction } from "@/lib/superadmin-auth";
 
 const schema = z.object({
   planSlug:     z.string(),
@@ -14,8 +15,12 @@ const schema = z.object({
 
 export const POST = withRoute<{ id: string }>(
   { route: "POST /api/superadmin/subscriptions/[id]/activate", rateLimit: RATE_LIMITS.WRITE, skipSubscriptionCheck: true },
-  async (req, { session, db }, { id }) => {
+  async (req, { session, db, log }, { id }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
 
     const body = schema.parse(await req.json());
 
@@ -43,6 +48,7 @@ export const POST = withRoute<{ id: string }>(
       updatedAt:          now,
     }).where(eq(subscriptions.id, id));
 
+    await logSuperadminAction(session.userId, "ACTIVATE_SUBSCRIPTION", { subscriptionId: id, planSlug: body.planSlug, months: body.months });
     return apiOk({ activated: true, planSlug: body.planSlug, expiresAt: end });
   }
 );

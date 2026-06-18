@@ -1,4 +1,4 @@
--- Migration: 0048_tooth_condition_history
+-- Migration: 0053_tooth_condition_history
 -- Adds per-tooth condition history table for bi-directional chart ↔ treatment sync.
 -- Also adds source column to tooth_chart_history to distinguish manual edits from
 -- treatment-driven chart updates.

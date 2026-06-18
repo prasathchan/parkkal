@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { appointmentsApi, patientsApi, orgApi, authApi, ApiError } from "@/api";
+import { appointmentsApi, patientsApi, orgApi, authApi, locationsApi, ApiError } from "@/api";
+import { useLocation } from "@/context/location-context";
 
 
 interface Patient { id: string; patientCode: string; name: string; }
@@ -26,6 +27,7 @@ export default function NewAppointmentPage() {
 function NewAppointmentForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { selectedLocationId, selectedLocation } = useLocation();
   const searchParams = useSearchParams();
   const prefillApplied = useRef(false);
   const [loading, setLoading] = useState(false);
@@ -55,8 +57,9 @@ function NewAppointmentForm() {
   }, [patientSearch]);
 
   useEffect(() => {
-    authApi.me()
-      .then((meData) => {
+    async function loadUser() {
+      try {
+        const meData = await authApi.me();
         const me = meData.user;
         if (!me) return;
         setCurrentUserRole(me.role);
@@ -64,23 +67,28 @@ function NewAppointmentForm() {
         setCurrentUserName(me.name ?? "");
 
         if (me.role === "ADMIN" || me.role === "RECEPTIONIST") {
-          // Fetch full staff list so they can pick any doctor
-          orgApi.members.list()
-            .then((membersData) => {
-              const eligible = (membersData.members || []).filter(
-                (m: { role: string; isDoctor?: number }) =>
-                  m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)
-              );
-              setDoctors(eligible.map((m: { userId: string; name: string; role: string }) => ({ id: m.userId, name: m.name, role: m.role })));
-            })
-            .catch(() => {});
+          const [membersData, assignmentsData] = await Promise.all([
+            orgApi.members.list(),
+            selectedLocationId ? locationsApi.staff.list(selectedLocationId).catch(() => null) : Promise.resolve(null),
+          ]);
+          const assignedIds = assignmentsData
+            ? new Set(assignmentsData.assignments.map((a: { userId: string }) => a.userId))
+            : null;
+          const eligible = (membersData.members || []).filter(
+            (m: { role: string; isDoctor?: number; userId: string }) =>
+              (m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)) &&
+              (assignedIds === null || assignedIds.has(m.userId))
+          );
+          setDoctors(eligible.map((m: { userId: string; name: string; role: string }) => ({ id: m.userId, name: m.name, role: m.role })));
         } else {
-          // Non-admin/receptionist: auto-assign to themselves (doctor, nurse, etc.)
           setForm((f) => ({ ...f, doctorId: me.userId }));
         }
-      })
-      .catch(() => {});
-  }, []);
+      } catch {
+        // silently degrade
+      }
+    }
+    loadUser();
+  }, [selectedLocationId]);
 
   // Pre-fill from URL params — supports recall flow and general follow-up flow
   useEffect(() => {
@@ -155,6 +163,7 @@ function NewAppointmentForm() {
         ...form,
         type: form.type as import("@/types").AppointmentType,
         ...(recallVisitId ? { recallVisitId } : {}),
+        ...(selectedLocationId ? { locationId: selectedLocationId } : {}),
       });
       toast.success("Appointment booked successfully");
       router.push("/dashboard/appointments/calendar");
@@ -252,6 +261,24 @@ function NewAppointmentForm() {
                   required
                 />
               </div>
+              {/* Branch hours warning — non-blocking, advisory only */}
+              {(() => {
+                const open  = selectedLocation?.settings?.openingTime;
+                const close = selectedLocation?.settings?.closingTime;
+                const t     = form.appointmentTime;
+                if (!open || !close || !t) return null;
+                const outside = t < open || t >= close;
+                if (!outside) return null;
+                return (
+                  <div className="flex items-start gap-2 text-xs text-pk-warning-text bg-pk-warning-fill border border-pk-warning-border rounded-pk-sm px-3 py-2">
+                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>
+                      This time is outside {selectedLocation!.name}&apos;s hours ({open}–{close}).
+                      You can still book — this is just a reminder.
+                    </span>
+                  </div>
+                );
+              })()}
 
               <Select id="type" label="Appointment Type" value={form.type} onChange={update("type")}>
                 <option value="CONSULTATION">Consultation</option>

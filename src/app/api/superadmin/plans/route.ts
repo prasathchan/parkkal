@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { subscriptionPlans } from "@/db/schema";
 import { isSuperAdmin } from "@/lib/superadmin";
+import { requireSuperadminToken, logSuperadminAction } from "@/lib/superadmin-auth";
 
 const planSchema = z.object({
   name:         z.string().min(1).max(60),
@@ -17,8 +18,13 @@ const planSchema = z.object({
 
 export const GET = withRoute(
   { route: "GET /api/superadmin/plans", rateLimit: RATE_LIMITS.READ, skipSubscriptionCheck: true },
-  async (_req, { session, db }) => {
+  async (req, { session, db, log }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
+    await logSuperadminAction(session.userId, "LIST_PLANS");
     const plans = await db.select().from(subscriptionPlans).orderBy(subscriptionPlans.sortOrder);
     return apiOk({ plans });
   }
@@ -26,8 +32,12 @@ export const GET = withRoute(
 
 export const POST = withRoute(
   { route: "POST /api/superadmin/plans", rateLimit: RATE_LIMITS.WRITE, skipSubscriptionCheck: true },
-  async (req, { session, db }) => {
+  async (req, { session, db, log }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
     const body = planSchema.parse(await req.json());
     const now  = Date.now();
     const id   = `plan_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -37,6 +47,7 @@ export const POST = withRoute(
       isActive:  body.isActive ? 1 : 0,
       createdAt: now, updatedAt: now,
     });
+    await logSuperadminAction(session.userId, "CREATE_PLAN", { planId: id, slug: body.slug });
     return apiOk({ id }, 201);
   }
 );

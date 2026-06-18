@@ -3,20 +3,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { visitsApi, appointmentsApi, treatmentsApi, patientsApi, ApiError } from "@/api";
+import { useToast } from "@/context/toast-context";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { VisitHeaderCard } from "@/components/visits/VisitHeaderCard";
 import { PaymentModal } from "@/components/visits/PaymentModal";
 import { VisitItemsTab } from "@/components/visits/VisitItemsTab";
 import { VisitPaymentsTab } from "@/components/visits/VisitPaymentsTab";
-import { VisitAttachmentsTab } from "@/components/visits/VisitAttachmentsTab";
-import { VisitPhotosTab } from "@/components/visits/VisitPhotosTab";
-import { VisitHistoryTab } from "@/components/visits/VisitHistoryTab";
+import { VisitFilesTab } from "@/components/visits/VisitFilesTab";
 import { VisitTreatmentPlanTab } from "@/components/visits/VisitTreatmentPlanTab";
 import { VisitToothChartTab } from "@/components/visits/VisitToothChartTab";
 import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab";
 import { LinkSuggestBar } from "@/components/visits/LinkSuggestBar";
 import { CompleteVisitModal } from "@/components/visits/CompleteVisitModal";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type {
   Visit, VisitItem, Payment, Attachment, HistoryVisit, Treatment, NewItemState,
 } from "@/components/visits/types";
@@ -25,11 +25,12 @@ import type { TreatmentDecision } from "@/api/treatments";
 import type { ChartData } from "@/components/ui/ToothChart";
 import type { Prescription } from "@/types";
 
-type TabKey = "items" | "payments" | "attachments" | "photos" | "prescriptions" | "history" | "treatmentPlan" | "chart";
+type TabKey = "items" | "payments" | "files" | "prescriptions" | "treatmentPlan" | "chart";
 
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [visit, setVisit] = useState<Visit | null>(null);
   const [items, setItems] = useState<VisitItem[]>([]);
@@ -63,6 +64,7 @@ export default function VisitDetailPage() {
   const [paySubmitting, setPaySubmitting] = useState(false);
 
   const [prefillItem, setPrefillItem] = useState<NewItemState | null>(null);
+  const [confirmComplete, setConfirmComplete] = useState<{ due: number; mode: "page" | "modal" } | null>(null);
 
   // Gap 4 — chart → bill suggestion
   const [chartBillSuggestion, setChartBillSuggestion] = useState<{
@@ -118,6 +120,7 @@ export default function VisitDetailPage() {
       await visitsApi.update(id, { chiefComplaint: notesForm.chiefComplaint || null, doctorNotes: notesForm.doctorNotes || null, diagnosis: notesForm.diagnosis || null });
       await fetchVisit();
       setEditingNotes(false);
+      toast.success("Notes saved");
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : "Failed to save notes");
     } finally { setSavingNotes(false); }
@@ -131,6 +134,7 @@ export default function VisitDetailPage() {
       await visitsApi.update(id, { recallDate: recallForm.recallDate || null, recallNotes: recallForm.recallNotes || null });
       await fetchVisit();
       setEditingRecall(false);
+      toast.success("Recall date saved");
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : "Failed to save recall");
     } finally { setSavingRecall(false); }
@@ -158,6 +162,7 @@ export default function VisitDetailPage() {
       });
       setShowPayModal(false);
       setPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
+      toast.success("Payment recorded");
       await fetchVisit();
     } catch (e) {
       setPayError(e instanceof ApiError ? e.message : "Payment failed");
@@ -182,12 +187,14 @@ export default function VisitDetailPage() {
 
       // No treatment decisions needed — proceed with outstanding balance check
       const due = visit.totalAmount - visit.paidAmount;
-      if (due > 0 && !confirm(`This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway?`)) {
+      if (due > 0) {
         setCompletingVisit(false);
+        setConfirmComplete({ due, mode: "page" });
         return;
       }
 
       await visitsApi.update(id, { status: "COMPLETED" });
+      toast.success("Visit marked as complete");
       await fetchVisit();
     } catch (e) {
       setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
@@ -197,10 +204,25 @@ export default function VisitDetailPage() {
   async function handleModalComplete() {
     if (!visit) return;
     const due = visit.totalAmount - visit.paidAmount;
-    if (due > 0 && !confirm(`This visit has ₹${due.toFixed(2)} outstanding. Mark as complete anyway?`)) return;
+    if (due > 0) {
+      setConfirmComplete({ due, mode: "modal" });
+      return;
+    }
     await visitsApi.update(id, { status: "COMPLETED" });
+    toast.success("Visit marked as complete");
     setCompleteCheckDecisions(null);
     await fetchVisit();
+  }
+
+  async function doForceComplete(mode: "page" | "modal") {
+    try {
+      await visitsApi.update(id, { status: "COMPLETED" });
+      toast.success("Visit marked as complete");
+      if (mode === "modal") setCompleteCheckDecisions(null);
+      await fetchVisit();
+    } catch (e) {
+      setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
+    }
   }
 
   async function handleMarkAppointmentDone() {
@@ -209,6 +231,7 @@ export default function VisitDetailPage() {
     try {
       await appointmentsApi.updateStatus(visit.appointmentId, "COMPLETED");
       setAppointmentStatus("COMPLETED");
+      toast.success("Appointment marked as done");
       await fetchVisit();
     } finally { setMarkingApptDone(false); }
   }
@@ -353,15 +376,35 @@ export default function VisitDetailPage() {
         />
 
         <div className="bg-pk-surface rounded-pk-lg border border-pk-border shadow-pk-e1">
-          <div className="border-b border-pk-border px-6 flex gap-1 overflow-x-auto rounded-t-pk-lg overflow-hidden">
-            {(["items", "payments", "attachments", "photos", "prescriptions", "history", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
+          {/* Mobile: tab select */}
+          <div className="md:hidden border-b border-pk-border px-4 py-2">
+            <select
+              value={tab}
+              onChange={(e) => setTab(e.target.value as TabKey)}
+              className="w-full text-sm rounded-pk-sm border border-pk-border bg-pk-surface px-3 py-2 text-pk-text focus:outline-none focus:ring-1 focus:ring-pk-teal-500"
+            >
+              {(["items", "payments", "files", "prescriptions", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
+                <option key={t} value={t}>
+                  {t === "items" ? "Items"
+                    : t === "files" ? `Files${(photos.length + attachments.length) > 0 ? ` (${photos.length + attachments.length})` : ""}`
+                    : t === "treatmentPlan" ? "Treatment Plan"
+                    : t === "chart" ? "Dental Chart"
+                    : t === "prescriptions" ? "Prescriptions"
+                    : t.charAt(0).toUpperCase() + t.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Desktop: tab buttons */}
+          <div className="hidden md:flex border-b border-pk-border px-6 gap-1 overflow-x-auto rounded-t-pk-lg overflow-hidden">
+            {(["items", "payments", "files", "prescriptions", "treatmentPlan", "chart"] as TabKey[]).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${tab === t ? "border-pk-teal-600 text-pk-teal-600" : "border-transparent text-pk-text-muted hover:text-pk-text-secondary"}`}>
                 {t === "items" ? "Items"
                   : t === "treatmentPlan" ? "Treatment Plan"
                   : t === "chart" ? "Dental Chart"
                   : t === "prescriptions" ? "Prescriptions"
-                  : t === "photos"
-                    ? (<span className="flex items-center gap-1">Photos{photos.length > 0 && <span className="text-xs bg-pk-teal-100 text-pk-teal-700 px-1.5 rounded-full">{photos.length}</span>}</span>)
+                  : t === "files"
+                    ? (<span className="flex items-center gap-1">Files{(photos.length + attachments.length) > 0 && <span className="text-xs bg-pk-teal-100 text-pk-teal-700 px-1.5 rounded-full">{photos.length + attachments.length}</span>}</span>)
                   : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -441,12 +484,10 @@ export default function VisitDetailPage() {
               </div>
             )}
 
-            {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} onRefresh={fetchVisit} onPageError={setPageError} onSuggestChart={handleBillSuggestChart} />}
+            {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} due={due} history={history} patientName={visit.patientName ?? ""} onRefresh={fetchVisit} onPageError={setPageError} onSuggestChart={handleBillSuggestChart} />}
             {tab === "payments" && <VisitPaymentsTab visit={visit} payments={payments} due={due} onOpenPayModal={() => setShowPayModal(true)} />}
-            {tab === "attachments" && <VisitAttachmentsTab visitId={id} visitStatus={visit.status} attachments={attachments} patientId={visit.patientId} onRefresh={fetchVisit} onPageError={setPageError} />}
-            {tab === "photos" && <VisitPhotosTab visitId={id} visitStatus={visit.status} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
+            {tab === "files" && <VisitFilesTab visitId={id} visitStatus={visit.status} patientId={visit.patientId} attachments={attachments} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "prescriptions" && <VisitPrescriptionsTab visitId={id} visitStatus={visit.status} prescriptions={prescriptions} onRefresh={fetchVisit} onPageError={setPageError} />}
-            {tab === "history" && <VisitHistoryTab patientName={visit.patientName ?? ""} history={history} />}
             {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} onLinkPlan={async (plan) => { await handleLinkTreatments([plan]); }} />}
             {tab === "chart" && <VisitToothChartTab visitId={id} patientId={visit.patientId} visitStatus={visit.status} items={items} treatments={treatments} onSuggestBill={handleChartSuggestBill} externalHighlightTeeth={chartHighlightTeeth} />}
           </div>
@@ -468,6 +509,17 @@ export default function VisitDetailPage() {
           currentChartData={currentChartData}
           onComplete={handleModalComplete}
           onCancel={() => setCompleteCheckDecisions(null)}
+        />
+      )}
+
+      {confirmComplete && (
+        <ConfirmModal
+          title="Outstanding balance"
+          message={`This visit has ₹${confirmComplete.due.toFixed(2)} outstanding. Mark as complete anyway?`}
+          confirmLabel="Mark complete"
+          variant="danger"
+          onConfirm={() => { const mode = confirmComplete.mode; setConfirmComplete(null); doForceComplete(mode); }}
+          onCancel={() => setConfirmComplete(null)}
         />
       )}
     </div>

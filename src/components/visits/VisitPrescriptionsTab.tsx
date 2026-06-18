@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { visitsApi, orgApi, ApiError, type OrgDrug } from "@/api";
 import type { Prescription, Medicine } from "@/types";
 import { DENTAL_DRUGS, type DrugSuggestion } from "@/constants";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Props {
   visitId: string;
@@ -170,6 +171,7 @@ export function VisitPrescriptionsTab({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteRxId, setConfirmDeleteRxId] = useState<string | null>(null);
   const [orgDrugs, setOrgDrugs] = useState<OrgDrug[]>([]);
 
   // Fetch org drugs once when the prescription form is shown
@@ -234,8 +236,7 @@ export function VisitPrescriptionsTab({
     }
   }
 
-  async function handleDelete(prescriptionId: string) {
-    if (!confirm("Delete this prescription?")) return;
+  async function doDelete(prescriptionId: string) {
     setDeletingId(prescriptionId);
     try {
       await visitsApi.prescriptions.delete(visitId, prescriptionId);
@@ -337,22 +338,28 @@ export function VisitPrescriptionsTab({
                   </div>
                   <div>
                     <label className="block text-xs text-pk-text-muted mb-1">Frequency *</label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        value={med.frequency}
-                        onChange={(e) => updateMedicine(idx, "frequency", e.target.value)}
-                        placeholder="e.g. 1-0-1"
-                        className="flex-1 text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
-                      />
-                      <select
-                        value=""
-                        onChange={(e) => { if (e.target.value) updateMedicine(idx, "frequency", e.target.value); }}
-                        className="text-xs border border-pk-border rounded-pk-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 text-pk-text-muted"
-                      >
-                        <option value="">Preset</option>
-                        {FREQ_PRESETS.map((p) => <option key={p} value={p}>{p}</option>)}
-                      </select>
+                    <input
+                      type="text"
+                      value={med.frequency}
+                      onChange={(e) => updateMedicine(idx, "frequency", e.target.value)}
+                      placeholder="e.g. 1-0-1"
+                      className="w-full text-sm border border-pk-border rounded-pk-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-pk-teal-500 mb-1.5"
+                    />
+                    <div className="flex flex-wrap gap-1">
+                      {FREQ_PRESETS.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => updateMedicine(idx, "frequency", p)}
+                          className={`text-xs px-2 py-0.5 rounded-pk-sm border transition ${
+                            med.frequency === p
+                              ? "bg-pk-teal-600 text-white border-pk-teal-600"
+                              : "bg-pk-surface border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <div>
@@ -451,7 +458,7 @@ export function VisitPrescriptionsTab({
                   </button>
                   {canEdit && (
                     <button
-                      onClick={() => handleDelete(rx.id)}
+                      onClick={() => setConfirmDeleteRxId(rx.id)}
                       disabled={deletingId === rx.id}
                       aria-label="Delete prescription"
                       className="flex items-center gap-1 text-xs text-pk-danger-text hover:text-pk-danger-text px-2 py-1 rounded hover:bg-pk-danger-fill transition disabled:opacity-50"
@@ -502,6 +509,17 @@ export function VisitPrescriptionsTab({
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDeleteRxId && (
+        <ConfirmModal
+          title="Delete prescription?"
+          message="This prescription will be permanently removed."
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { const id = confirmDeleteRxId; setConfirmDeleteRxId(null); doDelete(id); }}
+          onCancel={() => setConfirmDeleteRxId(null)}
+        />
       )}
     </div>
   );

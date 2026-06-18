@@ -57,6 +57,8 @@ export const PERMISSIONS = {
   REPORTS_VIEW: "reports.view",
   // Roles
   ROLES_MANAGE: "roles.manage",
+  // Locations (branches)
+  LOCATIONS_MANAGE: "locations.manage",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -5,6 +5,7 @@ import { visitsApi, ApiError } from "@/api";
 import { formatBytes } from "./types";
 import { BeforeAfterSlider } from "@/components/ui/before-after-slider";
 import { PhotoLightbox } from "@/components/ui/photo-lightbox";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { ClinicalPhoto, PhotoRole, PhotoType } from "@/types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -167,6 +168,7 @@ export function VisitPhotosTab({
 
   // Lightbox state
   const [lightbox, setLightbox] = useState<{ photos: ClinicalPhoto[]; index: number } | null>(null);
+  const [confirmDeletePhotoId, setConfirmDeletePhotoId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canEdit = visitStatus !== "CANCELLED";
@@ -208,8 +210,7 @@ export function VisitPhotosTab({
 
   // ─── Delete ──────────────────────────────────────────────────────────────────
 
-  async function handleDelete(photoId: string) {
-    if (!confirm("Delete this photo?")) return;
+  async function doDeletePhoto(photoId: string) {
     try {
       await visitsApi.photos.delete(visitId, photoId);
       await onRefresh();
@@ -457,7 +458,7 @@ export function VisitPhotosTab({
                   photo={photo}
                   canDelete={canEdit}
                   onOpen={() => setLightbox({ photos: filteredPhotos, index: i })}
-                  onDelete={() => handleDelete(photo.id)}
+                  onDelete={() => setConfirmDeletePhotoId(photo.id)}
                 />
               ))}
             </div>
@@ -471,6 +472,17 @@ export function VisitPhotosTab({
           photos={lightbox.photos}
           initialIndex={lightbox.index}
           onClose={() => setLightbox(null)}
+        />
+      )}
+
+      {confirmDeletePhotoId && (
+        <ConfirmModal
+          title="Delete photo?"
+          message="This photo will be permanently removed."
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { const id = confirmDeletePhotoId; setConfirmDeletePhotoId(null); doDeletePhoto(id); }}
+          onCancel={() => setConfirmDeletePhotoId(null)}
         />
       )}
     </div>

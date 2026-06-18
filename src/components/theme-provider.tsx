@@ -35,12 +35,13 @@ export function ThemeProvider({ config, children }: ThemeProviderProps) {
     root.style.setProperty("--sidebar-hover-bg", sidebar.hoverBg);
     root.style.setProperty("--sidebar-divider", sidebar.divider);
 
-    // Dark mode
-    const applyDark = (dark: boolean) => {
-      root.classList.toggle("dark", dark);
-    };
+    // Dark mode — user localStorage preference wins over org setting
+    const applyDark = (dark: boolean) => root.classList.toggle("dark", dark);
 
-    if (config.darkMode === "dark") {
+    const userPref = localStorage.getItem("pk-dark-mode");
+    if (userPref === "dark" || userPref === "light") {
+      applyDark(userPref === "dark");
+    } else if (config.darkMode === "dark") {
       applyDark(true);
     } else if (config.darkMode === "light") {
       applyDark(false);

@@ -6,7 +6,7 @@ import { ToothChart, type ChartData, type ToothCondition } from "@/components/ui
 import type { ToothConditionEntry, ToothChartHistoryEntry } from "@/api/patients";
 import type { VisitItem, Treatment } from "./types";
 
-// Derive per-tooth history from snapshots (fallback for teeth marked before migration 0048)
+// Derive per-tooth history from old snapshots (fallback for teeth marked before migration 0048)
 function deriveHistoryFromSnapshots(tooth: string, snapshots: ToothChartHistoryEntry[]): ToothConditionEntry[] {
   const sorted = [...snapshots].sort((a, b) => a.recordedAt - b.recordedAt);
   const entries: ToothConditionEntry[] = [];
@@ -72,7 +72,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 function ConditionChip({ condition }: { condition: string }) {
-  const label = CONDITION_LABELS[condition] ?? condition;
+  const label  = CONDITION_LABELS[condition]  ?? condition;
   const colors = CONDITION_CHIP_COLORS[condition] ?? { bg: "#F5F3F0", text: "#847D6E" };
   return (
     <span
@@ -83,6 +83,16 @@ function ConditionChip({ condition }: { condition: string }) {
     </span>
   );
 }
+
+// Quadrant definitions
+const QUADRANTS = [
+  { label: "UR", teeth: ["11","12","13","14","15","16","17","18"] },
+  { label: "UL", teeth: ["21","22","23","24","25","26","27","28"] },
+  { label: "LL", teeth: ["31","32","33","34","35","36","37","38"] },
+  { label: "LR", teeth: ["41","42","43","44","45","46","47","48"] },
+  { label: "All Upper", teeth: ["11","12","13","14","15","16","17","18","21","22","23","24","25","26","27","28"] },
+  { label: "All Lower", teeth: ["31","32","33","34","35","36","37","38","41","42","43","44","45","46","47","48"] },
+];
 
 interface Props {
   visitId: string;
@@ -105,38 +115,42 @@ export function VisitToothChartTab({
   onSuggestBill,
   externalHighlightTeeth,
 }: Props) {
-  const [chartData, setChartData]         = useState<ChartData>({});
-  const [snapshotAt, setSnapshotAt]       = useState<number | null>(null);
+  const [chartData, setChartData]               = useState<ChartData>({});
+  const [snapshotAt, setSnapshotAt]             = useState<number | null>(null);
   const [hasVisitSnapshot, setHasVisitSnapshot] = useState<boolean | null>(null);
-  const [loading, setLoading]             = useState(true);
-  const [saving, setSaving]               = useState(false);
-  const [savedAt, setSavedAt]             = useState<number | null>(null);
-  const [error, setError]                 = useState("");
+  const [loading, setLoading]                   = useState(true);
+  const [saving, setSaving]                     = useState(false);
+  const [savedAt, setSavedAt]                   = useState<number | null>(null);
+  const [error, setError]                       = useState("");
+
+  // Undo stack — each entry is a full ChartData snapshot before a quadrant action
+  const [undoStack, setUndoStack] = useState<ChartData[]>([]);
 
   // Per-tooth history panel
-  const [historyTooth, setHistoryTooth]     = useState<string | null>(null);
-  const [toothHistory, setToothHistory]     = useState<ToothConditionEntry[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  // Cached chart snapshots — fetched lazily as fallback when condition history is empty
+  const [historyTooth, setHistoryTooth]         = useState<string | null>(null);
+  const [toothHistory, setToothHistory]         = useState<ToothConditionEntry[]>([]);
+  const [historyLoading, setHistoryLoading]     = useState(false);
+  // Counter — incremented after a successful save to refresh the history panel
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  // Cached full chart snapshots — fetched lazily as fallback
   const [chartHistoryCache, setChartHistoryCache] = useState<ToothChartHistoryEntry[] | null>(null);
 
-  // Used only for OPEN visits
   const saveInFlight       = useRef(false);
   const latestData         = useRef<ChartData>({});
   const debounceTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestTreatmentId  = useRef<string | null>(null);
+  const historyToothRef    = useRef<string | null>(null);
+  historyToothRef.current  = historyTooth;
 
   const isOpen   = visitStatus === "OPEN";
   const readOnly = !isOpen;
 
-  // Teeth referenced in this visit's bill items OR linked treatment plans — highlighted as a hint
+  // Teeth referenced in this visit's bill items or linked treatment plans
   const billedTeeth = Array.from(
     new Set([
-      // From bill items (direct tooth_number column)
       ...items
         .map((i) => i.toothNumber?.trim())
         .filter((t): t is string => !!t && /^[1-4][1-8]$/.test(t)),
-      // From linked treatment plans (toothNumbers = "14,15" etc.)
       ...treatments.flatMap((tx) =>
         tx.toothNumbers
           ? tx.toothNumbers.split(",").map(s => s.trim()).filter(t => /^[1-4][1-8]$/.test(t))
@@ -145,7 +159,6 @@ export function VisitToothChartTab({
     ]),
   ).sort((a, b) => Number(a) - Number(b));
 
-  // Combined highlight set: billed + external (from bill→chart suggestion)
   const allHighlightTeeth = Array.from(
     new Set([...billedTeeth, ...(externalHighlightTeeth ?? [])]),
   );
@@ -161,6 +174,7 @@ export function VisitToothChartTab({
           const { toothData } = await patientsApi.getToothChart(patientId);
           if (!cancelled) {
             setChartData((toothData as ChartData) ?? {});
+            latestData.current = (toothData as ChartData) ?? {};
             setHasVisitSnapshot(false);
           }
         } else {
@@ -174,6 +188,7 @@ export function VisitToothChartTab({
               const { toothData } = await patientsApi.getToothChart(patientId);
               if (!cancelled) {
                 setChartData((toothData as ChartData) ?? {});
+                latestData.current = (toothData as ChartData) ?? {};
                 setHasVisitSnapshot(false);
               }
             }
@@ -190,7 +205,7 @@ export function VisitToothChartTab({
     return () => { cancelled = true; };
   }, [patientId, visitId, isOpen]);
 
-  // Pre-warm chart history cache for fallback (fetched once when chart loads)
+  // Pre-warm chart history cache (fallback for pre-migration teeth)
   useEffect(() => {
     if (loading || chartHistoryCache !== null) return;
     patientsApi.getToothChartHistory(patientId)
@@ -222,6 +237,8 @@ export function VisitToothChartTab({
       }
       setSavedAt(Date.now());
       setHasVisitSnapshot(true);
+      // Refresh the history panel after a successful save so new entries appear
+      setHistoryRefreshKey(k => k + 1);
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -230,27 +247,18 @@ export function VisitToothChartTab({
     }
   }, [patientId, visitId]);
 
-  // Gap 4 — tooth change handler that fires bill suggestion
-  function handleToothChange(toothNumber: string, newCondition: ToothCondition, treatmentId: string | null) {
-    latestTreatmentId.current = treatmentId;
-    if (treatmentId && newCondition !== "HEALTHY" && isOpen) {
-      const tx = treatments.find((t) => t.id === treatmentId);
-      if (tx) {
-        onSuggestBill?.(treatmentId, tx.description, toothNumber);
-      }
-    }
-  }
+  // ── Per-tooth history fetch ──────────────────────────────────────────────────
 
-  async function handleToothSelect(tooth: string) {
-    setHistoryTooth(tooth);
+  const fetchToothHistory = useCallback(async (tooth: string) => {
     setHistoryLoading(true);
     try {
       const { history } = await patientsApi.getToothConditionHistory(patientId, { toothNumber: tooth, limit: 20 });
       if (history.length > 0) {
         setToothHistory(history);
       } else {
-        // Fallback: derive from chart snapshots (teeth marked before migration 0048)
-        const snapshots = chartHistoryCache ?? (await patientsApi.getToothChartHistory(patientId).then(r => r.history).catch(() => []));
+        const snapshots = chartHistoryCache ?? (
+          await patientsApi.getToothChartHistory(patientId).then(r => r.history).catch(() => [])
+        );
         if (chartHistoryCache === null) setChartHistoryCache(snapshots);
         setToothHistory(deriveHistoryFromSnapshots(tooth, snapshots));
       }
@@ -258,6 +266,29 @@ export function VisitToothChartTab({
       setToothHistory([]);
     }
     setHistoryLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, chartHistoryCache]);
+
+  // Re-fetch history panel whenever historyRefreshKey changes (post-save)
+  useEffect(() => {
+    if (!historyToothRef.current || historyRefreshKey === 0) return;
+    fetchToothHistory(historyToothRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyRefreshKey]);
+
+  function handleToothSelect(tooth: string) {
+    setHistoryTooth(tooth);
+    fetchToothHistory(tooth);
+  }
+
+  // ── Condition change handler ─────────────────────────────────────────────────
+
+  function handleToothChange(toothNumber: string, newCondition: ToothCondition, treatmentId: string | null) {
+    latestTreatmentId.current = treatmentId;
+    if (treatmentId && newCondition !== "HEALTHY" && isOpen) {
+      const tx = treatments.find((t) => t.id === treatmentId);
+      if (tx) onSuggestBill?.(treatmentId, tx.description, toothNumber);
+    }
   }
 
   const handleChange = useCallback((data: ChartData) => {
@@ -268,7 +299,34 @@ export function VisitToothChartTab({
     debounceTimer.current = setTimeout(flushSave, SAVE_DEBOUNCE_MS);
   }, [flushSave]);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Quadrant actions ─────────────────────────────────────────────────────────
+
+  /**
+   * Mark all HEALTHY teeth in a set as the given condition.
+   * Non-HEALTHY teeth are NEVER overwritten — this is a safe, additive action.
+   * The pre-action state is pushed to the undo stack.
+   */
+  function handleQuadrantMark(teeth: string[], condition: ToothCondition = "CARIES") {
+    const before = { ...latestData.current };
+    const healthyTeeth = teeth.filter(t => !latestData.current[t] || latestData.current[t]?.condition === "HEALTHY");
+    if (healthyTeeth.length === 0) return; // nothing to mark
+
+    // Push current state to undo stack (keep last 10)
+    setUndoStack(prev => [...prev.slice(-9), before]);
+
+    const next = { ...latestData.current };
+    healthyTeeth.forEach(t => { next[t] = { condition }; });
+    handleChange(next);
+  }
+
+  function handleUndo() {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    handleChange({ ...prev });
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   if (loading) {
     return <p className="text-sm text-pk-text-muted py-6 text-center">Loading chart…</p>;
@@ -282,7 +340,7 @@ export function VisitToothChartTab({
           <h3 className="text-sm font-semibold text-pk-text">FDI Dental Chart</h3>
           <p className="text-xs text-pk-text-muted mt-0.5">
             {isOpen
-              ? "Click a tooth to update its condition. Double-click to see history. Changes are saved to the patient's cumulative chart."
+              ? "Click a tooth to view its history and update its condition."
               : hasVisitSnapshot
                 ? `Snapshot recorded during this visit on ${snapshotAt ? new Date(snapshotAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}.`
                 : "No chart edits were recorded during this visit. Showing current cumulative chart for reference."}
@@ -323,7 +381,7 @@ export function VisitToothChartTab({
         </div>
       )}
 
-      {/* Read-only notice — shown for all non-open visits */}
+      {/* Read-only notice */}
       {!isOpen && (
         <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-surface-raised border border-pk-border px-3 py-2.5">
           <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,36 +389,97 @@ export function VisitToothChartTab({
           </svg>
           <p className="text-xs text-pk-text-muted">
             <span className="font-medium text-pk-text-secondary">Chart is view-only for this visit.</span>
-            {" "}Double-click any tooth to view its history. To update a condition, use an active visit or the patient profile.
+            {" "}Click any tooth to view its condition history.
           </p>
         </div>
       )}
 
-      {/* No-snapshot notice for completed visits */}
       {!isOpen && !hasVisitSnapshot && (
         <div className="mb-4 flex items-center gap-2 rounded-pk-sm bg-pk-surface-raised border border-pk-border px-3 py-2">
           <svg className="w-4 h-4 text-pk-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-xs text-pk-text-muted">
-            The chart was not updated during this visit. Showing the current cumulative chart for reference only.
+            The chart was not updated during this visit. Showing the current cumulative chart for reference.
           </p>
         </div>
       )}
 
       {error && <p className="text-xs text-pk-danger-text mb-3">{error}</p>}
 
-      <ToothChart
-        data={chartData}
-        readOnly={readOnly}
-        onChange={isOpen ? handleChange : undefined}
-        highlightTeeth={allHighlightTeeth}
-        linkedTreatments={treatments}
-        onToothChange={isOpen ? handleToothChange : undefined}
-        onToothSelect={handleToothSelect}
-      />
+      {/* Quadrant quick-select — OPEN visits only */}
+      {isOpen && (
+        <div className="mb-3">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-pk-text-muted font-medium">Quick mark:</span>
+            {QUADRANTS.map(({ label, teeth }) => {
+              const healthyCount   = teeth.filter(t => !chartData[t] || chartData[t]?.condition === "HEALTHY").length;
+              const allMarked      = healthyCount === 0;
+              const partiallyMarked = !allMarked && healthyCount < teeth.length;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  disabled={allMarked}
+                  title={
+                    allMarked
+                      ? `All ${label} teeth already have conditions set`
+                      : `Mark ${healthyCount} healthy ${label} ${healthyCount === 1 ? "tooth" : "teeth"} as Caries`
+                  }
+                  onClick={() => handleQuadrantMark(teeth)}
+                  className={`text-xs px-2.5 py-1 rounded-pk-sm border font-medium transition ${
+                    allMarked
+                      ? "bg-pk-teal-600 text-white border-pk-teal-600 opacity-60 cursor-not-allowed"
+                      : partiallyMarked
+                      ? "bg-pk-surface border-pk-warning-border text-pk-warning-text hover:bg-pk-warning-fill"
+                      : "bg-pk-surface border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
+                  }`}
+                >
+                  {label}
+                  {partiallyMarked && (
+                    <span className="ml-1 opacity-70">({teeth.length - healthyCount}/{teeth.length})</span>
+                  )}
+                </button>
+              );
+            })}
 
-      {/* Per-tooth history — auto-shown when a tooth is clicked */}
+            {/* Undo button — only shown when there are quadrant actions to undo */}
+            {undoStack.length > 0 && (
+              <button
+                type="button"
+                onClick={handleUndo}
+                className="text-xs px-2.5 py-1 rounded-pk-sm border border-pk-border font-medium text-pk-text-secondary bg-pk-surface hover:bg-pk-surface-raised transition flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+                Undo
+                {undoStack.length > 1 && (
+                  <span className="ml-0.5 opacity-60">({undoStack.length})</span>
+                )}
+              </button>
+            )}
+          </div>
+          <p className="text-[10px] text-pk-text-muted mt-1.5">
+            Marks only healthy teeth as Caries. Existing conditions (fillings, crowns, etc.) are never overwritten.
+            Use Undo to revert the last mark action.
+          </p>
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
+        <ToothChart
+          data={chartData}
+          readOnly={readOnly}
+          onChange={isOpen ? handleChange : undefined}
+          highlightTeeth={allHighlightTeeth}
+          linkedTreatments={treatments}
+          onToothChange={isOpen ? handleToothChange : undefined}
+          onToothSelect={handleToothSelect}
+        />
+      </div>
+
+      {/* Per-tooth history panel — auto-shown when a tooth is clicked */}
       <div className="mt-4 border-t border-pk-border pt-4">
         {!historyTooth && (
           <p className="text-xs text-pk-text-muted italic">
@@ -371,19 +490,50 @@ export function VisitToothChartTab({
         {historyTooth && (
           <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-pk-text">Tooth {historyTooth} — Condition History</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-pk-text">Tooth {historyTooth} — History</p>
+                {/* Current condition chip */}
+                {(() => {
+                  const current = chartData[historyTooth]?.condition;
+                  if (!current || current === "HEALTHY") return null;
+                  const colors = CONDITION_CHIP_COLORS[current] ?? { bg: "#F5F3F0", text: "#847D6E" };
+                  return (
+                    <span
+                      className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                      style={{ background: colors.bg, color: colors.text }}
+                    >
+                      {CONDITION_LABELS[current] ?? current}
+                    </span>
+                  );
+                })()}
+              </div>
               <button
                 type="button"
                 onClick={() => setHistoryTooth(null)}
                 className="text-pk-text-muted hover:text-pk-text-secondary text-lg leading-none"
+                aria-label="Close history panel"
               >
                 &times;
               </button>
             </div>
+
             {historyLoading ? (
-              <p className="text-xs text-pk-text-muted">Loading…</p>
+              <div className="space-y-2">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-5 h-5 rounded-full bg-pk-surface animate-pulse flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 w-32 bg-pk-surface animate-pulse rounded" />
+                      <div className="h-3 w-48 bg-pk-surface animate-pulse rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : toothHistory.length === 0 ? (
-              <p className="text-xs text-pk-text-muted italic">No condition changes recorded for this tooth yet.</p>
+              <p className="text-xs text-pk-text-muted italic">
+                No condition changes recorded for tooth {historyTooth} yet.
+                {isOpen && " Change its condition above to start tracking."}
+              </p>
             ) : (
               <ol className="space-y-3">
                 {toothHistory.map((entry, i) => {

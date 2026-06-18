@@ -1,9 +1,9 @@
 import { desc } from "drizzle-orm";
 import { z } from "zod";
-import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
+import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { coupons } from "@/db/schema";
 import { isSuperAdmin } from "@/lib/superadmin";
-import { apiError } from "@/lib/api";
+import { requireSuperadminToken, logSuperadminAction } from "@/lib/superadmin-auth";
 
 const couponSchema = z.object({
   code:          z.string().min(2).max(40).toUpperCase(),
@@ -19,8 +19,13 @@ const couponSchema = z.object({
 
 export const GET = withRoute(
   { route: "GET /api/superadmin/coupons", rateLimit: RATE_LIMITS.READ, skipSubscriptionCheck: true },
-  async (_req, { session, db }) => {
+  async (req, { session, db, log }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
+    await logSuperadminAction(session.userId, "LIST_COUPONS");
     const rows = await db.select().from(coupons).orderBy(desc(coupons.createdAt));
     return apiOk({ coupons: rows });
   }
@@ -28,8 +33,12 @@ export const GET = withRoute(
 
 export const POST = withRoute(
   { route: "POST /api/superadmin/coupons", rateLimit: RATE_LIMITS.WRITE, skipSubscriptionCheck: true },
-  async (req, { session, db }) => {
+  async (req, { session, db, log }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
     const body = couponSchema.parse(await req.json());
     const now  = Date.now();
     const id   = `cpn_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -48,6 +57,7 @@ export const POST = withRoute(
       createdAt:     now,
       updatedAt:     now,
     });
+    await logSuperadminAction(session.userId, "CREATE_COUPON", { couponId: id, code: body.code });
     return apiOk({ id }, 201);
   }
 );

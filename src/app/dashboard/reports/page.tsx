@@ -6,9 +6,10 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { useAsync } from "@/hooks/use-async";
 import { reportsApi } from "@/api";
+import { useLocation } from "@/context/location-context";
 import type { ReportData } from "@/types";
-import type { ReportPeriod, ReportParams } from "@/api/reports";
-import type { AgingBucket, PatientFunnel } from "@/types/report";
+import type { ReportPeriod, ReportParams, BranchStat } from "@/api/reports";
+import type { AgingBucket, PatientFunnel, TopOutstandingPatient } from "@/types/report";
 
 // ─── SVG bar chart ─────────────────────────────────────────────────────────────
 
@@ -231,6 +232,82 @@ function FunnelChart({ funnel }: { funnel: PatientFunnel }) {
   );
 }
 
+// ─── Insight cards ────────────────────────────────────────────────────────────
+
+function InsightCards({
+  data,
+}: {
+  data: {
+    apptByStatus: Record<string, number>;
+    summary: { totalBilled: number; outstanding: number; periodVisits: number };
+    agingBuckets: AgingBucket[];
+    topOutstandingPatients: TopOutstandingPatient[];
+  };
+}) {
+  const noShowCount    = data.apptByStatus["NO_SHOW"] ?? 0;
+  const avgRevenue     = data.summary.periodVisits > 0
+    ? data.summary.totalBilled / data.summary.periodVisits
+    : 0;
+  const missedRevenue  = Math.round(noShowCount * avgRevenue);
+  const openVisitsCount = data.agingBuckets.reduce((s, b) => s + b.count, 0);
+
+  if (noShowCount === 0 && data.summary.outstanding === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-semibold text-pk-text">Insights</h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* Missed revenue from no-shows */}
+        {noShowCount > 0 && (
+          <div className="bg-pk-warning-fill border border-pk-warning-border rounded-pk-lg p-4">
+            <p className="text-xs font-medium text-pk-warning-text uppercase tracking-wide mb-1">Missed Revenue</p>
+            <p className="text-2xl font-bold text-pk-warning-text">{formatCurrency(missedRevenue)}</p>
+            <p className="text-xs text-pk-text-secondary mt-1">
+              From {noShowCount} no-show{noShowCount !== 1 ? "s" : ""} · {formatCurrency(Math.round(avgRevenue))} avg/visit
+            </p>
+          </div>
+        )}
+
+        {/* Outstanding balance total */}
+        {data.summary.outstanding > 0 && (
+          <div className="bg-pk-danger-fill border border-pk-danger-border rounded-pk-lg p-4">
+            <p className="text-xs font-medium text-pk-danger-text uppercase tracking-wide mb-1">Outstanding Balance</p>
+            <p className="text-2xl font-bold text-pk-danger-text">{formatCurrency(data.summary.outstanding)}</p>
+            <p className="text-xs text-pk-text-secondary mt-1">
+              Across {openVisitsCount} open visit{openVisitsCount !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )}
+
+        {/* Top debtors */}
+        {data.topOutstandingPatients.length > 0 && (
+          <div className="bg-pk-surface border border-pk-border rounded-pk-lg p-4 sm:col-span-2 lg:col-span-1">
+            <p className="text-xs font-medium text-pk-text-muted uppercase tracking-wide mb-3">Top Outstanding Balances</p>
+            <div className="space-y-2">
+              {data.topOutstandingPatients.map((p, i) => (
+                <div key={p.patientId} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs text-pk-text-muted w-4 shrink-0">{i + 1}.</span>
+                    <Link
+                      href={`/dashboard/patients/${p.patientId}`}
+                      className="text-sm text-pk-teal-600 hover:underline truncate"
+                    >
+                      {p.patientName}
+                    </Link>
+                  </div>
+                  <span className="text-sm font-semibold text-pk-danger-text shrink-0">{formatCurrency(p.balance)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 // ─── CSV export helper ─────────────────────────────────────────────────────────
 
 function exportCsv(data: ReportData, label: string) {
@@ -292,18 +369,28 @@ function daysAgo(n: number): string {
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
+  const { selectedLocationId, selectedLocation, isMultiBranch } = useLocation();
   const [period, setPeriod]     = useState<ReportPeriod>("30d");
   const [fromDate, setFromDate] = useState<string>(daysAgo(29));
   const [toDate,   setToDate]   = useState<string>(today());
   const [useCustom, setUseCustom] = useState(false);
 
-  const params: ReportParams = useCustom
-    ? { period: "custom", from: fromDate, to: toDate }
-    : { period };
+  const params: ReportParams = {
+    ...(useCustom ? { period: "custom" as const, from: fromDate, to: toDate } : { period }),
+    ...(selectedLocationId ? { locationId: selectedLocationId } : {}),
+  };
 
   const { data, loading, error } = useAsync<ReportData>(
     () => reportsApi.get(params),
-    [period, useCustom, useCustom ? fromDate : "", useCustom ? toDate : ""],
+    [period, useCustom, useCustom ? fromDate : "", useCustom ? toDate : "", selectedLocationId ?? ""],
+  );
+
+  const branchParams = useCustom ? { period: "custom" as const, from: fromDate, to: toDate } : { period };
+  const { data: branchData } = useAsync<{ branches: BranchStat[]; period: { start: number; end: number } } | null>(
+    () => isMultiBranch && !selectedLocationId
+      ? reportsApi.branchComparison(branchParams)
+      : Promise.resolve(null),
+    [period, useCustom, useCustom ? fromDate : "", useCustom ? toDate : "", isMultiBranch, selectedLocationId ?? ""],
   );
 
   const forbidden = (error ?? "").includes("403") || (error ?? "").toLowerCase().includes("permission");
@@ -332,7 +419,18 @@ export default function ReportsPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-lg font-bold text-pk-text">Business Reports</h1>
-            <p className="text-xs text-pk-text-muted mt-0.5">Revenue, patient activity, and clinical statistics.</p>
+            <p className="text-xs text-pk-text-muted mt-0.5">
+              Revenue, patient activity, and clinical statistics.
+              {isMultiBranch && selectedLocation && (
+                <span className="ml-2 inline-flex items-center gap-1 text-pk-teal-700 font-medium">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  {selectedLocation.name}
+                </span>
+              )}
+              {isMultiBranch && !selectedLocation && (
+                <span className="ml-2 text-pk-text-muted">All branches</span>
+              )}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -441,6 +539,68 @@ export default function ReportsPage() {
                 color={data.summary.collectionRate >= 90 ? "text-pk-success-text" : data.summary.collectionRate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}
               />
             </div>
+
+            {/* ── Insight cards ─────────────────────────────────────────────── */}
+            <InsightCards data={data} />
+
+            {/* ── Branch Performance (multi-branch, no specific branch selected) ── */}
+            {isMultiBranch && !selectedLocationId && branchData && branchData.branches.length > 0 && (() => {
+              const maxBilled = Math.max(...branchData.branches.map((b) => b.billed), 1);
+              return (
+                <div className="bg-pk-surface rounded-pk-lg border border-pk-border overflow-hidden">
+                  <div className="px-5 py-4 border-b border-pk-border flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold text-pk-text">Branch Performance</h2>
+                      <p className="text-xs text-pk-text-muted mt-0.5">Side-by-side metrics for every active branch this period.</p>
+                    </div>
+                    <span className="text-xs text-pk-text-muted bg-pk-teal-50 border border-pk-teal-200 text-pk-teal-700 px-2 py-0.5 rounded-pk-xs font-medium">
+                      {branchData.branches.length} branches
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm min-w-[600px]">
+                      <thead className="bg-pk-surface-raised text-xs text-pk-text-muted uppercase tracking-wide">
+                        <tr>
+                          <th className="px-5 py-3 text-left font-medium">Branch</th>
+                          <th className="px-5 py-3 text-right font-medium">Visits</th>
+                          <th className="px-5 py-3 text-right font-medium">Appointments</th>
+                          <th className="px-5 py-3 text-right font-medium">Billed</th>
+                          <th className="px-5 py-3 text-right font-medium">Collected</th>
+                          <th className="px-5 py-3 text-right font-medium">Rate</th>
+                          <th className="px-5 py-3 font-medium w-32">Revenue share</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-pk-border">
+                        {branchData.branches.map((b) => {
+                          const rate = b.collectionRate;
+                          const sharePct = maxBilled > 0 ? Math.round((b.billed / maxBilled) * 100) : 0;
+                          return (
+                            <tr key={b.locationId} className="hover:bg-pk-surface-raised">
+                              <td className="px-5 py-3 font-medium text-pk-text">{b.locationName}</td>
+                              <td className="px-5 py-3 text-right text-pk-text-secondary tabular-nums">{b.visits}</td>
+                              <td className="px-5 py-3 text-right text-pk-text-secondary tabular-nums">{b.appointments}</td>
+                              <td className="px-5 py-3 text-right text-pk-text-secondary tabular-nums">{formatCurrency(b.billed)}</td>
+                              <td className="px-5 py-3 text-right tabular-nums font-medium text-pk-text">{formatCurrency(b.collected)}</td>
+                              <td className={`px-5 py-3 text-right font-medium tabular-nums ${rate >= 90 ? "text-pk-success-text" : rate >= 70 ? "text-pk-warning-text" : "text-pk-danger-text"}`}>
+                                {rate}%
+                              </td>
+                              <td className="px-5 py-3">
+                                <div className="w-full bg-pk-surface-sunken rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-pk-teal-500 h-full rounded-full transition-all"
+                                    style={{ width: `${sharePct}%` }}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── Revenue chart ─────────────────────────────────────────────── */}
             <div className="bg-pk-surface rounded-pk-lg border border-pk-border p-5">

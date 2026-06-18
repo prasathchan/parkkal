@@ -8,11 +8,16 @@ type SubRow = {
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { subscriptions, subscriptionPlans, organizations } from "@/db/schema";
 import { isSuperAdmin } from "@/lib/superadmin";
+import { requireSuperadminToken, logSuperadminAction } from "@/lib/superadmin-auth";
 
 export const GET = withRoute(
   { route: "GET /api/superadmin/subscriptions", rateLimit: RATE_LIMITS.READ, skipSubscriptionCheck: true },
-  async (_req, { session, db }) => {
+  async (req, { session, db, log }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
 
     const rows = await db
       .select({
@@ -43,6 +48,7 @@ export const GET = withRoute(
       return { ...r, daysRemaining };
     });
 
+    await logSuperadminAction(session.userId, "LIST_SUBSCRIPTIONS");
     return apiOk({ subscriptions: enriched });
   }
 );

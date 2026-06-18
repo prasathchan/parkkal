@@ -191,6 +191,23 @@ export function listPatientPrescriptions(patientId: string): Promise<{ prescript
   return apiFetch<{ prescriptions: PatientPrescription[] }>(`/api/patients/${patientId}/prescriptions`);
 }
 
+export interface ImportPatientRow {
+  name: string;
+  phone: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  bloodGroup?: string;
+  medicalNotes?: string;
+}
+
+export function importPatients(rows: ImportPatientRow[]): Promise<{ imported: number; errors: { row: number; message: string }[]; total: number }> {
+  return apiFetch("/api/patients/import", {
+    method: "POST",
+    body: JSON.stringify({ patients: rows }),
+  });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 /** Use this object for a clean import: `import { patientsApi } from "@/api/patients"` */
@@ -208,4 +225,5 @@ export const patientsApi = {
   getToothChartHistory,
   getToothConditionHistory,
   listPrescriptions: listPatientPrescriptions,
+  import: importPatients,
 };

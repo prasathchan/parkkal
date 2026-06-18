@@ -57,6 +57,11 @@ const envSchema = z.object({
   // When unset, every /api/internal/* endpoint returns 503 (surface disabled).
   INTERNAL_API_KEY: z.string().min(32).optional(),
 
+  // ── Superadmin second-factor ───────────────────────────────────────────────
+  // Separate signing key for time-limited superadmin session tokens.
+  // When unset, /api/superadmin/* routes are disabled (403).
+  SUPERADMIN_SECRET: z.string().min(32).optional(),
+
   // ── Notifications ─────────────────────────────────────────────────────────
   RESEND_FROM_EMAIL: z.string().email().optional(),
   // Alert recipient for server-side error emails. Should be a monitored inbox,

@@ -18,7 +18,7 @@
  *   FULFILLED    — linked appointment was COMPLETED (patient came in)
  */
 import { eq, and, desc, count, isNotNull } from "drizzle-orm";
-import { visits, patients, users, appointments } from "@/db/schema";
+import { visits, patients, users, appointments, locations } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 import type { RecallStatus } from "@/types";
@@ -28,14 +28,14 @@ export const GET = withRoute(
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get("status") ?? "all";
+    const locationId   = searchParams.get("locationId");
     const limit  = Math.min(Number(searchParams.get("limit")  ?? 50), 200);
     const offset = Number(searchParams.get("offset") ?? 0);
     const today  = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-    const where = and(
-      eq(visits.organizationId, session.orgId),
-      isNotNull(visits.recallDate),
-    );
+    const where = locationId
+      ? and(eq(visits.organizationId, session.orgId), isNotNull(visits.recallDate), eq(visits.locationId, locationId))
+      : and(eq(visits.organizationId, session.orgId), isNotNull(visits.recallDate));
 
     const [{ total }] = await db.select({ total: count() }).from(visits).where(where);
 
@@ -56,11 +56,13 @@ export const GET = withRoute(
         recallAppointmentDate:   appointments.appointmentDate,
         recallAppointmentTime:   appointments.appointmentTime,
         recallAppointmentStatus: appointments.status,
+        locationName:            locations.name,
       })
       .from(visits)
       .leftJoin(patients,     eq(visits.patientId, patients.id))
       .leftJoin(users,        eq(visits.doctorId, users.id))
       .leftJoin(appointments, eq(visits.recallAppointmentId, appointments.id))
+      .leftJoin(locations,    eq(visits.locationId, locations.id))
       .where(where)
       .orderBy(desc(visits.recallDate))
       .limit(limit)

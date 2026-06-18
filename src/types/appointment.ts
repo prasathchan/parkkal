@@ -19,10 +19,12 @@ export interface Appointment {
   type: AppointmentType;
   notes?: string | null;
   createdAt: number;
+  locationId?: string | null;
   // Joined fields
   patientName?: string | null;
   patientCode?: string | null;
   doctorName?: string | null;
+  locationName?: string | null;
   /** Set once a visit has been recorded for this appointment */
   visitId?: string | null;
 }
@@ -36,6 +38,7 @@ export interface CreateAppointmentPayload {
   appointmentTime?: string;
   type?: AppointmentType;
   notes?: string;
+  locationId?: string;
   /** Set when booking from the Recalls page — links appointment back to the recall visit */
   recallVisitId?: string;
 }

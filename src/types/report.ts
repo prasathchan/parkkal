@@ -55,6 +55,13 @@ export interface PatientFunnel {
   hadPayment: number;
 }
 
+export interface TopOutstandingPatient {
+  patientId: string;
+  patientName: string;
+  balance: number;
+  openVisits: number;
+}
+
 export interface ReportData {
   period: {
     days: number;
@@ -73,4 +80,5 @@ export interface ReportData {
   doctorBreakdown: DoctorStats[];
   agingBuckets: AgingBucket[];
   patientFunnel: PatientFunnel;
+  topOutstandingPatients: TopOutstandingPatient[];
 }

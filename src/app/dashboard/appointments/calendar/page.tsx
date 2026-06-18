@@ -27,7 +27,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
-import { appointmentsApi, ApiError } from "@/api";
+import { appointmentsApi, visitsApi, ApiError } from "@/api";
+import { useLocation } from "@/context/location-context";
 import type { Appointment, AppointmentStatus } from "@/types";
 import { HOUR_START, type ViewMode, type ZoomLevel } from "./types";
 import {
@@ -42,6 +43,7 @@ import { DetailSheet } from "./DetailSheet";
 
 export default function CalendarPage() {
   const router = useRouter();
+  const { selectedLocationId } = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [view, setView]                     = useState<ViewMode>("week");
@@ -62,6 +64,8 @@ export default function CalendarPage() {
   const [now, setNow]                       = useState(new Date());
   const [statusBusy, setStatusBusy]         = useState(false);
   const [showQueue, setShowQueue]           = useState(true);
+  const [createVisitAppt, setCreateVisitAppt] = useState<Appointment | null>(null);
+  const [createVisitBusy, setCreateVisitBusy] = useState(false);
 
   const HOUR_HEIGHT  = Math.round(60 * zoom);
   const CHIP_HEIGHT  = Math.round((30 / 60) * HOUR_HEIGHT);
@@ -111,6 +115,7 @@ export default function CalendarPage() {
       const { appointments: appts } = await appointmentsApi.list({
         startDate, endDate,
         doctorId: doctorFilter || undefined,
+        locationId: selectedLocationId ?? undefined,
         limit: 500,
       });
 
@@ -136,14 +141,14 @@ export default function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  }, [doctorFilter]);
+  }, [doctorFilter, selectedLocationId]);
 
   useEffect(() => {
     if (view === "week")        fetchDates(weekDays);
     else if (view === "day")    fetchDates([selectedDay]);
     else                        fetchDates(monthGridDates);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, weekStart, selectedDay, monthStart, doctorFilter]);
+  }, [view, weekStart, selectedDay, monthStart, doctorFilter, selectedLocationId]);
 
   // Scroll to ~1 hour before current time on first load
   useEffect(() => {
@@ -204,8 +209,31 @@ export default function CalendarPage() {
         return next;
       });
       setSelected(appointment);
+      if (newStatus === "IN_PROGRESS" && !appointment.visitId) {
+        setCreateVisitAppt(appointment);
+      }
     } catch { /* silently ignore — UI stays open */ }
     finally { setStatusBusy(false); }
+  }
+
+  async function handleCreateVisit() {
+    if (!createVisitAppt || createVisitBusy) return;
+    setCreateVisitBusy(true);
+    try {
+      const { visit } = await visitsApi.create({
+        patientId: createVisitAppt.patientId,
+        doctorId: createVisitAppt.doctorId,
+        visitDate: createVisitAppt.appointmentDate,
+        chiefComplaint: createVisitAppt.notes ?? undefined,
+        appointmentId: createVisitAppt.id,
+        visitType: "APPOINTMENT",
+        locationId: createVisitAppt.locationId ?? selectedLocationId ?? undefined,
+      });
+      setCreateVisitAppt(null);
+      router.push(`/dashboard/visits/${visit.id}`);
+    } catch {
+      setCreateVisitBusy(false);
+    }
   }
 
   const nowDateStr = toDateStr(now);
@@ -298,6 +326,38 @@ export default function CalendarPage() {
           onStatusChange={handleStatusChange}
           statusBusy={statusBusy}
         />
+      )}
+
+      {createVisitAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="rounded-pk-md border border-pk-border bg-pk-surface shadow-pk-e3 w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-base font-semibold text-pk-text">Create visit for this appointment?</h3>
+            <p className="text-sm text-pk-text-secondary">
+              {createVisitAppt.patientName ?? "This patient"} is now in progress. Create a new visit to start recording items, prescriptions, and payments.
+            </p>
+            {createVisitAppt.notes && (
+              <p className="text-xs text-pk-text-muted bg-pk-surface-raised rounded-pk-sm px-3 py-2">
+                <span className="font-medium">Notes: </span>{createVisitAppt.notes}
+              </p>
+            )}
+            <div className="flex gap-3 justify-end pt-1">
+              <button
+                onClick={() => setCreateVisitAppt(null)}
+                disabled={createVisitBusy}
+                className="rounded-pk-sm border border-pk-border px-4 py-2 text-sm font-medium text-pk-text-secondary hover:bg-pk-surface-raised transition disabled:opacity-50"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleCreateVisit}
+                disabled={createVisitBusy}
+                className="rounded-pk-sm bg-pk-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-pk-teal-700 transition disabled:opacity-50"
+              >
+                {createVisitBusy ? "Creating…" : "Create Visit"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

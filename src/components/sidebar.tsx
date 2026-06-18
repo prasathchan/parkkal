@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
@@ -19,10 +19,15 @@ interface NavItem {
   adminOnly?: boolean;
   notAdmin?: boolean;
   sub?: boolean; // indented sub-item under a section
+  altHrefs?: string[]; // additional paths that keep this item highlighted as active
 }
 
 interface NavSection {
-  heading?: string; // section label shown above items; omit for top-level items
+  key: string;
+  heading?: string;
+  /** Collapsed by default for DOCTOR role */
+  collapsibleForDoctor?: boolean;
+  /** Entire section only visible to ADMIN */
   adminOnly?: boolean;
   items: NavItem[];
 }
@@ -30,6 +35,7 @@ interface NavSection {
 const navSections: NavSection[] = [
   // ── Top-level (no heading) ───────────────────────────────────────────────
   {
+    key: "home",
     items: [
       {
         label: "Dashboard",
@@ -43,9 +49,10 @@ const navSections: NavSection[] = [
     ],
   },
 
-  // ── Patients ─────────────────────────────────────────────────────────────
+  // ── Clinical ─────────────────────────────────────────────────────────────
   {
-    heading: "Patients",
+    key: "clinical",
+    heading: "Clinical",
     items: [
       {
         label: "Patients",
@@ -66,6 +73,7 @@ const navSections: NavSection[] = [
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         ),
+        altHrefs: ["/dashboard/appointments/list"],
       },
       {
         label: "Visits",
@@ -100,9 +108,11 @@ const navSections: NavSection[] = [
     ],
   },
 
-  // ── Billing ──────────────────────────────────────────────────────────────
+  // ── Finance ──────────────────────────────────────────────────────────────
   {
-    heading: "Billing",
+    key: "finance",
+    heading: "Finance",
+    collapsibleForDoctor: true,
     items: [
       {
         label: "Visit Billing",
@@ -125,22 +135,24 @@ const navSections: NavSection[] = [
         ),
       },
       {
-        label: "Reports",
-        href: "/dashboard/reports",
+        label: "Salary",
+        href: "/dashboard/salary",
+        adminOnly: true,
         sub: true,
         icon: (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
       },
     ],
   },
 
-  // ── Team (admin only) ─────────────────────────────────────────────────────
+  // ── Admin ─────────────────────────────────────────────────────────────────
   {
-    heading: "Team",
-    adminOnly: true,
+    key: "admin",
+    heading: "Admin",
+    collapsibleForDoctor: true,
     items: [
       {
         label: "Staff",
@@ -165,30 +177,12 @@ const navSections: NavSection[] = [
         ),
       },
       {
-        label: "Salary",
-        href: "/dashboard/salary",
-        adminOnly: true,
+        label: "Reports",
+        href: "/dashboard/reports",
         sub: true,
         icon: (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        ),
-      },
-    ],
-  },
-
-  // ── System ────────────────────────────────────────────────────────────────
-  {
-    heading: "System",
-    items: [
-      {
-        label: "Calendar Sync",
-        href: "/dashboard/settings/calendar",
-        sub: true,
-        icon: (
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         ),
       },
@@ -204,6 +198,16 @@ const navSections: NavSection[] = [
         ),
       },
       {
+        label: "Calendar Sync",
+        href: "/dashboard/settings/calendar",
+        sub: true,
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        ),
+      },
+      {
         label: "Backup & Restore",
         href: "/dashboard/settings/backup",
         adminOnly: true,
@@ -215,13 +219,14 @@ const navSections: NavSection[] = [
         ),
       },
       {
-        label: "Billing",
-        href: "/dashboard/settings/billing",
+        label: "Locations",
+        href: "/dashboard/settings/locations",
         adminOnly: true,
         sub: true,
         icon: (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
       },
@@ -406,8 +411,22 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
   const theme = useTheme();
   const colors = getSidebarColors(theme);
   const isAdmin = user.role === "ADMIN";
+  const isDoctor = user.role === "DOCTOR";
   const isLight = theme.sidebarStyle === "light";
   const { isOpen, close } = useSidebar();
+
+  // Sections collapsed by default for DOCTOR role; tracks which keys are collapsed
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const s of navSections) {
+      if (s.collapsibleForDoctor && isDoctor) initial[s.key] = true;
+    }
+    return initial;
+  });
+
+  const toggleSection = useCallback((key: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   async function handleLogout() {
     await authApi.logout().catch(() => {});
@@ -472,29 +491,66 @@ export function Sidebar({ user, logoUrl }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
-        {visibleSections.map((section, si) => (
-          <div key={si}>
-            {section.heading && (
-              <p
-                className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider"
-                style={{ color: colors.text, opacity: 0.45 }}
-              >
-                {section.heading}
-              </p>
-            )}
-            <div className="space-y-0.5">
-              {section.items.map((item) => {
-                const isActive =
-                  item.href === "/dashboard"
-                    ? pathname === "/dashboard"
-                    : pathname.startsWith(item.href);
-                return (
-                  <NavLink key={item.href} item={item} isActive={isActive} colors={colors} onNavigate={close} />
-                );
-              })}
+        {visibleSections.map((section) => {
+          const isCollapsible = Boolean(section.collapsibleForDoctor);
+          const isCollapsed = isCollapsible && collapsedSections[section.key];
+          // Auto-expand if an item in this section is active
+          const hasActiveItem = section.items.some((item) =>
+            item.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(item.href) || (item.altHrefs?.some((h) => pathname.startsWith(h)) ?? false)
+          );
+          const showItems = !isCollapsed || hasActiveItem;
+
+          return (
+            <div key={section.key}>
+              {section.heading && (
+                isCollapsible ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.key)}
+                    className="w-full flex items-center justify-between px-3 pb-1 group"
+                    aria-expanded={showItems}
+                  >
+                    <span
+                      className="text-xs font-semibold uppercase tracking-wider transition-opacity group-hover:opacity-70"
+                      style={{ color: colors.text, opacity: 0.45 }}
+                    >
+                      {section.heading}
+                    </span>
+                    <svg
+                      className="w-3 h-3 flex-shrink-0 transition-transform"
+                      style={{ color: colors.text, opacity: 0.45, transform: showItems ? "rotate(180deg)" : "none" }}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                ) : (
+                  <p
+                    className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: colors.text, opacity: 0.45 }}
+                  >
+                    {section.heading}
+                  </p>
+                )
+              )}
+              {showItems && (
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const isActive =
+                      item.href === "/dashboard"
+                        ? pathname === "/dashboard"
+                        : pathname.startsWith(item.href) || (item.altHrefs?.some((h) => pathname.startsWith(h)) ?? false);
+                    return (
+                      <NavLink key={item.href} item={item} isActive={isActive} colors={colors} onNavigate={close} />
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* User menu */}

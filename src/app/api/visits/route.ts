@@ -12,7 +12,7 @@
  *   patientId, doctorId, status, date, search, billingStatus, limit, offset
  */
 import { eq, desc, and, count, like, or, sql } from "drizzle-orm";
-import { visits, patients, users, organizationPatients, organizationMembers, appointments } from "@/db/schema";
+import { visits, patients, users, organizationPatients, organizationMembers, appointments, locations } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { escapeLike } from "@/lib/utils";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
@@ -28,6 +28,7 @@ const createVisitSchema = z.object({
   doctorNotes: z.string().max(5000).optional(),
   appointmentId: z.string().nullable().optional(),
   visitType: z.enum(["APPOINTMENT", "WALKIN"]).default("WALKIN"),
+  locationId: z.string().optional(),
 });
 
 /** Build a sequential visit code like VIS-20250601-0003 */
@@ -44,7 +45,8 @@ export const GET = withRoute(
   { route: "GET /api/visits", permission: PERMISSIONS.VISITS_VIEW },
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
-    const patientId = searchParams.get("patientId");
+    const patientId    = searchParams.get("patientId");
+    const locationId   = searchParams.get("locationId");
     // RBAC: DOCTOR role may only see their own visits
     const doctorId = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
     const status = searchParams.get("status");
@@ -53,8 +55,9 @@ export const GET = withRoute(
     const search = searchParams.get("search");
 
     const conditions = [eq(visits.organizationId, session.orgId)];
-    if (patientId) conditions.push(eq(visits.patientId, patientId));
-    if (doctorId) conditions.push(eq(visits.doctorId, doctorId));
+    if (patientId)  conditions.push(eq(visits.patientId, patientId));
+    if (doctorId)   conditions.push(eq(visits.doctorId, doctorId));
+    if (locationId) conditions.push(eq(visits.locationId, locationId));
     if (status) conditions.push(eq(visits.status, status as "OPEN" | "COMPLETED" | "CANCELLED"));
     if (billingStatus === "UNPAID") conditions.push(sql`${visits.paidAmount} < ${visits.totalAmount}`);
     if (date) conditions.push(eq(visits.visitDate, date));
@@ -84,15 +87,18 @@ export const GET = withRoute(
         status: visits.status,
         totalAmount: visits.totalAmount,
         paidAmount: visits.paidAmount,
+        locationId: visits.locationId,
         createdAt: visits.createdAt,
         updatedAt: visits.updatedAt,
         patientName: patients.name,
         patientCode: patients.patientCode,
         doctorName: users.name,
+        locationName: locations.name,
       })
       .from(visits)
       .leftJoin(patients, eq(visits.patientId, patients.id))
       .leftJoin(users, eq(visits.doctorId, users.id))
+      .leftJoin(locations, eq(visits.locationId, locations.id))
       .where(and(...conditions))
       .orderBy(desc(visits.createdAt))
       .limit(limit)
@@ -118,7 +124,7 @@ export const POST = withRoute(
     if (!parsed.success) {
       return apiError("Invalid input", 400);
     }
-    const { patientId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType } = parsed.data;
+    const { patientId, visitDate, chiefComplaint, doctorNotes, appointmentId, visitType, locationId } = parsed.data;
     // RBAC: DOCTOR role can only create visits assigned to themselves
     const doctorId = session.role === "DOCTOR" ? session.userId : parsed.data.doctorId;
 
@@ -161,6 +167,7 @@ export const POST = withRoute(
       status: "OPEN" as const,
       totalAmount: 0,
       paidAmount: 0,
+      locationId: locationId ?? null,
       createdAt: now,
       updatedAt: now,
     };

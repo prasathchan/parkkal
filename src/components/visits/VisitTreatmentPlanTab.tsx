@@ -7,6 +7,7 @@ import { PAYMENT_METHODS, type NewItemState, type Treatment, type Visit } from "
 import { treatmentsApi, visitsApi, ApiError } from "@/api";
 import type { TreatmentTemplate } from "@/api/treatments";
 import { ProgressRing } from "@/components/ui/ProgressRing";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 
 interface Props {
   visitId: string;
@@ -64,6 +65,8 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   // L2: deferred link-prompt — shown once per visit, dismissed via sessionStorage
   const [showLinkPrompt, setShowLinkPrompt] = useState(false);
   const [unlinkablePlans, setUnlinkablePlans] = useState<Treatment[]>([]);
+
+  const [confirmUnlinkId, setConfirmUnlinkId] = useState<string | null>(null);
 
   const DISMISS_KEY = `pk_visit_link_dismissed_${visitId}`;
 
@@ -139,8 +142,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
     }
   }
 
-  async function handleUnlinkTreatment(txId: string) {
-    if (!confirm("Unlink this treatment plan from this visit? The plan itself will not be deleted.")) return;
+  async function doUnlinkTreatment(txId: string) {
     try {
       await treatmentsApi.forVisit.unlink(visitId, txId);
       await onRefresh();
@@ -478,12 +480,14 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                             );
                           }
                           return (
-                            <span
-                              title="Upload and verify consent to enable billing"
-                              className="text-xs text-pk-warning-text bg-pk-warning-fill border border-pk-warning-border px-2.5 py-1.5 rounded-pk-sm flex items-center gap-1 cursor-default"
+                            <button
+                              type="button"
+                              title="Upload a signed consent form or apply Emergency Override to enable billing."
+                              onClick={() => document.getElementById(`consent-row-${tx.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                              className="text-xs text-pk-warning-text bg-pk-warning-fill border border-pk-warning-border px-2.5 py-1.5 rounded-pk-sm flex items-center gap-1 hover:bg-pk-warning-fill/80 transition"
                             >
                               🔒 Consent required
-                            </span>
+                            </button>
                           );
                         })()}
                         {/* Status badge — read-only for OPEN visits (status changes
@@ -498,7 +502,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         </span>
                         {visit.status !== "CANCELLED" && (
                           <button
-                            onClick={() => handleUnlinkTreatment(tx.id)}
+                            onClick={() => setConfirmUnlinkId(tx.id)}
                             className="text-xs text-pk-text-muted hover:text-pk-danger-text"
                             title="Unlink from this visit"
                           >
@@ -531,7 +535,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                     </div>
 
                     {/* Consent row */}
-                    <div className="mt-3 pt-3 border-t border-pk-border flex flex-wrap items-center gap-2">
+                    <div id={`consent-row-${tx.id}`} className="mt-3 pt-3 border-t border-pk-border flex flex-wrap items-center gap-2">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${consentBadge[tx.consentStatus] ?? consentBadge.PENDING}`}>
                         {consentLabel[tx.consentStatus] ?? tx.consentStatus}
                       </span>
@@ -794,6 +798,17 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
             </div>
           </div>
         </div>
+      )}
+
+      {confirmUnlinkId && (
+        <ConfirmModal
+          title="Unlink treatment plan?"
+          message="This will unlink the plan from this visit. The plan itself will not be deleted."
+          confirmLabel="Unlink"
+          variant="danger"
+          onConfirm={() => { const id = confirmUnlinkId; setConfirmUnlinkId(null); doUnlinkTreatment(id); }}
+          onCancel={() => setConfirmUnlinkId(null)}
+        />
       )}
     </>
   );

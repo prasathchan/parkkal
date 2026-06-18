@@ -1,13 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { formatCurrency } from "@/lib/utils";
-import { CATEGORIES, DEFAULT_NEW_ITEM, type NewItemState, type Treatment, type VisitItem } from "./types";
+import Link from "next/link";
+import { formatCurrency, formatDoctorName } from "@/lib/utils";
+import { CATEGORIES, DEFAULT_NEW_ITEM, type NewItemState, type Treatment, type VisitItem, type HistoryVisit } from "./types";
 import { visitsApi, ApiError } from "@/api";
 import { ITEM_CATEGORY_LABEL } from "@/constants/visit";
+import { PAYMENT_METHOD } from "@/constants";
 import { TreatmentPickerModal } from "./TreatmentPickerModal";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { STATUS_COLORS } from "./types";
 
 interface Payment { id: string; }
+
+const QUICK_PAY_METHODS = [
+  { value: "CASH",          label: "Cash" },
+  { value: "UPI",           label: "UPI" },
+  { value: "CARD",          label: "Card" },
+  { value: "BANK_TRANSFER", label: "Bank" },
+];
 
 interface Props {
   visitId: string;
@@ -16,6 +27,11 @@ interface Props {
   treatments: Treatment[];
   payments: Payment[];
   prefillItem?: NewItemState | null;
+  /** Outstanding balance — drives quick-pay default amount */
+  due?: number;
+  /** Patient visit history for collapsible section */
+  history?: HistoryVisit[];
+  patientName?: string;
   onRefresh: () => Promise<void>;
   onPageError: (msg: string) => void;
   onSuggestChart?: (toothNumbers: string[]) => void;
@@ -31,13 +47,24 @@ interface EditState {
   notes: string;
 }
 
-export function VisitItemsTab({ visitId, visitStatus, items, treatments, payments, prefillItem, onRefresh, onPageError, onSuggestChart }: Props) {
+export function VisitItemsTab({ visitId, visitStatus, items, treatments, payments, prefillItem, due = 0, history, patientName, onRefresh, onPageError, onSuggestChart }: Props) {
   const [newItem, setNewItem] = useState<NewItemState>(prefillItem ?? DEFAULT_NEW_ITEM);
   const [addingItem, setAddingItem] = useState(false);
   const [addItemError, setAddItemError] = useState("");
   const [editState, setEditState] = useState<EditState | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [showTreatmentPicker, setShowTreatmentPicker] = useState(false);
+  const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null);
+
+  // Quick-pay state
+  const [qpAmount, setQpAmount] = useState(() => due > 0 ? String(due.toFixed(2)) : "");
+  const [qpMethod, setQpMethod] = useState("CASH");
+  const [qpSubmitting, setQpSubmitting] = useState(false);
+  const [qpError, setQpError] = useState("");
+  const [qpSuccess, setQpSuccess] = useState(false);
+
+  // History section
+  const [showHistory, setShowHistory] = useState(false);
 
   const hasPayments = payments.length > 0;
 
@@ -75,13 +102,35 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
     }
   }
 
-  async function handleDeleteItem(itemId: string) {
-    if (!confirm("Delete this item?")) return;
+  async function doDeleteItem(itemId: string) {
     try {
       await visitsApi.items.delete(visitId, itemId);
       await onRefresh();
     } catch (e) {
       onPageError(e instanceof ApiError ? e.message : "Failed to delete item");
+    }
+  }
+
+  async function handleQuickPay(e: React.FormEvent) {
+    e.preventDefault();
+    const amt = parseFloat(qpAmount);
+    if (!amt || amt <= 0) { setQpError("Enter a valid amount"); return; }
+    setQpSubmitting(true);
+    setQpError("");
+    try {
+      await visitsApi.payments.add(visitId, {
+        amount: amt,
+        paymentMethod: qpMethod as typeof PAYMENT_METHOD[keyof typeof PAYMENT_METHOD],
+        notes: "Quick payment",
+      });
+      setQpSuccess(true);
+      setQpAmount("");
+      setTimeout(() => setQpSuccess(false), 3000);
+      await onRefresh();
+    } catch (e) {
+      setQpError(e instanceof ApiError ? e.message : "Payment failed");
+    } finally {
+      setQpSubmitting(false);
     }
   }
 
@@ -402,7 +451,7 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                           </button>
                           {!hasPayments && (
                             <button
-                              onClick={() => handleDeleteItem(item.id)}
+                              onClick={() => setConfirmDeleteItemId(item.id)}
                               className="text-pk-danger-text hover:text-pk-danger-text text-xs font-medium"
                             >
                               Delete
@@ -447,6 +496,103 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
           }}
           onClose={() => setShowTreatmentPicker(false)}
         />
+      )}
+
+      {confirmDeleteItemId && (
+        <ConfirmModal
+          title="Delete item?"
+          message="This will remove the item from the bill."
+          confirmLabel="Delete"
+          variant="danger"
+          onConfirm={() => { const id = confirmDeleteItemId; setConfirmDeleteItemId(null); doDeleteItem(id); }}
+          onCancel={() => setConfirmDeleteItemId(null)}
+        />
+      )}
+
+      {/* Quick-pay row — only for OPEN visits with items */}
+      {visitStatus === "OPEN" && items.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-pk-border">
+          <p className="text-sm font-semibold text-pk-text mb-3">Record Payment</p>
+          <form onSubmit={handleQuickPay} className="flex flex-wrap gap-2 items-end">
+            <div>
+              <label className="block text-xs text-pk-text-muted mb-1">Amount (₹)</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={qpAmount}
+                onChange={(e) => { setQpAmount(e.target.value); setQpError(""); }}
+                placeholder="0.00"
+                className="w-32 text-sm border border-pk-border rounded-pk-sm px-3 py-1.5 bg-pk-surface text-pk-text focus:outline-none focus:ring-1 focus:ring-pk-teal-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-pk-text-muted mb-1">Method</label>
+              <select
+                value={qpMethod}
+                onChange={(e) => setQpMethod(e.target.value)}
+                className="text-sm border border-pk-border rounded-pk-sm px-3 py-1.5 bg-pk-surface text-pk-text focus:outline-none focus:ring-1 focus:ring-pk-teal-500"
+              >
+                {QUICK_PAY_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="submit"
+              disabled={qpSubmitting || !qpAmount}
+              className="bg-pk-teal-600 text-white text-sm font-medium px-4 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition disabled:opacity-50"
+            >
+              {qpSubmitting ? "Recording…" : "Record Payment"}
+            </button>
+            {qpSuccess && <span className="text-xs text-pk-success-text font-medium">✓ Payment recorded</span>}
+            {qpError && <span className="text-xs text-pk-danger-text">{qpError}</span>}
+          </form>
+        </div>
+      )}
+
+      {/* Visit history — collapsible reference section */}
+      {history && history.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-pk-border">
+          <button
+            type="button"
+            onClick={() => setShowHistory((v) => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-pk-text-secondary hover:text-pk-text transition w-full"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showHistory ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            Visit history{patientName ? ` for ${patientName}` : ""}
+            <span className="text-xs bg-pk-surface-sunken text-pk-text-muted px-1.5 rounded-full ml-1">
+              {history.length}
+            </span>
+          </button>
+          {showHistory && (
+            <div className="mt-3 space-y-2">
+              {history.map((h) => (
+                <Link
+                  key={h.id}
+                  href={`/dashboard/visits/${h.id}`}
+                  className="flex items-center justify-between p-3 border border-pk-border rounded-pk-sm hover:bg-pk-teal-50 hover:border-pk-teal-200 transition"
+                >
+                  <div>
+                    <p className="text-sm font-mono text-pk-teal-700">{h.visitCode}</p>
+                    <p className="text-xs text-pk-text-muted">{h.visitDate} · {formatDoctorName(h.doctorName)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">{formatCurrency(h.totalAmount)}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[h.status] || "bg-pk-surface-sunken text-pk-text-secondary"}`}>
+                      {h.status}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

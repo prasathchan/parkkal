@@ -79,6 +79,7 @@ export { usersApi } from "./users";
 
 export { calendarApi } from "./calendar";
 export { backupApi } from "./backup";
+export { locationsApi } from "./locations";
 
 // The error class — always import this alongside the API you use
 export { ApiError } from "./_client";

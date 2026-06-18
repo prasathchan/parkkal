@@ -18,8 +18,8 @@
  *   topProcedures — [{ procedure: string, count: number, revenue: number }] top 10
  *   treatmentByStatus — { PLANNED, IN_PROGRESS, COMPLETED }
  */
-import { eq, and, gte, lte, lt, sum, count, ne, isNotNull } from "drizzle-orm";
-import { visits, payments, organizationPatients, appointments, treatments, users, invoices } from "@/db/schema";
+import { eq, and, gte, lte, lt, sum, count, ne, isNotNull, sql } from "drizzle-orm";
+import { visits, payments, organizationPatients, appointments, treatments, users, invoices, patients, locations } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 
@@ -37,9 +37,10 @@ export const GET = withRoute(
   { route: "GET /api/reports", rateLimit: RATE_LIMITS.READ, permission: PERMISSIONS.REPORTS_VIEW },
   async (req, { session, db }) => {
     const { searchParams } = new URL(req.url);
-    const periodParam = searchParams.get("period") ?? "30d";
-    const fromParam   = searchParams.get("from");  // YYYY-MM-DD
-    const toParam     = searchParams.get("to");    // YYYY-MM-DD
+    const periodParam  = searchParams.get("period") ?? "30d";
+    const fromParam    = searchParams.get("from");       // YYYY-MM-DD
+    const toParam      = searchParams.get("to");         // YYYY-MM-DD
+    const locationId   = searchParams.get("locationId"); // optional branch filter
 
     const orgId = session.orgId;
     const now   = Date.now();
@@ -62,7 +63,9 @@ export const GET = withRoute(
       label = periodParam;
     }
 
-    const inPeriod     = and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), lte(visits.createdAt, end));
+    const inPeriod     = locationId
+      ? and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), lte(visits.createdAt, end), eq(visits.locationId, locationId))
+      : and(eq(visits.organizationId, orgId), gte(visits.createdAt, start), lte(visits.createdAt, end));
     const inPeriodNoCx = and(inPeriod, ne(visits.status, "CANCELLED"));
 
     // ── 1. Summary totals ─────────────────────────────────────────────────────
@@ -150,7 +153,9 @@ export const GET = withRoute(
     const apptStatusRows = await db
       .select({ status: appointments.status, val: count() })
       .from(appointments)
-      .where(and(eq(appointments.organizationId, orgId), gte(appointments.createdAt, start), lte(appointments.createdAt, end)))
+      .where(locationId
+        ? and(eq(appointments.organizationId, orgId), gte(appointments.createdAt, start), lte(appointments.createdAt, end), eq(appointments.locationId, locationId))
+        : and(eq(appointments.organizationId, orgId), gte(appointments.createdAt, start), lte(appointments.createdAt, end)))
       .groupBy(appointments.status);
 
     const apptByStatus: Record<string, number> = {};
@@ -264,7 +269,31 @@ export const GET = withRoute(
       if (bucket) { bucket.count++; bucket.amount += due; }
     }
 
-    // ── 11. Patient funnel ────────────────────────────────────────────────────
+    // ── 11. Top 5 patients by outstanding balance ─────────────────────────────
+    const topDebtorRows = await db
+      .select({
+        patientId:   visits.patientId,
+        patientName: patients.name,
+        balance:     sql<number>`SUM(${visits.totalAmount} - ${visits.paidAmount})`,
+        openVisits:  count(),
+      })
+      .from(visits)
+      .leftJoin(patients, eq(visits.patientId, patients.id))
+      .where(and(eq(visits.organizationId, orgId), eq(visits.status, "OPEN")))
+      .groupBy(visits.patientId, patients.name)
+      .orderBy(sql`SUM(${visits.totalAmount} - ${visits.paidAmount}) DESC`)
+      .limit(5);
+
+    const topOutstandingPatients = topDebtorRows
+      .filter((r: typeof topDebtorRows[number]) => Number(r.balance) > 0)
+      .map((r: typeof topDebtorRows[number]) => ({
+        patientId:   r.patientId ?? "",
+        patientName: r.patientName ?? "Unknown",
+        balance:     Number(r.balance) || 0,
+        openVisits:  Number(r.openVisits) || 0,
+      }));
+
+    // ── 12. Patient funnel ────────────────────────────────────────────────────
     const [funnelRegistered, funnelVisit, funnelTx, funnelInvoice, funnelPayment] = await Promise.all([
       db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
       db.select({ val: count(visits.patientId) }).from(visits).where(and(eq(visits.organizationId, orgId), ne(visits.status, "CANCELLED"))),
@@ -303,6 +332,7 @@ export const GET = withRoute(
       doctorBreakdown,
       agingBuckets: agingBuckets.map(({ label, count, amount }) => ({ label, count, amount })),
       patientFunnel,
+      topOutstandingPatients,
     });
   }
 );

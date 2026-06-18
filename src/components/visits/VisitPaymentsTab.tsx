@@ -75,14 +75,27 @@ export function VisitPaymentsTab({ visit, payments, due, onOpenPayModal }: Props
         </table>
       </div>
 
-      {visit.status === "OPEN" && due > 0 && (
-        <button
-          onClick={onOpenPayModal}
-          className="bg-pk-success text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-success transition"
-        >
-          + Add Payment
-        </button>
-      )}
+      <div className="flex items-center gap-3 flex-wrap">
+        {visit.status === "OPEN" && due > 0 && (
+          <button
+            onClick={onOpenPayModal}
+            className="bg-pk-success text-white px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-success transition"
+          >
+            + Add Payment
+          </button>
+        )}
+        {payments.length > 0 && (
+          <button
+            onClick={() => window.open(`/dashboard/visits/${visit.id}/receipt`, "_blank")}
+            className="flex items-center gap-1.5 border border-pk-border text-pk-text-secondary px-4 py-2 rounded-pk-sm text-sm font-medium hover:bg-pk-surface-raised transition"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Print Receipt
+          </button>
+        )}
+      </div>
     </div>
   );
 }

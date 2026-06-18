@@ -28,3 +28,4 @@ export type * from "./report";
 export type * from "./org";
 export type * from "./auth";
 export type * from "./backup";
+export type * from "./location";

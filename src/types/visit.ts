@@ -25,10 +25,12 @@ export interface Visit {
   appointmentId?: string | null;
   createdAt: number;
   updatedAt: number;
+  locationId?: string | null;
   // Joined fields (present when fetched from the list endpoint)
   patientName?: string | null;
   patientCode?: string | null;
   doctorName?: string | null;
+  locationName?: string | null;
 }
 
 // ─── Bill item ────────────────────────────────────────────────────────────────

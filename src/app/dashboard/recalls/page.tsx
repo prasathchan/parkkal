@@ -23,6 +23,7 @@ import Link from "next/link";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useAsync } from "@/hooks/use-async";
 import { recallsApi } from "@/api";
+import { useLocation } from "@/context/location-context";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { RecallVisit, RecallStatus } from "@/types";
@@ -73,12 +74,18 @@ function DueBadge({ row }: { row: RecallVisit }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RecallsPage() {
+  const { selectedLocationId, isMultiBranch } = useLocation();
   const [tab, setTab] = useState<TabFilter>("unscheduled");
   const [offset, setOffset] = useState(0);
 
   const { data, loading, error, refetch } = useAsync(
-    () => recallsApi.list({ status: tab === "all" ? "all" : tab, limit: LIMIT, offset }),
-    [tab, offset],
+    () => recallsApi.list({
+      status:     tab === "all" ? "all" : tab,
+      locationId: selectedLocationId ?? undefined,
+      limit:      LIMIT,
+      offset,
+    }),
+    [tab, offset, selectedLocationId],
   );
 
   const recalls: RecallVisit[] = data?.recalls ?? [];
@@ -169,6 +176,7 @@ export default function RecallsPage() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Appointment</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Notes</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Doctor</th>
+                  {isMultiBranch && <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Branch</th>}
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Visit</th>
                 </tr>
               </thead>
@@ -197,16 +205,19 @@ export default function RecallsPage() {
                       <RecallStatusBadge status={row.recallStatus} />
                     </td>
 
-                    {/* Appointment — show details if booked, Book Now if not */}
+                    {/* Appointment — show details + link if booked, Book Now if not */}
                     <td className="px-4 py-3">
                       {row.recallAppointmentId ? (
                         <div>
-                          <div className="text-sm font-medium text-pk-text">
+                          <Link
+                            href={`/dashboard/appointments/calendar?appointmentId=${row.recallAppointmentId}`}
+                            className="text-sm font-medium text-pk-teal-600 hover:text-pk-teal-800 hover:underline"
+                          >
                             {row.recallAppointmentDate}
                             {row.recallAppointmentTime && (
                               <span className="text-pk-text-muted"> · {row.recallAppointmentTime}</span>
                             )}
-                          </div>
+                          </Link>
                           <div className="text-xs text-pk-text-muted mt-0.5 capitalize">
                             {row.recallAppointmentStatus?.toLowerCase()}
                           </div>
@@ -231,6 +242,13 @@ export default function RecallsPage() {
 
                     {/* Doctor */}
                     <td className="px-4 py-3 text-sm text-pk-text-muted">{row.doctorName ?? "—"}</td>
+
+                    {/* Branch */}
+                    {isMultiBranch && (
+                      <td className="px-4 py-3 text-xs text-pk-text-muted">
+                        {(row as RecallVisit & { locationName?: string | null }).locationName ?? "—"}
+                      </td>
+                    )}
 
                     {/* Original visit link */}
                     <td className="px-4 py-3">

@@ -188,6 +188,7 @@ export const appointments = sqliteTable("appointments", {
     enum: ["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"],
   }).notNull().default("CONSULTATION"),
   notes: text("notes"),
+  locationId: text("location_id").references((): AnySQLiteColumn => locations.id),
   createdAt: integer("created_at").notNull(),
 });
 
@@ -318,6 +319,7 @@ export const visits = sqliteTable("visits", {
   recallDate: text("recall_date"),              // YYYY-MM-DD — when the patient should return
   recallNotes: text("recall_notes"),            // e.g. "6-month checkup", "review root canal"
   recallAppointmentId: text("recall_appointment_id").references(() => appointments.id), // set when recall is booked
+  locationId: text("location_id").references((): AnySQLiteColumn => locations.id),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -545,6 +547,51 @@ export const orgBackups = sqliteTable("org_backups", {
   errorMessage:   text("error_message"),
   createdBy:      text("created_by").references(() => users.id), // null = auto
   createdAt:      integer("created_at").notNull(),
+});
+
+// ─── Locations (branches) ─────────────────────────────────────────────────────
+// Each organisation can have one or more physical branches. When only one branch
+// exists it is transparent to staff. The UI only shows the location selector once
+// a second branch is added.
+export const locations = sqliteTable("locations", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organizations.id),
+  name:           text("name").notNull(),                      // e.g. "Main Branch"
+  address:        text("address"),
+  phone:          text("phone"),
+  timezone:       text("timezone").notNull().default("Asia/Kolkata"),
+  isActive:       integer("is_active").notNull().default(1),
+  isDefault:      integer("is_default").notNull().default(0),  // 1 = the auto-created branch
+  gstin:          text("gstin"),                               // GST registration number (India)
+  createdAt:      integer("created_at").notNull(),
+  updatedAt:      integer("updated_at").notNull(),
+});
+
+// ─── Staff ↔ Location assignments ────────────────────────────────────────────
+// Tracks which doctors/staff work at which branches.
+// isPrimary = 1 means this is where they primarily work (for calendar filtering).
+export const staffLocationAssignments = sqliteTable(
+  "staff_location_assignments",
+  {
+    id:             text("id").primaryKey(),
+    userId:         text("user_id").notNull().references(() => users.id),
+    organizationId: text("organization_id").notNull().references(() => organizations.id),
+    locationId:     text("location_id").notNull().references(() => locations.id),
+    isPrimary:      integer("is_primary").notNull().default(0),
+    createdAt:      integer("created_at").notNull(),
+  },
+  (t) => ({ uniqUserLocation: unique().on(t.userId, t.locationId) })
+);
+
+// ─── Location settings ────────────────────────────────────────────────────────
+// Per-branch calendar configuration: opening hours, slot duration, advance booking.
+export const locationSettings = sqliteTable("location_settings", {
+  locationId:           text("location_id").primaryKey().references(() => locations.id),
+  openingTime:          text("opening_time").notNull().default("09:00"),   // HH:MM
+  closingTime:          text("closing_time").notNull().default("18:00"),   // HH:MM
+  slotDurationMinutes:  integer("slot_duration_minutes").notNull().default(30),
+  maxAdvanceBookingDays: integer("max_advance_booking_days").notNull().default(60),
+  updatedAt:            integer("updated_at").notNull(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -852,6 +899,16 @@ export const staffProfiles = sqliteTable("staff_profiles", {
 export const staffProfilesRelations = relations(staffProfiles, ({ one }) => ({
   user: one(users, { fields: [staffProfiles.userId], references: [users.id] }),
 }));
+
+// ─── Superadmin action audit log ─────────────────────────────────────────────
+// Append-only cross-org audit log. Rows are never updated or deleted.
+export const superadminActions = sqliteTable("superadmin_actions", {
+  id:        text("id").primaryKey(),
+  actorId:   text("actor_id").notNull().references(() => users.id),
+  action:    text("action").notNull(),
+  data:      text("data"),   // JSON
+  createdAt: integer("created_at").notNull(),
+});
 
 // ─── Onboarding email sequence ───────────────────────────────────────────────
 // One row per scheduled email. Inserted at signup; processed by the daily cron.

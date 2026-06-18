@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { coupons } from "@/db/schema";
 import { isSuperAdmin } from "@/lib/superadmin";
+import { requireSuperadminToken, logSuperadminAction } from "@/lib/superadmin-auth";
 
 const updateSchema = z.object({
   description:   z.string().max(200).optional(),
@@ -17,8 +18,12 @@ const updateSchema = z.object({
 
 export const PUT = withRoute<{ id: string }>(
   { route: "PUT /api/superadmin/coupons/[id]", rateLimit: RATE_LIMITS.WRITE, skipSubscriptionCheck: true },
-  async (req, { session, db }, { id }) => {
+  async (req, { session, db, log }, { id }) => {
     if (!await isSuperAdmin(db, session.userId)) return apiError("Forbidden", 403);
+    if (!await requireSuperadminToken(req, session.userId)) {
+      log.security("Superadmin route accessed without valid superadmin session token", {});
+      return apiError("Superadmin session token required. Call POST /api/superadmin/auth first.", 401);
+    }
     const body = updateSchema.parse(await req.json());
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (body.description   !== undefined) updates.description   = body.description;
@@ -30,6 +35,7 @@ export const PUT = withRoute<{ id: string }>(
     if (body.planSlug      !== undefined) updates.planSlug      = body.planSlug;
     if (body.isActive      !== undefined) updates.isActive      = body.isActive ? 1 : 0;
     await db.update(coupons).set(updates).where(eq(coupons.id, id));
+    await logSuperadminAction(session.userId, "UPDATE_COUPON", { couponId: id, updatedFields: Object.keys(updates) });
     return apiOk({ updated: true });
   }
 );

@@ -27,6 +27,7 @@ export interface ListAppointmentsParams {
   status?: string;
   patientId?: string;
   doctorId?: string;
+  locationId?: string;
   limit?: number;
   offset?: number;
 }
@@ -35,12 +36,13 @@ export function listAppointments(
   params: ListAppointmentsParams = {},
 ): Promise<AppointmentListResponse> {
   const q = new URLSearchParams();
-  if (params.date)      q.set("date",      params.date);
-  if (params.startDate) q.set("startDate", params.startDate);
-  if (params.endDate)   q.set("endDate",   params.endDate);
-  if (params.status)    q.set("status",    params.status);
-  if (params.patientId) q.set("patientId", params.patientId);
-  if (params.doctorId)  q.set("doctorId",  params.doctorId);
+  if (params.date)       q.set("date",       params.date);
+  if (params.startDate)  q.set("startDate",  params.startDate);
+  if (params.endDate)    q.set("endDate",    params.endDate);
+  if (params.status)     q.set("status",     params.status);
+  if (params.patientId)  q.set("patientId",  params.patientId);
+  if (params.doctorId)   q.set("doctorId",   params.doctorId);
+  if (params.locationId) q.set("locationId", params.locationId);
   if (params.limit  != null) q.set("limit",  String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<AppointmentListResponse>(`/api/appointments?${q}`);
@@ -117,6 +119,16 @@ export function listReminders(
   );
 }
 
+export function bulkUpdateStatus(
+  ids: string[],
+  status: "COMPLETED" | "NO_SHOW",
+): Promise<{ updated: number }> {
+  return apiFetch("/api/appointments/bulk-status", {
+    method: "POST",
+    body: JSON.stringify({ ids, status }),
+  });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 export const appointmentsApi = {
@@ -125,6 +137,7 @@ export const appointmentsApi = {
   create:       createAppointment,
   update:       updateAppointment,
   updateStatus: updateAppointmentStatus,
+  bulkUpdateStatus,
   delete:       deleteAppointment,
   reminders: {
     list: listReminders,

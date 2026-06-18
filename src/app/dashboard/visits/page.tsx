@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 import { visitsApi } from "@/api";
+import { useLocation } from "@/context/location-context";
 import { exportVisits } from "@/api/export";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -20,6 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
 const LIMIT = 50;
 
 export default function VisitsPage() {
+  const { selectedLocationId, isMultiBranch } = useLocation();
   const [visits,       setVisits]       = useState<Visit[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [loadingMore,  setLoadingMore]  = useState(false);
@@ -37,11 +39,12 @@ export default function VisitsPage() {
 
     try {
       const data = await visitsApi.list({
-        status: (statusFilter || undefined) as import("@/constants/visit").VisitStatus | undefined,
-        date:   dateFilter   || undefined,
-        search: debouncedSearch.trim() || undefined,
-        limit:  LIMIT,
-        offset: pageOffset,
+        status:     (statusFilter || undefined) as import("@/constants/visit").VisitStatus | undefined,
+        date:       dateFilter   || undefined,
+        search:     debouncedSearch.trim() || undefined,
+        locationId: selectedLocationId ?? undefined,
+        limit:      LIMIT,
+        offset:     pageOffset,
       });
       const rows = data.visits;
       setVisits((prev) => append ? [...prev, ...rows] : rows);
@@ -51,7 +54,7 @@ export default function VisitsPage() {
       if (append) setLoadingMore(false);
       else        setLoading(false);
     }
-  }, [statusFilter, dateFilter, debouncedSearch]);
+  }, [statusFilter, dateFilter, debouncedSearch, selectedLocationId]);
 
   useEffect(() => {
     setOffset(0);
@@ -156,6 +159,7 @@ export default function VisitsPage() {
                       <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Visit Code</th>
                       <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Patient</th>
                       <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Doctor</th>
+                      {isMultiBranch && <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Branch</th>}
                       <th className="text-left px-4 py-3 font-semibold text-pk-text-secondary">Date</th>
                       <th className="text-right px-4 py-3 font-semibold text-pk-text-secondary">Total</th>
                       <th className="text-right px-4 py-3 font-semibold text-pk-text-secondary">Paid</th>
@@ -175,6 +179,7 @@ export default function VisitsPage() {
                             <div className="text-xs text-pk-text-muted">{v.patientCode}</div>
                           </td>
                           <td className="px-4 py-3 text-pk-text-secondary">{v.doctorName}</td>
+                          {isMultiBranch && <td className="px-4 py-3 text-xs text-pk-text-secondary">{v.locationName ?? "—"}</td>}
                           <td className="px-4 py-3 text-pk-text-secondary">{v.visitDate}</td>
                           <td className="px-4 py-3 text-right text-pk-text">{formatCurrency(v.totalAmount)}</td>
                           <td className="px-4 py-3 text-right text-pk-success-text">{formatCurrency(v.paidAmount)}</td>

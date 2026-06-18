@@ -37,6 +37,7 @@ export interface ListVisitsParams {
   date?: string;
   search?: string;
   billingStatus?: "UNPAID";
+  locationId?: string;
   limit?: number;
   offset?: number;
 }
@@ -49,13 +50,14 @@ export interface VisitListResponse {
 
 export function listVisits(params: ListVisitsParams = {}): Promise<VisitListResponse> {
   const q = new URLSearchParams();
-  if (params.patientId) q.set("patientId", params.patientId);
-  if (params.doctorId) q.set("doctorId", params.doctorId);
-  if (params.status) q.set("status", params.status);
-  if (params.date) q.set("date", params.date);
-  if (params.search) q.set("search", params.search);
+  if (params.patientId)  q.set("patientId",  params.patientId);
+  if (params.doctorId)   q.set("doctorId",   params.doctorId);
+  if (params.status)     q.set("status",     params.status);
+  if (params.date)       q.set("date",       params.date);
+  if (params.search)     q.set("search",     params.search);
   if (params.billingStatus) q.set("billingStatus", params.billingStatus);
-  if (params.limit != null) q.set("limit", String(params.limit));
+  if (params.locationId) q.set("locationId", params.locationId);
+  if (params.limit  != null) q.set("limit",  String(params.limit));
   if (params.offset != null) q.set("offset", String(params.offset));
   return apiFetch<VisitListResponse>(`/api/visits?${q}`);
 }
@@ -82,6 +84,7 @@ export interface CreateVisitPayload {
   doctorNotes?: string;
   appointmentId?: string | null;
   visitType?: "APPOINTMENT" | "WALKIN";
+  locationId?: string;
 }
 
 export function createVisit(
@@ -326,4 +329,5 @@ export const visitsApi = {
     add:    addPhoto,
     delete: deletePhoto,
   },
+  getPrint: getPrintData,
 };

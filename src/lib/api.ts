@@ -333,14 +333,17 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
         return apiError("Unauthorized", 401);
       }
 
-      // ── 1b. Member Active Check ──────────────────────────────────────────
-      // Reject requests from staff whose account has been deactivated in the org.
-      // This catches the window between deactivation and token expiry (up to 24h).
-      // ADMIN role bypasses this check — at least one admin must always work.
-      if (session.role !== "ADMIN") {
+      // ── 1b. Member Status + Role Consistency Check ──────────────────────
+      // Always query the DB to catch two conditions before the 24h token expires:
+      //   (a) Account deactivated — rejected for all non-ADMIN roles.
+      //       ADMINs bypass the isActive check so the last admin can never be
+      //       accidentally locked out of the org (they can re-activate themselves).
+      //   (b) Role changed — if the role in the JWT no longer matches the DB,
+      //       force a re-login. Covers demotion, promotion, and role replacement.
+      {
         const memberDb = getDb();
         const [member] = await memberDb
-          .select({ isActive: organizationMembers.isActive })
+          .select({ isActive: organizationMembers.isActive, role: organizationMembers.role })
           .from(organizationMembers)
           .where(
             and(
@@ -348,7 +351,18 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
               eq(organizationMembers.userId, session.userId)
             )
           );
-        if (!member || member.isActive === 0) {
+
+        if (!member) {
+          log.security("Member not found in org", {});
+          writeAppLog({
+            level: "security", route: options.route,
+            message: "Member not found in org (removed?)",
+            organizationId: session.orgId, userId: session.userId, userRole: session.role,
+          });
+          return apiError("Unauthorized", 401);
+        }
+
+        if (session.role !== "ADMIN" && member.isActive === 0) {
           log.security("Deactivated member attempted access", {});
           writeAppLog({
             level: "security", route: options.route,
@@ -356,6 +370,17 @@ export function withRoute<P extends Record<string, string | string[]> = Record<s
             organizationId: session.orgId, userId: session.userId, userRole: session.role,
           });
           return apiError("Your account has been deactivated. Please contact your administrator.", 403);
+        }
+
+        if (member.role !== session.role) {
+          log.security("Role mismatch — token role no longer matches DB", { tokenRole: session.role, dbRole: member.role });
+          writeAppLog({
+            level: "security", route: options.route,
+            message: "Role mismatch: token role no longer matches DB",
+            organizationId: session.orgId, userId: session.userId, userRole: session.role,
+            data: { tokenRole: session.role, dbRole: member.role },
+          });
+          return apiError("Your permissions have changed. Please log in again.", 401);
         }
       }
 

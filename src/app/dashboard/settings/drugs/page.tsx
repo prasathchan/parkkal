@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/header";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { orgApi, ApiError, type OrgDrug } from "@/api";
 
 const EMPTY_FORM = { name: "", defaultDosage: "", defaultFrequency: "", defaultDuration: "" };
@@ -17,6 +18,7 @@ export default function DrugFormularyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -53,8 +55,7 @@ export default function DrugFormularyPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Remove this drug from your formulary?")) return;
+  async function doDelete(id: string) {
     setDeletingId(id);
     try {
       await orgApi.drugs.delete(id);
@@ -222,7 +223,7 @@ export default function DrugFormularyPage() {
                     <span className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{drug.defaultFrequency || "—"}</span>
                     <span className="text-xs" style={{ color: "var(--pk-text-muted)" }}>{drug.defaultDuration || "—"}</span>
                     <button
-                      onClick={() => handleDelete(drug.id)}
+                      onClick={() => setConfirmDeleteId(drug.id)}
                       disabled={deletingId === drug.id}
                       aria-label={`Remove ${drug.name}`}
                       className="flex items-center justify-center w-7 h-7 rounded-pk-sm transition disabled:opacity-40"
@@ -251,6 +252,17 @@ export default function DrugFormularyPage() {
           <Link href="/dashboard/settings" className="underline">Back to settings</Link>
         </p>
       </main>
+
+      {confirmDeleteId && (
+        <ConfirmModal
+          title="Remove drug?"
+          message="Remove this drug from your formulary?"
+          confirmLabel="Remove"
+          variant="danger"
+          onConfirm={() => { const id = confirmDeleteId; setConfirmDeleteId(null); doDelete(id); }}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

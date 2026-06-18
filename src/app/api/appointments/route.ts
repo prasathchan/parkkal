@@ -1,5 +1,5 @@
 import { eq, asc, and, count, gte, lte, notInArray } from "drizzle-orm";
-import { appointments, patients, users, organizationPatients, visits } from "@/db/schema";
+import { appointments, patients, users, organizationPatients, visits, locations } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
@@ -21,6 +21,7 @@ const createSchema = z.object({
   appointmentTime: z.string().regex(/^\d{2}:\d{2}$/, "appointmentTime must be HH:MM"),
   type: z.enum(["CONSULTATION", "CHECKUP", "TREATMENT", "FOLLOWUP"]).default("CONSULTATION"),
   notes: z.string().optional(),
+  locationId: z.string().optional(),
   /** When booking from the Recalls page: links this appointment back to the recall visit */
   recallVisitId: z.string().optional(),
 });
@@ -34,7 +35,8 @@ export const GET = withRoute(
     const startDate     = searchParams.get("startDate");  // for week/range view
     const endDate       = searchParams.get("endDate");
     const statusFilter  = searchParams.get("status");
-    const patientIdFilter = searchParams.get("patientId");
+    const patientIdFilter  = searchParams.get("patientId");
+    const locationIdFilter = searchParams.get("locationId");
 
     // RBAC: DOCTOR role may only see their own appointments
     const doctorIdFilter = session.role === "DOCTOR" ? session.userId : searchParams.get("doctorId");
@@ -45,8 +47,9 @@ export const GET = withRoute(
     if (endDate)     conditions.push(lte(appointments.appointmentDate, endDate));
     if (statusFilter)
       conditions.push(eq(appointments.status, statusFilter as "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "NO_SHOW"));
-    if (patientIdFilter) conditions.push(eq(appointments.patientId, patientIdFilter));
-    if (doctorIdFilter)  conditions.push(eq(appointments.doctorId, doctorIdFilter));
+    if (patientIdFilter)  conditions.push(eq(appointments.patientId, patientIdFilter));
+    if (doctorIdFilter)   conditions.push(eq(appointments.doctorId, doctorIdFilter));
+    if (locationIdFilter) conditions.push(eq(appointments.locationId, locationIdFilter));
 
     // Range queries (calendar month view) span many days in one request — allow a
     // higher cap than the default single-day/page limit.
@@ -65,15 +68,18 @@ export const GET = withRoute(
         status: appointments.status,
         type: appointments.type,
         notes: appointments.notes,
+        locationId: appointments.locationId,
         createdAt: appointments.createdAt,
         patientName: patients.name,
         doctorName: users.name,
         visitId: visits.id,
+        locationName: locations.name,
       })
       .from(appointments)
       .leftJoin(patients, eq(appointments.patientId, patients.id))
       .leftJoin(users, eq(appointments.doctorId, users.id))
       .leftJoin(visits, eq(visits.appointmentId, appointments.id))
+      .leftJoin(locations, eq(appointments.locationId, locations.id))
       .where(and(...conditions))
       // Clinic staff need chronological schedule view
       .orderBy(asc(appointments.appointmentDate), asc(appointments.appointmentTime))
@@ -110,6 +116,7 @@ export const POST = withRoute(
       status: "SCHEDULED" as const,
       type: data.type,
       notes: data.notes || null,
+      locationId: data.locationId ?? null,
       createdAt: Date.now(),
     };
 
