@@ -3,8 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { patientsApi } from "@/api";
-import { ToothChart, type ChartData } from "@/components/ui/ToothChart";
+import { ToothChart, type ChartData, type ToothCondition } from "@/components/ui/ToothChart";
 import type { ToothChartHistoryEntry, ToothConditionEntry } from "@/api/patients";
+
+const QUADRANTS = [
+  { label: "UR", teeth: ["11","12","13","14","15","16","17","18"] },
+  { label: "UL", teeth: ["21","22","23","24","25","26","27","28"] },
+  { label: "LL", teeth: ["31","32","33","34","35","36","37","38"] },
+  { label: "LR", teeth: ["41","42","43","44","45","46","47","48"] },
+  { label: "All Upper", teeth: ["11","12","13","14","15","16","17","18","21","22","23","24","25","26","27","28"] },
+  { label: "All Lower", teeth: ["31","32","33","34","35","36","37","38","41","42","43","44","45","46","47","48"] },
+];
 
 // ─── Condition display helpers ────────────────────────────────────────────────
 
@@ -101,6 +110,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
   const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
   const [toothHistory, setToothHistory] = useState<DerivedEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [undoStack, setUndoStack] = useState<ChartData[]>([]);
 
   // Pre-fetch condition history for enriching snapshot entries
   const [conditionHistory, setConditionHistory] = useState<ToothConditionEntry[]>([]);
@@ -127,6 +137,22 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
     setHistoryLoading(false);
   }
 
+  function handleQuadrantMark(teeth: string[], condition: ToothCondition = "CARIES") {
+    const healthyTeeth = teeth.filter(t => !chartData[t] || chartData[t]?.condition === "HEALTHY");
+    if (healthyTeeth.length === 0) return;
+    setUndoStack(prev => [...prev.slice(-9), { ...chartData }]);
+    const next = { ...chartData };
+    healthyTeeth.forEach(t => { next[t] = { condition }; });
+    onChartChange(next);
+  }
+
+  function handleUndo() {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    onChartChange({ ...prev });
+  }
+
   // For snapshot history: enrich each entry with condition change detail
   function getChangesForSnapshot(snap: ToothChartHistoryEntry) {
     const visitEntries = conditionHistory.filter(
@@ -148,9 +174,56 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-pk-text">FDI Dental Chart</h3>
-          <p className="text-xs text-pk-text-muted mt-0.5">Click a tooth to view its history. Double-click to update its condition. Changes save automatically.</p>
+          <p className="text-xs text-pk-text-muted mt-0.5">Single click a tooth to view its history · Double-click to change its condition · Changes save automatically.</p>
         </div>
         {chartSaving && <span className="text-xs text-pk-text-muted animate-pulse">Saving…</span>}
+      </div>
+
+      {/* Quick mark */}
+      <div className="mb-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-pk-text-muted font-medium">Quick mark:</span>
+          {QUADRANTS.map(({ label, teeth }) => {
+            const healthyCount    = teeth.filter(t => !chartData[t] || chartData[t]?.condition === "HEALTHY").length;
+            const allMarked       = healthyCount === 0;
+            const partiallyMarked = !allMarked && healthyCount < teeth.length;
+            return (
+              <button
+                key={label}
+                type="button"
+                disabled={allMarked}
+                title={allMarked ? `All ${label} teeth already have conditions set` : `Mark ${healthyCount} healthy ${label} ${healthyCount === 1 ? "tooth" : "teeth"} as Caries`}
+                onClick={() => handleQuadrantMark(teeth)}
+                className={`text-xs px-2.5 py-1 rounded-pk-sm border font-medium transition ${
+                  allMarked
+                    ? "bg-pk-teal-600 text-white border-pk-teal-600 opacity-60 cursor-not-allowed"
+                    : partiallyMarked
+                    ? "bg-pk-surface border-pk-warning-border text-pk-warning-text hover:bg-pk-warning-fill"
+                    : "bg-pk-surface border-pk-border text-pk-text-secondary hover:bg-pk-surface-raised"
+                }`}
+              >
+                {label}
+                {partiallyMarked && <span className="ml-1 opacity-70">({teeth.length - healthyCount}/{teeth.length})</span>}
+              </button>
+            );
+          })}
+
+          {undoStack.length > 0 && (
+            <button
+              type="button"
+              onClick={handleUndo}
+              className="text-xs px-2.5 py-1 rounded-pk-sm border border-pk-border font-medium text-pk-text-secondary bg-pk-surface hover:bg-pk-surface-raised transition flex items-center gap-1"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              Undo{undoStack.length > 1 && <span className="ml-0.5 opacity-60">({undoStack.length})</span>}
+            </button>
+          )}
+        </div>
+        <p className="text-[10px] text-pk-text-muted mt-1.5">
+          Marks only healthy teeth as Caries. Existing conditions are never overwritten. Use Undo to revert.
+        </p>
       </div>
 
       <ToothChart data={chartData} onChange={onChartChange} onToothSelect={handleToothSelect} />
@@ -158,7 +231,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
       {/* Per-tooth history — primary view */}
       <div className="mt-5 border-t border-pk-border pt-4">
         {!selectedTooth ? (
-          <p className="text-xs text-pk-text-muted italic">Click a tooth above to view its condition history. Double-click to change its condition.</p>
+          <p className="text-xs text-pk-text-muted italic">Single click a tooth above to view its history · Double-click to change its condition.</p>
         ) : (
           <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
             <div className="flex items-center justify-between mb-3">
