@@ -71,8 +71,13 @@ const envSchema = z.object({
   // not the noreply sender. Falls back to RESEND_FROM_EMAIL if unset (which
   // silently discards alerts if that address is unmonitored).
   ALERT_RECIPIENT_EMAIL: z.string().email().optional(),
-  // Reserved for future MSG91 WhatsApp Business API integration
-  // MSG91_WHATSAPP_API_KEY: z.string().optional(),
+
+  // ── WhatsApp (MSG91 WhatsApp Business API) ────────────────────────────────
+  // Set after WhatsApp Business API approval in MSG91 (same authkey as SMS).
+  // MSG91_WHATSAPP_NUMBER: the integrated WhatsApp Business number without "+"
+  //   e.g. "919876543210" for +91 98765 43210
+  // When unset, WHATSAPP channel reminders fall back to SMS silently.
+  MSG91_WHATSAPP_NUMBER: z.string().min(10).optional(),
 
   // ── Stripe ────────────────────────────────────────────────────────────────
   STRIPE_SECRET_KEY:      z.string().startsWith("sk_").optional(),

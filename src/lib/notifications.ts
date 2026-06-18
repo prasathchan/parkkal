@@ -22,8 +22,11 @@
  *               receives the full reminder message text.
  *               Register template at: https://control.msg91.com
  *
- *   WHATSAPP  — Not yet active. Requires MSG91 WhatsApp Business API approval.
- *               Falls back to SMS silently when not configured.
+ *   WHATSAPP  — MSG91 WhatsApp Business API (approved 2026-06-18).
+ *               Requires: MSG91_API_KEY, MSG91_WHATSAPP_NUMBER
+ *               MSG91_WHATSAPP_NUMBER = integrated WA Business number without "+"
+ *               e.g. "919876543210" for +91 98765 43210.
+ *               Falls back to SMS silently when either var is unset.
  *
  *   EMAIL     — Resend transactional email
  *
@@ -33,6 +36,11 @@
  *     MSG91_API_KEY         → authkey from msg91.com dashboard
  *     MSG91_SENDER_ID       → 6-char DLT sender ID (e.g. PARKDNT)
  *     MSG91_SMS_FLOW_ID     → Flow ID for appointment reminder template
+ *
+ *   WhatsApp:
+ *     MSG91_API_KEY         → same authkey as SMS
+ *     MSG91_WHATSAPP_NUMBER → approved WA Business number without "+"
+ *                              (find in MSG91 dashboard → WhatsApp → Integrated Numbers)
  *
  *   Email:
  *     RESEND_API_KEY        → from resend.com (already required for OTP emails)
@@ -110,13 +118,53 @@ async function sendSMS(to: string, message: string): Promise<void> {
   }
 }
 
-// ─── WhatsApp ─────────────────────────────────────────────────────────────────
-// WhatsApp via MSG91 requires separate WhatsApp Business API approval and
-// a different integration. Until that is set up, fall back to SMS silently.
+// ─── WhatsApp via MSG91 Business API ─────────────────────────────────────────
+// Requires MSG91 WhatsApp Business API approval (obtained 2026-06-18).
+// Env vars: MSG91_API_KEY (shared with SMS) + MSG91_WHATSAPP_NUMBER
+// Falls back to SMS silently when either var is unset.
 
 async function sendWhatsApp(to: string, message: string): Promise<void> {
-  console.warn("[NOTIFY] WhatsApp not yet configured — falling back to SMS for", to);
-  await sendSMS(to, message);
+  const apiKey          = env.MSG91_API_KEY;
+  const whatsappNumber  = env.MSG91_WHATSAPP_NUMBER;
+
+  if (!apiKey || !whatsappNumber) {
+    console.warn("[NOTIFY] MSG91 WhatsApp not configured — falling back to SMS for", to);
+    await sendSMS(to, message);
+    return;
+  }
+
+  const recipient = toMsg91Mobile(to);
+
+  const res = await fetch(
+    "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/",
+    {
+      method: "POST",
+      headers: {
+        authkey: apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        {
+          from: whatsappNumber,
+          to:   recipient,
+          message: {
+            type: "text",
+            text: { body: message },
+          },
+        },
+      ]),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`MSG91 WhatsApp error ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const data = await res.json() as { type?: string; message?: string };
+  if (data.type === "error") {
+    throw new Error(`MSG91 WhatsApp error: ${data.message}`);
+  }
 }
 
 // ─── Email ────────────────────────────────────────────────────────────────────
