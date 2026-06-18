@@ -71,9 +71,10 @@ function NewAppointmentForm() {
             orgApi.members.list(),
             selectedLocationId ? locationsApi.staff.list(selectedLocationId).catch(() => null) : Promise.resolve(null),
           ]);
-          const assignedIds = assignmentsData
-            ? new Set(assignmentsData.assignments.map((a: { userId: string }) => a.userId))
-            : null;
+          const assignedIds =
+            assignmentsData && assignmentsData.assignments.length > 0
+              ? new Set(assignmentsData.assignments.map((a: { userId: string }) => a.userId))
+              : null;
           const eligible = (membersData.members || []).filter(
             (m: { role: string; isDoctor?: number; userId: string }) =>
               (m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)) &&

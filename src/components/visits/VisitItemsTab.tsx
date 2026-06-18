@@ -219,14 +219,17 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
                         setNewItem(n => ({ ...n, linkedTreatmentId: "", itemName: "", unitPrice: "0", toothNumber: "" }));
                         return;
                       }
-                      const firstTooth = tx.toothNumbers ? tx.toothNumbers.split(",")[0].trim() : "";
+                      const allTeeth = tx.toothNumbers
+                        ? tx.toothNumbers.split(",").map((s) => s.trim()).filter(Boolean).join(", ")
+                        : "";
                       const outstanding = Math.max(0, tx.cost - (tx.billedAmount ?? 0));
                       setNewItem(n => ({
                         ...n,
                         linkedTreatmentId: tx.id,
                         itemName: tx.description,
                         unitPrice: String(outstanding > 0 ? outstanding : tx.cost),
-                        toothNumber: firstTooth,
+                        toothNumber: allTeeth,
+                        quantity: "1",
                       }));
                     }}
                     className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
@@ -248,37 +251,45 @@ export function VisitItemsTab({ visitId, visitStatus, items, treatments, payment
             )}
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Tooth #</label>
-              <select
-                value={newItem.toothNumber}
-                onChange={(e) => setNewItem({ ...newItem, toothNumber: e.target.value })}
-                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
-              >
-                <option value="">— Any tooth</option>
-                <optgroup label="Upper Right">
-                  {[11,12,13,14,15,16,17,18].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                </optgroup>
-                <optgroup label="Upper Left">
-                  {[21,22,23,24,25,26,27,28].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                </optgroup>
-                <optgroup label="Lower Left">
-                  {[31,32,33,34,35,36,37,38].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                </optgroup>
-                <optgroup label="Lower Right">
-                  {[41,42,43,44,45,46,47,48].map(n => <option key={n} value={String(n)}>{n}</option>)}
-                </optgroup>
-              </select>
+              {newItem.linkedTreatmentId ? (
+                <div className="w-full border border-pk-border bg-pk-surface-raised rounded-pk-sm px-3 py-2 text-sm text-pk-text min-h-[38px]">
+                  {newItem.toothNumber || <span className="text-pk-text-muted">—</span>}
+                </div>
+              ) : (
+                <select
+                  value={newItem.toothNumber}
+                  onChange={(e) => setNewItem({ ...newItem, toothNumber: e.target.value })}
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                >
+                  <option value="">— Any tooth</option>
+                  <optgroup label="Upper Right">
+                    {[11,12,13,14,15,16,17,18].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                  </optgroup>
+                  <optgroup label="Upper Left">
+                    {[21,22,23,24,25,26,27,28].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                  </optgroup>
+                  <optgroup label="Lower Left">
+                    {[31,32,33,34,35,36,37,38].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                  </optgroup>
+                  <optgroup label="Lower Right">
+                    {[41,42,43,44,45,46,47,48].map(n => <option key={n} value={String(n)}>{n}</option>)}
+                  </optgroup>
+                </select>
+              )}
             </div>
-            <div>
-              <label className="block text-xs text-pk-text-muted mb-1">Qty</label>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={newItem.quantity}
-                onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
-                className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
-              />
-            </div>
+            {!newItem.linkedTreatmentId && (
+              <div>
+                <label className="block text-xs text-pk-text-muted mb-1">Qty</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={newItem.quantity}
+                  onChange={(e) => setNewItem({ ...newItem, quantity: e.target.value })}
+                  className="w-full border border-pk-border rounded-pk-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs text-pk-text-muted mb-1">Unit Price (₹)</label>
               <input

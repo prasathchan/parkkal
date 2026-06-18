@@ -251,7 +251,7 @@ function LocationSelector() {
       <select
         value={selectedLocationId ?? ""}
         onChange={(e) => setSelectedLocationId(e.target.value || null)}
-        className="text-sm border border-pk-border rounded-pk-sm px-2 py-1 bg-pk-surface text-pk-text focus:outline-none focus:ring-2 focus:ring-pk-teal-500 max-w-[160px]"
+        className="text-sm border border-pk-border rounded-pk-sm px-2 py-1 bg-pk-surface text-pk-text focus:outline-none focus:ring-2 focus:ring-pk-teal-500 min-w-[180px] max-w-[240px]"
         aria-label="Select branch"
       >
         <option value="">All Locations</option>

@@ -57,7 +57,10 @@ export function VisitHeaderCard({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-pk-text font-mono">{visit.visitCode}</h2>
+            <h2 className="text-xl font-bold text-pk-text">
+              {visit.patientName}
+              <span className="text-pk-text-muted font-normal text-base ml-2">({visit.patientCode})</span>
+            </h2>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[visit.status]}`}>
               {visit.status}
             </span>
@@ -74,9 +77,7 @@ export function VisitHeaderCard({
             )}
           </div>
           <p className="text-sm text-pk-text-secondary">
-            <span className="font-medium">{visit.patientName}</span>
-            <span className="text-pk-text-muted ml-1">({visit.patientCode})</span>
-            <span className="text-pk-text-muted mx-2">·</span>
+            <span className="text-pk-text-muted">Doctor:</span>{" "}
             {formatDoctorName(visit.doctorName)}
             <span className="text-pk-text-muted mx-2">·</span>
             {visit.visitDate}

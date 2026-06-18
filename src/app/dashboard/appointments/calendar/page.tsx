@@ -40,6 +40,7 @@ import { MonthView } from "./MonthView";
 import { TimeGrid } from "./TimeGrid";
 import { DayQueue } from "./DayQueue";
 import { DetailSheet } from "./DetailSheet";
+import { NewAppointmentModal, type NewAppointmentPrefill } from "@/components/appointments/NewAppointmentModal";
 
 export default function CalendarPage() {
   const router = useRouter();
@@ -66,6 +67,7 @@ export default function CalendarPage() {
   const [showQueue, setShowQueue]           = useState(true);
   const [createVisitAppt, setCreateVisitAppt] = useState<Appointment | null>(null);
   const [createVisitBusy, setCreateVisitBusy] = useState(false);
+  const [newApptPrefill, setNewApptPrefill]   = useState<NewAppointmentPrefill | null>(null);
 
   const HOUR_HEIGHT  = Math.round(60 * zoom);
   const CHIP_HEIGHT  = Math.round((30 / 60) * HOUR_HEIGHT);
@@ -194,7 +196,7 @@ export default function CalendarPage() {
 
   function handleCellClick(dateStr: string, hour: number) {
     const time = `${String(hour).padStart(2, "0")}:00`;
-    router.push(`/dashboard/appointments/new?date=${dateStr}&time=${time}`);
+    setNewApptPrefill({ date: dateStr, time });
   }
 
   async function handleStatusChange(newStatus: AppointmentStatus) {
@@ -325,6 +327,14 @@ export default function CalendarPage() {
           onClose={() => setSelected(null)}
           onStatusChange={handleStatusChange}
           statusBusy={statusBusy}
+        />
+      )}
+
+      {newApptPrefill && (
+        <NewAppointmentModal
+          prefill={newApptPrefill}
+          onSuccess={() => { setNewApptPrefill(null); fetchDates(view === "month" ? monthGridDates : gridCols); }}
+          onClose={() => setNewApptPrefill(null)}
         />
       )}
 
