@@ -133,17 +133,38 @@ describe("sendNotification — SMS", () => {
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────
 
 describe("sendNotification — WhatsApp", () => {
-  it("falls back to SMS via MSG91 (WhatsApp not yet separately configured)", async () => {
+  it("falls back to SMS when MSG91_WHATSAPP_NUMBER is not configured", async () => {
+    // Default env mock has no MSG91_WHATSAPP_NUMBER — fallback expected
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await sendNotification({ channel: "WHATSAPP", to: "9876543210", message: "Reminder" });
 
-    // Should have warned about fallback, then called MSG91 flow API
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("WhatsApp not yet configured"), expect.anything());
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("MSG91 WhatsApp not configured"),
+      expect.anything(),
+    );
+    // Fallback calls SMS Flow API
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain("msg91.com");
+    expect(url).toContain("msg91.com/api/v5/flow");
 
     warn.mockRestore();
+  });
+
+  it("calls MSG91 WhatsApp outbound API when MSG91_WHATSAPP_NUMBER is set", async () => {
+    const { default: env } = await import("@/lib/env");
+    (env as Record<string, unknown>).MSG91_WHATSAPP_NUMBER = "918056415796";
+
+    await sendNotification({ channel: "WHATSAPP", to: "9876543210", message: "Reminder" });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("whatsapp-outbound-message");
+    expect((opts.headers as Record<string, string>)["authkey"]).toBe("testapikey123");
+    const body = JSON.parse(opts.body as string) as Array<{ from: string; to: string }>;
+    expect(body[0].from).toBe("918056415796");
+    expect(body[0].to).toBe("919876543210");
+
+    delete (env as Record<string, unknown>).MSG91_WHATSAPP_NUMBER;
   });
 });
 
