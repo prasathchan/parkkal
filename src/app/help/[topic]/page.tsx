@@ -259,29 +259,29 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ topi
   const allTopics = Object.entries(articles).map(([slug, a]) => ({ slug, title: a.title }));
 
   return (
-    <div className="min-h-screen bg-[#fafaf8]">
+    <div className="min-h-screen bg-pk-surface-sunken">
       {/* Top nav */}
-      <header className="border-b border-gray-200 bg-white px-6 py-3.5 flex items-center gap-4">
-        <Link href="/dashboard" className="text-sm text-[#0B6E6E] hover:underline font-medium">
+      <header className="border-b border-pk-border bg-pk-surface px-6 py-3.5 flex items-center gap-4">
+        <Link href="/dashboard" className="text-sm text-pk-teal-600 hover:underline font-medium">
           ← Dashboard
         </Link>
-        <span className="text-gray-300">|</span>
-        <span className="text-sm font-semibold text-gray-800">Parkkal Help</span>
+        <span className="text-pk-border-strong">|</span>
+        <span className="text-sm font-semibold text-pk-text">Parkkal Help</span>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-10 flex gap-10">
         {/* Sidebar nav */}
         <nav className="w-48 shrink-0 hidden md:block">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Topics</p>
+          <p className="text-xs font-semibold text-pk-text-muted uppercase tracking-wider mb-3">Topics</p>
           <ul className="space-y-1">
             {allTopics.map((t) => (
               <li key={t.slug}>
                 <Link
                   href={`/help/${t.slug}`}
-                  className={`block text-sm px-3 py-1.5 rounded-md transition ${
+                  className={`block text-sm px-3 py-1.5 rounded-pk-sm transition ${
                     t.slug === topic
-                      ? "bg-[#0B6E6E] text-white font-medium"
-                      : "text-gray-600 hover:bg-gray-100"
+                      ? "bg-pk-teal-600 text-white font-medium"
+                      : "text-pk-text-secondary hover:bg-pk-surface-raised"
                   }`}
                 >
                   {t.title}
@@ -293,17 +293,17 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ topi
 
         {/* Content */}
         <article className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{article.title}</h1>
-          <p className="text-gray-600 text-base mb-8 leading-relaxed">{article.intro}</p>
+          <h1 className="text-2xl font-bold text-pk-text mb-2">{article.title}</h1>
+          <p className="text-pk-text-secondary text-base mb-8 leading-relaxed">{article.intro}</p>
 
           <div className="space-y-8">
             {article.sections.map((section) => (
               <section key={section.heading}>
-                <h2 className="text-base font-semibold text-gray-800 mb-3">{section.heading}</h2>
+                <h2 className="text-base font-semibold text-pk-text mb-3">{section.heading}</h2>
                 <ul className="space-y-2">
                   {section.body.map((line, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600 leading-relaxed">
-                      <span className="text-[#0B6E6E] mt-1 shrink-0">•</span>
+                    <li key={i} className="flex items-start gap-2 text-sm text-pk-text-secondary leading-relaxed">
+                      <span className="text-pk-teal-600 mt-1 shrink-0">•</span>
                       <span>{line}</span>
                     </li>
                   ))}
@@ -313,14 +313,14 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ topi
           </div>
 
           {article.relatedLinks && article.relatedLinks.length > 0 && (
-            <div className="mt-10 pt-6 border-t border-gray-200">
-              <p className="text-sm font-semibold text-gray-500 mb-3">Related topics</p>
+            <div className="mt-10 pt-6 border-t border-pk-border">
+              <p className="text-sm font-semibold text-pk-text-muted mb-3">Related topics</p>
               <div className="flex flex-wrap gap-2">
                 {article.relatedLinks.map((l) => (
                   <Link
                     key={l.href}
                     href={l.href}
-                    className="inline-flex items-center gap-1 text-sm text-[#0B6E6E] border border-[#0B6E6E]/30 px-3 py-1.5 rounded-full hover:bg-[#0B6E6E]/5 transition"
+                    className="inline-flex items-center gap-1 text-sm text-pk-teal-600 border border-pk-teal-200 px-3 py-1.5 rounded-full hover:bg-pk-teal-50 transition"
                   >
                     {l.label} →
                   </Link>
