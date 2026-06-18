@@ -9,6 +9,11 @@ const overrideSchema = z.object({
   reason: z.string().min(5, "Please provide a reason of at least 5 characters"),
 });
 
+const manualStatusSchema = z.object({
+  action: z.enum(["VERIFY", "REJECT"]),
+  notes: z.string().max(500).optional(),
+});
+
 export const GET = withRoute<{ id: string }>(
   { route: "GET /api/treatments/[id]/consent" },
   async (_req, { session, db }, { id }) => {
@@ -36,12 +41,12 @@ export const PATCH = withRoute<{ id: string }>(
   { route: "PATCH /api/treatments/[id]/consent", rateLimit: RATE_LIMITS.WRITE },
   async (req, { session, db, log }, { id }) => {
     if (!["ADMIN", "DOCTOR"].includes(session.role)) {
-      log.security("Permission denied: only ADMIN/DOCTOR can apply consent override", { role: session.role });
+      log.security("Permission denied: only ADMIN/DOCTOR can update consent", { role: session.role });
       return apiError("Forbidden", 403);
     }
 
     const [treatment] = await db
-      .select({ id: treatments.id, description: treatments.description })
+      .select({ id: treatments.id, description: treatments.description, consentStatus: treatments.consentStatus })
       .from(treatments)
       .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
     if (!treatment) return apiError("Not found", 404);
@@ -49,10 +54,43 @@ export const PATCH = withRoute<{ id: string }>(
     let body: unknown;
     try { body = await req.json(); } catch { return apiError("Invalid JSON", 400); }
 
+    const now = Date.now();
+
+    // ── Manual verify / reject (for UPLOADED documents awaiting staff review) ──
+    const manualParsed = manualStatusSchema.safeParse(body);
+    if (manualParsed.success) {
+      const { action, notes } = manualParsed.data;
+      if (treatment.consentStatus !== "UPLOADED") {
+        return apiError("Document must be in UPLOADED state to manually verify or reject", 400);
+      }
+      const newStatus = action === "VERIFY" ? "VERIFIED" : "REJECTED";
+      await db
+        .update(treatments)
+        .set({
+          consentStatus: newStatus,
+          consentVerifiedAt: action === "VERIFY" ? now : null,
+          consentNotes: notes ?? null,
+        })
+        .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
+
+      await db.insert(consentAuditLog).values({
+        id: crypto.randomUUID(),
+        treatmentId: id,
+        organizationId: session.orgId,
+        actorId: session.userId,
+        actorRole: session.role,
+        action: action === "VERIFY" ? "MANUAL_VERIFY" : "MANUAL_REJECT",
+        reason: notes ?? null,
+        createdAt: now,
+      });
+
+      log.info(`Consent ${action === "VERIFY" ? "verified" : "rejected"} manually`, { treatmentId: id });
+      return apiOk({ success: true, consentStatus: newStatus });
+    }
+
+    // ── Emergency override (requires explicit reason) ──
     const parsed = overrideSchema.safeParse(body);
     if (!parsed.success) return apiError(parsed.error.errors[0].message, 400);
-
-    const now = Date.now();
 
     await db
       .update(treatments)
@@ -75,7 +113,6 @@ export const PATCH = withRoute<{ id: string }>(
       createdAt: now,
     });
 
-    // HIGH-severity audit log entry (awaited so it commits before response)
     await writeSensitiveAuditLog({
       organizationId: session.orgId,
       actorId: session.userId,
@@ -87,7 +124,6 @@ export const PATCH = withRoute<{ id: string }>(
       severity: "HIGH",
     });
 
-    // Notify all ADMIN users — fire-and-forget (email failure must not block the response)
     (async () => {
       try {
         const [actorUser, org, adminMembers] = await Promise.all([
@@ -99,10 +135,8 @@ export const PATCH = withRoute<{ id: string }>(
             .innerJoin(users, eq(organizationMembers.userId, users.id))
             .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.role, "ADMIN"), eq(organizationMembers.isActive, 1))),
         ]);
-
         const adminEmails = adminMembers.map((m: { email: string }) => m.email).filter(Boolean) as string[];
         if (adminEmails.length === 0) return;
-
         await sendEmergencyOverrideNotification({
           to: adminEmails,
           orgName: org[0]?.name ?? "Your clinic",

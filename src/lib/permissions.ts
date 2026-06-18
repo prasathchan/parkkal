@@ -59,6 +59,8 @@ export const PERMISSIONS = {
   ROLES_MANAGE: "roles.manage",
   // Locations (branches)
   LOCATIONS_MANAGE: "locations.manage",
+  // Billing override — required to record a payment exceeding the outstanding balance
+  BILLING_OVERRIDE: "billing.override",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

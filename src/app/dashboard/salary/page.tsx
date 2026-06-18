@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { useAsync } from "@/hooks/use-async";
 import { orgApi, ApiError } from "@/api";
 import type { SalaryRecord } from "@/types";
+import { SkeletonTable } from "@/components/ui/skeleton";
 
 export default function SalaryPage() {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -97,7 +98,7 @@ export default function SalaryPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-pk-text-muted">Loading...</div>
+          <SkeletonTable rows={5} cols={7} />
         ) : records.length === 0 ? (
           <div className="text-center py-12 text-pk-text-muted">
             <p>No salary records for {month}.</p>

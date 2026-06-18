@@ -33,6 +33,7 @@ export const ALL_PERMISSIONS = [
   "reports.view",
   "roles.manage",
   "locations.manage",
+  "billing.override",
 ];
 
 export interface DefaultRole {

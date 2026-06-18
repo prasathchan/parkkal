@@ -196,6 +196,17 @@ export function addPayment(
   });
 }
 
+export function voidPayment(
+  visitId: string,
+  paymentId: string,
+  voidReason: string,
+): Promise<{ success: true; voidedAt: number }> {
+  return apiFetch<{ success: true; voidedAt: number }>(
+    `/api/visits/${visitId}/payments/${paymentId}`,
+    { method: "PATCH", body: JSON.stringify({ voidReason }) },
+  );
+}
+
 // ─── Prescriptions ────────────────────────────────────────────────────────────
 
 export function listPrescriptions(
@@ -313,6 +324,7 @@ export const visitsApi = {
   payments: {
     list: listPayments,
     add: addPayment,
+    void: voidPayment,
   },
   prescriptions: {
     list: listPrescriptions,

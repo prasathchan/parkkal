@@ -76,10 +76,10 @@ describe("InvoicesPage", () => {
     mockPatients.mockResolvedValue({ patients: [], total: 0 });
   });
 
-  it("shows loading text while fetching", async () => {
+  it("shows skeleton while fetching", async () => {
     mockInvoices.mockReturnValue(new Promise(() => {}));
     render(<InvoicesPage />);
-    await waitFor(() => expect(screen.getByText(/loading/i)).toBeTruthy(), T);
+    await waitFor(() => expect(document.querySelector('[role="status"]')).toBeTruthy(), T);
   });
 
   it("renders invoice rows after data loads", async () => {
@@ -106,10 +106,10 @@ describe("SalaryPage", () => {
     paidAmount: 0, status: "PENDING", appointmentCount: 0,
   };
 
-  it("shows loading indicator while fetching", async () => {
+  it("shows skeleton while fetching", async () => {
     mockSalary.mockReturnValue(new Promise(() => {}));
     render(<SalaryPage />);
-    await waitFor(() => expect(screen.getByText(/^loading\.\.\.$/i)).toBeTruthy(), T);
+    await waitFor(() => expect(document.querySelector('[role="status"]')).toBeTruthy(), T);
   });
 
   it("renders salary records after data loads", async () => {

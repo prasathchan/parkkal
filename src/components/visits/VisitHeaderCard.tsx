@@ -24,6 +24,7 @@ interface Props {
   editingNotes: boolean;
   notesForm: NotesForm;
   savingNotes: boolean;
+  notesAutoSaved?: boolean;
   editingRecall: boolean;
   recallForm: RecallForm;
   savingRecall: boolean;
@@ -44,7 +45,7 @@ interface Props {
 
 export function VisitHeaderCard({
   visitId, visit, due,
-  editingNotes, notesForm, savingNotes,
+  editingNotes, notesForm, savingNotes, notesAutoSaved = false,
   editingRecall, recallForm, savingRecall,
   completingVisit,
   onEditNotes, onNotesChange, onSaveNotes, onCancelNotes,
@@ -105,9 +106,10 @@ export function VisitHeaderCard({
                 </label>
                 <textarea value={notesForm.doctorNotes} onChange={e => onNotesChange({ ...notesForm, doctorNotes: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none" />
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button type="submit" disabled={savingNotes} className="text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 disabled:opacity-50">{savingNotes ? "Saving..." : "Save"}</button>
                 <button type="button" onClick={onCancelNotes} className="text-xs border border-pk-border-strong text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-sunken">Cancel</button>
+                {notesAutoSaved && <span className="text-xs text-pk-success-text ml-1">Saved</span>}
               </div>
             </form>
           )}

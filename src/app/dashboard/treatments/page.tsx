@@ -11,6 +11,7 @@ import { exportTreatments } from "@/api/export";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Treatment, Patient } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { TreatmentStatus } from "@/constants/treatment";
 
 // Alias for readability within this page
@@ -316,9 +317,13 @@ export default function TreatmentsPage() {
               </thead>
               <tbody className="divide-y divide-pk-border">
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-10 text-pk-text-muted">Loading...</td>
-                  </tr>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i}>
+                      {Array.from({ length: 7 }).map((_, c) => (
+                        <td key={c} className="px-4 py-3"><Skeleton className="h-4" style={{ width: `${55 + (c * 11 + i * 7) % 35}%` }} /></td>
+                      ))}
+                    </tr>
+                  ))
                 ) : treatments.length === 0 ? (
                   <tr>
                     <td colSpan={7}>

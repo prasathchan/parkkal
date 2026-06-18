@@ -56,6 +56,9 @@ export interface Payment {
   recordedBy: string;
   treatmentId?: string | null;
   treatmentDescription?: string | null;
+  voidedAt?: number | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
 }
 
 export interface Attachment {

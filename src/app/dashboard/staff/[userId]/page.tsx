@@ -9,6 +9,7 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { parseAddress, serializeAddress, formatAddressDisplay, EMPTY_ADDRESS } from "@/lib/address";
 import { orgApi, usersApi, emergencyContactsApi, ApiError } from "@/api";
 import type { StaffMember, StaffProfile, Qualification, CredentialDoc, CredentialDocType } from "@/types";
+import { SkeletonDetailPage } from "@/components/ui/skeleton";
 
 type Member = StaffMember;
 
@@ -508,7 +509,7 @@ export default function StaffDetailPage() {
     setProfileForm((f) => ({ ...f, qualifications: f.qualifications.filter((_, i) => i !== index) }));
   }
 
-  if (loading) return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
+  if (loading) return <SkeletonDetailPage />;
   if (!member) return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3">
       <p className="text-pk-text-muted">Staff member not found.</p>

@@ -379,6 +379,9 @@ export const payments = sqliteTable("payments", {
   notes: text("notes"),
   paidAt: integer("paid_at").notNull(),
   recordedBy: text("recorded_by").notNull().references(() => users.id),
+  voidedAt: integer("voided_at"),
+  voidedBy: text("voided_by").references(() => users.id),
+  voidReason: text("void_reason"),
 });
 
 export const attachments = sqliteTable("attachments", {

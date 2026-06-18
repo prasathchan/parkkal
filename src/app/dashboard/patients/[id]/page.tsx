@@ -14,6 +14,7 @@ import { PatientPrescriptionsTab } from "@/components/patients/PatientPrescripti
 import { PatientEmergencyTab } from "@/components/patients/PatientEmergencyTab";
 import { PatientTabList } from "@/components/patients/PatientTabList";
 import { type ChartData } from "@/components/ui/ToothChart";
+import { SkeletonDetailPage } from "@/components/ui/skeleton";
 
 interface Patient {
   id: string;
@@ -65,7 +66,7 @@ export default function PatientDetailPage() {
 
   useEffect(() => {
     patientsApi.get(id).then((d) => setPatient(d.patient)).finally(() => setLoading(false));
-    patientsApi.balance(id).then((d) => setBalance(d)).catch(() => {});
+    patientsApi.balance(id).then((d) => setBalance(d)).catch((e) => console.error("[patient] balance fetch failed:", e));
     authApi.me().then((d) => setIsAdmin(d.user.role === "ADMIN")).catch(() => {});
   }, [id]);
 
@@ -80,18 +81,25 @@ export default function PatientDetailPage() {
       return;
     }
     if (tab === "chart") {
-      patientsApi.getToothChart(id).then((d) => setChartData((d.toothData as ChartData) ?? {})).catch(() => {});
-      patientsApi.getToothChartHistory(id).then((d) => setChartHistory(d.history)).catch(() => {});
+      patientsApi.getToothChart(id).then((d) => setChartData((d.toothData as ChartData) ?? {})).catch((e) => console.error("[patient] chart fetch failed:", e));
+      patientsApi.getToothChartHistory(id).then((d) => setChartHistory(d.history)).catch((e) => console.error("[patient] chart history fetch failed:", e));
       return;
     }
-    const fetchers: Record<Exclude<TabType, "emergency" | "chart" | "prescriptions">, () => Promise<unknown>> = {
+    type ListTab = Exclude<TabType, "emergency" | "chart" | "prescriptions">;
+    const currentTab = tab as ListTab;
+    const fetchers: Record<ListTab, () => Promise<unknown>> = {
       visits:       () => visitsApi.list({ patientId: id }),
       appointments: () => appointmentsApi.list({ patientId: id }),
       treatments:   () => treatmentsApi.list({ patientId: id }),
       invoices:     () => invoicesApi.list({ patientId: id }),
     };
-    fetchers[tab as Exclude<TabType, "emergency" | "chart" | "prescriptions">]()
-      .then((d) => { const r = d as Record<string, unknown[]>; setTabData(r.visits || r.appointments || r.treatments || r.invoices || []); });
+    fetchers[currentTab]()
+      .then((d) => {
+        const r = d as Record<string, unknown>;
+        const rows = r[currentTab];
+        setTabData(Array.isArray(rows) ? rows : []);
+      })
+      .catch((e) => { console.error(`[patient] ${currentTab} fetch failed:`, e); setTabData([]); });
   }, [id, tab]);
 
   async function saveChart(data: ChartData) {
@@ -99,7 +107,7 @@ export default function PatientDetailPage() {
     setChartSaving(true);
     try {
       await patientsApi.saveToothChart(id, data as Record<string, unknown>);
-      patientsApi.getToothChartHistory(id).then((d) => setChartHistory(d.history)).catch(() => {});
+      patientsApi.getToothChartHistory(id).then((d) => setChartHistory(d.history)).catch((e) => console.error("[patient] chart history save-refresh failed:", e));
     } finally { setChartSaving(false); }
   }
 
@@ -123,7 +131,7 @@ export default function PatientDetailPage() {
     { key: "emergency", label: "Emergency" },
   ];
 
-  if (loading) return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
+  if (loading) return <SkeletonDetailPage />;
   if (!patient) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4">

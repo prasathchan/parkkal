@@ -224,6 +224,17 @@ export function overrideConsent(
   });
 }
 
+export function manualConsentAction(
+  treatmentId: string,
+  action: "VERIFY" | "REJECT",
+  notes?: string,
+): Promise<{ success: true; consentStatus: string }> {
+  return apiFetch<{ success: true; consentStatus: string }>(`/api/treatments/${treatmentId}/consent`, {
+    method: "PATCH",
+    body: JSON.stringify({ action, notes }),
+  });
+}
+
 // ─── Clinical photos for a treatment ─────────────────────────────────────────
 
 export function listTreatmentPhotos(treatmentId: string): Promise<{ photos: ClinicalPhoto[] }> {
@@ -249,6 +260,7 @@ export const treatmentsApi = {
   consent: {
     upload: uploadConsent,
     override: overrideConsent,
+    manualAction: manualConsentAction,
   },
   photos: {
     list: listTreatmentPhotos,

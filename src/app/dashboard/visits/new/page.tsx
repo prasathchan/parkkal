@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { appointmentsApi, visitsApi, patientsApi, orgApi, authApi, ApiError } from "@/api";
 import { useLocation } from "@/context/location-context";
 
@@ -92,7 +93,7 @@ function NewVisitForm() {
           setForm((f) => ({ ...f, doctorId: me.userId }));
         }
       }
-    }).catch(() => {});
+    }).catch((e) => console.error("[new-visit] current user fetch failed:", e));
   }, []);
 
   // Pre-fill from URL params (?patientId=X&appointmentId=Y&doctorId=Z)
@@ -129,7 +130,7 @@ function NewVisitForm() {
             }));
           }
         })
-        .catch(() => {});
+        .catch((e) => console.error("[new-visit] appointment prefill fetch failed:", e));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patients, searchParams]);
@@ -264,8 +265,9 @@ function NewVisitForm() {
               {/* Step 2: Appointment or Walk-in */}
               {selectedPatient && (
                 <div>
-                  <label className="block text-sm font-medium text-pk-text-secondary mb-2">
+                  <label className="block text-sm font-medium text-pk-text-secondary mb-2 flex items-center gap-1">
                     Visit Source <span className="text-pk-danger-text">*</span>
+                    <InfoTooltip content="Link this visit to an existing appointment, or mark it as a walk-in if the patient arrived without one. Walk-in visits still appear in billing and history." position="right" />
                   </label>
 
                   {loadingAppointments ? (
@@ -382,8 +384,9 @@ function NewVisitForm() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-pk-text-secondary mb-1">
+                    <label className="block text-sm font-medium text-pk-text-secondary mb-1 flex items-center gap-1">
                       Chief Complaint
+                      <InfoTooltip content="The patient's main reason for visiting in their own words. Keeps it separate from your clinical diagnosis so both are preserved." />
                     </label>
                     <textarea
                       value={form.chiefComplaint}

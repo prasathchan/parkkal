@@ -16,6 +16,7 @@ import {
   TableCell,
   TableHeadCell,
 } from "@/components/ui/table";
+import { SkeletonTable } from "@/components/ui/skeleton";
 
 const STATUS_COLORS: Record<string, string> = {
   PAID:             "bg-pk-success-fill text-pk-success-text",
@@ -178,6 +179,9 @@ export default function InvoicesPage() {
             </div>
           </div>
 
+          {loading ? (
+            <SkeletonTable rows={6} cols={8} />
+          ) : (
           <Table>
             <TableHead>
               <tr>
@@ -192,11 +196,7 @@ export default function InvoicesPage() {
               </tr>
             </TableHead>
             <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-pk-text-muted">Loading...</TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8}>
                     <EmptyState
@@ -256,6 +256,7 @@ export default function InvoicesPage() {
               )}
             </TableBody>
           </Table>
+          )}
         </div>
       </main>
 

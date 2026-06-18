@@ -30,8 +30,18 @@ export function listRecalls(
   return apiFetch<RecallListResponse>(`/api/recalls?${q}`);
 }
 
+export function notifyRecalls(
+  visitIds: string[],
+): Promise<{ sent: number; skipped: number; failed: number }> {
+  return apiFetch<{ sent: number; skipped: number; failed: number }>("/api/recalls/notify", {
+    method: "POST",
+    body: JSON.stringify({ visitIds }),
+  });
+}
+
 export const recallsApi = {
   list: listRecalls,
+  notify: notifyRecalls,
 };
 
 export type { RecallVisit };

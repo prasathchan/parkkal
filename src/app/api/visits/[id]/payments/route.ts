@@ -48,6 +48,9 @@ export const GET = withRoute<{ id: string }>(
         notes: payments.notes,
         paidAt: payments.paidAt,
         recordedBy: payments.recordedBy,
+        voidedAt: payments.voidedAt,
+        voidedBy: payments.voidedBy,
+        voidReason: payments.voidReason,
       })
       .from(payments)
       .leftJoin(treatments, eq(payments.treatmentId, treatments.id))
@@ -76,8 +79,14 @@ export const POST = withRoute<{ id: string }>(
     const due = visit.totalAmount - visit.paidAmount;
     if (due <= 0.001) return apiError("Visit is already fully paid", 400);
 
-    if (amount > due + 0.001 && !allowOverpayment) {
-      return apiError(`Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}`, 400);
+    if (amount > due + 0.001) {
+      if (!allowOverpayment) {
+        return apiError(`Payment of ₹${amount.toFixed(2)} exceeds balance due of ₹${due.toFixed(2)}`, 400);
+      }
+      const canOverride = session.role === "ADMIN" || (session.permissions ?? []).includes("billing.override");
+      if (!canOverride) {
+        return apiError("Overpayment requires billing override permission. Contact an admin.", 403);
+      }
     }
 
     // Validate treatmentId is linked to this visit
@@ -108,7 +117,7 @@ export const POST = withRoute<{ id: string }>(
     await db
       .update(visits)
       .set({
-        paidAmount: sql`MIN(total_amount, (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE visit_id = ${id}))`,
+        paidAmount: sql`MIN(total_amount, (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE visit_id = ${id} AND voided_at IS NULL))`,
         updatedAt: Date.now(),
       })
       .where(eq(visits.id, id));

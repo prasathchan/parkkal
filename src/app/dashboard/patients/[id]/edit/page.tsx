@@ -11,6 +11,7 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
 import { BloodGroupSelect } from "@/components/ui/blood-group-select";
 import { patientsApi, ApiError } from "@/api";
+import { SkeletonDetailPage } from "@/components/ui/skeleton";
 
 
 const GENDERS: { value: string; label: string }[] = [
@@ -112,9 +113,7 @@ export default function PatientEditPage() {
     }
   }
 
-  if (loading) {
-    return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
-  }
+  if (loading) return <SkeletonDetailPage />;
 
   return (
     <div className="flex-1 flex flex-col">

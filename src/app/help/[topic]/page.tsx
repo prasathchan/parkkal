@@ -155,6 +155,7 @@ const articles: Record<string, Article> = {
     ],
     relatedLinks: [
       { href: "/help/treatment-plans", label: "Treatment plans" },
+      { href: "/help/void-payments", label: "Voiding payments" },
       { href: "/help/reports", label: "Reports and analytics" },
     ],
   },
@@ -191,6 +192,42 @@ const articles: Record<string, Article> = {
     relatedLinks: [
       { href: "/help/billing", label: "Billing and payments" },
       { href: "/help/reports", label: "Reports and analytics" },
+    ],
+  },
+
+  "void-payments": {
+    title: "Voiding Payments",
+    intro:
+      "Voiding cancels a recorded payment without deleting it, preserving the full audit trail. Use it when a payment was entered in error, a cheque bounced, or a refund has been issued.",
+    sections: [
+      {
+        heading: "Who can void a payment?",
+        body: [
+          "Only users with the billing.override permission (typically Admin role) can void payments.",
+          "If you don't see the Void button on a payment row, your role does not have this permission. Contact your admin.",
+        ],
+      },
+      {
+        heading: "How to void a payment",
+        body: [
+          "Open the visit, go to the Payments tab, and click 'Void' next to the payment.",
+          "Enter a reason for the void (required). This reason is stored permanently and appears in the payment row.",
+          "Click 'Confirm Void'. The payment row will be greyed out with a 'Voided' label, and the visit's balance due will be recalculated automatically.",
+        ],
+      },
+      {
+        heading: "What happens after voiding?",
+        body: [
+          "The voided payment remains visible in the ledger but is excluded from all balance calculations.",
+          "The 'Print Receipt' button only includes non-voided payments.",
+          "The void action and reason are logged in the audit trail (Settings → Audit Log).",
+          "Voiding cannot be undone — if the patient resubmits the payment, record it as a new payment entry.",
+        ],
+      },
+    ],
+    relatedLinks: [
+      { href: "/help/billing", label: "Billing and payments" },
+      { href: "/help/treatment-plans", label: "Treatment plans" },
     ],
   },
 

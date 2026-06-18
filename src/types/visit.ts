@@ -63,7 +63,10 @@ export interface Payment {
   paidAt: number;
   recordedBy: string;
   recordedByName?: string | null;
-  treatmentDescription?: string | null; // Joined from linked treatment, if any
+  treatmentDescription?: string | null;
+  voidedAt?: number | null;
+  voidedBy?: string | null;
+  voidReason?: string | null;
 }
 
 // ─── Prescription ─────────────────────────────────────────────────────────────

@@ -81,7 +81,7 @@ export function NewTreatmentModal({
 
   // Load templates
   useEffect(() => {
-    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch(() => {});
+    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch((e) => console.error("[new-treatment-modal] templates fetch failed:", e));
   }, []);
 
   // Load doctor list (non-doctor roles only)
@@ -92,7 +92,7 @@ export function NewTreatmentModal({
         const all: Member[] = d.members || [];
         setMembers(all.filter((m) => m.role === "DOCTOR" || (m.role === "ADMIN" && m.isDoctor === 1)));
       })
-      .catch(() => {});
+      .catch((e) => console.error("[new-treatment-modal] members fetch failed:", e));
   }, [currentUserRole]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -236,7 +236,7 @@ export function NewTreatmentModal({
                 if (suggestRef.current) clearTimeout(suggestRef.current);
                 suggestRef.current = setTimeout(() => {
                   if (val.length >= 2) {
-                    treatmentsApi.suggest(val).then((d) => setSuggestions(d.suggestions ?? [])).catch(() => {});
+                    treatmentsApi.suggest(val).then((d) => setSuggestions(d.suggestions ?? [])).catch(() => setSuggestions([]));
                   } else {
                     setSuggestions([]);
                   }

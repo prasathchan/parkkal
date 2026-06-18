@@ -3,6 +3,7 @@ import { attachments, visits } from "@/db/schema";
 import { storeFile } from "@/lib/storage";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, apiError } from "@/lib/api";
+import { validateUploadedFile, sanitizeFileName } from "@/lib/file-validation";
 
 const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 
@@ -47,18 +48,21 @@ export const POST = withRoute<{ id: string }>(
       ? (fileTypeRaw as AttachmentFileType)
       : "OTHER";
 
-    const allowedExt = ALLOWED_MIME_TYPES[file.type];
-    if (!allowedExt) {
-      return apiError("File type not allowed. Allowed: JPEG, PNG, WebP, GIF, PDF", 400);
-    }
-    if (file.size > MAX_SIZE) return apiError("File must be under 10 MB", 400);
+    const validation = await validateUploadedFile(file, {
+      allowedMimeTypes: Object.keys(ALLOWED_MIME_TYPES),
+      maxSizeBytes: MAX_SIZE,
+      label: "Attachment",
+    });
+    if (!validation.valid) return apiError(validation.error!, 400);
 
+    const allowedExt = ALLOWED_MIME_TYPES[file.type] ?? ".bin";
     const [visitRow] = await db
       .select({ organizationId: visits.organizationId, patientId: visits.patientId })
       .from(visits)
       .where(and(eq(visits.id, id), eq(visits.organizationId, session.orgId)));
     if (!visitRow) return apiError("Visit not found", 404);
 
+    const safeOriginalName = sanitizeFileName(file.name);
     const fileName = `${crypto.randomUUID()}${allowedExt}`;
     const key = `patients/${visitRow.patientId}/${fileName}`;
     const bytes = await file.arrayBuffer();
@@ -69,7 +73,7 @@ export const POST = withRoute<{ id: string }>(
       visitId: id,
       patientId: visitRow.patientId,
       fileName,
-      originalName: file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
+      originalName: safeOriginalName,
       fileType,
       mimeType: file.type,
       fileSize: file.size,

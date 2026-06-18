@@ -40,14 +40,16 @@ vi.mock("@/api", () => ({
     members:       { list: vi.fn() },
   },
   authApi: { me: vi.fn(), changePassword: vi.fn() },
+  adminApi: { featureFlags: { get: vi.fn(), update: vi.fn() } },
   ApiError: class ApiError extends Error {},
 }));
 
 import SettingsPage from "../settings/page";
-import { orgApi } from "@/api";
+import { orgApi, authApi } from "@/api";
 
 const mockProfile = orgApi.getProfile  as ReturnType<typeof vi.fn>;
 const mockMembers = orgApi.members.list as ReturnType<typeof vi.fn>;
+const mockMe      = authApi.me          as ReturnType<typeof vi.fn>;
 
 const ORG = {
   id: "org1", name: "Parkkal Dental", tagline: "Your smile, our care",
@@ -60,13 +62,14 @@ const T = { timeout: 3000 };
 beforeEach(() => {
   vi.clearAllMocks();
   mockMembers.mockResolvedValue({ members: [] });
+  mockMe.mockResolvedValue({ user: { role: "RECEPTIONIST", userId: "u1" } });
 });
 
 describe("SettingsPage", () => {
-  it("shows loading text while fetching profile", async () => {
+  it("shows skeleton while fetching profile", async () => {
     mockProfile.mockReturnValue(new Promise(() => {}));
     render(<SettingsPage />);
-    await waitFor(() => expect(screen.getByText(/loading/i)).toBeTruthy(), T);
+    await waitFor(() => expect(document.querySelector('[role="status"]')).toBeTruthy(), T);
   });
 
   it("renders org name after profile loads", async () => {

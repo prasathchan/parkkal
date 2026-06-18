@@ -21,8 +21,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { SkeletonTable } from "@/components/ui/skeleton";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { useAsync } from "@/hooks/use-async";
-import { recallsApi } from "@/api";
+import { recallsApi, ApiError } from "@/api";
 import { useLocation } from "@/context/location-context";
 import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -77,6 +78,9 @@ export default function RecallsPage() {
   const { selectedLocationId, isMultiBranch } = useLocation();
   const [tab, setTab] = useState<TabFilter>("unscheduled");
   const [offset, setOffset] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [notifying, setNotifying] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState("");
 
   const { data, loading, error, refetch } = useAsync(
     () => recallsApi.list({
@@ -94,6 +98,39 @@ export default function RecallsPage() {
   function handleTabChange(t: TabFilter) {
     setTab(t);
     setOffset(0);
+    setSelected(new Set());
+    setNotifyMsg("");
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === recalls.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(recalls.map((r) => r.id)));
+    }
+  }
+
+  async function handleSendReminders() {
+    if (selected.size === 0) return;
+    setNotifying(true);
+    setNotifyMsg("");
+    try {
+      const result = await recallsApi.notify([...selected]);
+      setNotifyMsg(`Sent ${result.sent} reminder${result.sent !== 1 ? "s" : ""}${result.skipped > 0 ? `, ${result.skipped} skipped (no email)` : ""}${result.failed > 0 ? `, ${result.failed} failed` : ""}.`);
+      setSelected(new Set());
+    } catch (e) {
+      setNotifyMsg(e instanceof ApiError ? e.message : "Failed to send reminders.");
+    } finally {
+      setNotifying(false);
+    }
   }
 
   const TABS: { key: TabFilter; label: string }[] = [
@@ -117,12 +154,26 @@ export default function RecallsPage() {
           <h1 className="text-2xl font-bold text-pk-text">Recalls</h1>
           <p className="text-sm text-pk-text-muted mt-0.5">Patients due for a follow-up visit · <a href="/help/recalls" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline">How recalls work →</a></p>
         </div>
-        {actionableCount > 0 && (tab === "unscheduled" || tab === "lapsed") && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-pk-warning-fill px-3 py-1 text-sm font-medium text-pk-warning-text">
-            <span className="h-2 w-2 rounded-full bg-pk-warning" />
-            {actionableCount} need booking
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {selected.size > 0 && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleSendReminders}
+                disabled={notifying}
+                className="inline-flex items-center gap-2 rounded-pk-sm bg-pk-teal-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-pk-teal-700 disabled:opacity-50 transition"
+              >
+                {notifying ? "Sending…" : `Send Reminder (${selected.size})`}
+              </button>
+              <InfoTooltip content="Sends an email reminder to the selected patients with their recall date. Patients without an email address are skipped." position="bottom" />
+            </div>
+          )}
+          {actionableCount > 0 && (tab === "unscheduled" || tab === "lapsed") && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-pk-warning-fill px-3 py-1 text-sm font-medium text-pk-warning-text">
+              <span className="h-2 w-2 rounded-full bg-pk-warning" />
+              {actionableCount} need booking
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Status tabs */}
@@ -143,9 +194,13 @@ export default function RecallsPage() {
         ))}
       </div>
 
-      {/* Error */}
-      {error && (
-        <ErrorState message={error} onRetry={refetch} />
+      {/* Error / notify feedback */}
+      {error && <ErrorState message={error} onRetry={refetch} />}
+      {notifyMsg && (
+        <div className="rounded-pk-sm border border-pk-teal-200 bg-pk-teal-50 px-4 py-3 text-sm text-pk-teal-700 flex items-center justify-between">
+          <span>{notifyMsg}</span>
+          <button onClick={() => setNotifyMsg("")} className="ml-4 text-pk-teal-500 hover:text-pk-teal-700 font-bold leading-none">&times;</button>
+        </div>
       )}
 
       {/* Table */}
@@ -170,6 +225,15 @@ export default function RecallsPage() {
             <table className="min-w-full divide-y divide-pk-border">
               <thead className="bg-pk-surface-raised">
                 <tr>
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      className="rounded border-pk-border text-pk-teal-600 focus:ring-pk-teal-500"
+                      checked={selected.size === recalls.length && recalls.length > 0}
+                      onChange={toggleSelectAll}
+                      aria-label="Select all"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Patient</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Recall Date</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-pk-text-muted uppercase tracking-wider">Status</th>
@@ -182,7 +246,18 @@ export default function RecallsPage() {
               </thead>
               <tbody className="bg-pk-surface divide-y divide-pk-border">
                 {recalls.map((row) => (
-                  <tr key={row.id} className="hover:bg-pk-surface-raised transition-colors">
+                  <tr key={row.id} className={`hover:bg-pk-surface-raised transition-colors ${selected.has(row.id) ? "bg-pk-teal-50" : ""}`}>
+
+                    {/* Checkbox */}
+                    <td className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        className="rounded border-pk-border text-pk-teal-600 focus:ring-pk-teal-500"
+                        checked={selected.has(row.id)}
+                        onChange={() => toggleSelect(row.id)}
+                        aria-label={`Select ${row.patientName}`}
+                      />
+                    </td>
 
                     {/* Patient */}
                     <td className="px-4 py-3">

@@ -3,6 +3,7 @@ import { clinicalPhotos, visits } from "@/db/schema";
 import { storeFile } from "@/lib/storage";
 import { PERMISSIONS } from "@/lib/permissions";
 import { withRoute, apiOk, apiError } from "@/lib/api";
+import { validateUploadedFile, sanitizeFileName } from "@/lib/file-validation";
 
 const UPLOAD_RATE_LIMIT = { limit: 30, windowMs: 60_000 };
 
@@ -57,10 +58,15 @@ export const POST = withRoute<{ id: string }>(
     const photoType: PhotoType = VALID_TYPES.includes(photoTypeRaw as PhotoType)
       ? (photoTypeRaw as PhotoType) : "INTRA_ORAL";
 
-    const allowedExt = ALLOWED_MIME_TYPES[file.type];
-    if (!allowedExt) return apiError("Only JPEG, PNG, WebP, HEIC images are allowed", 400);
-    if (file.size > MAX_SIZE) return apiError("Photo must be under 20 MB", 400);
+    const validation = await validateUploadedFile(file, {
+      allowedMimeTypes: Object.keys(ALLOWED_MIME_TYPES),
+      maxSizeBytes: MAX_SIZE,
+      label: "Photo",
+    });
+    if (!validation.valid) return apiError(validation.error!, 400);
 
+    const allowedExt = ALLOWED_MIME_TYPES[file.type] ?? ".jpg";
+    const safeOriginalName = sanitizeFileName(file.name);
     const [visitRow] = await db
       .select({ organizationId: visits.organizationId, patientId: visits.patientId })
       .from(visits)
@@ -81,7 +87,7 @@ export const POST = withRoute<{ id: string }>(
       photoRole,
       photoType,
       fileName,
-      originalName:   file.name.replace(/[^\w.\-]/g, "_").slice(0, 255),
+      originalName:   safeOriginalName,
       mimeType:       file.type,
       fileSize:       file.size,
       fileUrl,

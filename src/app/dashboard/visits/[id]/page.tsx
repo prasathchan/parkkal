@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { visitsApi, appointmentsApi, treatmentsApi, patientsApi, ApiError } from "@/api";
-import { useToast } from "@/context/toast-context";
+import { useParams } from "next/navigation";
+import { VisitProvider, useVisit } from "@/context/visit-context";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { VisitHeaderCard } from "@/components/visits/VisitHeaderCard";
@@ -17,297 +15,33 @@ import { VisitPrescriptionsTab } from "@/components/visits/VisitPrescriptionsTab
 import { LinkSuggestBar } from "@/components/visits/LinkSuggestBar";
 import { CompleteVisitModal } from "@/components/visits/CompleteVisitModal";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import type {
-  Visit, VisitItem, Payment, Attachment, HistoryVisit, Treatment, NewItemState,
-} from "@/components/visits/types";
-import type { ClinicalPhoto } from "@/types";
-import type { TreatmentDecision } from "@/api/treatments";
-import type { ChartData } from "@/components/ui/ToothChart";
-import type { Prescription } from "@/types";
+import type { NewItemState } from "@/components/visits/types";
+import { SkeletonDetailPage } from "@/components/ui/skeleton";
 
 type TabKey = "items" | "payments" | "files" | "prescriptions" | "treatmentPlan" | "chart";
 
-export default function VisitDetailPage() {
+function VisitPageContent() {
+  const {
+    visit, items, payments, attachments, photos, prescriptions, history, treatments,
+    tab, setTab, loading, pageError, setPageError,
+    markingApptDone, appointmentStatus, completingVisit,
+    completeCheckDecisions, setCompleteCheckDecisions, currentChartData,
+    editingNotes, setEditingNotes, notesForm, setNotesForm, savingNotes, notesAutoSaved,
+    editingRecall, setEditingRecall, recallForm, setRecallForm, savingRecall,
+    showPayModal, setShowPayModal, payForm, setPayForm, payError, paySubmitting,
+    prefillItem, setPrefillItem, confirmComplete, setConfirmComplete,
+    chartBillSuggestion, setChartBillSuggestion,
+    billChartSuggestion, setBillChartSuggestion, chartHighlightTeeth, setChartHighlightTeeth,
+    navigateToBookFollowup, fetchVisit,
+    handleSaveNotes, handleSaveRecall, handleClearRecall,
+    handleAddPayment, handleCompleteVisit, handleModalComplete, doForceComplete,
+    handleMarkAppointmentDone, handleChartSuggestBill, handleBillSuggestChart,
+    handleLinkTreatments, handleLinkTreatmentsOnly, handleAddToBill,
+  } = useVisit();
+
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const { toast } = useToast();
 
-  const [visit, setVisit] = useState<Visit | null>(null);
-  const [items, setItems] = useState<VisitItem[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [photos, setPhotos] = useState<ClinicalPhoto[]>([]);
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [history, setHistory] = useState<HistoryVisit[]>([]);
-  const [treatments, setTreatments] = useState<Treatment[]>([]);
-
-  const [tab, setTab] = useState<TabKey>("items");
-  const [loading, setLoading] = useState(true);
-  const [pageError, setPageError] = useState("");
-  const [markingApptDone, setMarkingApptDone] = useState(false);
-  const [appointmentStatus, setAppointmentStatus] = useState<string | null>(null);
-  const [completingVisit, setCompletingVisit] = useState(false);
-  const [completeCheckDecisions, setCompleteCheckDecisions] = useState<TreatmentDecision[] | null>(null);
-  const [currentChartData, setCurrentChartData] = useState<ChartData>({});
-
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [notesForm, setNotesForm] = useState({ chiefComplaint: "", doctorNotes: "", diagnosis: "" });
-  const [savingNotes, setSavingNotes] = useState(false);
-
-  const [editingRecall, setEditingRecall] = useState(false);
-  const [recallForm, setRecallForm] = useState({ recallDate: "", recallNotes: "" });
-  const [savingRecall, setSavingRecall] = useState(false);
-
-  const [showPayModal, setShowPayModal] = useState(false);
-  const [payForm, setPayForm] = useState({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
-  const [payError, setPayError] = useState("");
-  const [paySubmitting, setPaySubmitting] = useState(false);
-
-  const [prefillItem, setPrefillItem] = useState<NewItemState | null>(null);
-  const [confirmComplete, setConfirmComplete] = useState<{ due: number; mode: "page" | "modal" } | null>(null);
-
-  // Gap 4 — chart → bill suggestion
-  const [chartBillSuggestion, setChartBillSuggestion] = useState<{
-    treatmentId: string;
-    description: string;
-    toothNumber: string;
-  } | null>(null);
-
-  // Gap 5 — bill → chart suggestion
-  const [billChartSuggestion, setBillChartSuggestion] = useState<string[] | null>(null);
-  const [chartHighlightTeeth, setChartHighlightTeeth] = useState<string[]>([]);
-
-  const fetchVisit = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await visitsApi.get(id);
-      setVisit(data.visit);
-      setItems(data.items || []);
-      setPayments(data.payments || []);
-      setAttachments(data.attachments || []);
-      if (data.visit?.appointmentId) {
-        appointmentsApi.get(data.visit.appointmentId)
-          .then((d) => setAppointmentStatus(d.appointment?.status ?? null))
-          .catch(() => setAppointmentStatus(null));
-      } else {
-        setAppointmentStatus(null);
-      }
-      treatmentsApi.forVisit.list(id).then((d) => setTreatments(d.treatments ?? [])).catch(() => {});
-      visitsApi.prescriptions.list(id).then((d) => setPrescriptions(d.prescriptions ?? [])).catch(() => {});
-      visitsApi.photos.list(id).then((d) => setPhotos(d.photos ?? [])).catch(() => {});
-    } catch (e) {
-      setPageError(e instanceof ApiError ? e.message : `Failed to load visit`);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => { fetchVisit(); }, [fetchVisit]);
-
-  useEffect(() => {
-    if (visit?.patientId) {
-      visitsApi.list({ patientId: visit.patientId })
-        .then((d) => setHistory((d.visits ?? []).filter((v: HistoryVisit) => v.id !== id)))
-        .catch(() => {});
-    }
-  }, [visit?.patientId, id]);
-
-  async function handleSaveNotes(e: React.FormEvent) {
-    e.preventDefault();
-    setSavingNotes(true);
-    setPageError("");
-    try {
-      await visitsApi.update(id, { chiefComplaint: notesForm.chiefComplaint || null, doctorNotes: notesForm.doctorNotes || null, diagnosis: notesForm.diagnosis || null });
-      await fetchVisit();
-      setEditingNotes(false);
-      toast.success("Notes saved");
-    } catch (e) {
-      setPageError(e instanceof ApiError ? e.message : "Failed to save notes");
-    } finally { setSavingNotes(false); }
-  }
-
-  async function handleSaveRecall(e: React.FormEvent) {
-    e.preventDefault();
-    setSavingRecall(true);
-    setPageError("");
-    try {
-      await visitsApi.update(id, { recallDate: recallForm.recallDate || null, recallNotes: recallForm.recallNotes || null });
-      await fetchVisit();
-      setEditingRecall(false);
-      toast.success("Recall date saved");
-    } catch (e) {
-      setPageError(e instanceof ApiError ? e.message : "Failed to save recall");
-    } finally { setSavingRecall(false); }
-  }
-
-  async function handleClearRecall() {
-    setSavingRecall(true);
-    await visitsApi.update(id, { recallDate: null, recallNotes: null }).catch(() => {});
-    await fetchVisit();
-    setEditingRecall(false);
-    setSavingRecall(false);
-  }
-
-  async function handleAddPayment(allowOverpayment = false) {
-    if (!visit) return;
-    setPayError("");
-    setPaySubmitting(true);
-    try {
-      await visitsApi.payments.add(id, {
-        amount: Number(payForm.amount),
-        paymentMethod: payForm.paymentMethod as "CASH" | "CARD" | "UPI" | "BANK_TRANSFER",
-        referenceNumber: payForm.referenceNumber || undefined,
-        notes: payForm.notes || undefined,
-        allowOverpayment,
-      });
-      setShowPayModal(false);
-      setPayForm({ amount: "", paymentMethod: "CASH", referenceNumber: "", notes: "" });
-      toast.success("Payment recorded");
-      await fetchVisit();
-    } catch (e) {
-      setPayError(e instanceof ApiError ? e.message : "Payment failed");
-    } finally { setPaySubmitting(false); }
-  }
-
-  async function handleCompleteVisit() {
-    if (!visit) return;
-    setCompletingVisit(true);
-    setPageError("");
-    try {
-      // Check if any treatment decisions are needed before completing
-      const check = await treatmentsApi.getCompleteCheck(id);
-      if (check.needsAttention) {
-        // Load current chart data for the modal
-        const { toothData } = await patientsApi.getToothChart(visit.patientId);
-        setCurrentChartData((toothData as ChartData) ?? {});
-        setCompleteCheckDecisions(check.treatments);
-        setCompletingVisit(false);
-        return;
-      }
-
-      // No treatment decisions needed — proceed with outstanding balance check
-      const due = visit.totalAmount - visit.paidAmount;
-      if (due > 0) {
-        setCompletingVisit(false);
-        setConfirmComplete({ due, mode: "page" });
-        return;
-      }
-
-      await visitsApi.update(id, { status: "COMPLETED" });
-      toast.success("Visit marked as complete");
-      await fetchVisit();
-    } catch (e) {
-      setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
-    } finally { setCompletingVisit(false); }
-  }
-
-  async function handleModalComplete() {
-    if (!visit) return;
-    const due = visit.totalAmount - visit.paidAmount;
-    if (due > 0) {
-      setConfirmComplete({ due, mode: "modal" });
-      return;
-    }
-    await visitsApi.update(id, { status: "COMPLETED" });
-    toast.success("Visit marked as complete");
-    setCompleteCheckDecisions(null);
-    await fetchVisit();
-  }
-
-  async function doForceComplete(mode: "page" | "modal") {
-    try {
-      await visitsApi.update(id, { status: "COMPLETED" });
-      toast.success("Visit marked as complete");
-      if (mode === "modal") setCompleteCheckDecisions(null);
-      await fetchVisit();
-    } catch (e) {
-      setPageError(e instanceof ApiError ? e.message : "Failed to complete visit");
-    }
-  }
-
-  async function handleMarkAppointmentDone() {
-    if (!visit?.appointmentId) return;
-    setMarkingApptDone(true);
-    try {
-      await appointmentsApi.updateStatus(visit.appointmentId, "COMPLETED");
-      setAppointmentStatus("COMPLETED");
-      toast.success("Appointment marked as done");
-      await fetchVisit();
-    } finally { setMarkingApptDone(false); }
-  }
-
-  function handleChartSuggestBill(treatmentId: string, description: string, toothNumber: string) {
-    setChartBillSuggestion({ treatmentId, description, toothNumber });
-  }
-
-  function handleBillSuggestChart(toothNumbers: string[]) {
-    setBillChartSuggestion(toothNumbers);
-  }
-
-  function inferConditionFromTreatment(description: string, procedure?: string | null): string {
-    const text = `${description} ${procedure ?? ""}`.toLowerCase();
-    if (/root.?canal|rct|endodont/i.test(text)) return "ROOT_CANAL";
-    if (/crown|ceramic|porcelain|zirconia|pfm/i.test(text)) return "CROWN";
-    if (/implant/i.test(text)) return "IMPLANT";
-    if (/bridge/i.test(text)) return "BRIDGE";
-    if (/extract|remov|pull|avuls/i.test(text)) return "MISSING";
-    if (/fractur|crack|chip/i.test(text)) return "FRACTURED";
-    if (/filling|composite|amalgam|restoration/i.test(text)) return "FILLING";
-    return "WATCH";
-  }
-
-  async function handleLinkTreatments(plans: Treatment[]) {
-    for (const plan of plans) {
-      await treatmentsApi.forVisit.link(id, { treatmentId: plan.id });
-
-      const alreadyBilledHere = items.some((i) => i.linkedTreatmentId === plan.id);
-      const outstanding = Math.max(0, plan.cost - (plan.billedAmount ?? 0));
-      if (!alreadyBilledHere && outstanding > 0) {
-        const firstTooth = plan.toothNumbers?.split(",")[0]?.trim() ?? "";
-        await visitsApi.items.add(id, {
-          itemName: plan.description,
-          category: "TREATMENT",
-          toothNumber: firstTooth || undefined,
-          quantity: 1,
-          unitPrice: outstanding,
-          notes: "",
-          linkedTreatmentId: plan.id,
-        });
-      }
-
-      if (plan.status === "IN_PROGRESS" && plan.toothNumbers) {
-        const teeth = plan.toothNumbers.split(",").map((t) => t.trim()).filter(Boolean);
-        if (teeth.length > 0) {
-          const inferredCondition = inferConditionFromTreatment(plan.description, plan.procedure);
-          const { toothData } = await patientsApi.getToothChart(visit!.patientId);
-          const updatedChart = { ...(toothData as Record<string, { condition: string }> ?? {}) };
-          for (const tooth of teeth) updatedChart[tooth] = { condition: inferredCondition };
-          await patientsApi.saveToothChart(
-            visit!.patientId,
-            updatedChart as Record<string, unknown>,
-            id,
-            "treatment_start",
-            plan.id,
-          );
-        }
-      }
-    }
-    await fetchVisit();
-  }
-
-  async function handleLinkTreatmentsOnly(plans: Treatment[]) {
-    for (const plan of plans) {
-      await treatmentsApi.forVisit.link(id, { treatmentId: plan.id });
-    }
-    await fetchVisit();
-  }
-
-  function handleAddToBill(item: NewItemState) {
-    setPrefillItem(item);
-    setTab("items");
-  }
-
-  if (loading) return <div className="flex-1 flex items-center justify-center text-pk-text-muted">Loading...</div>;
+  if (loading) return <SkeletonDetailPage />;
   if (!visit) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3">
@@ -358,7 +92,7 @@ export default function VisitDetailPage() {
 
         <VisitHeaderCard
           visitId={id} visit={visit} due={due}
-          editingNotes={editingNotes} notesForm={notesForm} savingNotes={savingNotes}
+          editingNotes={editingNotes} notesForm={notesForm} savingNotes={savingNotes} notesAutoSaved={notesAutoSaved}
           editingRecall={editingRecall} recallForm={recallForm} savingRecall={savingRecall}
           completingVisit={completingVisit}
           onEditNotes={() => { setNotesForm({ chiefComplaint: visit.chiefComplaint || "", doctorNotes: visit.doctorNotes || "", diagnosis: visit.diagnosis || "" }); setEditingNotes(true); }}
@@ -371,7 +105,7 @@ export default function VisitDetailPage() {
           onCancelRecall={() => setEditingRecall(false)}
           onClearRecall={handleClearRecall}
           onCompleteVisit={handleCompleteVisit}
-          onBookFollowup={() => router.push(`/dashboard/appointments/new?patientId=${visit.patientId}&doctorId=${visit.doctorId}&type=FOLLOWUP`)}
+          onBookFollowup={navigateToBookFollowup}
           onAddPayment={() => setShowPayModal(true)}
         />
 
@@ -433,7 +167,7 @@ export default function VisitDetailPage() {
                           unitPrice: String(Math.max(0, tx.cost - (tx.billedAmount ?? 0))),
                           notes: "",
                           linkedTreatmentId: tx.id,
-                        });
+                        } as NewItemState);
                       }
                       setChartBillSuggestion(null);
                       setTab("items");
@@ -485,7 +219,7 @@ export default function VisitDetailPage() {
             )}
 
             {tab === "items" && <VisitItemsTab key={prefillItem ? JSON.stringify(prefillItem) : "items"} visitId={id} visitStatus={visit.status} items={items} treatments={treatments} payments={payments} prefillItem={prefillItem} due={due} history={history} patientName={visit.patientName ?? ""} onRefresh={fetchVisit} onPageError={setPageError} onSuggestChart={handleBillSuggestChart} />}
-            {tab === "payments" && <VisitPaymentsTab visit={visit} payments={payments} due={due} onOpenPayModal={() => setShowPayModal(true)} />}
+            {tab === "payments" && <VisitPaymentsTab visit={visit} payments={payments} due={due} onOpenPayModal={() => setShowPayModal(true)} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "files" && <VisitFilesTab visitId={id} visitStatus={visit.status} patientId={visit.patientId} attachments={attachments} photos={photos} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "prescriptions" && <VisitPrescriptionsTab visitId={id} visitStatus={visit.status} prescriptions={prescriptions} onRefresh={fetchVisit} onPageError={setPageError} />}
             {tab === "treatmentPlan" && <VisitTreatmentPlanTab visitId={id} visit={visit} treatments={treatments} onRefresh={fetchVisit} onPageError={setPageError} onAddToBill={handleAddToBill} onLinkPlan={async (plan) => { await handleLinkTreatments([plan]); }} />}
@@ -497,7 +231,7 @@ export default function VisitDetailPage() {
       {showPayModal && (
         <PaymentModal
           due={due} payForm={payForm} payError={payError} paySubmitting={paySubmitting}
-          onChange={setPayForm} onSubmit={handleAddPayment} onClose={() => { setShowPayModal(false); setPayError(""); }}
+          onChange={setPayForm} onSubmit={handleAddPayment} onClose={() => { setShowPayModal(false); setPageError(""); }}
         />
       )}
 
@@ -523,5 +257,14 @@ export default function VisitDetailPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function VisitDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <VisitProvider visitId={id}>
+      <VisitPageContent />
+    </VisitProvider>
   );
 }

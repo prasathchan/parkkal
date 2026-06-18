@@ -80,11 +80,32 @@ export function listAppLogs(
   return apiFetch<{ logs: AppLogEntry[]; hasMore: boolean }>(`/api/admin/app-logs?${q}`);
 }
 
+export interface FeatureFlags {
+  void_payments: boolean;
+  recall_notify: boolean;
+  consent_ai: boolean;
+}
+
+export function getFeatureFlags(): Promise<{ flags: FeatureFlags; defaults: FeatureFlags }> {
+  return apiFetch<{ flags: FeatureFlags; defaults: FeatureFlags }>("/api/admin/feature-flags");
+}
+
+export function updateFeatureFlags(flags: Partial<FeatureFlags>): Promise<{ flags: FeatureFlags }> {
+  return apiFetch<{ flags: FeatureFlags }>("/api/admin/feature-flags", {
+    method: "PATCH",
+    body: JSON.stringify(flags),
+  });
+}
+
 export const adminApi = {
   auditLog: {
     list: listAuditLog,
   },
   appLogs: {
     list: listAppLogs,
+  },
+  featureFlags: {
+    get: getFeatureFlags,
+    update: updateFeatureFlags,
   },
 };

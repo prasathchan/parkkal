@@ -163,6 +163,9 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
   const [photos, setPhotos] = useState<ClinicalPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [consentUploading, setConsentUploading] = useState(false);
+  const [consentActing, setConsentActing] = useState(false);
+  const [consentMsg, setConsentMsg] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -183,6 +186,36 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
     }
     load();
   }, [id]);
+
+  async function handleConsentUpload(file: File) {
+    setConsentUploading(true);
+    setConsentMsg("");
+    try {
+      const result = await treatmentsApi.consent.upload(id, file) as { consentStatus?: string; notes?: string };
+      setConsentMsg(result.notes ?? "Document uploaded.");
+      const data = await treatmentsApi.getVisits(id);
+      setTreatment(data.treatment);
+    } catch (e) {
+      setConsentMsg(e instanceof ApiError ? e.message : "Upload failed. Please try again.");
+    } finally {
+      setConsentUploading(false);
+    }
+  }
+
+  async function handleConsentAction(action: "VERIFY" | "REJECT") {
+    setConsentActing(true);
+    setConsentMsg("");
+    try {
+      await treatmentsApi.consent.manualAction(id, action);
+      const data = await treatmentsApi.getVisits(id);
+      setTreatment(data.treatment);
+      setConsentMsg(action === "VERIFY" ? "Consent verified." : "Consent rejected.");
+    } catch (e) {
+      setConsentMsg(e instanceof ApiError ? e.message : "Action failed.");
+    } finally {
+      setConsentActing(false);
+    }
+  }
 
   const toothList = treatment?.toothNumbers
     ? treatment.toothNumbers.split(",").map((s) => s.trim()).filter(Boolean)
@@ -288,34 +321,72 @@ export default function TreatmentDetailPage({ params }: { params: Promise<{ id: 
               )}
 
               {/* Consent row */}
-              <div className="mt-4 pt-4 border-t border-pk-border flex flex-wrap items-center gap-3">
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${CONSENT_BADGE[treatment.consentStatus] ?? CONSENT_BADGE.PENDING}`}>
-                  {CONSENT_LABEL[treatment.consentStatus] ?? treatment.consentStatus}
-                </span>
-                {treatment.consentNotes && (
-                  <span className="text-xs text-pk-text-muted italic">{treatment.consentNotes}</span>
-                )}
-                {treatment.emergencyReason && (
-                  <span className="text-xs text-pk-warning-text">Reason: {treatment.emergencyReason}</span>
-                )}
-                {treatment.consentDocumentUrl && (
+              <div className="mt-4 pt-4 border-t border-pk-border space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${CONSENT_BADGE[treatment.consentStatus] ?? CONSENT_BADGE.PENDING}`}>
+                    {CONSENT_LABEL[treatment.consentStatus] ?? treatment.consentStatus}
+                  </span>
+                  {treatment.consentNotes && (
+                    <span className="text-xs text-pk-text-muted italic">{treatment.consentNotes}</span>
+                  )}
+                  {treatment.emergencyReason && (
+                    <span className="text-xs text-pk-warning-text">Reason: {treatment.emergencyReason}</span>
+                  )}
+                  {treatment.consentDocumentUrl && (
+                    <a href={treatment.consentDocumentUrl} target="_blank" rel="noreferrer" className="text-xs text-pk-teal-600 hover:underline">
+                      View Consent Document ↗
+                    </a>
+                  )}
                   <a
-                    href={treatment.consentDocumentUrl}
+                    href={`/api/treatments/${treatment.id}/consent-pdf`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-pk-teal-600 hover:underline"
+                    className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised transition ml-auto"
                   >
-                    View Consent Document ↗
+                    Download Consent Form PDF
                   </a>
-                )}
-                <a
-                  href={`/api/treatments/${treatment.id}/consent-pdf`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs border border-pk-border text-pk-text-secondary px-2.5 py-1 rounded-pk-sm hover:bg-pk-surface-raised transition ml-auto"
-                >
-                  Download Consent Form PDF
-                </a>
+                </div>
+
+                {/* Consent actions */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Upload button — shown when PENDING or REJECTED */}
+                  {(treatment.consentStatus === "PENDING" || treatment.consentStatus === "REJECTED") && (
+                    <label className={`cursor-pointer text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition ${consentUploading ? "opacity-50 pointer-events-none" : ""}`}>
+                      {consentUploading ? "Uploading…" : "Upload Signed Consent"}
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf"
+                        className="sr-only"
+                        disabled={consentUploading}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleConsentUpload(f); e.target.value = ""; }}
+                      />
+                    </label>
+                  )}
+
+                  {/* Manual verify/reject — shown only when UPLOADED (AI couldn't auto-verify) */}
+                  {treatment.consentStatus === "UPLOADED" && (
+                    <>
+                      <button
+                        onClick={() => handleConsentAction("VERIFY")}
+                        disabled={consentActing}
+                        className="text-xs bg-pk-success text-white px-3 py-1.5 rounded-pk-sm hover:opacity-90 disabled:opacity-50 transition"
+                      >
+                        {consentActing ? "Saving…" : "Verify"}
+                      </button>
+                      <button
+                        onClick={() => handleConsentAction("REJECT")}
+                        disabled={consentActing}
+                        className="text-xs bg-pk-danger text-white px-3 py-1.5 rounded-pk-sm hover:opacity-90 disabled:opacity-50 transition"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+
+                  {consentMsg && (
+                    <span className="text-xs text-pk-text-muted italic">{consentMsg}</span>
+                  )}
+                </div>
               </div>
             </div>
 

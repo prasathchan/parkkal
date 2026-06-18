@@ -88,7 +88,7 @@ export default function StaffPage() {
     fetchMembers();
     orgApi.roles.list()
       .then(d => setOrgRoles(d.roles ?? []))
-      .catch(() => {});
+      .catch((e) => console.error("[staff] roles fetch failed:", e));
   }, []);
 
   async function fetchMembers() {

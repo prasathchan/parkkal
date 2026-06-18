@@ -72,7 +72,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
   const DISMISS_KEY = `pk_visit_link_dismissed_${visitId}`;
 
   useEffect(() => {
-    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch(() => {});
+    treatmentsApi.templates.list().then((d) => setTemplates(d.templates ?? [])).catch((e) => console.error("[treatment-plan-tab] templates fetch failed:", e));
   }, []);
 
   // Seed session notes from server data (runs when treatments first load)
@@ -100,7 +100,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
         setUnlinkablePlans(plans);
         setShowLinkPrompt(true);
       }
-    }).catch(() => {});
+    }).catch((e) => console.error("[treatment-plan-tab] unlinked plans fetch failed:", e));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
 
@@ -356,7 +356,7 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                     if (suggestRef.current) clearTimeout(suggestRef.current);
                     suggestRef.current = setTimeout(() => {
                       if (val.length >= 2) {
-                        treatmentsApi.suggest(val).then((d) => setTxSuggestions(d.suggestions ?? [])).catch(() => {});
+                        treatmentsApi.suggest(val).then((d) => setTxSuggestions(d.suggestions ?? [])).catch(() => setTxSuggestions([]));
                       } else {
                         setTxSuggestions([]);
                       }

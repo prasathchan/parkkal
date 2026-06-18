@@ -347,3 +347,63 @@ export async function sendPasswordResetEmail(to: string, name: string, code: str
     throw new Error(`Email send failed: ${res.status}`);
   }
 }
+
+export async function sendRecallReminderEmail(params: {
+  to: string;
+  patientName: string;
+  clinicName: string;
+  recallDate: string;
+  doctorName?: string | null;
+  recallNotes?: string | null;
+}): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[EMAIL] RESEND_API_KEY not set — skipping recall reminder to:", params.to);
+    return;
+  }
+
+  const { patientName, clinicName, recallDate, doctorName, recallNotes } = params;
+  const formattedDate = new Date(recallDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>Your dental check-up is due</title></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
+  <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+    <div style="background: linear-gradient(135deg, #0B6E6E, #0B5654); padding: 28px 32px; text-align: center;">
+      <h1 style="color: #ffffff; margin: 0; font-size: 22px;">Time for your check-up</h1>
+    </div>
+    <div style="padding: 32px;">
+      <p style="color: #1a2e35; font-size: 16px; margin-top: 0;">Hi <strong>${patientName}</strong>,</p>
+      <p style="color: #4a5568; font-size: 15px; line-height: 1.6;">
+        Your dental recall at <strong>${clinicName}</strong> is scheduled for
+        <strong style="color: #0B6E6E;">${formattedDate}</strong>.
+        ${doctorName ? `You'll be seeing <strong>${doctorName}</strong>.` : ""}
+      </p>
+      ${recallNotes ? `<p style="color: #4a5568; font-size: 14px; background: #f7fafc; border-left: 3px solid #0B6E6E; padding: 10px 14px; border-radius: 4px;">${recallNotes}</p>` : ""}
+      <p style="color: #4a5568; font-size: 14px; margin-top: 24px;">Please call or visit us to confirm your appointment. Regular check-ups help keep your smile healthy!</p>
+    </div>
+    <div style="background: #f7fafc; padding: 16px 32px; text-align: center; border-top: 1px solid #e2e8f0;">
+      <p style="color: #a0aec0; font-size: 12px; margin: 0;">${clinicName} · Powered by Parkkal</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: fromAddress(),
+      to: [params.to],
+      subject: `Your dental recall at ${clinicName} — ${formattedDate}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[EMAIL] Failed to send recall reminder:", err);
+    throw new Error(`Email send failed: ${res.status}`);
+  }
+}

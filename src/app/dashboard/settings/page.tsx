@@ -9,7 +9,8 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import Link from "next/link";
 import { type OrgThemeConfig, DEFAULT_THEME, PARKKAL_ACCENT_SET, getAccent, getAccentCssVars, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
-import { orgApi, authApi, ApiError } from "@/api";
+import { orgApi, authApi, adminApi, ApiError } from "@/api";
+import { SkeletonDetailPage } from "@/components/ui/skeleton";
 import type { OrgProfile, StaffMember } from "@/types";
 
 interface AdminMember {
@@ -64,6 +65,9 @@ export default function SettingsPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState<{ void_payments: boolean; recall_notify: boolean; consent_ai: boolean } | null>(null);
+  const [flagsSaving, setFlagsSaving] = useState<string | null>(null);
 
   useEffect(() => {
     orgApi.getProfile()
@@ -98,6 +102,15 @@ export default function SettingsPage() {
           email: m.email,
           phone: m.phone ?? null,
         })));
+      })
+      .catch(() => {});
+    authApi.me()
+      .then(data => {
+        const admin = data.user.role === "ADMIN";
+        setIsAdmin(admin);
+        if (admin) {
+          adminApi.featureFlags.get().then((d) => setFeatureFlags(d.flags)).catch(() => {});
+        }
       })
       .catch(() => {});
   }, []);
@@ -168,7 +181,7 @@ export default function SettingsPage() {
     setOrg(o => o ? { ...o, logoUrl: null } : o);
   }
 
-  if (loading) return <div className="flex-1 p-6 text-pk-text-muted" style={{ color: "var(--pk-text-muted)" }}>Loading...</div>;
+  if (loading) return <SkeletonDetailPage />;
 
   async function handleDeleteOrg() {
     setDeleteError("");
@@ -731,6 +744,41 @@ export default function SettingsPage() {
                 View Log →
               </Link>
             </div>
+
+            {/* Feature Flags — admin only */}
+            {isAdmin && featureFlags && (
+              <div className="rounded-pk-lg border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Feature Flags</h3>
+                <p className="text-xs mb-4" style={{ color: "var(--pk-text-muted)" }}>
+                  Toggle features on/off without a deployment. Changes take effect immediately.
+                </p>
+                <div className="space-y-3">
+                  {(Object.entries(featureFlags) as [keyof typeof featureFlags, boolean][]).map(([key, enabled]) => (
+                    <label key={key} className="flex items-center justify-between gap-4 cursor-pointer">
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: "var(--pk-text)" }}>{key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={flagsSaving === key}
+                        onClick={async () => {
+                          setFlagsSaving(key);
+                          try {
+                            const updated = await adminApi.featureFlags.update({ [key]: !enabled });
+                            setFeatureFlags(updated.flags);
+                          } catch { /* ignore */ }
+                          setFlagsSaving(null);
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${enabled ? "bg-pk-teal-600" : "bg-pk-border-strong"} ${flagsSaving === key ? "opacity-50" : ""}`}
+                        aria-pressed={enabled}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
+                      </button>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* App Logs — errors & security events captured by the API layer */}
             <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"
