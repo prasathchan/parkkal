@@ -4,39 +4,56 @@
  * AES-256-GCM field-level encryption for sensitive Indian government IDs.
  * Used to protect PAN numbers and Aadhaar numbers at rest in the database.
  *
- * ─── HOW IT WORKS ────────────────────────────────────────────────────────────
- *   1. A random 12-byte IV is generated for every encryption.
- *   2. The plaintext is encrypted with AES-256-GCM using ENCRYPTION_KEY.
- *   3. IV + ciphertext are base64-encoded and prefixed with "enc:".
- *   4. The database stores the "enc:..." string instead of the raw value.
+ * ─── VERSIONED KEY FORMAT ────────────────────────────────────────────────────
+ *   enc:<base64>          → legacy v1 (pre-rotation; decrypts with ENCRYPTION_KEY)
+ *   enc:v1:<base64>       → explicit v1 (post-rotation re-encrypt with old key)
+ *   enc:v2:<base64>       → v2 (set ENCRYPTION_KEY_V2 to activate)
  *
- *   On read: if the value starts with "enc:", it's decrypted.
- *            If it doesn't (legacy row), it's returned as-is (passthrough).
+ *   encrypt() always uses the latest active version:
+ *     - v2 if ENCRYPTION_KEY_V2 is set
+ *     - v1 (legacy format) otherwise
  *
- * ─── SETUP ───────────────────────────────────────────────────────────────────
- *   Set ENCRYPTION_KEY to a 64-character hex string (= 32 bytes / 256 bits).
- *   Generate one with: openssl rand -hex 32
+ *   decrypt() reads the version prefix and routes to the matching key.
+ *   This means both keys must be present during key rotation.
  *
- *   Without the key, fields are stored in plaintext with a warning.
- *   This is intentional for local dev — never skip the key in production.
+ * ─── HOW TO ROTATE ───────────────────────────────────────────────────────────
+ *   1. Generate a new key: openssl rand -hex 32
+ *   2. Set ENCRYPTION_KEY_V2 in your environment (keep ENCRYPTION_KEY too).
+ *   3. Run: node scripts/rotate-encryption-key.js
+ *      This re-encrypts all PII fields in the DB with v2.
+ *   4. Once all rows are migrated, ENCRYPTION_KEY can be removed.
  *
  * ─── EXPORTS ─────────────────────────────────────────────────────────────────
- *   encryptField(value)  → "enc:..." ciphertext, or the original value if no key
+ *   encryptField(value)  → versioned ciphertext, or original value if no key
  *   decryptField(value)  → plaintext, or null on decryption failure
  */
 
 import env from "@/lib/env";
 
-const PREFIX = "enc:";
+const LEGACY_PREFIX = "enc:";
+const V1_PREFIX     = "enc:v1:";
+const V2_PREFIX     = "enc:v2:";
 
-// Cache the CryptoKey per hex value — importKey() is expensive and the ENCRYPTION_KEY
-// env var is immutable for the lifetime of a Worker isolate.
-let _keyCache: { hex: string; key: CryptoKey } | null = null;
+type KeyCache = { hex: string; key: CryptoKey };
+const _keyCache: Record<"v1" | "v2", KeyCache | null> = { v1: null, v2: null };
 let _keyMissingWarned = false;
 
-async function importKey(): Promise<CryptoKey | null> {
-  const hex = env.ENCRYPTION_KEY;
-  if (!hex || hex.length !== 64) {
+async function importHexKey(hex: string, version: "v1" | "v2"): Promise<CryptoKey> {
+  if (_keyCache[version]?.hex === hex) return _keyCache[version]!.key;
+  const raw = new Uint8Array(32);
+  for (let i = 0; i < 64; i += 2) raw[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  const key = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  _keyCache[version] = { hex, key };
+  return key;
+}
+
+async function getActiveKey(): Promise<{ key: CryptoKey; prefix: string } | null> {
+  const v2hex = env.ENCRYPTION_KEY_V2;
+  if (v2hex) {
+    return { key: await importHexKey(v2hex, "v2"), prefix: V2_PREFIX };
+  }
+  const v1hex = env.ENCRYPTION_KEY;
+  if (!v1hex || v1hex.length !== 64) {
     if (env.NODE_ENV !== "test") {
       throw new Error("ENCRYPTION_KEY is not set or invalid — refusing to store PII without encryption");
     }
@@ -46,43 +63,57 @@ async function importKey(): Promise<CryptoKey | null> {
     }
     return null;
   }
-  if (_keyCache?.hex === hex) return _keyCache.key;
-  const raw = new Uint8Array(32);
-  for (let i = 0; i < 64; i += 2) {
-    raw[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  return { key: await importHexKey(v1hex, "v1"), prefix: LEGACY_PREFIX };
+}
+
+async function getKeyForDecrypt(value: string): Promise<CryptoKey | null> {
+  if (value.startsWith(V2_PREFIX)) {
+    const hex = env.ENCRYPTION_KEY_V2;
+    if (!hex) return null;
+    return importHexKey(hex, "v2");
   }
-  const key = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-  _keyCache = { hex, key };
-  return key;
+  // Legacy "enc:" and explicit "enc:v1:" both use ENCRYPTION_KEY
+  const hex = env.ENCRYPTION_KEY;
+  if (!hex || hex.length !== 64) return null;
+  return importHexKey(hex, "v1");
+}
+
+function stripPrefix(value: string): string {
+  if (value.startsWith(V2_PREFIX)) return value.slice(V2_PREFIX.length);
+  if (value.startsWith(V1_PREFIX)) return value.slice(V1_PREFIX.length);
+  return value.slice(LEGACY_PREFIX.length); // legacy "enc:"
 }
 
 export async function encryptField(value: string | null | undefined): Promise<string | null | undefined> {
   if (value === null || value === undefined || value === "") return value;
-  if (value.startsWith(PREFIX)) return value; // already encrypted
-  const key = await importKey();
-  if (!key) return value;
+  if (value.startsWith(LEGACY_PREFIX)) return value; // already encrypted
+
+  const active = await getActiveKey();
+  if (!active) return value;
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
-    key,
+    active.key,
     new TextEncoder().encode(value)
   );
 
   const combined = new Uint8Array(12 + ciphertext.byteLength);
   combined.set(iv);
   combined.set(new Uint8Array(ciphertext), 12);
-  return PREFIX + btoa(String.fromCharCode(...combined));
+  return active.prefix + btoa(String.fromCharCode(...combined));
 }
 
 export async function decryptField(value: string | null | undefined): Promise<string | null | undefined> {
   if (value === null || value === undefined || value === "") return value;
-  if (!value.startsWith(PREFIX)) return value; // plaintext passthrough (legacy row)
-  const key = await importKey();
+  if (!value.startsWith(LEGACY_PREFIX)) return value; // plaintext passthrough (legacy row)
+
+  const key = await getKeyForDecrypt(value);
   if (!key) return value;
 
   try {
-    const combined = Uint8Array.from(atob(value.slice(PREFIX.length)), (c) => c.charCodeAt(0));
+    const b64 = stripPrefix(value);
+    const combined = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     const plaintext = await crypto.subtle.decrypt(
       { name: "AES-GCM", iv: combined.slice(0, 12) },
       key,
@@ -90,7 +121,6 @@ export async function decryptField(value: string | null | undefined): Promise<st
     );
     return new TextDecoder().decode(plaintext);
   } catch {
-    // Decryption failure — return null rather than expose raw ciphertext
     return null;
   }
 }

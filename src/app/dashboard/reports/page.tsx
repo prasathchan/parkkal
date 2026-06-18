@@ -420,7 +420,7 @@ export default function ReportsPage() {
           <div>
             <h1 className="text-lg font-bold text-pk-text">Business Reports</h1>
             <p className="text-xs text-pk-text-muted mt-0.5">
-              Revenue, patient activity, and clinical statistics.
+              Revenue, patient activity, and clinical statistics. <a href="/help/reports" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline">Learn more →</a>
               {isMultiBranch && selectedLocation && (
                 <span className="ml-2 inline-flex items-center gap-1 text-pk-teal-700 font-medium">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>

@@ -220,6 +220,83 @@ export async function sendPhoneVerificationEmail(to: string, name: string, code:
   }
 }
 
+/**
+ * Sent to all ADMIN users when an emergency consent override is applied.
+ * Delivers treatment, doctor, and reason so admins can review immediately.
+ */
+export async function sendEmergencyOverrideNotification(params: {
+  to: string[];
+  orgName: string;
+  doctorName: string;
+  treatmentDescription: string;
+  treatmentId: string;
+  reason: string;
+}): Promise<void> {
+  const apiKey = env.RESEND_API_KEY;
+  if (!apiKey || params.to.length === 0) return;
+
+  const { orgName, doctorName, treatmentDescription, treatmentId, reason } = params;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8" /><title>Emergency Consent Override — Action Required</title></head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4ff; margin: 0; padding: 40px 20px;">
+      <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #B91C1C, #991B1B); padding: 32px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">⚠ Emergency Override Alert</h1>
+          <p style="color: #fecaca; margin: 8px 0 0; font-size: 14px;">${orgName} · Parkkal</p>
+        </div>
+        <div style="padding: 32px;">
+          <p style="color: #374151; font-size: 15px; margin: 0 0 16px;">
+            An emergency consent override was applied on a treatment plan. This event has been logged to the audit trail.
+          </p>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 24px;">
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280; width: 40%;">Treatment</td>
+              <td style="padding: 10px 0; color: #111827; font-weight: 500;">${treatmentDescription}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px 0; color: #6b7280;">Applied by</td>
+              <td style="padding: 10px 0; color: #111827; font-weight: 500;">${doctorName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; color: #6b7280;">Reason given</td>
+              <td style="padding: 10px 0; color: #111827;">${reason}</td>
+            </tr>
+          </table>
+          <p style="color: #6b7280; font-size: 13px; margin: 0 0 8px;">
+            Treatment ID: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${treatmentId}</code>
+          </p>
+          <p style="color: #6b7280; font-size: 13px; margin: 0;">
+            Review this in the Audit Log under Settings → Audit Log.
+          </p>
+        </div>
+        <div style="background: #f9fafb; padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Parkkal — This alert was sent because you are an ADMIN at ${orgName}.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: fromAddress(),
+      to: params.to,
+      subject: `[Action Required] Emergency consent override — ${orgName}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[EMAIL] Failed to send emergency override notification:", err);
+  }
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<void> {
   const apiKey = env.RESEND_API_KEY;
   if (!apiKey) {

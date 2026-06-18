@@ -201,6 +201,10 @@ export default function TreatmentsPage() {
           <ErrorState message={statusError} onRetry={() => { setStatusError(""); fetchTreatments(0); }} />
         )}
 
+        <p className="text-xs text-pk-text-muted -mt-2">
+          <a href="/help/treatment-plans" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline">Learn how treatment plans work →</a>
+        </p>
+
         {/* Filter bar */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* Patient search filter */}

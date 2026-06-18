@@ -73,6 +73,9 @@ export const organizations = sqliteTable("organizations", {
   dpaAcceptedBy: text("dpa_accepted_by"),
   dataRetentionYears: integer("data_retention_years").notNull().default(7),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
+  // Informational data residency field for DPDP compliance conversations.
+  // D1 data is globally replicated by default; this documents the org's acknowledged region.
+  dataRegion: text("data_region").notNull().default("global"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -411,6 +414,10 @@ export const adminAuditLog = sqliteTable("admin_audit_log", {
   targetType: text("target_type").notNull(),
   targetId: text("target_id"),
   metadata: text("metadata"), // JSON string
+  severity: text("severity").notNull().default("INFO"), // "INFO" | "HIGH"
+  // Tamper-detection hash chain: SHA-256(prev_row_hash + row_json).
+  // Walk the chain with GET /api/admin/audit-log/verify to detect tampering.
+  rowHash: text("row_hash"),
   createdAt: integer("created_at").notNull(),
 });
 

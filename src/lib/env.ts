@@ -35,6 +35,9 @@ const envSchema = z.object({
 
   // ── Encryption ────────────────────────────────────────────────────────────
   ENCRYPTION_KEY: z.string().length(64, "ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)"),
+  // Rotation key (optional). When set, encrypt() uses v2 and decrypt() falls back to v1.
+  // Run scripts/rotate-encryption-key.js to re-encrypt all PII fields with v2.
+  ENCRYPTION_KEY_V2: z.string().length(64, "ENCRYPTION_KEY_V2 must be exactly 64 hex characters (32 bytes)").optional(),
 
   // ── Email (Resend) ────────────────────────────────────────────────────────
   RESEND_API_KEY: z.string().startsWith("re_", "RESEND_API_KEY must start with 're_'"),
@@ -92,6 +95,10 @@ const envSchema = z.object({
 
   // ── AI ────────────────────────────────────────────────────────────────────
   ANTHROPIC_API_KEY: z.string().startsWith("sk-ant-").optional(),
+
+  // ── Demo mode ─────────────────────────────────────────────────────────────
+  // Set IS_DEMO=true on the demo worker. Shows a banner; enables /api/internal/seed-demo.
+  IS_DEMO: z.enum(["true", "false"]).optional(),
 
   // ── Runtime ───────────────────────────────────────────────────────────────
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),

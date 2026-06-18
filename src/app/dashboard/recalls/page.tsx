@@ -115,7 +115,7 @@ export default function RecallsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-pk-text">Recalls</h1>
-          <p className="text-sm text-pk-text-muted mt-0.5">Patients due for a follow-up visit</p>
+          <p className="text-sm text-pk-text-muted mt-0.5">Patients due for a follow-up visit · <a href="/help/recalls" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline">How recalls work →</a></p>
         </div>
         {actionableCount > 0 && (tab === "unscheduled" || tab === "lapsed") && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-pk-warning-fill px-3 py-1 text-sm font-medium text-pk-warning-text">

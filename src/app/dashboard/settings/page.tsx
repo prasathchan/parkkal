@@ -55,6 +55,8 @@ export default function SettingsPage() {
   const [dpaStatus, setDpaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [tzSaving, setTzSaving] = useState(false);
+  const [dataRegion, setDataRegion] = useState<"global" | "india" | "eu">("global");
+  const [dataRegionSaving, setDataRegionSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -83,6 +85,7 @@ export default function SettingsPage() {
         });
         setDataRetentionYears((orgAny.dataRetentionYears as number) ?? 7);
         setTimezone(o.timezone ?? "Asia/Kolkata");
+        setDataRegion(((orgAny.dataRegion as string) || "global") as "global" | "india" | "eu");
         setDpaStatus({ version: (o.dpaVersion ?? null), acceptedAt: (o.dpaAcceptedAt ?? null) });
         setLoading(false);
       });
@@ -217,6 +220,17 @@ export default function SettingsPage() {
       toast.error(e instanceof ApiError ? e.message : "Failed to save timezone.");
     }
     setTzSaving(false);
+  }
+
+  async function handleSaveDataRegion() {
+    setDataRegionSaving(true);
+    try {
+      await orgApi.updateProfile({ dataRegion });
+      toast.success("Data region saved");
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Failed to save data region.");
+    }
+    setDataRegionSaving(false);
   }
 
   return (
@@ -624,6 +638,36 @@ export default function SettingsPage() {
                   style={{ background: "var(--pk-primary)" }}
                 >
                   {tzSaving ? "Saving..." : "Save Timezone"}
+                </button>
+              </div>
+            </Section>
+
+            {/* Data Residency */}
+            <Section
+              title="Data Residency"
+              subtitle="Informational — documents your clinic's acknowledged data region for DPDP Act compliance conversations. Cloudflare D1 data is globally replicated by default; an India-specific region will be applied when Cloudflare makes it available."
+            >
+              <div className="space-y-3">
+                <select
+                  value={dataRegion}
+                  onChange={e => setDataRegion(e.target.value as "global" | "india" | "eu")}
+                  className="field-input"
+                >
+                  <option value="global">Global (Cloudflare D1 default — data replicated worldwide)</option>
+                  <option value="india">India (Preferred — pending Cloudflare India region availability)</option>
+                  <option value="eu">EU (European data residency)</option>
+                </select>
+                <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>
+                  Current state: D1 replicates data globally for low-latency reads. This field is a compliance disclosure, not an enforcement control. It is included in your DPA.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSaveDataRegion}
+                  disabled={dataRegionSaving}
+                  className="px-4 py-2 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                  style={{ background: "var(--pk-primary)" }}
+                >
+                  {dataRegionSaving ? "Saving..." : "Save Data Region"}
                 </button>
               </div>
             </Section>

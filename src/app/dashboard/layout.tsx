@@ -9,6 +9,7 @@ import { getOrgSubscription } from "@/lib/subscription";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Sidebar } from "@/components/sidebar";
 import { DashboardProviders } from "@/components/providers/dashboard-providers";
+import env from "@/lib/env";
 
 export default async function DashboardLayout({
   children,
@@ -42,6 +43,7 @@ export default async function DashboardLayout({
   const themeConfig = parseThemeConfig(org?.themeConfig);
   const isReadOnly  = subscription?.isReadOnly ?? false;
   const trialDaysLeft = subscription?.status === "trialing" ? (subscription.daysRemaining ?? 0) : null;
+  const isDemo = env.IS_DEMO === "true";
 
   return (
     <ThemeProvider config={themeConfig}>
@@ -51,6 +53,17 @@ export default async function DashboardLayout({
           logoUrl={org?.logoUrl ?? null}
         />
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+          {/* Demo mode banner */}
+          {isDemo && (
+            <div className="bg-pk-teal-800 text-white px-5 py-2 flex items-center justify-between text-sm print:hidden">
+              <span>
+                <strong>Demo environment</strong> — data resets every 24 hours. No real patients or records here.
+              </span>
+              <a href="https://parkkal.app" target="_blank" rel="noreferrer" className="underline font-medium ml-4 whitespace-nowrap">
+                Get started free →
+              </a>
+            </div>
+          )}
           {/* Subscription banners */}
           {isReadOnly && (
             <div className="bg-pk-danger text-white px-5 py-2.5 flex items-center justify-between text-sm print:hidden">
@@ -65,15 +78,24 @@ export default async function DashboardLayout({
               </a>
             </div>
           )}
-          {!isReadOnly && trialDaysLeft !== null && trialDaysLeft <= 7 && trialDaysLeft >= 0 && (
-            <div className="bg-pk-warning text-white px-5 py-2 flex items-center justify-between text-sm print:hidden">
+          {!isReadOnly && trialDaysLeft !== null && trialDaysLeft >= 0 && (
+            <div
+              className="px-5 py-2 flex items-center justify-between text-sm print:hidden"
+              style={
+                trialDaysLeft <= 3
+                  ? { background: "var(--pk-danger)", color: "white" }
+                  : trialDaysLeft <= 7
+                  ? { background: "var(--pk-warning)", color: "white" }
+                  : { background: "var(--pk-teal-700)", color: "white" }
+              }
+            >
               <span>
                 {trialDaysLeft === 0
-                  ? "Your free trial ends today."
+                  ? "Your free trial ends today — upgrade to keep access."
                   : `${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left in your free trial.`}
               </span>
               <a href="/dashboard/settings/billing" className="underline font-medium ml-4 whitespace-nowrap">
-                View plans →
+                Upgrade →
               </a>
             </div>
           )}

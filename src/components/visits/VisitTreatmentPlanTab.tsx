@@ -8,6 +8,7 @@ import { treatmentsApi, visitsApi, ApiError } from "@/api";
 import type { TreatmentTemplate } from "@/api/treatments";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface Props {
   visitId: string;
@@ -448,11 +449,17 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                        <ProgressRing
-                          percent={tx.cost > 0 ? Math.round((txPaid / tx.cost) * 100) : (txPaid > 0 ? 100 : 0)}
-                          size={36}
-                          strokeWidth={3}
-                        />
+                        <span className="inline-flex items-center gap-1">
+                          <ProgressRing
+                            percent={tx.cost > 0 ? Math.round((txPaid / tx.cost) * 100) : (txPaid > 0 ? 100 : 0)}
+                            size={36}
+                            strokeWidth={3}
+                          />
+                          <InfoTooltip
+                            position="left"
+                            content={`Payment progress for this treatment plan. ${txPaid > 0 ? `₹${txPaid.toLocaleString()} paid` : "No payment yet"} of ₹${tx.cost.toLocaleString()} total.`}
+                          />
+                        </span>
                         {visit.status !== "CANCELLED" && txOutstanding > 0 && (() => {
                           const consentOk = ["VERIFIED", "EMERGENCY_OVERRIDE"].includes(tx.consentStatus);
                           if (consentOk) {
@@ -536,8 +543,24 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
 
                     {/* Consent row */}
                     <div id={`consent-row-${tx.id}`} className="mt-3 pt-3 border-t border-pk-border flex flex-wrap items-center gap-2">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${consentBadge[tx.consentStatus] ?? consentBadge.PENDING}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border ${consentBadge[tx.consentStatus] ?? consentBadge.PENDING}`}>
                         {consentLabel[tx.consentStatus] ?? tx.consentStatus}
+                        <InfoTooltip
+                          position="top"
+                          content={
+                            tx.consentStatus === "PENDING"
+                              ? "No consent form uploaded yet. Upload a signed form or apply Emergency Override to enable billing for this treatment."
+                              : tx.consentStatus === "UPLOADED"
+                              ? "Consent form has been uploaded and is awaiting admin verification."
+                              : tx.consentStatus === "VERIFIED"
+                              ? "Consent verified. Billing is enabled for this treatment."
+                              : tx.consentStatus === "EMERGENCY_OVERRIDE"
+                              ? "Emergency Override was applied. A notification was sent to all admins and logged in the audit trail."
+                              : tx.consentStatus === "REJECTED"
+                              ? "The uploaded consent form was rejected. Please re-upload a valid signed form."
+                              : "Consent status for this treatment plan."
+                          }
+                        />
                       </span>
                       {tx.consentNotes && (
                         <span className="text-xs text-pk-text-muted italic">{tx.consentNotes}</span>
@@ -571,12 +594,18 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                             />
                           </label>
                         )}
-                        <button
-                          onClick={() => { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }}
-                          className="text-xs text-pk-warning-text hover:text-pk-warning-text font-medium"
-                        >
-                          Emergency Override
-                        </button>
+                        <span className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => { setOverrideTxId(tx.id); setOverrideReason(""); setOverrideError(""); setShowOverrideModal(true); }}
+                            className="text-xs text-pk-warning-text hover:text-pk-warning-text font-medium"
+                          >
+                            Emergency Override
+                          </button>
+                          <InfoTooltip
+                            position="top"
+                            content="Allows billing without a signed consent form. Requires a written reason. All admin users are notified by email and the action is permanently recorded in the audit trail."
+                          />
+                        </span>
                       </div>
                       {consentUploadError[tx.id] && (
                         <p className="w-full text-xs text-pk-danger-text mt-1">{consentUploadError[tx.id]}</p>
@@ -697,19 +726,20 @@ export function VisitTreatmentPlanTab({ visitId, visit, treatments, onRefresh, o
                           </div>
                         </div>
                       </div>
-                      {/* Issue 3: two CTAs */}
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={() => handleLinkOnly(plan.id)}
-                          className="flex-1 text-xs border border-pk-border text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-raised transition font-medium"
+                          className="flex-1 text-xs border border-pk-border text-pk-text-secondary px-3 py-1.5 rounded-pk-sm hover:bg-pk-surface-raised transition font-medium inline-flex items-center justify-center gap-1"
                         >
                           Link Only
+                          <InfoTooltip position="top" content="Associates this treatment with the visit for tracking purposes, but does not add a line item to the bill. Use when payment was already collected or will be invoiced separately." />
                         </button>
                         <button
                           onClick={() => handleLinkAndBill(plan.id)}
-                          className="flex-1 text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium"
+                          className="flex-1 text-xs bg-pk-teal-600 text-white px-3 py-1.5 rounded-pk-sm hover:bg-pk-teal-700 transition font-medium inline-flex items-center justify-center gap-1"
                         >
                           Link &amp; Add to Bill
+                          <InfoTooltip position="top" content="Associates this treatment with the visit AND adds the outstanding treatment cost as a line item on the current visit's bill. Use when you want to collect payment now." />
                         </button>
                       </div>
                     </div>

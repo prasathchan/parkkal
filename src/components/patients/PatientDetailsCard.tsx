@@ -17,18 +17,22 @@ interface Patient {
   bloodGroup?: string | null;
   address?: string | null;
   medicalHistory?: string | null;
+  dataConsentAt?: number | null;
   createdAt: number;
 }
 
 interface Props {
   patient: Patient;
   onErase: () => void;
+  onWithdrawConsent?: () => void;
+  isAdmin?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }
 
-export function PatientDetailsCard({ patient, onErase, collapsed = false, onToggleCollapse }: Props) {
+export function PatientDetailsCard({ patient, onErase, onWithdrawConsent, isAdmin = false, collapsed = false, onToggleCollapse }: Props) {
   const [showEraseModal, setShowEraseModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -118,6 +122,34 @@ export function PatientDetailsCard({ patient, onErase, collapsed = false, onTogg
               <p className="text-sm text-pk-text-secondary bg-pk-surface-raised rounded-pk-sm p-3">{patient.medicalHistory}</p>
             </div>
           )}
+          {/* DPDP data consent status */}
+          <div className="mt-4 pt-4 border-t border-pk-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-pk-text mb-0.5">Data Processing Consent</p>
+                {patient.dataConsentAt ? (
+                  <p className="text-xs text-pk-text-muted">
+                    <span className="inline-flex items-center gap-1 text-pk-success-text font-medium">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                      Consent given
+                    </span>
+                    {" "}on {formatDate(patient.dataConsentAt)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-pk-warning-text font-medium">No consent on record</p>
+                )}
+              </div>
+              {isAdmin && patient.dataConsentAt && onWithdrawConsent && (
+                <button
+                  onClick={() => setShowWithdrawModal(true)}
+                  className="text-xs border border-pk-warning-border text-pk-warning-text px-3 py-1.5 rounded-pk-sm hover:bg-pk-warning-fill transition font-medium shrink-0 ml-4"
+                >
+                  Withdraw Consent
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="mt-4 pt-4 border-t border-pk-danger-border">
             <div className="flex items-center justify-between">
               <div>
@@ -162,6 +194,46 @@ export function PatientDetailsCard({ patient, onErase, collapsed = false, onTogg
               </button>
               <button
                 onClick={() => setShowEraseModal(false)}
+                className="flex-1 border border-pk-border text-pk-text-secondary rounded-pk-lg py-2 text-sm font-medium hover:bg-pk-surface-raised transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-pk-surface rounded-pk-xl border border-pk-warning-border shadow-pk-e3 max-w-md w-full p-6">
+            <h2 className="text-base font-bold text-pk-warning-text mb-1">Withdraw Data Processing Consent</h2>
+            <p className="text-sm text-pk-text-secondary mb-4">
+              Under the Digital Personal Data Protection Act 2023 (Article 13), <strong>{patient.name}</strong> has
+              the right to withdraw consent at any time. This will clear the consent record. The patient&apos;s clinical
+              data will remain until erased separately. This action is recorded in the audit log.
+            </p>
+            {error && <p className="text-xs text-pk-danger-text mb-3">{error}</p>}
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  setError("");
+                  try {
+                    await onWithdrawConsent?.();
+                    setShowWithdrawModal(false);
+                  } catch {
+                    setError("Failed to withdraw consent. Please try again.");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="flex-1 bg-pk-warning text-white rounded-pk-lg py-2 text-sm font-semibold hover:opacity-90 transition disabled:opacity-50"
+              >
+                {loading ? "Processing…" : "Withdraw Consent"}
+              </button>
+              <button
+                onClick={() => setShowWithdrawModal(false)}
                 className="flex-1 border border-pk-border text-pk-text-secondary rounded-pk-lg py-2 text-sm font-medium hover:bg-pk-surface-raised transition"
               >
                 Cancel

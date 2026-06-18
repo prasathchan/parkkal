@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { patientsApi, visitsApi, appointmentsApi, treatmentsApi, invoicesApi } from "@/api";
+import { patientsApi, visitsApi, appointmentsApi, treatmentsApi, invoicesApi, authApi } from "@/api";
 import type { PatientPrescription, ToothChartHistoryEntry } from "@/api/patients";
 import Link from "next/link";
 import { Header } from "@/components/header";
@@ -26,6 +26,7 @@ interface Patient {
   bloodGroup?: string | null;
   address?: string | null;
   medicalHistory?: string | null;
+  dataConsentAt?: number | null;
   createdAt: number;
 }
 
@@ -56,6 +57,7 @@ export default function PatientDetailPage() {
   const [chartHistory, setChartHistory] = useState<ToothChartHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   // Collapsible card state — all open by default
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(true);
@@ -64,6 +66,7 @@ export default function PatientDetailPage() {
   useEffect(() => {
     patientsApi.get(id).then((d) => setPatient(d.patient)).finally(() => setLoading(false));
     patientsApi.balance(id).then((d) => setBalance(d)).catch(() => {});
+    authApi.me().then((d) => setIsAdmin(d.user.role === "ADMIN")).catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -103,6 +106,11 @@ export default function PatientDetailPage() {
   async function handleErase() {
     await patientsApi.erase(id);
     router.push("/dashboard/patients");
+  }
+
+  async function handleWithdrawConsent() {
+    await patientsApi.withdrawConsent(id);
+    setPatient((p) => p ? { ...p, dataConsentAt: null } : p);
   }
 
   const tabs: { key: TabType; label: string }[] = [
@@ -160,7 +168,7 @@ export default function PatientDetailPage() {
           </div>
         )}
 
-        <PatientDetailsCard patient={patient} collapsed={!detailsOpen} onToggleCollapse={() => setDetailsOpen((o) => !o)} onErase={handleErase} />
+        <PatientDetailsCard patient={patient} collapsed={!detailsOpen} onToggleCollapse={() => setDetailsOpen((o) => !o)} onErase={handleErase} isAdmin={isAdmin} onWithdrawConsent={handleWithdrawConsent} />
 
         <Card>
           <div className="flex items-center gap-3 px-6 py-3 border-b border-pk-border">

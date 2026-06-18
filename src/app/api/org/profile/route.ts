@@ -29,6 +29,7 @@ const updateOrgSchema = z.object({
   sgstRate: z.number().min(0).max(14).optional(),
   dataRetentionYears: z.number().int().min(1).max(30).optional(),
   timezone: z.string().min(1).optional(),
+  dataRegion: z.enum(["global", "india", "eu"]).optional(),
 });
 
 /** GET /api/org/profile — fetch the current org's settings */
@@ -55,7 +56,7 @@ export const PATCH = withRoute(
     const parsed = updateOrgSchema.safeParse(await req.json());
     if (!parsed.success) return apiError("Invalid input", 400);
 
-    const { name, tagline, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode, cgstRate, sgstRate, dataRetentionYears, timezone } = parsed.data;
+    const { name, tagline, address, phone, email, logoUrl, themeConfig, gstin, gstRegistered, gstStateCode, cgstRate, sgstRate, dataRetentionYears, timezone, dataRegion } = parsed.data;
     const updates: Record<string, unknown> = { updatedAt: Date.now() };
     if (name !== undefined) updates.name = name;
     if (tagline !== undefined) updates.tagline = tagline || null;
@@ -71,6 +72,7 @@ export const PATCH = withRoute(
     if (sgstRate !== undefined) updates.sgstRate = sgstRate;
     if (dataRetentionYears !== undefined) updates.dataRetentionYears = dataRetentionYears;
     if (timezone !== undefined) updates.timezone = timezone;
+    if (dataRegion !== undefined) updates.dataRegion = dataRegion;
 
     await db.update(organizations).set(updates).where(eq(organizations.id, session.orgId));
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatCurrency, formatDoctorName } from "@/lib/utils";
 import { STATUS_COLORS } from "./types";
 import type { Visit } from "./types";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 interface NotesForm {
   chiefComplaint: string;
@@ -98,7 +99,10 @@ export function VisitHeaderCard({
                 <input type="text" value={notesForm.diagnosis} onChange={e => onNotesChange({ ...notesForm, diagnosis: e.target.value })} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500" placeholder="Enter diagnosis..." />
               </div>
               <div>
-                <label className="block text-xs font-medium text-pk-text-secondary mb-1">Doctor Notes</label>
+                <label className="block text-xs font-medium text-pk-text-secondary mb-1 inline-flex items-center gap-1">
+                  Doctor Notes
+                  <InfoTooltip position="right" content="Private session notes visible only to staff. Not shown on patient-facing receipts or invoices. Use for clinical observations, treatment rationale, or follow-up reminders." />
+                </label>
                 <textarea value={notesForm.doctorNotes} onChange={e => onNotesChange({ ...notesForm, doctorNotes: e.target.value })} rows={2} className="w-full px-2.5 py-1.5 border border-pk-border-strong rounded-pk-sm text-sm focus:outline-none focus:ring-2 focus:ring-pk-teal-500 resize-none" />
               </div>
               <div className="flex gap-2">

@@ -21,8 +21,45 @@ const CSP = [
   ...(isDev ? [] : ["report-uri /api/csp-report"]),
 ].join("; ");
 
+// ── CORS ─────────────────────────────────────────────────────────────────────
+// Restrict all /api/* routes to same-origin requests only.
+// The app's canonical origin is APP_URL (Cloudflare Worker secret) or the request Host.
+// In dev there is no strict origin enforcement (cross-tab tooling, Postman, etc.).
+function getAllowedOrigin(request: NextRequest): string | null {
+  const appUrl = process.env.APP_URL;
+  if (appUrl) return appUrl;
+  const host = request.headers.get("host");
+  if (!host) return null;
+  return isDev ? null : `https://${host}`;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── CORS: enforce same-origin for all API routes ──────────────────────────
+  if (pathname.startsWith("/api/")) {
+    const allowedOrigin = getAllowedOrigin(request);
+    const requestOrigin = request.headers.get("origin");
+
+    // Reject cross-origin preflight and requests from unknown origins (production only)
+    if (!isDev && allowedOrigin && requestOrigin && requestOrigin !== allowedOrigin) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+
+    // Respond to OPTIONS preflight immediately
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": allowedOrigin ?? "*",
+          "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Superadmin-Token",
+          "Access-Control-Max-Age": "86400",
+          "Vary": "Origin",
+        },
+      });
+    }
+  }
 
   // Protect /dashboard routes using org session
   if (pathname.startsWith("/dashboard")) {
@@ -65,6 +102,15 @@ export async function middleware(request: NextRequest) {
   }
 
   const response = NextResponse.next();
+
+  // ── CORS response header ────────────────────────────────────────────────────
+  if (pathname.startsWith("/api/")) {
+    const allowedOrigin = getAllowedOrigin(request);
+    if (allowedOrigin) {
+      response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+      response.headers.set("Vary", "Origin");
+    }
+  }
 
   // ── Security headers ────────────────────────────────────────────────────────
   response.headers.set("Content-Security-Policy", CSP);

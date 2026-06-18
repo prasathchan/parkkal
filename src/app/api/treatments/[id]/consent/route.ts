@@ -1,6 +1,8 @@
 import { eq, and } from "drizzle-orm";
-import { treatments, consentAuditLog } from "@/db/schema";
+import { treatments, consentAuditLog, organizationMembers, users, organizations } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { writeSensitiveAuditLog } from "@/lib/audit";
+import { sendEmergencyOverrideNotification } from "@/lib/email";
 import { z } from "zod";
 
 const overrideSchema = z.object({
@@ -39,7 +41,7 @@ export const PATCH = withRoute<{ id: string }>(
     }
 
     const [treatment] = await db
-      .select({ id: treatments.id })
+      .select({ id: treatments.id, description: treatments.description })
       .from(treatments)
       .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
     if (!treatment) return apiError("Not found", 404);
@@ -72,6 +74,47 @@ export const PATCH = withRoute<{ id: string }>(
       reason: parsed.data.reason,
       createdAt: now,
     });
+
+    // HIGH-severity audit log entry (awaited so it commits before response)
+    await writeSensitiveAuditLog({
+      organizationId: session.orgId,
+      actorId: session.userId,
+      actorRole: session.role,
+      action: "CONSENT_EMERGENCY_OVERRIDE",
+      targetType: "treatment",
+      targetId: id,
+      metadata: { reason: parsed.data.reason, treatmentDescription: treatment.description },
+      severity: "HIGH",
+    });
+
+    // Notify all ADMIN users — fire-and-forget (email failure must not block the response)
+    (async () => {
+      try {
+        const [actorUser, org, adminMembers] = await Promise.all([
+          db.select({ name: users.name }).from(users).where(eq(users.id, session.userId)).limit(1),
+          db.select({ name: organizations.name }).from(organizations).where(eq(organizations.id, session.orgId)).limit(1),
+          db
+            .select({ email: users.email })
+            .from(organizationMembers)
+            .innerJoin(users, eq(organizationMembers.userId, users.id))
+            .where(and(eq(organizationMembers.organizationId, session.orgId), eq(organizationMembers.role, "ADMIN"), eq(organizationMembers.isActive, 1))),
+        ]);
+
+        const adminEmails = adminMembers.map((m: { email: string }) => m.email).filter(Boolean) as string[];
+        if (adminEmails.length === 0) return;
+
+        await sendEmergencyOverrideNotification({
+          to: adminEmails,
+          orgName: org[0]?.name ?? "Your clinic",
+          doctorName: actorUser[0]?.name ?? session.userId,
+          treatmentDescription: treatment.description,
+          treatmentId: id,
+          reason: parsed.data.reason,
+        });
+      } catch (e) {
+        console.error("[consent/override] Failed to send admin notification:", e);
+      }
+    })();
 
     log.info("Emergency consent override applied", { treatmentId: id, reason: parsed.data.reason });
     return apiOk({ success: true, consentStatus: "EMERGENCY_OVERRIDE" });

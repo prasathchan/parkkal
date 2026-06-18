@@ -208,6 +208,10 @@ export function importPatients(rows: ImportPatientRow[]): Promise<{ imported: nu
   });
 }
 
+export function withdrawConsent(patientId: string): Promise<{ success: boolean }> {
+  return apiFetch(`/api/patients/${patientId}/consent`, { method: "DELETE" });
+}
+
 // ─── Grouped export ───────────────────────────────────────────────────────────
 
 /** Use this object for a clean import: `import { patientsApi } from "@/api/patients"` */
@@ -226,4 +230,5 @@ export const patientsApi = {
   getToothConditionHistory,
   listPrescriptions: listPatientPrescriptions,
   import: importPatients,
+  withdrawConsent,
 };

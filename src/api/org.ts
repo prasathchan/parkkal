@@ -38,6 +38,7 @@ export interface UpdateOrgProfilePayload {
   registrationNumber?: string;
   themeConfig?: unknown;
   timezone?: string;
+  dataRegion?: "global" | "india" | "eu";
 }
 
 export function updateOrgProfile(

@@ -142,7 +142,7 @@ export default function BillingPage() {
           <div className="px-6 py-4 border-b border-pk-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-pk-text">Visit Billing Summary</h2>
-              <p className="text-xs text-pk-text-muted mt-0.5">Financial summary per visit — payments are recorded inside each visit</p>
+              <p className="text-xs text-pk-text-muted mt-0.5">Financial summary per visit — payments are recorded inside each visit · <a href="/help/billing" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline">How billing works →</a></p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="bg-pk-warning-fill text-pk-warning-text px-2 py-1 rounded-full text-xs">{pending} Pending</span>
