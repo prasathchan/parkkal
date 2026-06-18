@@ -7,6 +7,7 @@ import { useToast } from "@/context/toast-context";
 import { Header } from "@/components/header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { appointmentsApi, visitsApi, patientsApi, orgApi, authApi, ApiError } from "@/api";
+import { useLocation } from "@/context/location-context";
 
 interface Patient {
   id: string;
@@ -44,6 +45,7 @@ function NewVisitForm() {
   const router = useRouter();
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const { selectedLocationId } = useLocation();
   const prefillApplied = useRef(false);
 
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -192,6 +194,7 @@ function NewVisitForm() {
         doctorNotes: form.doctorNotes,
         appointmentId: selectedAppointment?.id || null,
         visitType: visitSource === "appointment" ? "APPOINTMENT" : "WALKIN",
+        ...(selectedLocationId ? { locationId: selectedLocationId } : {}),
       });
       toast.success("Visit created successfully");
       router.push(`/dashboard/visits/${data.visit.id}`);
