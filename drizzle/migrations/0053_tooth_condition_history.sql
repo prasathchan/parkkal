@@ -31,6 +31,6 @@ CREATE INDEX IF NOT EXISTS idx_tooth_cond_hist_treatment
   ON tooth_condition_history (treatment_id)
   WHERE treatment_id IS NOT NULL;
 
--- Add source column to existing tooth_chart_history table.
--- DEFAULT 'manual' so all historical rows are correctly classified.
-ALTER TABLE tooth_chart_history ADD COLUMN source TEXT NOT NULL DEFAULT 'manual';
+-- Add source column to existing tooth_chart_history table (IF NOT EXISTS guards
+-- against staging DBs that already have this column from migration 0048_tooth_condition_history).
+ALTER TABLE tooth_chart_history ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'manual';
