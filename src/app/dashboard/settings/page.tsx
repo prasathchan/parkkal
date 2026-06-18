@@ -9,7 +9,7 @@ import { AddressForm, type AddressValue } from "@/components/ui/address-form";
 import Link from "next/link";
 import { type OrgThemeConfig, DEFAULT_THEME, PARKKAL_ACCENT_SET, getAccent, getAccentCssVars, FONT_OPTIONS, parseThemeConfig } from "@/lib/theme";
 import { parseAddress, serializeAddress, EMPTY_ADDRESS } from "@/lib/address";
-import { orgApi, authApi, adminApi, ApiError } from "@/api";
+import { orgApi, authApi, ApiError } from "@/api";
 import { SkeletonDetailPage } from "@/components/ui/skeleton";
 import type { OrgProfile, StaffMember } from "@/types";
 
@@ -56,8 +56,6 @@ export default function SettingsPage() {
   const [dpaStatus, setDpaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [tzSaving, setTzSaving] = useState(false);
-  const [dataRegion, setDataRegion] = useState<"global" | "india" | "eu">("global");
-  const [dataRegionSaving, setDataRegionSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMessage, setPwMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -65,9 +63,6 @@ export default function SettingsPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [featureFlags, setFeatureFlags] = useState<{ void_payments: boolean; recall_notify: boolean; consent_ai: boolean } | null>(null);
-  const [flagsSaving, setFlagsSaving] = useState<string | null>(null);
 
   useEffect(() => {
     orgApi.getProfile()
@@ -89,7 +84,6 @@ export default function SettingsPage() {
         });
         setDataRetentionYears((orgAny.dataRetentionYears as number) ?? 7);
         setTimezone(o.timezone ?? "Asia/Kolkata");
-        setDataRegion(((orgAny.dataRegion as string) || "global") as "global" | "india" | "eu");
         setDpaStatus({ version: (o.dpaVersion ?? null), acceptedAt: (o.dpaAcceptedAt ?? null) });
         setLoading(false);
       });
@@ -102,15 +96,6 @@ export default function SettingsPage() {
           email: m.email,
           phone: m.phone ?? null,
         })));
-      })
-      .catch(() => {});
-    authApi.me()
-      .then(data => {
-        const admin = data.user.role === "ADMIN";
-        setIsAdmin(admin);
-        if (admin) {
-          adminApi.featureFlags.get().then((d) => setFeatureFlags(d.flags)).catch(() => {});
-        }
       })
       .catch(() => {});
   }, []);
@@ -233,17 +218,6 @@ export default function SettingsPage() {
       toast.error(e instanceof ApiError ? e.message : "Failed to save timezone.");
     }
     setTzSaving(false);
-  }
-
-  async function handleSaveDataRegion() {
-    setDataRegionSaving(true);
-    try {
-      await orgApi.updateProfile({ dataRegion });
-      toast.success("Data region saved");
-    } catch (e) {
-      toast.error(e instanceof ApiError ? e.message : "Failed to save data region.");
-    }
-    setDataRegionSaving(false);
   }
 
   return (
@@ -655,36 +629,6 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            {/* Data Residency */}
-            <Section
-              title="Data Residency"
-              subtitle="Informational — documents your clinic's acknowledged data region for DPDP Act compliance conversations. Cloudflare D1 data is globally replicated by default; an India-specific region will be applied when Cloudflare makes it available."
-            >
-              <div className="space-y-3">
-                <select
-                  value={dataRegion}
-                  onChange={e => setDataRegion(e.target.value as "global" | "india" | "eu")}
-                  className="field-input"
-                >
-                  <option value="global">Global (Cloudflare D1 default — data replicated worldwide)</option>
-                  <option value="india">India (Preferred — pending Cloudflare India region availability)</option>
-                  <option value="eu">EU (European data residency)</option>
-                </select>
-                <p className="text-xs" style={{ color: "var(--pk-text-muted)" }}>
-                  Current state: D1 replicates data globally for low-latency reads. This field is a compliance disclosure, not an enforcement control. It is included in your DPA.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleSaveDataRegion}
-                  disabled={dataRegionSaving}
-                  className="px-4 py-2 rounded-pk-sm text-sm font-semibold text-white transition-colors disabled:opacity-50"
-                  style={{ background: "var(--pk-primary)" }}
-                >
-                  {dataRegionSaving ? "Saving..." : "Save Data Region"}
-                </button>
-              </div>
-            </Section>
-
             {/* Change Password */}
             <form onSubmit={handleChangePassword}>
               <Section title="Change Password" subtitle="Update your account password. You must enter your current password to confirm.">
@@ -745,58 +689,6 @@ export default function SettingsPage() {
               </Link>
             </div>
 
-            {/* Feature Flags — admin only */}
-            {isAdmin && featureFlags && (
-              <div className="rounded-pk-lg border p-6" style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
-                <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Feature Flags</h3>
-                <p className="text-xs mb-4" style={{ color: "var(--pk-text-muted)" }}>
-                  Toggle features on/off without a deployment. Changes take effect immediately.
-                </p>
-                <div className="space-y-3">
-                  {(Object.entries(featureFlags) as [keyof typeof featureFlags, boolean][]).map(([key, enabled]) => (
-                    <label key={key} className="flex items-center justify-between gap-4 cursor-pointer">
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: "var(--pk-text)" }}>{key.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</p>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={flagsSaving === key}
-                        onClick={async () => {
-                          setFlagsSaving(key);
-                          try {
-                            const updated = await adminApi.featureFlags.update({ [key]: !enabled });
-                            setFeatureFlags(updated.flags);
-                          } catch { /* ignore */ }
-                          setFlagsSaving(null);
-                        }}
-                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${enabled ? "bg-pk-teal-600" : "bg-pk-border-strong"} ${flagsSaving === key ? "opacity-50" : ""}`}
-                        aria-pressed={enabled}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
-                      </button>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* App Logs — errors & security events captured by the API layer */}
-            <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"
-              style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
-              <div>
-                <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>App Logs</h3>
-                <p className="text-xs mt-1" style={{ color: "var(--pk-text-muted)" }}>
-                  Errors, security events, and warnings captured by the API layer. Filter by level, route, user, and date range.
-                </p>
-              </div>
-              <Link
-                href="/dashboard/settings/app-logs"
-                className="shrink-0 text-sm font-medium px-4 py-2 rounded-pk-sm border transition-colors"
-                style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
-              >
-                View Logs →
-              </Link>
-            </div>
           </div>
         )}
       </main>
