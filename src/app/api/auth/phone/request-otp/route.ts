@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { users, verificationTokens } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { sendPhoneVerificationEmail } from "@/lib/email";
+import { sendWhatsAppOTP } from "@/lib/sms";
 import { hashOTP } from "@/lib/otp";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -82,11 +83,21 @@ export async function POST(request: NextRequest) {
     createdAt: now,
   });
 
+  // Try WhatsApp first (falls back to SMS internally if WA not configured),
+  // then always send email as a guaranteed fallback.
+  const waSent = await sendWhatsAppOTP(user.phone, code);
+  if (!waSent) {
+    log.warn("WhatsApp/SMS OTP failed — relying on email only", { userId: session.userId });
+  }
+
   try {
     await sendPhoneVerificationEmail(user.email, user.name, code);
   } catch (err) {
-    log.error("Email failed for phone OTP", { error: String(err), userId: session.userId });
-    return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
+    if (!waSent) {
+      log.error("Email also failed for phone OTP", { error: String(err), userId: session.userId });
+      return NextResponse.json({ error: "Failed to send verification code. Please try again." }, { status: 500 });
+    }
+    log.warn("Email failed for phone OTP but WhatsApp succeeded", { error: String(err), userId: session.userId });
   }
 
   const maskedEmail = (() => {

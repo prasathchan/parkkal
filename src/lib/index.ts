@@ -48,7 +48,7 @@ export { writeAuditLog } from "./audit";
 
 // External services
 export { sendStaffInviteEmail, sendEmailOTP } from "./email";
-export { sendSMSOTP } from "./sms";
+export { sendSMSOTP, sendWhatsAppOTP } from "./sms";
 export { storeFile, getFile, deleteFile } from "./storage";
 export type { StoredFile } from "./storage";
 
