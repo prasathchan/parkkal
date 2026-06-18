@@ -148,7 +148,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-pk-text">FDI Dental Chart</h3>
-          <p className="text-xs text-pk-text-muted mt-0.5">Click any tooth to update its condition or view its history. Changes save automatically.</p>
+          <p className="text-xs text-pk-text-muted mt-0.5">Click a tooth to view its history. Double-click to update its condition. Changes save automatically.</p>
         </div>
         {chartSaving && <span className="text-xs text-pk-text-muted animate-pulse">Saving…</span>}
       </div>
@@ -158,7 +158,7 @@ export function PatientChartTab({ patientId, chartData, chartSaving, chartHistor
       {/* Per-tooth history — primary view */}
       <div className="mt-5 border-t border-pk-border pt-4">
         {!selectedTooth ? (
-          <p className="text-xs text-pk-text-muted italic">Click any tooth above to view its condition history.</p>
+          <p className="text-xs text-pk-text-muted italic">Click a tooth above to view its condition history. Double-click to change its condition.</p>
         ) : (
           <div className="bg-pk-surface-raised border border-pk-border rounded-pk-lg p-4">
             <div className="flex items-center justify-between mb-3">

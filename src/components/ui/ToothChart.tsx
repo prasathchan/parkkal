@@ -148,27 +148,23 @@ function ToothCell({
 
       {/*
         Click behavior:
-          Single click → always call onToothSelect (load history panel)
-                        + open condition picker on editable visits
-          Double click → cancel single-click timer, call onToothSelect
-                        (history panel shows without reopening picker)
+          Single click → call onToothSelect (show history panel only)
+          Double click → call onToothSelect + open condition picker (editable visits only)
       */}
       <button
         type="button"
-        title={`Tooth ${number} — ${CONDITION_LABELS[condition]}${data?.notes ? ` — ${data.notes}` : ""}  (click for history${readOnly ? "" : " · picker"})`}
+        title={`Tooth ${number} — ${CONDITION_LABELS[condition]}${data?.notes ? ` — ${data.notes}` : ""}  (click for history${readOnly ? "" : " · dbl-click for picker"})`}
         onClick={() => {
           if (clickTimer.current) {
-            // This is the second click of a dblclick — let onDoubleClick handle it
+            // Second click of a dblclick — let onDoubleClick handle it
             clearTimeout(clickTimer.current);
             clickTimer.current = null;
             return;
           }
           clickTimer.current = setTimeout(() => {
             clickTimer.current = null;
-            // Always fire onToothSelect (shows history for both open and read-only visits)
+            // Single click: history panel only, no picker
             onToothSelect?.(String(number));
-            // Only open condition picker on editable visits
-            if (!readOnly) handleOpen();
           }, 220);
         }}
         onDoubleClick={() => {
@@ -176,8 +172,9 @@ function ToothCell({
             clearTimeout(clickTimer.current);
             clickTimer.current = null;
           }
-          // Double-click: show history without reopening the picker
+          // Double-click: history + open condition picker on editable visits
           onToothSelect?.(String(number));
+          if (!readOnly) handleOpen();
         }}
         className={`w-9 ${height} rounded-sm border-2 transition-all focus:outline-none relative hover:scale-110 hover:z-10 cursor-pointer ${highlight ? "ring-2 ring-pk-teal-400 ring-offset-1" : ""}`}
         style={{ background: colors.bg, borderColor: colors.border }}
