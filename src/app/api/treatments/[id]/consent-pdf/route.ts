@@ -4,6 +4,7 @@ import { withRoute, apiError } from "@/lib/api";
 import { NextResponse } from "next/server";
 import { PERMISSIONS } from "@/lib/permissions";
 import { createDoc, headerBar, hRule, embedOrgLogo, A4, COLOR } from "@/lib/pdf";
+import { parseAddress, formatAddressDisplay } from "@/lib/address";
 
 export const GET = withRoute<{ id: string }>(
   { route: "GET /api/treatments/[id]/consent-pdf", permission: PERMISSIONS.VISITS_VIEW },
@@ -58,7 +59,8 @@ export const GET = withRoute<{ id: string }>(
     });
     y -= 17;
 
-    const orgContact = [row.orgAddress, row.orgPhone, row.orgEmail].filter(Boolean).join("  |  ");
+    const orgAddressFormatted = row.orgAddress ? formatAddressDisplay(parseAddress(row.orgAddress)) : null;
+    const orgContact = [orgAddressFormatted, row.orgPhone, row.orgEmail].filter(Boolean).join("  |  ");
     if (orgContact) {
       page.drawText(orgContact, { x: M, y, size: 8, font: fonts.regular, color: COLOR.mid, maxWidth: A4.width - M * 2 });
       y -= 13;
@@ -151,7 +153,9 @@ export const GET = withRoute<{ id: string }>(
       y -= 13;
     }
 
-    y -= 20;
+    // Anchor the signature block: always start from a fixed position near the bottom
+    // so the form looks consistent regardless of how long the consent text is.
+    y = Math.min(y - 20, 310);
     hRule(page, y, M);
     y -= 28;
 
@@ -164,8 +168,11 @@ export const GET = withRoute<{ id: string }>(
 
     y -= 30;
 
-    // Doctor section
-    page.drawText(`Treating Doctor: Dr. ${row.doctorName ?? "—"}`, {
+    // Doctor section — name already stored with "Dr." prefix; don't double-prefix
+    const doctorLabel = row.doctorName
+      ? `Treating Doctor: ${row.doctorName.startsWith("Dr") ? "" : "Dr. "}${row.doctorName}`
+      : "Treating Doctor: —";
+    page.drawText(doctorLabel, {
       x: M, y, size: 9, font: fonts.regular, color: COLOR.mid,
     });
     y -= 22;
@@ -194,7 +201,7 @@ export const GET = withRoute<{ id: string }>(
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `inline; filename="${filename}"`,
       },
     });
   }

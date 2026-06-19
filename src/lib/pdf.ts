@@ -14,9 +14,9 @@ import { getFile } from "@/lib/storage";
 
 export const A4 = { width: 595, height: 842 };
 
-// Brand colours
+// Brand colours — pk-teal-600 (#0B6E6E) as primary
 export const COLOR = {
-  primary:  rgb(0.13, 0.35, 0.82), // blue-700
+  primary:  rgb(0.04, 0.43, 0.43), // pk-teal-600 #0B6E6E
   dark:     rgb(0.11, 0.11, 0.16), // slate-900
   mid:      rgb(0.35, 0.42, 0.52), // slate-500
   light:    rgb(0.55, 0.62, 0.72), // slate-400
