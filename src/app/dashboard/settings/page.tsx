@@ -54,6 +54,8 @@ export default function SettingsPage() {
   const [gstForm, setGstForm] = useState({ gstin: "", gstRegistered: false, gstStateCode: "", cgstRate: 9, sgstRate: 9 });
   const [dataRetentionYears, setDataRetentionYears] = useState(7);
   const [dpaStatus, setDpaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
+  const [baaStatus, setBaaStatus] = useState<{ version: string | null; acceptedAt: number | null }>({ version: null, acceptedAt: null });
+  const [baaAccepting, setBaaAccepting] = useState(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [tzSaving, setTzSaving] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -85,6 +87,7 @@ export default function SettingsPage() {
         setDataRetentionYears((orgAny.dataRetentionYears as number) ?? 7);
         setTimezone(o.timezone ?? "Asia/Kolkata");
         setDpaStatus({ version: (o.dpaVersion ?? null), acceptedAt: (o.dpaAcceptedAt ?? null) });
+        setBaaStatus({ version: (o.baaVersion ?? null), acceptedAt: (o.baaAcceptedAt ?? null) });
         setLoading(false);
       });
     orgApi.members.list()
@@ -670,6 +673,45 @@ export default function SettingsPage() {
                 </div>
               </Section>
             </form>
+
+            {/* HIPAA BAA */}
+            <div className="rounded-pk-lg border p-6 space-y-3"
+              style={{ background: "var(--pk-surface)", borderColor: "var(--pk-border)" }}>
+              <div>
+                <h3 className="text-sm font-semibold" style={{ color: "var(--pk-text)" }}>HIPAA Business Associate Agreement (BAA)</h3>
+                <p className="text-xs mt-1 mb-3" style={{ color: "var(--pk-text-muted)" }}>
+                  Required for clinics outside India that are covered entities under HIPAA. By accepting, you confirm Parkkal
+                  will handle PHI in accordance with HIPAA requirements on your behalf.
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${baaStatus.acceptedAt ? "bg-pk-success-fill text-pk-success-text border-pk-success-border" : "bg-pk-surface-sunken text-pk-text-secondary border-pk-border"}`}>
+                    {baaStatus.acceptedAt
+                      ? `BAA accepted (${baaStatus.version}) on ${new Date(baaStatus.acceptedAt).toLocaleDateString("en-IN")}`
+                      : "BAA not accepted"}
+                  </div>
+                  {!baaStatus.acceptedAt && (
+                    <button
+                      type="button"
+                      disabled={baaAccepting}
+                      onClick={async () => {
+                        setBaaAccepting(true);
+                        try {
+                          const result = await orgApi.acceptBaa();
+                          setBaaStatus({ version: result.version, acceptedAt: Date.now() });
+                        } catch { /* non-fatal */ } finally {
+                          setBaaAccepting(false);
+                        }
+                      }}
+                      className="text-xs font-medium px-3 py-1.5 rounded-pk-sm border transition-colors disabled:opacity-50"
+                      style={{ borderColor: "var(--pk-border)", color: "var(--pk-text)" }}
+                    >
+                      {baaAccepting ? "Accepting…" : "Accept BAA →"}
+                    </button>
+                  )}
+                  <a href="/legal/baa/v1" target="_blank" rel="noreferrer" className="text-xs ml-auto" style={{ color: "var(--pk-text-muted)" }}>View BAA text →</a>
+                </div>
+              </div>
+            </div>
 
             {/* Audit Log link */}
             <div className="rounded-pk-lg border p-6 flex items-start justify-between gap-4"

@@ -20,6 +20,9 @@ export interface OrgProfile {
   dpaVersion?: string | null;
   dpaAcceptedAt?: number | null;
   dpaAcceptedBy?: string | null;
+  baaVersion?: string | null;
+  baaAcceptedAt?: number | null;
+  baaAcceptedBy?: string | null;
   dataRetentionYears?: number | null;
   timezone?: string;
   createdAt: number;

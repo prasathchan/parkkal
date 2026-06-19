@@ -374,6 +374,7 @@ export const orgApi = {
   delete:            deleteOrg,
   dismissOnboarding: dismissOnboarding,
   acceptDpa:         acceptDpa,
+  acceptBaa:         acceptBaa,
   profile: {
     get:       getStaffProfile,
     update:    updateStaffProfile,
@@ -395,4 +396,8 @@ export const orgApi = {
 
 async function acceptDpa(): Promise<{ accepted: boolean; version: string }> {
   return apiFetch("/api/org/accept-dpa", { method: "POST" });
+}
+
+async function acceptBaa(): Promise<{ accepted: boolean; version: string }> {
+  return apiFetch("/api/org/accept-baa", { method: "POST" });
 }

@@ -71,6 +71,9 @@ export const organizations = sqliteTable("organizations", {
   dpaVersion: text("dpa_version"),
   dpaAcceptedAt: integer("dpa_accepted_at"),
   dpaAcceptedBy: text("dpa_accepted_by"),
+  baaVersion: text("baa_version"),
+  baaAcceptedAt: integer("baa_accepted_at"),
+  baaAcceptedBy: text("baa_accepted_by"),
   dataRetentionYears: integer("data_retention_years").notNull().default(7),
   timezone: text("timezone").notNull().default("Asia/Kolkata"),
   // Informational data residency field for DPDP compliance conversations.
