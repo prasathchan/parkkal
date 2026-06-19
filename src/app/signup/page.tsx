@@ -14,6 +14,8 @@ export default function SignupPage() {
     confirmPassword: "",
     clinicName: "",
   });
+  const [tosAccepted, setTosAccepted] = useState(false);
+  const [dpaAccepted, setDpaAccepted] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +32,11 @@ export default function SignupPage() {
       return;
     }
 
+    if (!tosAccepted || !dpaAccepted) {
+      setError("Please accept the Terms of Service and Data Processing Agreement to continue.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -42,6 +49,7 @@ export default function SignupPage() {
           password: form.password,
           phone: form.phone,
           clinicName: form.clinicName,
+          dpaAccepted: true,
         }),
       });
 
@@ -202,6 +210,38 @@ export default function SignupPage() {
             />
           </div>
 
+          {/* Compliance agreements — explicit acceptance required */}
+          <div className="space-y-3 py-1">
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={tosAccepted}
+                onChange={(e) => setTosAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-pk-border-strong text-pk-teal-600 focus:ring-pk-teal-500"
+              />
+              <span className="text-xs text-pk-text-secondary leading-relaxed">
+                I have read and agree to the{" "}
+                <a href="/legal/terms" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline font-medium">Terms of Service</a>{" "}
+                and{" "}
+                <a href="/legal/privacy" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline font-medium">Privacy Policy</a>.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={dpaAccepted}
+                onChange={(e) => setDpaAccepted(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-pk-border-strong text-pk-teal-600 focus:ring-pk-teal-500"
+              />
+              <span className="text-xs text-pk-text-secondary leading-relaxed">
+                I accept the{" "}
+                <a href="/legal/dpa/v1" target="_blank" rel="noreferrer" className="text-pk-teal-600 hover:underline font-medium">Data Processing Agreement (DPA)</a>{" "}
+                under the DPDP Act 2023. Parkkal will process patient data on behalf of my clinic.
+              </span>
+            </label>
+          </div>
+
           {error && (
             <div className="bg-pk-danger-fill border border-pk-danger-border text-pk-danger-text text-sm rounded-pk-sm px-4 py-3">
               {error}
@@ -210,8 +250,8 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 text-white font-semibold py-2.5 px-4 rounded-pk-sm transition duration-200 text-sm"
+            disabled={loading || !tosAccepted || !dpaAccepted}
+            className="w-full bg-pk-teal-600 hover:bg-pk-teal-700 disabled:bg-pk-teal-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-pk-sm transition duration-200 text-sm"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>
@@ -222,13 +262,6 @@ export default function SignupPage() {
           <a href="/login" className="text-pk-teal-600 hover:underline font-medium">
             Sign in
           </a>
-        </p>
-
-        <p className="text-center text-xs text-pk-text-muted mt-4">
-          By signing up you agree to our{" "}
-          <a href="/legal/terms" className="underline hover:text-pk-text-secondary">Terms of Service</a>{" "}
-          and{" "}
-          <a href="/legal/privacy" className="underline hover:text-pk-text-secondary">Privacy Policy</a>.
         </p>
         <p className="text-center text-xs text-pk-text-muted mt-2">
           © {new Date().getFullYear()} Parkkal Clinic · app.parkkal.com

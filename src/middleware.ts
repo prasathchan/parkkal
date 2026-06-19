@@ -6,13 +6,25 @@ import { verifyOrgToken, verifyToken } from "@/lib/auth-edge";
 // so script-src requires 'unsafe-inline'. 'unsafe-eval' is only needed in the
 // Next.js dev server (hot reload, React refresh) — production builds never use
 // eval, so we exclude it there to close that XSS vector.
+//
+// NOTE: process.env is intentionally used here (not @/lib/env).
+// This file runs on the Cloudflare Edge runtime where the Node.js module system
+// is unavailable. @/lib/env imports Zod and performs module-level validation —
+// neither works at the edge. process.env IS available here because Next.js
+// replaces static env var references at build time, and Cloudflare injects
+// secret bindings before the first request.
 const isDev = process.env.NODE_ENV !== "production";
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data: https:",
-  "connect-src 'self' https://api.resend.com",
+  // Allowed outbound fetch targets (server-side only, but CSP is defence-in-depth):
+  //   api.resend.com       — transactional email
+  //   api.msg91.com        — MSG91 WhatsApp outbound messages + SMS Flow API
+  //   control.msg91.com    — MSG91 OTP widget
+  //   api.postalpincode.in — India Post pincode autocomplete
+  "connect-src 'self' https://api.resend.com https://api.msg91.com https://control.msg91.com https://api.postalpincode.in",
   "font-src 'self' data:",
   "frame-ancestors 'none'",
   "base-uri 'self'",

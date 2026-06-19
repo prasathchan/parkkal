@@ -359,17 +359,15 @@ export default function SettingsPage() {
               {/* Data & Privacy Section */}
               <div className="rounded-pk-lg border border-pk-border p-4 space-y-3">
                 <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--pk-text)" }}>Data & Privacy (DPDP Act 2023)</h3>
-                <div className="flex items-center gap-3">
-                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full border ${dpaStatus.acceptedAt ? "bg-pk-success-fill text-pk-success-text border-pk-success-border" : "bg-pk-warning-fill text-pk-warning-text border-pk-warning-border"}`}>
-                    {dpaStatus.acceptedAt
-                      ? `DPA accepted (${dpaStatus.version}) on ${new Date(dpaStatus.acceptedAt).toLocaleDateString("en-IN")}`
-                      : "DPA not yet accepted"}
-                  </div>
-                  {!dpaStatus.acceptedAt && (
+                {!dpaStatus.acceptedAt && (
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs font-medium px-2.5 py-1 rounded-full border bg-pk-warning-fill text-pk-warning-text border-pk-warning-border">
+                      DPA not yet accepted
+                    </div>
                     <a href="/accept-dpa" className="text-xs text-pk-teal-600 hover:underline">Accept DPA →</a>
-                  )}
-                  <a href="/legal/dpa/v1" target="_blank" rel="noreferrer" className="text-xs text-pk-text-muted hover:underline ml-auto">View DPA text →</a>
-                </div>
+                    <a href="/legal/dpa/v1" target="_blank" rel="noreferrer" className="text-xs text-pk-text-muted hover:underline ml-auto">View DPA text →</a>
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs text-pk-text-muted mb-1">Data retention period (years)</label>
                   <div className="flex items-center gap-2">

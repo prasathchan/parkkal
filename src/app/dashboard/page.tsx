@@ -9,6 +9,118 @@ import { OnboardingChecklist, type OnboardingStep } from "@/components/onboardin
 import { DashboardClientSection } from "@/components/dashboard/DashboardClientSection";
 import type { SystemRole } from "@/types";
 
+function ComplianceCard({
+  dpaAcceptedAt,
+  baaAcceptedAt,
+  orgCreatedAt,
+}: {
+  dpaAcceptedAt: number | null;
+  baaAcceptedAt: number | null;
+  orgCreatedAt: number | null;
+}) {
+  const fmt = (ts: number) => new Date(ts).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+  const items = [
+    {
+      label: "Terms of Service",
+      accepted: true,
+      note: orgCreatedAt ? `Accepted ${fmt(orgCreatedAt)}` : "Accepted at signup",
+      href: "/legal/terms",
+    },
+    {
+      label: "Data Processing Agreement",
+      sublabel: "DPDP Act 2023",
+      accepted: !!dpaAcceptedAt,
+      note: dpaAcceptedAt ? `Accepted ${fmt(dpaAcceptedAt)}` : null,
+      href: "/legal/dpa/v1",
+      actionHref: "/accept-dpa",
+      actionLabel: "Accept DPA →",
+    },
+    {
+      label: "HIPAA BAA",
+      sublabel: "For international clinics",
+      accepted: !!baaAcceptedAt,
+      note: baaAcceptedAt ? `Accepted ${fmt(baaAcceptedAt)}` : null,
+      href: "/legal/baa/v1",
+      actionHref: "/dashboard/settings?tab=security",
+      actionLabel: "Go International →",
+      optional: true,
+    },
+  ];
+
+  const allRequired = items.filter((i) => !i.optional).every((i) => i.accepted);
+
+  return (
+    <section aria-label="Compliance status">
+      <div className="rounded-pk-md border border-pk-border bg-pk-surface p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-pk-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <h2 className="text-sm font-semibold text-pk-text">Compliance</h2>
+            {allRequired && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pk-success-fill text-pk-success-text border border-pk-success-border">
+                All clear
+              </span>
+            )}
+          </div>
+          <Link href="/dashboard/settings?tab=security" className="text-xs text-pk-text-muted hover:text-pk-text-secondary transition">
+            Manage →
+          </Link>
+        </div>
+
+        <div className="divide-y divide-pk-border">
+          {items.map((item) => (
+            <div key={item.label} className="flex items-center justify-between py-2.5 gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {item.accepted ? (
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-pk-success-fill flex items-center justify-center">
+                    <svg className="w-3 h-3 text-pk-success-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                ) : item.optional ? (
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-pk-surface-raised flex items-center justify-center">
+                    <svg className="w-3 h-3 text-pk-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </span>
+                ) : (
+                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-pk-warning-fill flex items-center justify-center">
+                    <svg className="w-3 h-3 text-pk-warning-text" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-pk-text">{item.label}</span>
+                    {item.sublabel && <span className="text-xs text-pk-text-muted">· {item.sublabel}</span>}
+                  </div>
+                  {item.note && (
+                    <p className="text-xs text-pk-text-muted mt-0.5">{item.note}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link href={item.href} target="_blank" className="text-xs text-pk-text-muted hover:text-pk-text-secondary transition">
+                  View
+                </Link>
+                {!item.accepted && item.actionHref && (
+                  <Link href={item.actionHref} className="text-xs font-medium text-pk-teal-600 hover:underline">
+                    {item.actionLabel}
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 async function getOnboardingState(orgId: string) {
   const db = getDb();
   const [orgRows, memberCountRows, patientCountRows, apptCountRows] = await Promise.all([
@@ -17,6 +129,9 @@ async function getOnboardingState(orgId: string) {
       address: organizations.address,
       logoUrl: organizations.logoUrl,
       onboardingDismissedAt: organizations.onboardingDismissedAt,
+      dpaAcceptedAt: organizations.dpaAcceptedAt,
+      baaAcceptedAt: organizations.baaAcceptedAt,
+      createdAt: organizations.createdAt,
     }).from(organizations).where(eq(organizations.id, orgId)).limit(1),
     db.select({ val: count() }).from(organizationMembers).where(eq(organizationMembers.organizationId, orgId)),
     db.select({ val: count() }).from(organizationPatients).where(eq(organizationPatients.organizationId, orgId)),
@@ -30,6 +145,9 @@ async function getOnboardingState(orgId: string) {
     patientDone:     (patientCountRows[0]?.val ?? 0) > 0,
     appointmentDone: (apptCountRows[0]?.val ?? 0) > 0,
     logoDone:        !!org?.logoUrl,
+    dpaAcceptedAt:   org?.dpaAcceptedAt ?? null,
+    baaAcceptedAt:   org?.baaAcceptedAt ?? null,
+    createdAt:       org?.createdAt ?? null,
   };
 }
 
@@ -67,6 +185,15 @@ export default async function DashboardPage() {
             />
           );
         })()}
+
+        {/* ── Compliance card — admin only ────────────────────────────────── */}
+        {session?.role === "ADMIN" && onboarding && (
+          <ComplianceCard
+            dpaAcceptedAt={onboarding.dpaAcceptedAt}
+            baaAcceptedAt={onboarding.baaAcceptedAt}
+            orgCreatedAt={onboarding.createdAt}
+          />
+        )}
 
         {/* ── Zones A + B — location-aware schedule + stat strip ─────────── */}
         <DashboardClientSection />

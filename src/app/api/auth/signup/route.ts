@@ -25,6 +25,7 @@ const signupSchema = z.object({
     return p;
   }),
   clinicName: z.string().min(2),
+  dpaAccepted: z.boolean().optional(),
 });
 
 const SIGNUP_RATE_LIMIT = { limit: 5, windowMs: 60 * 60 * 1000 }; // 5 per hour per IP
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
   const log = logger.forRoute("POST /api/auth/signup");
   try {
     const body = await request.json();
-    const { name, email, password, phone, clinicName } = signupSchema.parse(body);
+    const { name, email, password, phone, clinicName, dpaAccepted } = signupSchema.parse(body);
 
     const db = getDb();
 
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       createdAt: now,
     });
 
-    // Create organization
+    // Create organization — record DPA acceptance if the admin agreed at signup
     await db.insert(organizations).values({
       id: orgId,
       name: clinicName,
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest) {
       isActive: 0,
       createdAt: now,
       updatedAt: now,
+      ...(dpaAccepted ? { dpaVersion: "v1", dpaAcceptedAt: now, dpaAcceptedBy: userId } : {}),
     });
 
     // Seed default org roles and capture the Administrator role id for the owner.
