@@ -1,7 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { patients, organizationPatients, appointments, treatments, visitTreatments, prescriptions, invoices, invoiceTreatments, visits, visitItems, payments, attachments, emergencyContacts, consentAuditLog } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
-import { writeAuditLog } from "@/lib/audit";
+import { writeAuditLog, logPatientAccess } from "@/lib/audit";
 import { encryptField, decryptField } from "@/lib/encryption";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { runCascade } from "@/lib/db";
@@ -31,16 +31,24 @@ export const GET = withRoute<{ id: string }>(
       .where(and(eq(organizationPatients.organizationId, session.orgId), eq(organizationPatients.patientId, id)));
     if (!orgLink) return apiError("Forbidden", 403);
 
-    // PAN and Aadhaar are Indian national IDs (equivalent to SSN).
-    // Only ADMIN may see them; all other roles receive null.
+    logPatientAccess({ organizationId: session.orgId, actorId: session.userId, patientId: id, accessType: "PROFILE", route: "GET /api/patients/[id]" });
+
+    const base = {
+      ...patient,
+      dateOfBirth:    await decryptField(patient.dateOfBirth) ?? null,
+      address:        await decryptField(patient.address) ?? null,
+      medicalHistory: await decryptField(patient.medicalHistory) ?? null,
+    };
+
+    // PAN and Aadhaar: only ADMIN may see them.
     if (session.role === "ADMIN") {
       return apiOk({ patient: {
-        ...patient,
-        panNumber: await decryptField(patient.panNumber) ?? null,
+        ...base,
+        panNumber:    await decryptField(patient.panNumber) ?? null,
         aadhaarNumber: await decryptField(patient.aadhaarNumber) ?? null,
       }});
     }
-    return apiOk({ patient: { ...patient, panNumber: null, aadhaarNumber: null } });
+    return apiOk({ patient: { ...base, panNumber: null, aadhaarNumber: null } });
   }
 );
 
@@ -60,26 +68,35 @@ export const PATCH = withRoute<{ id: string }>(
       delete (data as Partial<typeof data>).aadhaarNumber;
     }
 
-    // Encrypt government IDs before persisting
     const updatePayload = {
       ...data,
-      panNumber: data.panNumber !== undefined ? (await encryptField(data.panNumber) ?? null) : undefined,
-      aadhaarNumber: data.aadhaarNumber !== undefined ? (await encryptField(data.aadhaarNumber) ?? null) : undefined,
+      dateOfBirth:    data.dateOfBirth    !== undefined ? (await encryptField(data.dateOfBirth) ?? null)    : undefined,
+      address:        data.address        !== undefined ? (await encryptField(data.address) ?? null)        : undefined,
+      medicalHistory: data.medicalHistory !== undefined ? (await encryptField(data.medicalHistory) ?? null) : undefined,
+      panNumber:      data.panNumber      !== undefined ? (await encryptField(data.panNumber) ?? null)      : undefined,
+      aadhaarNumber:  data.aadhaarNumber  !== undefined ? (await encryptField(data.aadhaarNumber) ?? null)  : undefined,
       updatedAt: Date.now(),
     };
 
     await db.update(patients).set(updatePayload).where(eq(patients.id, id));
     const [updated] = await db.select().from(patients).where(eq(patients.id, id));
 
+    const base = {
+      ...updated,
+      dateOfBirth:    await decryptField(updated.dateOfBirth) ?? null,
+      address:        await decryptField(updated.address) ?? null,
+      medicalHistory: await decryptField(updated.medicalHistory) ?? null,
+    };
+
     if (session.role === "ADMIN") {
       return apiOk({ patient: {
-        ...updated,
-        panNumber: await decryptField(updated.panNumber) ?? null,
+        ...base,
+        panNumber:    await decryptField(updated.panNumber) ?? null,
         aadhaarNumber: await decryptField(updated.aadhaarNumber) ?? null,
       }});
     }
     log.info("Patient updated", { patientId: id });
-    return apiOk({ patient: { ...updated, panNumber: null, aadhaarNumber: null } });
+    return apiOk({ patient: { ...base, panNumber: null, aadhaarNumber: null } });
   }
 );
 

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { users, organizationMembers } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -28,7 +29,12 @@ export const PATCH = withRoute<{ id: string }>(
     }
 
     const data = updateSchema.parse(await req.json());
-    await db.update(users).set({ ...data, updatedAt: Date.now() }).where(eq(users.id, id));
+    const encrypted = {
+      ...data,
+      dateOfBirth: data.dateOfBirth !== undefined ? (await encryptField(data.dateOfBirth) ?? null) : undefined,
+      address:     data.address     !== undefined ? (await encryptField(data.address) ?? null)     : undefined,
+    };
+    await db.update(users).set({ ...encrypted, updatedAt: Date.now() }).where(eq(users.id, id));
 
     const [updated] = await db
       .select({ id: users.id, name: users.name, phone: users.phone, email: users.email, dateOfBirth: users.dateOfBirth, gender: users.gender, address: users.address })
@@ -36,6 +42,10 @@ export const PATCH = withRoute<{ id: string }>(
       .where(eq(users.id, id));
 
     log.info("User profile updated", { targetUserId: id });
-    return apiOk({ user: updated });
+    return apiOk({ user: {
+      ...updated,
+      dateOfBirth: await decryptField(updated.dateOfBirth) ?? null,
+      address:     await decryptField(updated.address) ?? null,
+    } });
   }
 );

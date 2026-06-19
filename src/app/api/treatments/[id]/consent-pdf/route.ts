@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { PERMISSIONS } from "@/lib/permissions";
 import { createDoc, headerBar, hRule, embedOrgLogo, A4, COLOR } from "@/lib/pdf";
 import { parseAddress, formatAddressDisplay } from "@/lib/address";
+import { decryptField } from "@/lib/encryption";
 
 export const GET = withRoute<{ id: string }>(
   { route: "GET /api/treatments/[id]/consent-pdf", permission: PERMISSIONS.VISITS_VIEW },
@@ -34,6 +35,9 @@ export const GET = withRoute<{ id: string }>(
       .where(and(eq(treatments.id, id), eq(treatments.organizationId, session.orgId)));
 
     if (!row) return apiError("Treatment not found", 404);
+
+    // Decrypt encrypted patient PII before rendering the PDF
+    const patientDobDecrypted = await decryptField(row.patientDob);
 
     // ── Build PDF ──────────────────────────────────────────────────────────────
     const { doc, fonts } = await createDoc();
@@ -81,7 +85,7 @@ export const GET = withRoute<{ id: string }>(
 
     // ── Patient details ────────────────────────────────────────────────────────
     const dateStr = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
-    const dobStr  = row.patientDob ? new Date(row.patientDob).toLocaleDateString("en-IN") : "—";
+    const dobStr  = patientDobDecrypted ? new Date(patientDobDecrypted).toLocaleDateString("en-IN") : "—";
 
     const col2X = (A4.width + M) / 2;
 

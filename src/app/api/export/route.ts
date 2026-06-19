@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { patients, organizationPatients, visits, treatments } from "@/db/schema";
 import { withRoute, apiError, RATE_LIMITS } from "@/lib/api";
 import { PERMISSIONS, hasPermission } from "@/lib/permissions";
+import { decryptField } from "@/lib/encryption";
 
 /** GET /api/export?type=patients|visits|treatments — download CSV of org data */
 export const GET = withRoute(
@@ -36,17 +37,17 @@ export const GET = withRoute(
         .orderBy(organizationPatients.registeredAt);
 
       const header = "Code,Name,Phone,Date of Birth,Gender,Blood Group,Address,Referral Source,Registered At";
-      const csvRows = rows.map((r: typeof rows[number]) => [
+      const csvRows = await Promise.all(rows.map(async (r: typeof rows[number]) => [
         r.code ?? "",
         csvEscape(r.name),
         r.phone ?? "",
-        r.dob ?? "",
+        (await decryptField(r.dob)) ?? "",
         r.gender ?? "",
         r.blood ?? "",
-        csvEscape(r.address ?? ""),
+        csvEscape((await decryptField(r.address)) ?? ""),
         r.referralSource ?? "",
         r.createdAt ? new Date(r.createdAt).toISOString() : "",
-      ].join(","));
+      ].join(",")));
 
       return csvResponse([header, ...csvRows].join("\n"), `patients-${dateStamp()}.csv`);
     }

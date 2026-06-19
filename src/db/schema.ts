@@ -923,6 +923,20 @@ export const superadminActions = sqliteTable("superadmin_actions", {
   createdAt: integer("created_at").notNull(),
 });
 
+// ─── Patient access log ──────────────────────────────────────────────────────
+// Fire-and-forget rows written on every patient record READ.
+// Distinct from admin_audit_log (which covers mutations only).
+// Satisfies DPDP Act §9 — data fiduciary must log who accessed data and why.
+export const patientAccessLog = sqliteTable("patient_access_log", {
+  id:             text("id").primaryKey(),
+  organizationId: text("organization_id").notNull(),
+  actorId:        text("actor_id").notNull(),
+  patientId:      text("patient_id").notNull(),
+  accessType:     text("access_type").notNull(), // PROFILE | VISIT | TREATMENT | PRESCRIPTION | ATTACHMENT | BILLING | CHART
+  route:          text("route").notNull(),
+  createdAt:      integer("created_at").notNull(),
+});
+
 // ─── Onboarding email sequence ───────────────────────────────────────────────
 // One row per scheduled email. Inserted at signup; processed by the daily cron.
 export const onboardingEmails = sqliteTable("onboarding_emails", {

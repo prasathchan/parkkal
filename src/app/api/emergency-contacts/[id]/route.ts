@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { emergencyContacts, organizationPatients, organizationMembers } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { encryptField } from "@/lib/encryption";
 
 /** Verify that the contact's entity belongs to the requesting org. */
 async function assertContactOwnership(
@@ -33,9 +34,9 @@ export const PATCH = withRoute<{ id: string }>(
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;
     if (relationship !== undefined) updates.relationship = relationship;
-    if (phone !== undefined) updates.phone = phone;
-    if (email !== undefined) updates.email = email;
-    if (address !== undefined) updates.address = address;
+    if (phone !== undefined) updates.phone = await encryptField(phone) ?? phone;
+    if (email !== undefined) updates.email = await encryptField(email || null) ?? null;
+    if (address !== undefined) updates.address = await encryptField(address || null) ?? null;
 
     await db.update(emergencyContacts).set(updates).where(eq(emergencyContacts.id, id));
     log.info("Emergency contact updated", { contactId: id });

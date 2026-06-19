@@ -75,20 +75,26 @@ export const GET = withRoute(
       .leftJoin(orgRoles, eq(organizationMembers.orgRoleId, orgRoles.id))
       .where(eq(organizationMembers.organizationId, session.orgId));
 
-    // Strip national IDs and salary info from non-ADMIN callers
+    // Decrypt PII fields for all callers; strip gov IDs and salary for non-ADMIN
     type MemberRow = (typeof rows)[number];
     let members: unknown[];
     if (session.role === "ADMIN") {
       members = await Promise.all(rows.map(async (r: MemberRow) => ({
         ...r,
-        panNumber: await decryptField(r.panNumber) ?? null,
+        dateOfBirth:  await decryptField(r.dateOfBirth) ?? null,
+        address:      await decryptField(r.address) ?? null,
+        panNumber:    await decryptField(r.panNumber) ?? null,
         aadhaarNumber: await decryptField(r.aadhaarNumber) ?? null,
       })));
     } else {
-      members = rows.map((r: MemberRow) => {
+      members = await Promise.all(rows.map(async (r: MemberRow) => {
         const { panNumber: _pan, aadhaarNumber: _aad, salaryType: _st, salaryAmount: _sa, ...rest } = r;
-        return rest;
-      });
+        return {
+          ...rest,
+          dateOfBirth: await decryptField(r.dateOfBirth) ?? null,
+          address:     await decryptField(r.address) ?? null,
+        };
+      }));
     }
 
     return apiOk({ members });
@@ -133,11 +139,11 @@ export const POST = withRoute(
         name: data.name,
         email: data.email,
         passwordHash,
-        phone: data.phone || null,
-        dateOfBirth: data.dateOfBirth || null,
-        gender: data.gender || null,
-        address: data.address || null,
-        panNumber: await encryptField(data.panNumber || null) ?? null,
+        phone:        data.phone || null,
+        dateOfBirth:  await encryptField(data.dateOfBirth || null) ?? null,
+        gender:       data.gender || null,
+        address:      await encryptField(data.address || null) ?? null,
+        panNumber:    await encryptField(data.panNumber || null) ?? null,
         aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
         profileImageUrl: null,
         isActive: userIsActive,
@@ -209,8 +215,8 @@ export const POST = withRoute(
       entityId: existingUser.id,
       name: data.emergencyContact!.name,
       relationship: data.emergencyContact!.relationship,
-      phone: data.emergencyContact!.phone,
-      email: data.emergencyContact!.email || null,
+      phone:   await encryptField(data.emergencyContact!.phone) ?? data.emergencyContact!.phone,
+      email:   await encryptField(data.emergencyContact!.email || null) ?? null,
       address: null,
       createdAt: now,
     });

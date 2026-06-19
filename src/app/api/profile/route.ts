@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { staffProfiles, users } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const qualificationSchema = z.object({
@@ -42,7 +43,7 @@ export const GET = withRoute(
     const [profile] = await db.select().from(staffProfiles).where(eq(staffProfiles.userId, session.userId));
 
     return apiOk({
-      user: { ...user, id: session.userId, role: session.role },
+      user: { ...user, id: session.userId, role: session.role, dateOfBirth: await decryptField(user.dateOfBirth) ?? null },
       profile: profile ? {
         ...profile,
         languages: JSON.parse(profile.languages ?? "[]"),
@@ -67,7 +68,7 @@ export const PATCH = withRoute(
     const userUpdates: Record<string, unknown> = {};
     if (data.name !== undefined) userUpdates.name = data.name;
     if (data.phone !== undefined) userUpdates.phone = data.phone;
-    if (data.dateOfBirth !== undefined) userUpdates.dateOfBirth = data.dateOfBirth;
+    if (data.dateOfBirth !== undefined) userUpdates.dateOfBirth = await encryptField(data.dateOfBirth) ?? null;
     if (data.gender !== undefined) userUpdates.gender = data.gender;
     if (Object.keys(userUpdates).length > 0) {
       userUpdates.updatedAt = now;

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { patients, organizationPatients, patientCodeSequences } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId } from "@/lib/utils";
+import { encryptField } from "@/lib/encryption";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
 import { z } from "zod";
 
@@ -72,7 +73,7 @@ export const POST = withRoute(
     for (let batchStart = 0; batchStart < n; batchStart += BATCH_SIZE) {
       const batch = rows.slice(batchStart, batchStart + BATCH_SIZE);
 
-      const patientValues = batch.map((row, i) => {
+      const patientValues = await Promise.all(batch.map(async (row, i) => {
         const idx = batchStart + i;
         const globalCode = `PKL-${String(globalStart + idx).padStart(6, "0")}`;
         return {
@@ -81,10 +82,10 @@ export const POST = withRoute(
           name:          row.name,
           phone:         row.phone,
           email:         row.email || null,
-          dateOfBirth:   row.dateOfBirth || null,
+          dateOfBirth:   await encryptField(row.dateOfBirth || null) ?? null,
           gender:        (row.gender as "MALE" | "FEMALE" | "OTHER" | null) || null,
           bloodGroup:    row.bloodGroup || null,
-          medicalHistory: row.medicalNotes || null,
+          medicalHistory: await encryptField(row.medicalNotes || null) ?? null,
           address:       null,
           panNumber:     null,
           aadhaarNumber: null,
@@ -96,7 +97,7 @@ export const POST = withRoute(
           createdAt:     now,
           updatedAt:     now,
         };
-      });
+      }));
 
       const orgPatientValues = patientValues.map((p, i) => {
         const idx = batchStart + i;

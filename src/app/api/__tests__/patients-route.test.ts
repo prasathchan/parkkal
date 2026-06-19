@@ -38,6 +38,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 vi.mock("@/lib/encryption", () => ({
   encryptField: vi.fn().mockResolvedValue("encrypted"),
+  decryptField: vi.fn().mockImplementation((v: string | null | undefined) => Promise.resolve(v)),
 }));
 vi.mock("@/lib/utils", () => ({
   generateId:  vi.fn().mockReturnValue("new_patient_id"),

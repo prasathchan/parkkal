@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import { emergencyContacts, patients, organizationPatients, organizationMembers } from "@/db/schema";
 import { withRoute, apiOk, apiError, RATE_LIMITS } from "@/lib/api";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -48,8 +49,16 @@ export const GET = withRoute(
     const allowed = await assertEntityOwnership(db, session.orgId, entityType, entityId, log);
     if (!allowed) return apiError("Forbidden", 403);
 
-    const contacts = await db.select().from(emergencyContacts)
+    const raw = await db.select().from(emergencyContacts)
       .where(and(eq(emergencyContacts.entityType, entityType), eq(emergencyContacts.entityId, entityId)));
+
+    type EC = (typeof raw)[number];
+    const contacts = await Promise.all(raw.map(async (c: EC) => ({
+      ...c,
+      phone:   await decryptField(c.phone) ?? c.phone,
+      email:   await decryptField(c.email) ?? null,
+      address: await decryptField(c.address) ?? null,
+    })));
 
     return apiOk({ contacts });
   }
@@ -70,9 +79,9 @@ export const POST = withRoute(
       entityId: data.entityId,
       name: data.name,
       relationship: data.relationship,
-      phone: data.phone,
-      email: data.email || null,
-      address: data.address || null,
+      phone:   await encryptField(data.phone) ?? data.phone,
+      email:   await encryptField(data.email || null) ?? null,
+      address: await encryptField(data.address || null) ?? null,
       createdAt: Date.now(),
     };
 

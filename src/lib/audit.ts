@@ -13,7 +13,7 @@
  */
 
 import { getDb } from "@/lib/db";
-import { adminAuditLog } from "@/db/schema";
+import { adminAuditLog, patientAccessLog } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 
 export type AuditAction =
@@ -112,6 +112,34 @@ export function writeAuditLog(params: AuditParams): void {
       await insertAuditRow(params);
     } catch {
       console.error("[audit] Failed to write audit log entry", params.action);
+    }
+  })();
+}
+
+export type PatientAccessType = "PROFILE" | "VISIT" | "TREATMENT" | "PRESCRIPTION" | "ATTACHMENT" | "BILLING" | "CHART";
+
+/** Fire-and-forget. Logs every patient record READ for DPDP Act §9 compliance. */
+export function logPatientAccess(params: {
+  organizationId: string;
+  actorId: string;
+  patientId: string;
+  accessType: PatientAccessType;
+  route: string;
+}): void {
+  (async () => {
+    try {
+      const db = getDb();
+      await db.insert(patientAccessLog).values({
+        id:             crypto.randomUUID(),
+        organizationId: params.organizationId,
+        actorId:        params.actorId,
+        patientId:      params.patientId,
+        accessType:     params.accessType,
+        route:          params.route,
+        createdAt:      Date.now(),
+      });
+    } catch {
+      // Never block the primary operation on an access log failure
     }
   })();
 }

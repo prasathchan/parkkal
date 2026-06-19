@@ -12,7 +12,7 @@ import { like, or, desc, count, eq, and, sql } from "drizzle-orm";
 import { patients, organizationPatients, emergencyContacts, patientCodeSequences } from "@/db/schema";
 import { PERMISSIONS } from "@/lib/permissions";
 import { generateId, escapeLike } from "@/lib/utils";
-import { encryptField } from "@/lib/encryption";
+import { encryptField, decryptField } from "@/lib/encryption";
 import { withRoute, apiOk, RATE_LIMITS } from "@/lib/api";
 import { createPatientSchema } from "@/lib/schemas/patient";
 
@@ -81,14 +81,15 @@ export const GET = withRoute(
 
     type PatientRow = (typeof results)[number];
 
-    // PAN and Aadhaar are sensitive Indian government IDs; never expose in list view.
-    const masked = results.map((p: PatientRow) => ({
+    // Decrypt DOB per row; strip government IDs entirely from list view.
+    const decrypted = await Promise.all(results.map(async (p: PatientRow) => ({
       ...p,
-      panNumber: null,
+      dateOfBirth:  await decryptField(p.dateOfBirth) ?? null,
+      panNumber:    null,
       aadhaarNumber: null,
-    }));
+    })));
 
-    return apiOk({ patients: masked, total, limit, offset });
+    return apiOk({ patients: decrypted, total, limit, offset });
   }
 );
 
@@ -114,10 +115,10 @@ export const POST = withRoute(
       name: data.name,
       phone: data.phone,
       email: data.email || null,
-      dateOfBirth: data.dateOfBirth || null,
+      dateOfBirth:    await encryptField(data.dateOfBirth || null) ?? null,
       gender: data.gender || null,
-      address: data.address || null,
-      medicalHistory: data.medicalHistory || null,
+      address:        await encryptField(data.address || null) ?? null,
+      medicalHistory: await encryptField(data.medicalHistory || null) ?? null,
       bloodGroup: data.bloodGroup || null,
       panNumber: await encryptField(data.panNumber || null) ?? null,
       aadhaarNumber: await encryptField(data.aadhaarNumber || null) ?? null,
@@ -176,8 +177,8 @@ export const POST = withRoute(
         entityId: patientId,
         name: data.emergencyContact.name,
         relationship: data.emergencyContact.relationship,
-        phone: data.emergencyContact.phone,
-        email: data.emergencyContact.email || null,
+        phone:   await encryptField(data.emergencyContact.phone) ?? data.emergencyContact.phone,
+        email:   await encryptField(data.emergencyContact.email || null) ?? null,
         address: null,
         createdAt: now,
       });
